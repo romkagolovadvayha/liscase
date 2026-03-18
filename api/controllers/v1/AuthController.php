@@ -254,6 +254,89 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Редирект на Discord OAuth для привязки аккаунта (требуется JWT)
+     */
+    public function actionDiscord()
+    {
+        $user = $this->getCurrentUser();
+        $clientId = Yii::$app->settings->get('discord_client_id');
+        if (empty($clientId)) {
+            return $this->errorResponse('NOT_CONFIGURED', 'Discord OAuth не настроен', [], 503);
+        }
+        $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
+        $redirectUri = $baseUrl . '/v1/auth/discord-callback';
+        $state = Yii::$app->security->generateRandomString(32);
+        Yii::$app->cache->set('discord_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id], 600);
+        $params = [
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'identify',
+            'state' => $state,
+        ];
+        $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Редирект на Twitch OAuth для привязки аккаунта (требуется JWT)
+     */
+    public function actionTwitch()
+    {
+        $user = $this->getCurrentUser();
+        $clientId = Yii::$app->settings->get('twitch_client_id');
+        if (empty($clientId)) {
+            return $this->errorResponse('NOT_CONFIGURED', 'Twitch OAuth не настроен', [], 503);
+        }
+        $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
+        $redirectUri = $baseUrl . '/v1/auth/twitch-callback';
+        $state = Yii::$app->security->generateRandomString(32);
+        Yii::$app->cache->set('twitch_oauth_state_' . $state, ['state' => $state, 'user_id' => $user->id], 600);
+        $params = [
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'user:read:email',
+            'state' => $state,
+        ];
+        $authUrl = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query($params);
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Редирект на Kick OAuth 2.1 (PKCE) для привязки аккаунта (требуется JWT)
+     */
+    public function actionKick()
+    {
+        $user = $this->getCurrentUser();
+        $clientId = Yii::$app->settings->get('kick_client_id');
+        if (empty($clientId)) {
+            return $this->errorResponse('NOT_CONFIGURED', 'Kick OAuth не настроен', [], 503);
+        }
+        $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
+        $redirectUri = $baseUrl . '/v1/auth/kick-callback';
+        $state = Yii::$app->security->generateRandomString(32);
+        $codeVerifier = Yii::$app->security->generateRandomString(64);
+        $codeChallenge = strtr(rtrim(base64_encode(hash('sha256', $codeVerifier, true)), '='), '+/', '-_');
+        Yii::$app->cache->set('kick_oauth_state_' . $state, [
+            'state' => $state,
+            'user_id' => $user->id,
+            'code_verifier' => $codeVerifier,
+        ], 600);
+        $params = [
+            'response_type' => 'code',
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'state' => $state,
+            'scope' => 'user:read',
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+        ];
+        $authUrl = 'https://id.kick.com/oauth/authorize?' . http_build_query($params);
+        return $this->redirect($authUrl);
+    }
+
+    /**
      * Авторизация с JWT токеном (для проверки токена)
      * POST /api/v1/auth/login
      */

@@ -59,6 +59,12 @@ $config = [
                 'v1/auth/refresh' => 'v1/auth/refresh',
                 'v1/auth/logout' => 'v1/auth/logout',
                 'v1/auth/me' => 'v1/auth/me',
+                'v1/auth/discord' => 'v1/auth/discord',
+                'v1/auth/discord-callback' => 'discord/callback',
+                'v1/auth/twitch' => 'v1/auth/twitch',
+                'v1/auth/twitch-callback' => 'twitch/callback',
+                'v1/auth/kick' => 'v1/auth/kick',
+                'v1/auth/kick-callback' => 'kick/callback',
 
                 // User
                 'v1/user/profile' => 'v1/user/profile',

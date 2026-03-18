@@ -53,7 +53,7 @@ class AuthController extends WebController
                         'roles'   => ['?'],
                     ],
                     [
-                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord', 'discord-callback'],
+                        'actions' => ['login-success', 'logout', 'oauth', 'two-step-scan', 'disable-two-step-auth', 'discord', 'discord-callback', 'twitch', 'twitch-callback', 'kick', 'kick-callback'],
                         'allow'   => true,
                         'roles'   => ['@'],
                     ],
@@ -278,6 +278,326 @@ class AuthController extends WebController
             Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
         }
 
+        return $this->redirect(['/user/profile']);
+    }
+
+    /**
+     * Twitch OAuth — старт привязки
+     */
+    public function actionTwitch()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Twitch необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $clientId = Yii::$app->settings->get('twitch_client_id');
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/twitch-callback';
+        $userId = Yii::$app->user->id;
+
+        if (empty($clientId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Twitch OAuth не настроен. Обратитесь к администратору.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        Yii::$app->session->set('twitch_oauth_user_id', $userId);
+        $state = Yii::$app->security->generateRandomString(32);
+        Cookie::add('twitch_oauth_state', $state, true, 10);
+
+        $params = [
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'user:read:email',
+            'state' => $state,
+        ];
+        $authUrl = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query($params);
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Twitch OAuth callback
+     */
+    public function actionTwitchCallback()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Twitch необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $code = Yii::$app->request->get('code');
+        $state = Yii::$app->request->get('state');
+        $error = Yii::$app->request->get('error');
+
+        if (!empty($error)) {
+            if ($error === 'access_denied') {
+                Yii::info('Twitch OAuth: User cancelled authorization', __METHOD__);
+                Yii::$app->session->setFlash('info', Yii::t('common', 'Авторизация Twitch отменена.'));
+            } else {
+                Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Twitch: {error}', ['error' => $error]));
+            }
+            return $this->redirect(['/user/profile']);
+        }
+
+        $savedState = Cookie::getValue('twitch_oauth_state');
+        if (empty($state) || $state !== $savedState) {
+            Cookie::remove('twitch_oauth_state');
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Twitch.'));
+            return $this->redirect(['/user/profile']);
+        }
+        Cookie::remove('twitch_oauth_state');
+
+        if (empty($code)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Twitch не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $clientId = Yii::$app->settings->get('twitch_client_id');
+        $clientSecret = Yii::$app->settings->get('twitch_client_secret');
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/twitch-callback';
+
+        if (empty($clientId) || empty($clientSecret)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Twitch OAuth не настроен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $tokenUrl = 'https://id.twitch.tv/oauth2/token';
+        $tokenParams = [
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'code' => $code,
+            'grant_type' => 'authorization_code',
+            'redirect_uri' => $redirectUri,
+        ];
+        $ch = curl_init($tokenUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenParams));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        $tokenResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Twitch OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Twitch.'));
+            return $this->redirect(['/user/profile']);
+        }
+        $tokenData = json_decode($tokenResponse, true);
+        if (empty($tokenData['access_token'])) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Twitch не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $userUrl = 'https://api.twitch.tv/helix/users';
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $tokenData['access_token'],
+            'Client-Id: ' . $clientId,
+        ]);
+        $userResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode !== 200) {
+            Yii::error("Twitch API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Twitch.'));
+            return $this->redirect(['/user/profile']);
+        }
+        $data = json_decode($userResponse, true);
+        $twitchUser = $data['data'][0] ?? null;
+        $twitchId = $twitchUser['id'] ?? null;
+        $twitchLogin = $twitchUser['login'] ?? null;
+        if (empty($twitchId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Twitch не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $userId = Yii::$app->session->get('twitch_oauth_user_id') ?: Yii::$app->user->id;
+        Yii::$app->session->remove('twitch_oauth_user_id');
+        $user = User::findOne($userId);
+        if ($user) {
+            $user->twitch_id = (string)$twitchId;
+            if ($user->save(false)) {
+                if (!empty($user->userProfile) && !empty($twitchLogin)) {
+                    $user->userProfile->twitch_link = 'https://www.twitch.tv/' . $twitchLogin;
+                    $user->userProfile->save(false);
+                }
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Twitch аккаунт успешно привязан!'));
+            } else {
+                Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Twitch ID.'));
+            }
+        } else {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
+        }
+        return $this->redirect(['/user/profile']);
+    }
+
+    /**
+     * Kick OAuth 2.1 (PKCE) — старт привязки.
+     * Документация: https://docs.kick.com/getting-started/generating-tokens-oauth2-flow
+     */
+    public function actionKick()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Kick необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $clientId = Yii::$app->settings->get('kick_client_id');
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/kick-callback';
+        $userId = Yii::$app->user->id;
+
+        if (empty($clientId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Kick OAuth не настроен. Обратитесь к администратору.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $state = Yii::$app->security->generateRandomString(32);
+        $codeVerifier = Yii::$app->security->generateRandomString(64);
+        $codeChallenge = strtr(rtrim(base64_encode(hash('sha256', $codeVerifier, true)), '='), '+/', '-_');
+
+        Yii::$app->session->set('kick_oauth_user_id', $userId);
+        Yii::$app->session->set('kick_oauth_state', $state);
+        Yii::$app->session->set('kick_oauth_code_verifier', $codeVerifier);
+
+        $params = [
+            'response_type' => 'code',
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'state' => $state,
+            'scope' => 'user:read',
+            'code_challenge' => $codeChallenge,
+            'code_challenge_method' => 'S256',
+        ];
+        $authUrl = 'https://id.kick.com/oauth/authorize?' . http_build_query($params);
+        return $this->redirect($authUrl);
+    }
+
+    /**
+     * Kick OAuth callback
+     */
+    public function actionKickCallback()
+    {
+        if (Yii::$app->user->isGuest) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Для привязки Kick необходимо быть авторизованным.'));
+            return $this->redirect(['/']);
+        }
+
+        $code = Yii::$app->request->get('code');
+        $state = Yii::$app->request->get('state');
+        $error = Yii::$app->request->get('error');
+
+        if (!empty($error)) {
+            if ($error === 'access_denied') {
+                Yii::info('Kick OAuth: User cancelled authorization', __METHOD__);
+                Yii::$app->session->setFlash('info', Yii::t('common', 'Авторизация Kick отменена.'));
+            } else {
+                Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Kick: {error}', ['error' => $error]));
+            }
+            return $this->redirect(['/user/profile']);
+        }
+
+        $savedState = Yii::$app->session->get('kick_oauth_state');
+        $codeVerifier = Yii::$app->session->get('kick_oauth_code_verifier');
+        if (empty($state) || $state !== $savedState || empty($codeVerifier)) {
+            Yii::$app->session->remove('kick_oauth_state');
+            Yii::$app->session->remove('kick_oauth_code_verifier');
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Kick.'));
+            return $this->redirect(['/user/profile']);
+        }
+        Yii::$app->session->remove('kick_oauth_state');
+        Yii::$app->session->remove('kick_oauth_code_verifier');
+
+        if (empty($code)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Kick не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $clientId = Yii::$app->settings->get('kick_client_id');
+        $clientSecret = Yii::$app->settings->get('kick_client_secret');
+        $baseUrl = Yii::$app->params['homePage'] ?? 'https://prostoj.store';
+        $redirectUri = $baseUrl . '/auth/kick-callback';
+
+        if (empty($clientId) || empty($clientSecret)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Kick OAuth не настроен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $tokenUrl = 'https://id.kick.com/oauth/token';
+        $tokenParams = [
+            'grant_type' => 'authorization_code',
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'redirect_uri' => $redirectUri,
+            'code' => $code,
+            'code_verifier' => $codeVerifier,
+        ];
+        $ch = curl_init($tokenUrl);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($tokenParams));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
+        $tokenResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200) {
+            Yii::error("Kick OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Kick.'));
+            return $this->redirect(['/user/profile']);
+        }
+        $tokenData = json_decode($tokenResponse, true);
+        if (empty($tokenData['access_token'])) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Kick не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $userUrl = 'https://api.kick.com/public/v1/users';
+        $ch = curl_init($userUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $tokenData['access_token'],
+        ]);
+        $userResponse = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($httpCode !== 200) {
+            Yii::error("Kick API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Kick.'));
+            return $this->redirect(['/user/profile']);
+        }
+        $data = json_decode($userResponse, true);
+        $kickUser = isset($data['data']) ? $data['data'] : $data;
+        $kickId = isset($kickUser['id']) ? (string)$kickUser['id'] : (isset($data['id']) ? (string)$data['id'] : null);
+        $kickSlug = $kickUser['slug'] ?? $kickUser['username'] ?? $kickUser['login'] ?? $data['slug'] ?? $data['username'] ?? null;
+        if (empty($kickId)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Kick не получен.'));
+            return $this->redirect(['/user/profile']);
+        }
+
+        $userId = Yii::$app->session->get('kick_oauth_user_id') ?: Yii::$app->user->id;
+        Yii::$app->session->remove('kick_oauth_user_id');
+        $user = User::findOne($userId);
+        if ($user) {
+            $user->kick_id = $kickId;
+            if ($user->save(false)) {
+                if (!empty($user->userProfile)) {
+                    $user->userProfile->kick_link = !empty($kickSlug)
+                        ? 'https://kick.com/' . $kickSlug
+                        : 'https://kick.com/channel/' . $kickId;
+                    $user->userProfile->save(false);
+                }
+                Yii::$app->session->setFlash('success', Yii::t('common', 'Kick аккаунт успешно привязан!'));
+            } else {
+                Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при сохранении Kick ID.'));
+            }
+        } else {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
+        }
         return $this->redirect(['/user/profile']);
     }
 

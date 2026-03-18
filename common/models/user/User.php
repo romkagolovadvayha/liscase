@@ -40,6 +40,8 @@ use yii\web\JsExpression;
  * @property int             $telegram_chat_id
  * @property int|null        $vk_id
  * @property string|null     $discord_id
+ * @property string|null     $twitch_id
+ * @property string|null     $kick_id
  * @property string          $username
  * @property string          $password_hash
  * @property string          $auth_key

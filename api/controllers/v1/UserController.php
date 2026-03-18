@@ -97,10 +97,14 @@ class UserController extends BaseApiController
                     'is_hide_team' => (bool)($user->userProfile->is_hide_team ?? false),
                     'youtube_link' => $user->userProfile->youtube_link ?? null,
                     'twitch_link' => $user->userProfile->twitch_link ?? null,
+                    'kick_link' => $user->userProfile->kick_link ?? null,
                     'vk_link' => $user->userProfile->vk_link ?? null,
                     'telegram_link' => $user->userProfile->telegram_link ?? null,
                     'telegram_chat_id' => !empty($user->telegram_chat_id) ? (string)(int)$user->telegram_chat_id : null,
                     'telegramBotUsername' => (string)(Yii::$app->settings->get('telegram_personal_bot_username') ?? ''),
+                    'discord_id' => $user->discord_id ? (string)$user->discord_id : null,
+                    'twitch_id' => $user->twitch_id ? (string)$user->twitch_id : null,
+                    'kick_id' => $user->kick_id ? (string)$user->kick_id : null,
                 ],
             ]);
         }
@@ -146,6 +150,9 @@ class UserController extends BaseApiController
                 }
                 if (array_key_exists('twitch_link', $post)) {
                     $model->twitch_link = $post['twitch_link'] !== null && $post['twitch_link'] !== '' ? trim((string)$post['twitch_link']) : null;
+                }
+                if (array_key_exists('kick_link', $post)) {
+                    $model->kick_link = $post['kick_link'] !== null && $post['kick_link'] !== '' ? trim((string)$post['kick_link']) : null;
                 }
                 if (array_key_exists('vk_link', $post)) {
                     $model->vk_link = $post['vk_link'] !== null && $post['vk_link'] !== '' ? trim((string)$post['vk_link']) : null;
