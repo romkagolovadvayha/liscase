@@ -3,7 +3,6 @@
 namespace api\controllers\v1;
 
 use api\components\jwt\JwtAuthFilter;
-use common\components\StreamersLiveHelper;
 use common\components\VideoMetadataFetcher;
 use common\components\VideoPosterUploader;
 use common\models\user\User;
@@ -37,10 +36,13 @@ class UserVideoController extends BaseApiController
 
     /**
      * Список стримеров (is_blogger) с Twitch/Kick ссылками и статусом «В эфире».
+     * Статус и сортировка по stream_live_at (обновляется кроном раз в 3 мин).
      * GET /v1/user-videos/streamers
      */
     public function actionStreamers()
     {
+        $liveThreshold = date('Y-m-d H:i:s', time() - 5 * 60); // 5 мин — считаем «в эфире»
+
         $query = User::find()
             ->joinWith(['userProfile'])
             ->where(['user.is_blogger' => 1])
@@ -50,7 +52,7 @@ class UserVideoController extends BaseApiController
                 ' OR (user.twitch_id IS NOT NULL AND user.twitch_id != "")' .
                 ' OR (user.kick_id IS NOT NULL AND user.kick_id != "")'
             )
-            ->orderBy(['user.username' => SORT_ASC]);
+            ->orderBy(['user.stream_live_at' => SORT_DESC, 'user.username' => SORT_ASC]);
 
         $users = $query->all();
         $items = [];
@@ -64,13 +66,8 @@ class UserVideoController extends BaseApiController
             if ($twitchLink === null && $kickLink === null) {
                 continue;
             }
-            $isLive = false;
-            if ($user->twitch_id) {
-                $isLive = StreamersLiveHelper::isTwitchLive((string) $user->twitch_id);
-            }
-            if (!$isLive && $user->kick_id) {
-                $isLive = StreamersLiveHelper::isKickLive((string) $user->kick_id);
-            }
+            $streamLiveAt = $user->stream_live_at ?? null;
+            $isLive = $streamLiveAt !== null && $streamLiveAt >= $liveThreshold;
             $items[] = [
                 'id' => $user->id,
                 'username' => $user->username,
@@ -78,6 +75,7 @@ class UserVideoController extends BaseApiController
                 'twitch_link' => $twitchLink,
                 'kick_link' => $kickLink,
                 'is_live' => $isLive,
+                'stream_live_at' => $streamLiveAt,
             ];
         }
         return $this->successResponse(['streamers' => $items]);

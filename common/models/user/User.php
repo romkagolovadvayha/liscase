@@ -71,6 +71,7 @@ use yii\web\JsExpression;
  * @property bool            $store
  * @property bool            $is_stats
  * @property bool            $is_blogger
+ * @property string|null     $stream_live_at Дата последнего онлайна в эфире (обновляется кроном)
  * @property string          $blocked_support_at
  * @property bool            $blocked_support
  * @property string          $stat_status
@@ -225,7 +226,7 @@ class User extends ActiveRecord implements IdentityInterface
             [['email', 'password_hash', 'stat_status'], 'string', 'max' => 255],
             [['promocode'], 'string', 'max' => 120, 'min' => 5],
             [['auth_key', 'socket_room'], 'string', 'max' => 32],
-            [['current_language', 'created_at'], 'safe'],
+            [['current_language', 'created_at', 'stream_live_at'], 'safe'],
             ['floating_price_percent', 'integer', 'min' => 0, 'max' => 100],
             [['is_wipe_calendar_visitor'], 'boolean'],
         ];
