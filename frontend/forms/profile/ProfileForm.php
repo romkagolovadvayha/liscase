@@ -13,22 +13,30 @@ class ProfileForm extends UserProfile
     public $raid_notify;
     public $telegram_disabled;
     public $discord_disabled;
+    public $twitch_disabled;
+    public $kick_disabled;
 
     public function rules(): array
     {
-        return [
-            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'trim'],
-            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled'], 'integer'],
+        $linkAttrs = ['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'];
+        if ($this->hasAttribute('kick_link')) {
+            $linkAttrs[] = 'kick_link';
+        }
+        $rules = [
+            [$linkAttrs, 'trim'],
+            [['raid_notify', 'ban_notify', 'telegram_disabled', 'discord_disabled', 'twitch_disabled', 'kick_disabled'], 'integer'],
             [['is_hide_online', 'is_hide_team'], 'boolean'],
-            [['trade_link', 'youtube_link', 'twitch_link', 'vk_link', 'telegram_link'], 'string', 'max' => 255],
-            // Валидация URL только для непустых значений
+            [$linkAttrs, 'string', 'max' => 255],
             [['youtube_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['twitch_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['vk_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
             [['telegram_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false],
-            // Помечаем поля как safe для массового присваивания
             [['is_hide_online', 'is_hide_team'], 'safe'],
         ];
+        if ($this->hasAttribute('kick_link')) {
+            $rules[] = [['kick_link'], 'url', 'defaultScheme' => 'https', 'skipOnEmpty' => true, 'enableClientValidation' => false];
+        }
+        return $rules;
     }
 
     public function afterFind()
@@ -51,6 +59,9 @@ class ProfileForm extends UserProfile
         }
         if ($this->twitch_link === '') {
             $this->twitch_link = null;
+        }
+        if ($this->hasAttribute('kick_link') && $this->kick_link === '') {
+            $this->kick_link = null;
         }
         if ($this->vk_link === '') {
             $this->vk_link = null;
@@ -97,6 +108,18 @@ class ProfileForm extends UserProfile
             }
         }
 
+        if (!empty($this->twitch_disabled)) {
+            $this->user->twitch_id = null;
+            $this->twitch_link = null;
+        }
+
+        if (!empty($this->kick_disabled)) {
+            $this->user->kick_id = null;
+            if ($this->hasAttribute('kick_link')) {
+                $this->kick_link = null;
+            }
+        }
+
         // Настройки приватности (только для VIP)
         // Значения уже должны быть установлены из POST, просто проверяем VIP
         if (!$this->user->hasVip()) {
@@ -132,6 +155,9 @@ class ProfileForm extends UserProfile
         // Сохранение социальных ссылок (так же, как trade_link)
         $this->youtube_link = !empty($this->youtube_link) ? trim($this->youtube_link) : null;
         $this->twitch_link = !empty($this->twitch_link) ? trim($this->twitch_link) : null;
+        if ($this->hasAttribute('kick_link')) {
+            $this->kick_link = !empty($this->kick_link) ? trim($this->kick_link) : null;
+        }
         $this->vk_link = !empty($this->vk_link) ? trim($this->vk_link) : null;
         $this->telegram_link = !empty($this->telegram_link) ? trim($this->telegram_link) : null;
         

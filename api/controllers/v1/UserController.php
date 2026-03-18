@@ -97,7 +97,7 @@ class UserController extends BaseApiController
                     'is_hide_team' => (bool)($user->userProfile->is_hide_team ?? false),
                     'youtube_link' => $user->userProfile->youtube_link ?? null,
                     'twitch_link' => $user->userProfile->twitch_link ?? null,
-                    'kick_link' => $user->userProfile->kick_link ?? null,
+                    'kick_link' => $user->userProfile->hasAttribute('kick_link') ? ($user->userProfile->kick_link ?? null) : null,
                     'vk_link' => $user->userProfile->vk_link ?? null,
                     'telegram_link' => $user->userProfile->telegram_link ?? null,
                     'telegram_chat_id' => !empty($user->telegram_chat_id) ? (string)(int)$user->telegram_chat_id : null,
@@ -151,7 +151,7 @@ class UserController extends BaseApiController
                 if (array_key_exists('twitch_link', $post)) {
                     $model->twitch_link = $post['twitch_link'] !== null && $post['twitch_link'] !== '' ? trim((string)$post['twitch_link']) : null;
                 }
-                if (array_key_exists('kick_link', $post)) {
+                if (array_key_exists('kick_link', $post) && $model->hasAttribute('kick_link')) {
                     $model->kick_link = $post['kick_link'] !== null && $post['kick_link'] !== '' ? trim((string)$post['kick_link']) : null;
                 }
                 if (array_key_exists('vk_link', $post)) {

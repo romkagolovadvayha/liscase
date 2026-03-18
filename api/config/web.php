@@ -325,4 +325,18 @@ if (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST'])) {
     $config['params']['homePage'] = $params['homePage'] ?? 'http://localhost';
 }
 
+// Хосты, на которые разрешён редирект после OAuth (привязка Twitch/Discord/Kick). По умолчанию — фронт + локальная разработка.
+if (empty($config['params']['allowedRedirectHosts'])) {
+    $hosts = ['localhost', '127.0.0.1', 'prostoj.local'];
+    $frontendUrl = $config['params']['frontendUrl'] ?? $params['frontendUrl'] ?? null;
+    if (!empty($frontendUrl) && ($h = parse_url($frontendUrl, PHP_URL_HOST))) {
+        $hosts[] = $h;
+    }
+    $currentHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+    if (strpos($currentHost, 'api.') === 0) {
+        $hosts[] = substr($currentHost, 4);
+    }
+    $config['params']['allowedRedirectHosts'] = array_values(array_unique($hosts));
+}
+
 return $config;

@@ -30,6 +30,7 @@ class LinkReturnUrlHelper
 
     /**
      * Проверка, что URL безопасен для редиректа (тот же фронт/домен).
+     * Для локальной разработки можно задать params['allowedRedirectHosts'] => ['prostoj.store', 'prostoj.local', 'localhost'].
      */
     public static function isValidReturnUrl(?string $url): bool
     {
@@ -40,15 +41,25 @@ class LinkReturnUrlHelper
         if ($host === null) {
             return false;
         }
+        $hostLower = strtolower($host);
+        $allowedHosts = Yii::$app->params['allowedRedirectHosts'] ?? null;
+        if (!empty($allowedHosts) && is_array($allowedHosts)) {
+            foreach ($allowedHosts as $allowed) {
+                if (is_string($allowed) && $hostLower === strtolower($allowed)) {
+                    return true;
+                }
+            }
+            return false;
+        }
         $frontendUrl = Yii::$app->params['frontendUrl'] ?? null;
         if (!empty($frontendUrl)) {
             $allowedHost = parse_url($frontendUrl, PHP_URL_HOST);
-            if ($allowedHost && strtolower($host) === strtolower($allowedHost)) {
+            if ($allowedHost && $hostLower === strtolower($allowedHost)) {
                 return true;
             }
         }
         $currentHost = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
         $mainHost = (strpos($currentHost, 'api.') === 0) ? substr($currentHost, 4) : $currentHost;
-        return strtolower($host) === strtolower($mainHost);
+        return $hostLower === strtolower($mainHost);
     }
 }
