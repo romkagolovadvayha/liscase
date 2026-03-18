@@ -65,7 +65,7 @@ class UserVideoController extends BaseApiController
             $myPending = UserVideo::find()
                 ->joinWith(['user'])
                 ->andWhere(['user_video.user_id' => Yii::$app->user->id])
-                ->andWhere(['in', 'user_video.status', [UserVideo::STATUS_WAIT, UserVideo::STATUS_REJECT]])
+                ->andWhere(['in', 'user_video.status', [UserVideo::STATUS_WAIT]])
                 ->orderBy(['user_video.id' => SORT_DESC])
                 ->all();
             $data['my_videos'] = array_map([$this, 'formatVideoItem'], $myPending);
