@@ -64,7 +64,7 @@ class SettingsCacheHelper
     public static function cacheKey(array $categories): string
     {
         sort($categories);
-        return 'api_settings_' . md5(implode(',', $categories));
+        return 'api_settings2_' . md5(implode(',', $categories));
     }
 
     /**
