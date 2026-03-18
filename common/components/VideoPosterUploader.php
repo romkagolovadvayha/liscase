@@ -7,7 +7,7 @@ use Yii;
 
 /**
  * Скачивает постер видео по URL, прогоняет через TinyPNG, загружает в S3.
- * poster_image_150 — уменьшенная копия 150px по высоте.
+ * poster_image_150 — уменьшенная копия 250×250px (обрезка по меньшей стороне, центр).
  */
 class VideoPosterUploader
 {
@@ -17,8 +17,10 @@ class VideoPosterUploader
         'SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl',
     ];
 
+    private const THUMB_SIZE = 250;
+
     /**
-     * Скачать постер по URL, оптимизировать TinyPNG, загрузить в S3 (оригинал + копия 150px по высоте).
+     * Скачать постер по URL, оптимизировать TinyPNG, загрузить в S3 (оригинал + копия 250×250 по меньшей стороне).
      *
      * @param string $posterUrl URL постера (YouTube/TikTok thumbnail)
      * @return array|null ['poster_image' => string, 'poster_image_150' => string, 'poster_image_400' => string] или null при ошибке
@@ -37,7 +39,7 @@ class VideoPosterUploader
         $tempDir = sys_get_temp_dir();
         $uniq = uniqid('video_', true);
         $tempOriginal = $tempDir . '/' . str_replace('.', '_', $uniq) . '_orig.png';
-        $temp150 = $tempDir . '/' . str_replace('.', '_', $uniq) . '_150.png';
+        $tempThumb = $tempDir . '/' . str_replace('.', '_', $uniq) . '_' . self::THUMB_SIZE . '.png';
 
         $imageContent = self::downloadImage($posterUrl);
         if ($imageContent === null || $imageContent === '') {
@@ -61,7 +63,7 @@ class VideoPosterUploader
         $s3Api = Yii::$app->s3Api;
         $baseName = $uniq . '.png';
         $s3KeyOriginal = self::S3_PREFIX . $baseName;
-        $s3Key150 = self::S3_PREFIX . '150_' . $baseName;
+        $s3KeyThumb = self::S3_PREFIX . self::THUMB_SIZE . '_' . $baseName;
 
         $originalContent = file_get_contents($tempOriginal);
         if ($originalContent === false) {
@@ -76,9 +78,9 @@ class VideoPosterUploader
 
         $posterUrlMain = $s3Api->getPublicUrl($s3KeyOriginal);
 
-        if (!DropImage::resizeImageByHeight($tempOriginal, $temp150, 150)) {
+        if (!DropImage::resizeImageByMinSide($tempOriginal, $tempThumb, self::THUMB_SIZE)) {
             @unlink($tempOriginal);
-            @unlink($temp150);
+            @unlink($tempThumb);
             return [
                 'poster_image' => $posterUrlMain,
                 'poster_image_150' => $posterUrlMain,
@@ -86,10 +88,10 @@ class VideoPosterUploader
             ];
         }
 
-        $content150 = file_get_contents($temp150);
+        $contentThumb = file_get_contents($tempThumb);
         @unlink($tempOriginal);
-        @unlink($temp150);
-        if ($content150 === false || $s3Api->putFile($s3Key150, $content150, 'image/png') === false) {
+        @unlink($tempThumb);
+        if ($contentThumb === false || $s3Api->putFile($s3KeyThumb, $contentThumb, 'image/png') === false) {
             return [
                 'poster_image' => $posterUrlMain,
                 'poster_image_150' => $posterUrlMain,
@@ -97,11 +99,11 @@ class VideoPosterUploader
             ];
         }
 
-        $posterUrl150 = $s3Api->getPublicUrl($s3Key150);
+        $posterUrlThumb = $s3Api->getPublicUrl($s3KeyThumb);
 
         return [
             'poster_image' => $posterUrlMain,
-            'poster_image_150' => $posterUrl150,
+            'poster_image_150' => $posterUrlThumb,
             'poster_image_400' => $posterUrlMain,
         ];
     }

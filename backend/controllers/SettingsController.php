@@ -4,6 +4,7 @@ namespace backend\controllers;
 use backend\components\BackendController;
 use common\components\helpers\Role;
 use common\components\settings\Settings;
+use common\helpers\SettingsCacheHelper;
 use common\models\box\BoxImage;
 use Yii;
 use yii\base\BaseObject;
@@ -329,25 +330,10 @@ class SettingsController extends BackendController
     }
 
     /**
-     * Очистка кэша API настроек
-     * Удаляет все возможные комбинации категорий
+     * Очистка кэша API настроек (ключи из SettingsCacheHelper).
      */
-    protected function clearApiSettingsCache()
+    protected function clearApiSettingsCache(): void
     {
-        $categories = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip'];
-        
-        // Удаляем кэш для всех возможных комбинаций категорий
-        // Проще всего удалить все ключи, начинающиеся с 'api_settings_'
-        $cache = Yii::$app->cache;
-        
-        // Если используется Redis или Memcached, можно использовать паттерн
-        // Для простого кэша удаляем основные комбинации
-        foreach ($categories as $category) {
-            $cache->delete('api_settings_' . md5($category));
-        }
-        
-        // Удаляем кэш для всех категорий
-        $allCategories = implode(',', $categories);
-        $cache->delete('api_settings_' . md5($allCategories));
+        SettingsCacheHelper::clearApiSettingsCache();
     }
 }
