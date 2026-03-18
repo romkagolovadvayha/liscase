@@ -71,6 +71,7 @@ class S3StorageController extends BackendController
      */
     public function actionSetHeaders(): Response
     {
+        set_time_limit(600); // 10 минут — операция может обрабатывать много объектов S3
         if (!Yii::$app->request->isPost) {
             throw new BadRequestHttpException('Только POST.');
         }
