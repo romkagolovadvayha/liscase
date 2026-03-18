@@ -7,31 +7,30 @@ use common\models\video\UserVideo;
 use Yii;
 
 /**
- * API видео пользователей (раздел Медиа): список своих видео, добавление по ссылке.
+ * API видео (раздел Медиа): публичный список всех видео, добавление по ссылке (с авторизацией).
  * Поддерживаются YouTube и TikTok; название и превью подставляются автоматически.
  */
 class UserVideoController extends BaseApiController
 {
     /**
-     * Список видео текущего пользователя.
+     * Публичный список всех видео. Авторизация не требуется.
      * GET /v1/user-videos?page=1&limit=20
      */
     public function actionIndex()
     {
-        $user = $this->getCurrentUser();
         $page = (int) Yii::$app->request->get('page', 1);
         $limit = min(50, max(1, (int) Yii::$app->request->get('limit', 20)));
 
         $query = UserVideo::find()
-            ->andWhere(['user_id' => $user->id])
-            ->orderBy(['id' => SORT_DESC]);
+            ->joinWith(['user'])
+            ->orderBy(['user_video.id' => SORT_DESC]);
 
         $total = $query->count();
         $offset = ($page - 1) * $limit;
         $list = $query->offset($offset)->limit($limit)->all();
 
         $items = array_map(function (UserVideo $v) {
-            return [
+            $row = [
                 'id' => $v->id,
                 'name' => $v->name,
                 'type' => $v->type,
@@ -43,6 +42,10 @@ class UserVideoController extends BaseApiController
                 'status_label' => (UserVideo::getStatusList())[$v->status] ?? '',
                 'created_at' => $v->created_at,
             ];
+            if ($v->user) {
+                $row['username'] = $v->user->username;
+            }
+            return $row;
         }, $list);
 
         return $this->successResponse([
