@@ -100,7 +100,7 @@ class WipeCalendarController extends BaseApiController
         $cached = $cache->get($cacheKey);
 
         if ($cached !== false) {
-            return $this->successResponse($cached);
+            //return $this->successResponse($cached);
         }
 
         // Время событий
