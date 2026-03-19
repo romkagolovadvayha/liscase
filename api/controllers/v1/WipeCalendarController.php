@@ -128,26 +128,21 @@ class WipeCalendarController extends BaseApiController
         }));
         $countNon30 = count($non30Active);
 
-        // Обновление игры (четверг), глобал (пятница). globalWeekIso — первая неделя: для 7-дневных там показываем глобал. globalDates — для 14-дневных.
+        // Обновление игры (четверг 21:00) — отдельно, не вайп. globalDates (первая пятница) — для 14-дневных. Все вайпы только в 16:00.
         $officialByDateTime = [];
-        $globalByDateTime   = [];
-        $globalWeekIso     = [];
         $globalDates       = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
-            $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $globalWeekIso[$globalDT->format('o-\WW')] = true;
             $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
         $byDateTime = [];
 
-        // Официальное обновление (четверг) — только подпись
+        // Официальное обновление игры (четверг 21:00) — не вайп, отдельное событие
         foreach ($officialByDateTime as $dtStr => $_) {
             $byDateTime[$dtStr] = [
                 'official'         => true,
@@ -163,25 +158,10 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // Наши глобалы (первый пятница) — все сервера
-        foreach ($globalByDateTime as $dtStr => $_) {
-            $byDateTime[$dtStr] = [
-                'global'           => true,
-                'servers'          => [],
-                'weekly7_count'    => 0,
-                'biweekly14_count' => 0,
-                'names7'           => [],
-                'names14'          => [],
-                'title'            => Yii::t('common', 'Глобальный вайп'),
-                'link'             => '/servers',
-                'names'            => [Yii::t('common', 'все сервера')],
-            ];
-        }
-
-        // 7-дневные: в первую неделю месяца — глобал (wipe_weekday), в остальные недели — вайп карты (чередование).
+        // 7-дневные: чередование по неделям месяца — нед.1 глобал, нед.2 вайп карты, нед.3 глобал, нед.4 вайп карты.
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 7) {
-                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $s, $tz);
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $mapTime, $s, $tz);
             }
         }
 
@@ -254,8 +234,11 @@ class WipeCalendarController extends BaseApiController
             }
 
             if (!empty($bucket['global'])) {
-                $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
-
+                if (!empty($bucket['names7'])) {
+                    $badges[] = ['class' => 'badge-weekly7', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                } else {
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
+                }
                 $events[$dayKey][] = [
                     'name'        => $bucket['title'],
                     'link'        => $bucket['link'],
@@ -435,24 +418,19 @@ class WipeCalendarController extends BaseApiController
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
         $officialByDateTime = [];
-        $globalByDateTime   = [];
-        $globalWeekIso     = [];
         $globalDates       = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
-            $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $globalWeekIso[$globalDT->format('o-\WW')] = true;
             $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
         $byDateTime = [];
 
-        // Официальное обновление (четверг)
+        // Официальное обновление игры (четверг 21:00) — не вайп
         foreach ($officialByDateTime as $dtStr => $_) {
             $byDateTime[$dtStr] = [
                 'official' => true,
@@ -463,17 +441,7 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // Наши глобалы (пятница)
-        foreach ($globalByDateTime as $dtStr => $_) {
-            $byDateTime[$dtStr] = [
-                'global'   => true,
-                'servers'  => [],
-                'title'    => Yii::t('common', 'Глобальный вайп'),
-                'link'     => '/servers',
-            ];
-        }
-
-        // Вайпы карты по дню недели сервера (wipe_weekday)
+        // Вайпы по дню недели сервера (wipe_weekday), время всегда 16:00
         $serverWipeWeekday = (int)($server->wipe_weekday ?? 5);
         if ($serverWipeWeekday < 1 || $serverWipeWeekday > 7) {
             $serverWipeWeekday = 5;
@@ -481,7 +449,7 @@ class WipeCalendarController extends BaseApiController
         if ((int)$server->wipe_type !== 30) {
             $wt = (int)$server->wipe_type;
             if ($wt === 7) {
-                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $server, $tz);
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $mapTime, $server, $tz);
             } elseif ($wt === 14) {
                 $this->addBiweeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalDates, $globalTime, $mapTime, $server, $tz);
             }
@@ -510,8 +478,11 @@ class WipeCalendarController extends BaseApiController
             }
 
             if (!empty($bucket['global'])) {
-                $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
-
+                if (!empty($bucket['names7'])) {
+                    $badges[] = ['class' => 'badge-weekly7', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                } else {
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
+                }
                 $events[$dayKey][] = [
                     'name'        => $bucket['title'],
                     'link'        => $bucket['link'],
@@ -563,9 +534,10 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * wipe_type=7: чередование — в первую неделю месяца в wipe_weekday показываем глобал, в остальные недели — вайп карты.
+     * wipe_type=7: чередование по неделям месяца — нед.1 глобал, нед.2 вайп карты, нед.3 глобал, нед.4 вайп карты и т.д.
+     * Глобал только для серверов с вайпом в этот день недели (бейджи — список этих серверов, не «все сервера»).
      */
-    private function addWeeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $globalWeekIso, $mapTime, Servers $s, DateTimeZone $tz)
+    private function addWeeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, $mapTime, Servers $s, DateTimeZone $tz)
     {
         $weekday = (int)($s->wipe_weekday ?? 5);
         if ($weekday < 1 || $weekday > 7) {
@@ -575,20 +547,22 @@ class WipeCalendarController extends BaseApiController
             'global' => false, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
             'names7' => [], 'names14' => [], 'title' => null, 'link' => null, 'names' => [],
         ];
-        $globalBucket = [
-            'global' => true, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
-            'names7' => [], 'names14' => [], 'title' => Yii::t('common', 'Глобальный вайп'), 'link' => '/servers', 'names' => [Yii::t('common', 'все сервера')],
-        ];
         foreach ($monthStarts as $mStart) {
             $dt = $this->firstWeekdayOfMonth($mStart, $weekday);
             $dt = new DateTimeImmutable($dt->format('Y-m-d') . ' ' . $mapTime, $tz);
             while ($dt < $afterLastMonth) {
                 $key = $dt->format('Y-m-d H:i:s');
-                $isGlobalWeek = isset($globalWeekIso[$dt->format('o-\WW')]);
-                if ($isGlobalWeek) {
+                $dayOfMonth = (int)$dt->format('j');
+                $weekOfMonth = (int)floor(($dayOfMonth - 1) / 7) + 1;
+                $isGlobalSlot = ($weekOfMonth % 2 === 1);
+                if ($isGlobalSlot) {
                     if (!isset($byDateTime[$key])) {
-                        $byDateTime[$key] = $globalBucket;
+                        $byDateTime[$key] = [
+                            'global' => true, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
+                            'names7' => [], 'names14' => [], 'title' => Yii::t('common', 'Глобальный вайп'), 'link' => '/servers', 'names' => [],
+                        ];
                     }
+                    $byDateTime[$key]['names7'][] = $s->monitoring_name ?: $s->name;
                 } else {
                     if (!isset($byDateTime[$key])) {
                         $byDateTime[$key] = $emptyBucket;
