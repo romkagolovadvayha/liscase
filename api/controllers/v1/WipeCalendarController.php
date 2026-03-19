@@ -100,7 +100,7 @@ class WipeCalendarController extends BaseApiController
         $cached = $cache->get($cacheKey);
 
         if ($cached !== false) {
-            //return $this->successResponse($cached);
+            return $this->successResponse($cached);
         }
 
         // Время событий
@@ -129,23 +129,20 @@ class WipeCalendarController extends BaseApiController
         }));
         $countNon30 = count($non30Active);
 
-        // === 1) Официальные (первый четверг), глобалы (первый пятница). Неделя глобала = неделя обновления игры ===
-        // Пример: сервер wipe_weekday=Пн, wipe_type=7 → в любой понедельник вайп, кроме недели глобала (там только глобал), далее Пн вайп карты, до первой недели след. месяца.
-        // wipe_type=14 → то же, но слоты каждые 14 дней: первая неделя глобал, через 2 недели в Пн вайп карты, через 2 недели глобал и т.д. Слоты в неделю глобала не показываем.
-        // 30-дневные: только глобал раз в месяц (не в non30Active).
+        // Неделя обновления игры = первая неделя месяца (четверг обновление, пятница глобал). 30-дневные — только глобал.
         $officialByDateTime = [];
         $globalByDateTime   = [];
-        $blockedIsoWeeks   = []; // неделя первого пятницы — для 7-дневных: в эту неделю нет вайпов карты
-        $blockedGlobalDates = []; // дата первого пятницы — для 14-дневных: в этот день нет вайпа карты
+        $globalWeekIso     = []; // ISO-неделя глобала: для 7-дневных в эту неделю не показываем вайп карты
+        $globalDates       = []; // дата глобала (первая пятница): для 14-дневных не показываем слот в этот день
         foreach ($monthStarts as $mStart) {
-            $firstThu = $this->firstWeekdayOfMonth($mStart, 4); // четверг — обновление игры
-            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);  // пятница — глобал
+            $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
+            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
-            $blockedGlobalDates[$firstFri->format('Y-m-d')] = true;
+            $globalWeekIso[$globalDT->format('o-\WW')] = true;
+            $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
@@ -182,21 +179,17 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // === 3) 7-дневные: каждый wipe_weekday, кроме недели глобала (в эту неделю только глобал) ===
+        // 7-дневные: вайп карты каждый wipe_weekday. В неделю глобала — только глобал, слот не добавляем.
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 7) {
-                $this->addFridaysWeeklyBlockedByGlobal(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
-                );
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $s, $tz);
             }
         }
 
-        // === 4) 14-дневные: первый вайп карты через 14 дней после глобала (по wipe_weekday), далее +14 дней; слоты в неделю глобала не показываем ===
+        // 14-дневные: глобал → через 14 дней вайп карты (wipe_weekday) → через 14 дней снова глобал. Неделю глобала не блокируем.
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 14) {
-                $this->addFridaysBiWeeklyAfterGlobalBlocked(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $blockedGlobalDates, $globalTime, $mapTime, $s, $tz
-                );
+                $this->addBiweeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalDates, $globalTime, $mapTime, $s, $tz);
             }
         }
 
@@ -442,11 +435,11 @@ class WipeCalendarController extends BaseApiController
         }
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
-        // === 1) Официальные (четверг), глобалы (пятница). 7-д: блок недели глобала; 14-д: блок даты глобала ===
+        // Неделя глобала и даты глобала (как в actionIndex)
         $officialByDateTime = [];
         $globalByDateTime   = [];
-        $blockedIsoWeeks    = [];
-        $blockedGlobalDates = [];
+        $globalWeekIso     = [];
+        $globalDates       = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
@@ -454,8 +447,8 @@ class WipeCalendarController extends BaseApiController
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
-            $blockedGlobalDates[$firstFri->format('Y-m-d')] = true;
+            $globalWeekIso[$globalDT->format('o-\WW')] = true;
+            $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
@@ -490,62 +483,9 @@ class WipeCalendarController extends BaseApiController
         if ((int)$server->wipe_type !== 30) {
             $wt = (int)$server->wipe_type;
             if ($wt === 7) {
-                // 7-дневные: каждый wipe_weekday, кроме недели глобала (в эту неделю только глобал)
-                foreach ($monthStarts as $mStart) {
-                    $firstDay = $this->firstWeekdayOfMonth($mStart, $serverWipeWeekday);
-                    $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
-                    
-                    while ($dt < $afterLastMonth) {
-                        $iso = $dt->format('o-\WW');
-                        if (!isset($blockedIsoWeeks[$iso])) {
-                            $key = $dt->format('Y-m-d H:i:s');
-                            if (!isset($byDateTime[$key])) {
-                                $byDateTime[$key] = [
-                                    'global' => false,
-                                    'servers' => [],
-                                ];
-                            }
-                            $byDateTime[$key]['servers'][] = [
-                                'id'              => (int)$server->id,
-                                'name'            => $server->name,
-                                'monitoring_name' => $server->monitoring_name,
-                                'link'            => $server->getLink('stats'),
-                                'wt'              => 7,
-                            ];
-                        }
-                        $dt = $dt->modify('+7 days');
-                    }
-                }
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $server, $tz);
             } elseif ($wt === 14) {
-                // 14-дневные: первый слот через 14 дней после глобала; не показываем слоты в неделю глобала
-                foreach ($monthStarts as $mStart) {
-                    $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
-                    $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
-                    $firstAllowed = $globalDT->modify('+14 days');
-                    $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $serverWipeWeekday, $mapTime, $tz);
-
-                    while ($dt < $afterLastMonth) {
-                        $iso = $dt->format('o-\WW');
-                        $dateKey = $dt->format('Y-m-d');
-                        if (!isset($blockedIsoWeeks[$iso]) && !isset($blockedGlobalDates[$dateKey])) {
-                            $key = $dt->format('Y-m-d H:i:s');
-                            if (!isset($byDateTime[$key])) {
-                                $byDateTime[$key] = [
-                                    'global' => false,
-                                    'servers' => [],
-                                ];
-                            }
-                            $byDateTime[$key]['servers'][] = [
-                                'id'              => (int)$server->id,
-                                'name'            => $server->name,
-                                'monitoring_name' => $server->monitoring_name,
-                                'link'            => $server->getLink('stats'),
-                                'wt'              => 14,
-                            ];
-                        }
-                        $dt = $dt->modify('+14 days');
-                    }
-                }
+                $this->addBiweeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalDates, $globalTime, $mapTime, $server, $tz);
             }
         }
 
@@ -624,41 +564,32 @@ class WipeCalendarController extends BaseApiController
         ]);
     }
 
-    /** 7-дневные: каждый wipe_weekday, кроме недели глобала (в неделю обновления игры — только глобал, вайпов карты нет) */
-    private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
+    /**
+     * wipe_type=7: вайп карты каждый wipe_weekday (каждый понедельник и т.д.).
+     * В неделю глобала (первая неделя месяца) — только глобал, слот не добавляем.
+     */
+    private function addWeeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $globalWeekIso, $mapTime, Servers $s, DateTimeZone $tz)
     {
         $weekday = (int)($s->wipe_weekday ?? 5);
         if ($weekday < 1 || $weekday > 7) {
             $weekday = 5;
         }
+        $emptyBucket = [
+            'global' => false, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
+            'names7' => [], 'names14' => [], 'title' => null, 'link' => null, 'names' => [],
+        ];
         foreach ($monthStarts as $mStart) {
-            $firstDay = $this->firstWeekdayOfMonth($mStart, $weekday);
-            $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
-
+            $dt = $this->firstWeekdayOfMonth($mStart, $weekday);
+            $dt = new DateTimeImmutable($dt->format('Y-m-d') . ' ' . $mapTime, $tz);
             while ($dt < $afterLastMonth) {
-                $iso = $dt->format('o-\WW');
-                if (!isset($blockedIsoWeeks[$iso])) {
+                if (!isset($globalWeekIso[$dt->format('o-\WW')])) {
                     $key = $dt->format('Y-m-d H:i:s');
                     if (!isset($byDateTime[$key])) {
-                        $byDateTime[$key] = [
-                            'global'           => false,
-                            'servers'          => [],
-                            'weekly7_count'    => 0,
-                            'biweekly14_count' => 0,
-                            'names7'           => [],
-                            'names14'          => [],
-                            'title'            => null,
-                            'link'             => null,
-                            'names'            => [],
-                        ];
+                        $byDateTime[$key] = $emptyBucket;
                     }
                     $byDateTime[$key]['servers'][$s->id] = [
-                        'id'              => (int)$s->id,
-                        'name'            => $s->name,
-                        'monitoring_name' => $s->monitoring_name,
-                        'link'            => $s->getLink('stats'), // /servers/{tag}
-                        'text_ip'         => $s->text_ip,
-                        'wt'              => 7,
+                        'id' => (int)$s->id, 'name' => $s->name, 'monitoring_name' => $s->monitoring_name,
+                        'link' => $s->getLink('stats'), 'text_ip' => $s->text_ip, 'wt' => 7,
                     ];
                     $byDateTime[$key]['weekly7_count']++;
                     $byDateTime[$key]['names7'][] = $s->monitoring_name ?: $s->name;
@@ -669,58 +600,32 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * 14-дневные: первый слот = через 14 дней после глобала (по wipe_weekday), далее +14 дней.
-     * Не показываем слоты в неделю глобала (blockedIsoWeeks) и на дату глобала (blockedGlobalDates).
+     * wipe_type=14: глобал в первую неделю, через 14 дней вайп карты (wipe_weekday), через 14 дней снова глобал.
+     * Слоты: глобал + 14 дней, +28, +42… по wipe_weekday. Не блокируем неделю глобала — только не ставим слот в дату глобала.
      */
-    private function addFridaysBiWeeklyAfterGlobalBlocked(
-        array &$byDateTime,
-        array $monthStarts,
-        DateTimeImmutable $afterLastMonth,
-        array $blockedIsoWeeks,
-        array $blockedGlobalDates,
-        $globalTime,
-        $mapTime,
-        Servers $s,
-        DateTimeZone $tz
-    ) {
+    private function addBiweeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $globalDates, $globalTime, $mapTime, Servers $s, DateTimeZone $tz)
+    {
         $weekday = (int)($s->wipe_weekday ?? 5);
         if ($weekday < 1 || $weekday > 7) {
             $weekday = 5;
         }
+        $emptyBucket = [
+            'global' => false, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
+            'names7' => [], 'names14' => [], 'title' => null, 'link' => null, 'names' => [],
+        ];
         foreach ($monthStarts as $mStart) {
-            // глобал — первая пятница месяца; первый вайп карты — через 14 дней
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $firstAllowed = $globalDT->modify('+14 days');
-            $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $weekday, $mapTime, $tz);
-
+            $dt = $this->nextWeekdayOnOrAfter($globalDT->modify('+14 days'), $weekday, $mapTime, $tz);
             while ($dt < $afterLastMonth) {
-                $iso = $dt->format('o-\WW');
-                $dateKey = $dt->format('Y-m-d');
-                $inBlockedWeek = isset($blockedIsoWeeks[$iso]);
-                $isGlobalDate = isset($blockedGlobalDates[$dateKey]);
-                if (!$inBlockedWeek && !$isGlobalDate) {
+                if (!isset($globalDates[$dt->format('Y-m-d')])) {
                     $key = $dt->format('Y-m-d H:i:s');
                     if (!isset($byDateTime[$key])) {
-                        $byDateTime[$key] = [
-                            'global'           => false,
-                            'servers'          => [],
-                            'weekly7_count'    => 0,
-                            'biweekly14_count' => 0,
-                            'names7'           => [],
-                            'names14'          => [],
-                            'title'            => null,
-                            'link'             => null,
-                            'names'            => [],
-                        ];
+                        $byDateTime[$key] = $emptyBucket;
                     }
                     $byDateTime[$key]['servers'][$s->id] = [
-                        'id'              => (int)$s->id,
-                        'name'            => $s->name,
-                        'monitoring_name' => $s->monitoring_name,
-                        'link'            => $s->getLink('stats'), // /servers/{tag}
-                        'text_ip'         => $s->text_ip,
-                        'wt'              => 14,
+                        'id' => (int)$s->id, 'name' => $s->name, 'monitoring_name' => $s->monitoring_name,
+                        'link' => $s->getLink('stats'), 'text_ip' => $s->text_ip, 'wt' => 14,
                     ];
                     $byDateTime[$key]['biweekly14_count']++;
                     $byDateTime[$key]['names14'][] = $s->monitoring_name ?: $s->name;
