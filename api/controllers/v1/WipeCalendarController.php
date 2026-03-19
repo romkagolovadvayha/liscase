@@ -235,7 +235,7 @@ class WipeCalendarController extends BaseApiController
 
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
-                    $badges[] = ['class' => 'badge-weekly7', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
                 } else {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
                 }
@@ -248,23 +248,25 @@ class WipeCalendarController extends BaseApiController
                     'badges'      => $badges,
                     'desc'        => null,
                 ];
-                continue;
+                if (empty($bucket['servers'])) {
+                    continue;
+                }
             }
 
             // Схлопнутые
             if (isset($bucket['title']) && empty($bucket['servers'])) {
                 if (!empty($bucket['names7']) || !empty($bucket['names14'])) {
                     if (!empty($bucket['names7'])) {
-                        $badges[] = ['class' => 'badge-weekly7',    'text' => Yii::t('common', '{list}',  ['list' => implode(', ', $bucket['names7'])])];
+                        $badges[] = ['class' => 'badge-map-wipe', 'text' => Yii::t('common', '{list}',  ['list' => implode(', ', $bucket['names7'])])];
                     }
                     if (!empty($bucket['names14'])) {
-                        $badges[] = ['class' => 'badge-biweekly14', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names14'])])];
+                        $badges[] = ['class' => 'badge-map-wipe', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names14'])])];
                     }
                 } elseif (!empty($bucket['names'])) {
                     $text = ($bucket['names'][0] === Yii::t('common', 'все сервера'))
                         ? Yii::t('common', 'все сервера')
                         : implode(', ', $bucket['names']);
-                    $badges[] = ['class' => ($text === Yii::t('common', 'все сервера') ? 'badge-status' : 'badge-weekly7'), 'text' => $text];
+                    $badges[] = ['class' => ($text === Yii::t('common', 'все сервера') ? 'badge-global' : 'badge-map-wipe'), 'text' => $text];
                 }
 
                 $events[$dayKey][] = [
@@ -283,7 +285,7 @@ class WipeCalendarController extends BaseApiController
             if (!empty($bucket['servers'])) {
                 foreach ($bucket['servers'] as $srv) {
                     $badges = [
-                        ['class' => ($srv['wt'] === 7 ? 'badge-weekly7' : 'badge-biweekly14'),
+                        ['class' => 'badge-map-wipe',
                          'text'  => $srv['monitoring_name'] ?: $srv['name']],
                     ];
                     $events[$dayKey][] = [
@@ -479,7 +481,7 @@ class WipeCalendarController extends BaseApiController
 
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
-                    $badges[] = ['class' => 'badge-weekly7', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
                 } else {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
                 }
@@ -492,7 +494,9 @@ class WipeCalendarController extends BaseApiController
                     'badges'      => $badges,
                     'desc'        => null,
                 ];
-                continue;
+                if (empty($bucket['servers'])) {
+                    continue;
+                }
             }
 
             // По серверам отдельно
@@ -500,7 +504,7 @@ class WipeCalendarController extends BaseApiController
                 foreach ($bucket['servers'] as $srv) {
                     if ($srv['id'] == $server->id) {
                         $badges = [
-                            ['class' => ($srv['wt'] === 7 ? 'badge-weekly7' : 'badge-biweekly14'),
+                            ['class' => 'badge-map-wipe',
                              'text'  => $srv['monitoring_name'] ?: $srv['name']],
                         ];
                         $events[$dayKey][] = [
