@@ -94,14 +94,13 @@ class WipeCalendarController extends BaseApiController
         $month  = $month  ? (int)$month : (int)$now->format('n');
         $months = (int)max(1, (int)$months);
 
-        // Кэшируем календарь на 1 час, с учетом параметров
-        $cacheKey = 'api_wipe_calendar_' . $year . '_' . $month . '_' . $months;
-        $cache = Yii::$app->cache;
-        $cached = $cache->get($cacheKey);
-
-        if ($cached !== false) {
-            //return $this->successResponse($cached);
-        }
+        // Кэш отключён (временно)
+        // $cacheKey = 'api_wipe_calendar_' . $year . '_' . $month . '_' . $months;
+        // $cache = Yii::$app->cache;
+        // $cached = $cache->get($cacheKey);
+        // if ($cached !== false) {
+        //     return $this->successResponse($cached);
+        // }
 
         // Время событий
         $globalTime = '21:00:00'; // глобал (четверг)
@@ -758,8 +757,7 @@ class WipeCalendarController extends BaseApiController
             ],
         ];
 
-        // Сохраняем в кэш на 1 час (3600 секунд)
-        $cache->set($cacheKey, $result, 3600);
+        // Кэш отключён: $cache->set($cacheKey, $result, 3600);
 
         return $this->successResponse($result);
     }
