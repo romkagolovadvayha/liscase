@@ -236,7 +236,11 @@ class WipeCalendarController extends BaseApiController
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
-                } else {
+                }
+                if (!empty($bucket['names14'])) {
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names14']))])];
+                }
+                if (empty($badges)) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
                 }
                 $events[$dayKey][] = [
@@ -286,11 +290,12 @@ class WipeCalendarController extends BaseApiController
                 foreach ($bucket['servers'] as $srv) {
                     $badges = [
                         ['class' => 'badge-map-wipe',
-                         'text'  => $srv['monitoring_name'] ?: $srv['name']],
+                         'text'  => $srv['monitoring_name'] ?: $srv['name'],
+                         'link'  => $srv['link']],
                     ];
                     $events[$dayKey][] = [
-                        'name'        => Yii::t('common', 'Вайп карты — {server}', ['server' => $srv['name']]),
-                        'link'        => $srv['link'],
+                        'name'        => Yii::t('common', 'Вайп карты'),
+                        'link'        => null,
                         'time'        => $timeTxt,
                         'is_official' => false,
                         'is_global'   => false,
@@ -457,6 +462,18 @@ class WipeCalendarController extends BaseApiController
             }
         }
 
+        // Четверг 16:00 — не вайп для сервера; только «Обновление игры» в четверг 21:00
+        foreach (array_keys($byDateTime) as $dtStr) {
+            $bucket = $byDateTime[$dtStr];
+            if (!empty($bucket['official'])) {
+                continue;
+            }
+            $dt = new DateTimeImmutable($dtStr, $tz);
+            if ((int)$dt->format('N') === 4 && $dt->format('H:i') === '16:00') {
+                unset($byDateTime[$dtStr]);
+            }
+        }
+
         // === 3) Events для API ===
         $events = [];
         foreach ($byDateTime as $dtStr => $bucket) {
@@ -482,7 +499,11 @@ class WipeCalendarController extends BaseApiController
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
-                } else {
+                }
+                if (!empty($bucket['names14'])) {
+                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names14']))])];
+                }
+                if (empty($badges)) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
                 }
                 $events[$dayKey][] = [
@@ -505,11 +526,12 @@ class WipeCalendarController extends BaseApiController
                     if ($srv['id'] == $server->id) {
                         $badges = [
                             ['class' => 'badge-map-wipe',
-                             'text'  => $srv['monitoring_name'] ?: $srv['name']],
+                             'text'  => $srv['monitoring_name'] ?: $srv['name'],
+                             'link'  => $srv['link']],
                         ];
                         $events[$dayKey][] = [
-                            'name'        => Yii::t('common', 'Вайп карты — {server}', ['server' => $srv['name']]),
-                            'link'        => $srv['link'],
+                            'name'        => Yii::t('common', 'Вайп карты'),
+                            'link'        => null,
                             'time'        => $timeTxt,
                             'is_official' => false,
                             'is_global'   => false,
@@ -599,8 +621,21 @@ class WipeCalendarController extends BaseApiController
         ];
         foreach ($monthStarts as $mStart) {
             $firstDay = $this->firstWeekdayOfMonth($mStart, $weekday);
-            $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
-            $dt = $dt->modify('+14 days');
+            $dtFirst = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
+            if ($dtFirst < $afterLastMonth) {
+                $key = $dtFirst->format('Y-m-d H:i:s');
+                if (!isset($byDateTime[$key])) {
+                    $byDateTime[$key] = array_merge([], $emptyBucket);
+                }
+                $byDateTime[$key]['global'] = true;
+                $byDateTime[$key]['biweekly14_count'] = ($byDateTime[$key]['biweekly14_count'] ?? 0) + 1;
+                $byDateTime[$key]['names14'][] = $s->monitoring_name ?: $s->name;
+                if (!isset($byDateTime[$key]['title']) || $byDateTime[$key]['title'] === null) {
+                    $byDateTime[$key]['title'] = Yii::t('common', 'Глобальный вайп');
+                    $byDateTime[$key]['link'] = '/servers';
+                }
+            }
+            $dt = $dtFirst->modify('+14 days');
             while ($dt < $afterLastMonth) {
                 if (!isset($globalDates[$dt->format('Y-m-d')])) {
                     $key = $dt->format('Y-m-d H:i:s');
