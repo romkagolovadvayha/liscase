@@ -211,6 +211,15 @@ class WipeCalendarController extends BaseApiController
         }
         unset($bucket);
 
+        // Имя (monitoring_name|name) → ссылка на сервер для бейджей (trim для совпадения с именами из слотов)
+        $serverLinkByDisplayName = [];
+        foreach ($activeServers as $s) {
+            $displayName = trim((string)($s->monitoring_name ?: $s->name));
+            if ($displayName !== '') {
+                $serverLinkByDisplayName[$displayName] = $s->getLink('stats');
+            }
+        }
+
         // === 6) Events для API ===
         $events = [];
         foreach ($byDateTime as $dtStr => $bucket) {
@@ -235,10 +244,16 @@ class WipeCalendarController extends BaseApiController
 
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
-                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                    foreach (array_unique($bucket['names7']) as $name) {
+                        $key = trim((string)$name);
+                        $badges[] = ['class' => 'badge-global', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                    }
                 }
                 if (!empty($bucket['names14'])) {
-                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names14']))])];
+                    foreach (array_unique($bucket['names14']) as $name) {
+                        $key = trim((string)$name);
+                        $badges[] = ['class' => 'badge-global', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                    }
                 }
                 if (empty($badges)) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
@@ -261,16 +276,27 @@ class WipeCalendarController extends BaseApiController
             if (isset($bucket['title']) && empty($bucket['servers'])) {
                 if (!empty($bucket['names7']) || !empty($bucket['names14'])) {
                     if (!empty($bucket['names7'])) {
-                        $badges[] = ['class' => 'badge-map-wipe', 'text' => Yii::t('common', '{list}',  ['list' => implode(', ', $bucket['names7'])])];
+                        foreach (array_unique($bucket['names7']) as $name) {
+                            $key = trim((string)$name);
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                        }
                     }
                     if (!empty($bucket['names14'])) {
-                        $badges[] = ['class' => 'badge-map-wipe', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', $bucket['names14'])])];
+                        foreach (array_unique($bucket['names14']) as $name) {
+                            $key = trim((string)$name);
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                        }
                     }
                 } elseif (!empty($bucket['names'])) {
-                    $text = ($bucket['names'][0] === Yii::t('common', 'все сервера'))
-                        ? Yii::t('common', 'все сервера')
-                        : implode(', ', $bucket['names']);
-                    $badges[] = ['class' => ($text === Yii::t('common', 'все сервера') ? 'badge-global' : 'badge-map-wipe'), 'text' => $text];
+                    $allServersText = Yii::t('common', 'все сервера');
+                    if ($bucket['names'][0] === $allServersText) {
+                        $badges[] = ['class' => 'badge-global', 'text' => $allServersText];
+                    } else {
+                        foreach (array_unique($bucket['names']) as $name) {
+                            $key = trim((string)$name);
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                        }
+                    }
                 }
 
                 $events[$dayKey][] = [
@@ -461,6 +487,10 @@ class WipeCalendarController extends BaseApiController
             }
         }
 
+        // Для бейджей: имя текущего сервера → ссылка (на странице сервера только один сервер)
+        $serverDisplayName = $server->monitoring_name ?: $server->name;
+        $serverLinkForBadge = $server->getLink('stats');
+
         // === 3) Events для API ===
         $events = [];
         foreach ($byDateTime as $dtStr => $bucket) {
@@ -485,10 +515,14 @@ class WipeCalendarController extends BaseApiController
 
             if (!empty($bucket['global'])) {
                 if (!empty($bucket['names7'])) {
-                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names7']))])];
+                    foreach (array_unique($bucket['names7']) as $name) {
+                        $badges[] = ['class' => 'badge-global', 'text' => $name, 'link' => ($name === $serverDisplayName ? $serverLinkForBadge : null)];
+                    }
                 }
                 if (!empty($bucket['names14'])) {
-                    $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', '{list}', ['list' => implode(', ', array_unique($bucket['names14']))])];
+                    foreach (array_unique($bucket['names14']) as $name) {
+                        $badges[] = ['class' => 'badge-global', 'text' => $name, 'link' => ($name === $serverDisplayName ? $serverLinkForBadge : null)];
+                    }
                 }
                 if (empty($badges)) {
                     $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
