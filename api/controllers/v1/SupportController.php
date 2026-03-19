@@ -304,9 +304,10 @@ class SupportController extends BaseApiController
             throw new NotFoundHttpException('Тикет не найден');
         }
 
-        // Проверка доступа
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]) 
-            && $ticket->user_id !== $user->id) {
+        // Просмотр тикета (в т.ч. закрытого) разрешён: создателю, админу, модератору, поддержке
+        $isCreator = (int) $ticket->user_id === (int) $user->id;
+        $isStaff = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
+        if (!$isCreator && !$isStaff) {
             throw new ForbiddenHttpException('Доступ запрещен');
         }
 
@@ -733,9 +734,10 @@ class SupportController extends BaseApiController
             throw new NotFoundHttpException('Тикет не найден');
         }
 
-        // Проверка доступа (только автор или админ/модератор)
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR]) 
-            && $ticket->user_id !== $user->id) {
+        // Закрыть может автор тикета или админ/модератор/поддержка
+        $isCreator = (int) $ticket->user_id === (int) $user->id;
+        $isStaff = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
+        if (!$isCreator && !$isStaff) {
             throw new ForbiddenHttpException('Доступ запрещен');
         }
 
