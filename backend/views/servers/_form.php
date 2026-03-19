@@ -83,17 +83,6 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                         </div>
                     </div>
                 </div>
-                <div class="mt-3 flex flex-wrap gap-3">
-                    <?= $form->field($model, 'wipe_weekday', ['options' => ['class' => 'mb-0 min-w-[180px]'], 'template' => '{label}{input}{error}'])->dropDownList([
-                        1 => Yii::t('common', 'Понедельник'),
-                        2 => Yii::t('common', 'Вторник'),
-                        3 => Yii::t('common', 'Среда'),
-                        4 => Yii::t('common', 'Четверг'),
-                        5 => Yii::t('common', 'Пятница'),
-                        6 => Yii::t('common', 'Суббота'),
-                        7 => Yii::t('common', 'Воскресенье'),
-                    ], ['class' => 'ds-input form-control ds-select', 'prompt' => ''])->label($model->getAttributeLabel('wipe_weekday')) ?>
-                </div>
             </div>
 
             <div>
@@ -165,6 +154,21 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                                 7 => Yii::t('common', 'Еженедельно'),
                                 14 => Yii::t('common', 'Каждые две недели'),
                                 30 => Yii::t('common', 'Раз в месяц'),
+                            ], ['class' => 'ds-select w-full text-sm', 'prompt' => '']) ?>
+                            <i class="fas fa-chevron-down ds-select-arrow"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('wipe_weekday') ?></label>
+                        <div class="ds-select-wrapper">
+                            <?= $form->field($model, 'wipe_weekday', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->dropDownList([
+                                1 => Yii::t('common', 'Понедельник'),
+                                2 => Yii::t('common', 'Вторник'),
+                                3 => Yii::t('common', 'Среда'),
+                                4 => Yii::t('common', 'Четверг'),
+                                5 => Yii::t('common', 'Пятница'),
+                                6 => Yii::t('common', 'Суббота'),
+                                7 => Yii::t('common', 'Воскресенье'),
                             ], ['class' => 'ds-select w-full text-sm', 'prompt' => '']) ?>
                             <i class="fas fa-chevron-down ds-select-arrow"></i>
                         </div>
