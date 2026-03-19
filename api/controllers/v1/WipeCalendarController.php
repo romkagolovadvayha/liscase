@@ -171,7 +171,7 @@ class WipeCalendarController extends BaseApiController
                 'biweekly14_count' => 0,
                 'names7'           => [],
                 'names14'          => [],
-                'title'            => Yii::t('common', 'Глобальный вайп на всех серверах'),
+                'title'            => Yii::t('common', 'Глобальный вайп'),
                 'link'             => '/servers',
                 'names'            => [Yii::t('common', 'все сервера')],
             ];
@@ -471,7 +471,7 @@ class WipeCalendarController extends BaseApiController
             $byDateTime[$dtStr] = [
                 'global'   => true,
                 'servers'  => [],
-                'title'    => Yii::t('common', 'Глобальный вайп на всех серверах'),
+                'title'    => Yii::t('common', 'Глобальный вайп'),
                 'link'     => '/servers',
             ];
         }

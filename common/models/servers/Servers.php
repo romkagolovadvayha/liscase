@@ -28,6 +28,7 @@ use yii\helpers\ArrayHelper;
  * @property int    $wipe_type
  * @property string $next_wipe
  * @property string $global_wipe
+ * @property int $wipe_weekday День недели вайпа (1=Пн..7=Вс)
  * @property string $description
  * @property string $rules
  * @property string $ip
@@ -110,6 +111,9 @@ class Servers extends \common\components\base\ActiveRecord
         if ($this->isNewRecord && $this->sort === null) {
             $this->sort = 100;
         }
+        if ($this->isNewRecord && $this->wipe_weekday === null) {
+            $this->wipe_weekday = 5; // Пятница по умолчанию
+        }
     }
 
     /**
@@ -132,7 +136,8 @@ class Servers extends \common\components\base\ActiveRecord
             'wipe'          => Yii::t('common', 'Последний вайп'),
             'next_wipe'          => Yii::t('common', 'Следующий вайп'),
             'global_wipe'          => Yii::t('common', 'Глобальный вайп'),
-            'wipe_type'          => Yii::t('common', 'Глобальный вайп'),
+            'wipe_weekday'       => Yii::t('common', 'День недели вайпа'),
+            'wipe_type'          => Yii::t('common', 'Периодичность вайпа'),
             'sort'          => Yii::t('common', 'Сортировка'),
             'ip'          => Yii::t('common', 'IP адрес'),
             'text_ip'     => Yii::t('common', 'Текстовый IP адрес'),
@@ -178,7 +183,9 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
-            [['sort', 'status', 'wipe_type', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
+            [['wipe_weekday'], 'in', 'range' => [1, 2, 3, 4, 5, 6, 7]],
+            [['wipe_weekday'], 'default', 'value' => 5],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
             [['tag'], 'unique', 'targetClass' => self::class, 'message' => Yii::t('common', 'Сервер с таким тегом уже существует')],
             [['min_map_size'], 'validateMapSize', 'skipOnError' => false],
