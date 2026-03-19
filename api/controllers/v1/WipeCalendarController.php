@@ -129,22 +129,40 @@ class WipeCalendarController extends BaseApiController
         }));
         $countNon30 = count($non30Active);
 
-        // === 1) Глобальные (первый четверг каждого месяца) + блок-недели ===
-        $globalByDateTime = []; // 'Y-m-d H:i:s' => true
-        $blockedIsoWeeks  = []; // 'YYYY-WW' => true
+        // === 1) Официальные (первый четверг — обновление игры) и наши глобалы (первый пятница) + блок-недели ===
+        $officialByDateTime = []; // первый четверг — только подпись «Обновление игры»
+        $globalByDateTime   = []; // первый пятница — глобальный вайп на наших серверах
+        $blockedIsoWeeks    = []; // неделя первого пятницы: в эту неделю нет пятничных вайпов карты
         foreach ($monthStarts as $mStart) {
-            $firstThu = $this->firstWeekdayOfMonth($mStart, 4); // 1=Пн..4=Чт..7=Вс
-            $gDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $gKey = $gDT->format('Y-m-d H:i:s');
-            $globalByDateTime[$gKey] = true;
-            // Блокируем всю ISO-неделю глобала: в эту неделю никаких пятничных вайпов
-            $blockedIsoWeeks[$gDT->format('o-\WW')] = true;
+            $firstThu = $this->firstWeekdayOfMonth($mStart, 4); // четверг
+            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);  // пятница
+            $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
+            $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
+            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
         }
 
         // === 2) Слоты по точному времени ===
         $byDateTime = [];
 
-        // Глобалы сразу «все сервера» и ссылка на /servers
+        // Официальное обновление (четверг) — только подпись
+        foreach ($officialByDateTime as $dtStr => $_) {
+            $byDateTime[$dtStr] = [
+                'official'         => true,
+                'global'           => false,
+                'servers'          => [],
+                'weekly7_count'    => 0,
+                'biweekly14_count' => 0,
+                'names7'           => [],
+                'names14'          => [],
+                'title'            => Yii::t('common', 'Обновление игры'),
+                'link'             => null,
+                'names'            => [],
+            ];
+        }
+
+        // Наши глобалы (первый пятница) — все сервера
         foreach ($globalByDateTime as $dtStr => $_) {
             $byDateTime[$dtStr] = [
                 'global'           => true,
@@ -180,7 +198,7 @@ class WipeCalendarController extends BaseApiController
 
         // === 5) Агрегация ===
         foreach ($byDateTime as $dtStr => &$bucket) {
-            if (!empty($bucket['global'])) {
+            if (!empty($bucket['official']) || !empty($bucket['global'])) {
                 continue;
             }
             $hasServers = !empty($bucket['servers']);
@@ -226,6 +244,19 @@ class WipeCalendarController extends BaseApiController
 
             $badges = [];
 
+            if (!empty($bucket['official'])) {
+                $events[$dayKey][] = [
+                    'name'        => $bucket['title'],
+                    'link'        => $bucket['link'],
+                    'time'        => $timeTxt,
+                    'is_official' => true,
+                    'is_global'   => false,
+                    'badges'      => [],
+                    'desc'        => null,
+                ];
+                continue;
+            }
+
             if (!empty($bucket['global'])) {
                 $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
 
@@ -233,7 +264,7 @@ class WipeCalendarController extends BaseApiController
                     'name'        => $bucket['title'],
                     'link'        => $bucket['link'],
                     'time'        => $timeTxt,
-                    'is_official' => true,
+                    'is_official' => false,
                     'is_global'   => true,
                     'badges'      => $badges,
                     'desc'        => null,
@@ -396,8 +427,8 @@ class WipeCalendarController extends BaseApiController
         $months = (int)max(1, (int)$months);
 
         // Время событий
-        $globalTime = '21:00:00'; // глобал (четверг)
-        $mapTime    = '16:00:00'; // карта (пятница)
+        $globalTime = '21:00:00';
+        $mapTime    = '16:00:00';
 
         // Диапазон месяцев
         $firstMonthStart = new DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month), $tz);
@@ -407,27 +438,41 @@ class WipeCalendarController extends BaseApiController
         }
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
-        // === 1) Глобальные (первый четверг каждого месяца) ===
-        $globalByDateTime = [];
-        $blockedIsoWeeks  = [];
+        // === 1) Официальные (первый четверг) и наши глобалы (первый пятница) ===
+        $officialByDateTime = [];
+        $globalByDateTime   = [];
+        $blockedIsoWeeks    = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
-            $gDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $gKey = $gDT->format('Y-m-d H:i:s');
-            $globalByDateTime[$gKey] = true;
-            $blockedIsoWeeks[$gDT->format('o-\WW')] = true;
+            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
+            $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
+            $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
+            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
         }
 
         // === 2) Слоты по точному времени ===
         $byDateTime = [];
 
-        // Глобалы
+        // Официальное обновление (четверг)
+        foreach ($officialByDateTime as $dtStr => $_) {
+            $byDateTime[$dtStr] = [
+                'official' => true,
+                'global'   => false,
+                'servers'  => [],
+                'title'    => Yii::t('common', 'Обновление игры'),
+                'link'     => null,
+            ];
+        }
+
+        // Наши глобалы (пятница)
         foreach ($globalByDateTime as $dtStr => $_) {
             $byDateTime[$dtStr] = [
-                'global'           => true,
-                'servers'          => [],
-                'title'            => Yii::t('common', 'Глобальный вайп на всех серверах'),
-                'link'             => '/servers',
+                'global'   => true,
+                'servers'  => [],
+                'title'    => Yii::t('common', 'Глобальный вайп на всех серверах'),
+                'link'     => '/servers',
             ];
         }
 
@@ -462,12 +507,11 @@ class WipeCalendarController extends BaseApiController
                     }
                 }
             } elseif ($wt === 14) {
-                // 14-дневные: пятница после глобала, НО неделя глобала блокируется
+                // 14-дневные: первый слот через 2 недели после глобала (первая пятница месяца)
                 foreach ($monthStarts as $mStart) {
-                    $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
-                    $globalDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-                    
-                    $anchorFri = $globalDT->modify('+1 day');
+                    $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
+                    $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
+                    $anchorFri = $globalDT;
                     $firstAllowed = $anchorFri->modify('+14 days');
                     $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
                     
@@ -504,6 +548,19 @@ class WipeCalendarController extends BaseApiController
 
             $badges = [];
 
+            if (!empty($bucket['official'])) {
+                $events[$dayKey][] = [
+                    'name'        => $bucket['title'],
+                    'link'        => $bucket['link'],
+                    'time'        => $timeTxt,
+                    'is_official' => true,
+                    'is_global'   => false,
+                    'badges'      => [],
+                    'desc'        => null,
+                ];
+                continue;
+            }
+
             if (!empty($bucket['global'])) {
                 $badges[] = ['class' => 'badge-global', 'text' => Yii::t('common', 'все сервера')];
 
@@ -511,7 +568,7 @@ class WipeCalendarController extends BaseApiController
                     'name'        => $bucket['title'],
                     'link'        => $bucket['link'],
                     'time'        => $timeTxt,
-                    'is_official' => true,
+                    'is_official' => false,
                     'is_global'   => true,
                     'badges'      => $badges,
                     'desc'        => null,
@@ -613,13 +670,10 @@ class WipeCalendarController extends BaseApiController
         DateTimeZone $tz
     ) {
         foreach ($monthStarts as $mStart) {
-            // глобал четверга этого месяца
-            $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
-            $globalDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-
-            // пятница после глобала
-            $anchorFri = $globalDT->modify('+1 day'); // пятница той же недели (заблокирована)
-            // первый реальный слот = через неделю после этой пятницы
+            // глобал — первая пятница месяца
+            $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
+            $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
+            $anchorFri = $globalDT; // пятница глобала (неделя заблокирована)
             $firstAllowed = $anchorFri->modify('+14 days');
             $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
 
