@@ -424,29 +424,16 @@ class WipeCalendarController extends BaseApiController
         }
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
-        $officialByDateTime = [];
-        $globalDates       = [];
+        $globalDates = [];
         foreach ($monthStarts as $mStart) {
-            $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
-            $officialDT = new DateTimeImmutable($firstThu->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
-        // === 2) Слоты по точному времени ===
+        // === 2) Слоты по точному времени (только по дню вайпа сервера, без четверга)
         $byDateTime = [];
 
-        // Официальное обновление игры (четверг 21:00) — не вайп
-        foreach ($officialByDateTime as $dtStr => $_) {
-            $byDateTime[$dtStr] = [
-                'official' => true,
-                'global'   => false,
-                'servers'  => [],
-                'title'    => Yii::t('common', 'Обновление игры'),
-                'link'     => null,
-            ];
-        }
+        // На странице сервера не показываем «Обновление игры» — только события в день вайпа (wipe_weekday)
 
         // Вайпы по дню недели сервера (wipe_weekday), время всегда 16:00
         $serverWipeWeekday = (int)($server->wipe_weekday ?? 5);
