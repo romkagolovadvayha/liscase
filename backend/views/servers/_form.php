@@ -83,6 +83,17 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                         </div>
                     </div>
                 </div>
+                <div class="mt-3 flex flex-wrap gap-3">
+                    <?= $form->field($model, 'wipe_weekday', ['options' => ['class' => 'mb-0 min-w-[180px]'], 'template' => '{label}{input}{error}'])->dropDownList([
+                        1 => Yii::t('common', 'Понедельник'),
+                        2 => Yii::t('common', 'Вторник'),
+                        3 => Yii::t('common', 'Среда'),
+                        4 => Yii::t('common', 'Четверг'),
+                        5 => Yii::t('common', 'Пятница'),
+                        6 => Yii::t('common', 'Суббота'),
+                        7 => Yii::t('common', 'Воскресенье'),
+                    ], ['class' => 'ds-input form-control ds-select', 'prompt' => ''])->label($model->getAttributeLabel('wipe_weekday')) ?>
+                </div>
             </div>
 
             <div>

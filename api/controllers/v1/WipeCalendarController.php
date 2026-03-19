@@ -115,10 +115,10 @@ class WipeCalendarController extends BaseApiController
         }
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
-        // Активные сервера
+        // Активные сервера (wipe_weekday: 1=Пн..7=Вс, по умолчанию 5=Пятница)
         /** @var Servers[] $activeServers */
         $activeServers = Servers::find()
-                                ->select(['id', 'name', 'monitoring_name', 'tag', 'wipe_type', 'status', 'sort'])
+                                ->select(['id', 'name', 'monitoring_name', 'tag', 'wipe_type', 'wipe_weekday', 'status', 'sort'])
                                 ->andWhere(['status' => Servers::STATUS_ACTIVE])
                                 ->orderBy(['sort' => SORT_ASC])
                                 ->all();
@@ -205,9 +205,9 @@ class WipeCalendarController extends BaseApiController
             $count7  = isset($bucket['weekly7_count']) ? (int)$bucket['weekly7_count'] : 0;
             $count14 = isset($bucket['biweekly14_count']) ? (int)$bucket['biweekly14_count'] : 0;
 
-            // A) В моменте есть 7- и 14-дневные и вместе покрывают всех non-30 → «Вайп на всех серверах»
+            // A) В моменте есть 7- и 14-дневные и вместе покрывают всех non-30 → «Вайп»
             if ($hasServers && $countNon30 > 0 && ($count7 + $count14) === $countNon30 && $count7 > 0 && $count14 > 0) {
-                $bucket['title']   = Yii::t('common', 'Вайп на всех серверах');
+                $bucket['title']   = Yii::t('common', 'Вайп');
                 $bucket['link']    = '/servers';
                 $bucket['names7']  = array_values(array_unique($bucket['names7']));
                 $bucket['names14'] = array_values(array_unique($bucket['names14']));
@@ -216,18 +216,18 @@ class WipeCalendarController extends BaseApiController
                 continue;
             }
 
-            // B) Только 7-дневные (>=2) → «Вайп карты на недельных серверах»
+            // B) Только 7-дневные (>=2) → «Вайп карты»
             if ($hasServers && $count7 >= 2 && $count14 === 0) {
-                $bucket['title']   = Yii::t('common', 'Вайп карты на недельных серверах');
+                $bucket['title']   = Yii::t('common', 'Вайп карты');
                 $bucket['link']    = '/servers';
                 $bucket['names']   = array_values(array_unique($bucket['names7']));
                 $bucket['servers'] = [];
                 continue;
             }
 
-            // C) Совпало у всех non-30 (только один тип) → «Вайп на всех серверах»
+            // C) Совпало у всех non-30 (только один тип) → «Вайп»
             if ($hasServers && ($count7 + $count14) === $countNon30 && $countNon30 > 0) {
-                $bucket['title']   = Yii::t('common', 'Вайп на всех серверах');
+                $bucket['title']   = Yii::t('common', 'Вайп');
                 $bucket['link']    = '/servers';
                 $bucket['names']   = [Yii::t('common', 'все сервера')];
                 $bucket['servers'] = [];
@@ -476,14 +476,18 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // Пятничные вайпы для конкретного сервера
+        // Вайпы карты по дню недели сервера (wipe_weekday)
+        $serverWipeWeekday = (int)($server->wipe_weekday ?? 5);
+        if ($serverWipeWeekday < 1 || $serverWipeWeekday > 7) {
+            $serverWipeWeekday = 5;
+        }
         if ((int)$server->wipe_type !== 30) {
             $wt = (int)$server->wipe_type;
             if ($wt === 7) {
-                // 7-дневные: каждая пятница, но пропускаем ISO-недели глобала
+                // 7-дневные: каждый день недели сервера, пропускаем ISO-недели глобала
                 foreach ($monthStarts as $mStart) {
-                    $firstFri = $this->firstWeekdayOfMonth($mStart, 5); // Пт
-                    $dt = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $mapTime, $tz);
+                    $firstDay = $this->firstWeekdayOfMonth($mStart, $serverWipeWeekday);
+                    $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
                     
                     while ($dt < $afterLastMonth) {
                         $iso = $dt->format('o-\WW');
@@ -507,14 +511,14 @@ class WipeCalendarController extends BaseApiController
                     }
                 }
             } elseif ($wt === 14) {
-                // 14-дневные: первый слот через 2 недели после глобала (первая пятница месяца)
+                // 14-дневные: первый слот — день недели сервера на или после (глобал + 14 дней)
                 foreach ($monthStarts as $mStart) {
                     $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
                     $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
                     $anchorFri = $globalDT;
                     $firstAllowed = $anchorFri->modify('+14 days');
-                    $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
-                    
+                    $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $serverWipeWeekday, $mapTime, $tz);
+
                     while ($dt < $afterLastMonth) {
                         $iso = $dt->format('o-\WW');
                         if (!isset($blockedIsoWeeks[$iso])) {
@@ -614,12 +618,16 @@ class WipeCalendarController extends BaseApiController
         ]);
     }
 
-    /** 7-дневные: каждая пятница, но пропускаем ISO-недели глобала */
+    /** 7-дневные: каждый выбранный день недели (wipe_weekday), пропускаем ISO-недели глобала */
     private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
     {
+        $weekday = (int)($s->wipe_weekday ?? 5);
+        if ($weekday < 1 || $weekday > 7) {
+            $weekday = 5;
+        }
         foreach ($monthStarts as $mStart) {
-            $firstFri = $this->firstWeekdayOfMonth($mStart, 5); // Пт
-            $dt = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $mapTime, $tz);
+            $firstDay = $this->firstWeekdayOfMonth($mStart, $weekday);
+            $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
                 $iso = $dt->format('o-\WW');
@@ -669,13 +677,17 @@ class WipeCalendarController extends BaseApiController
         Servers $s,
         DateTimeZone $tz
     ) {
+        $weekday = (int)($s->wipe_weekday ?? 5);
+        if ($weekday < 1 || $weekday > 7) {
+            $weekday = 5;
+        }
         foreach ($monthStarts as $mStart) {
             // глобал — первая пятница месяца
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $anchorFri = $globalDT; // пятница глобала (неделя заблокирована)
+            $anchorFri = $globalDT;
             $firstAllowed = $anchorFri->modify('+14 days');
-            $dt = new DateTimeImmutable($firstAllowed->format('Y-m-d') . ' ' . $mapTime, $tz);
+            $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $weekday, $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
                 $iso = $dt->format('o-\WW');
@@ -717,6 +729,18 @@ class WipeCalendarController extends BaseApiController
         $delta  = (int)$weekday - $firstN;
         if ($delta < 0) $delta += 7;
         return $monthStart->modify('+' . $delta . ' day');
+    }
+
+    /** Ближайшая дата на или после $date с днём недели $weekday (1–7), время $mapTime */
+    private function nextWeekdayOnOrAfter(DateTimeImmutable $date, $weekday, $mapTime, DateTimeZone $tz)
+    {
+        $currentN = (int)$date->format('N');
+        $delta = (int)$weekday - $currentN;
+        if ($delta < 0) {
+            $delta += 7;
+        }
+        $targetDate = $date->modify('+' . $delta . ' day');
+        return new DateTimeImmutable($targetDate->format('Y-m-d') . ' ' . $mapTime, $tz);
     }
 
     /** Сетка месяца с серыми соседними днями */
