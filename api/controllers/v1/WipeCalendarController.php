@@ -128,9 +128,10 @@ class WipeCalendarController extends BaseApiController
         }));
         $countNon30 = count($non30Active);
 
-        // Обновление игры (четверг), глобал (пятница). 30-дневные — только глобал. globalDates — для 14-дневных (не ставим слот в дату глобала).
+        // Обновление игры (четверг), глобал (пятница). globalWeekIso — первая неделя: для 7-дневных там показываем глобал. globalDates — для 14-дневных.
         $officialByDateTime = [];
         $globalByDateTime   = [];
+        $globalWeekIso     = [];
         $globalDates       = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
@@ -139,6 +140,7 @@ class WipeCalendarController extends BaseApiController
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
+            $globalWeekIso[$globalDT->format('o-\WW')] = true;
             $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
@@ -176,10 +178,10 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // 7-дневные: вайп карты каждый wipe_weekday каждую неделю (в т.ч. в неделю глобала).
+        // 7-дневные: в первую неделю месяца — глобал (wipe_weekday), в остальные недели — вайп карты (чередование).
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 7) {
-                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $mapTime, $s, $tz);
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $s, $tz);
             }
         }
 
@@ -434,6 +436,7 @@ class WipeCalendarController extends BaseApiController
 
         $officialByDateTime = [];
         $globalByDateTime   = [];
+        $globalWeekIso     = [];
         $globalDates       = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
@@ -442,6 +445,7 @@ class WipeCalendarController extends BaseApiController
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
+            $globalWeekIso[$globalDT->format('o-\WW')] = true;
             $globalDates[$firstFri->format('Y-m-d')] = true;
         }
 
@@ -477,7 +481,7 @@ class WipeCalendarController extends BaseApiController
         if ((int)$server->wipe_type !== 30) {
             $wt = (int)$server->wipe_type;
             if ($wt === 7) {
-                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $mapTime, $server, $tz);
+                $this->addWeeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalWeekIso, $mapTime, $server, $tz);
             } elseif ($wt === 14) {
                 $this->addBiweeklyMapWipes($byDateTime, $monthStarts, $afterLastMonth, $globalDates, $globalTime, $mapTime, $server, $tz);
             }
@@ -559,9 +563,9 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * wipe_type=7: вайп карты каждый wipe_weekday каждую неделю (каждый понедельник и т.д.).
+     * wipe_type=7: чередование — в первую неделю месяца в wipe_weekday показываем глобал, в остальные недели — вайп карты.
      */
-    private function addWeeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, $mapTime, Servers $s, DateTimeZone $tz)
+    private function addWeeklyMapWipes(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $globalWeekIso, $mapTime, Servers $s, DateTimeZone $tz)
     {
         $weekday = (int)($s->wipe_weekday ?? 5);
         if ($weekday < 1 || $weekday > 7) {
@@ -571,20 +575,31 @@ class WipeCalendarController extends BaseApiController
             'global' => false, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
             'names7' => [], 'names14' => [], 'title' => null, 'link' => null, 'names' => [],
         ];
+        $globalBucket = [
+            'global' => true, 'servers' => [], 'weekly7_count' => 0, 'biweekly14_count' => 0,
+            'names7' => [], 'names14' => [], 'title' => Yii::t('common', 'Глобальный вайп'), 'link' => '/servers', 'names' => [Yii::t('common', 'все сервера')],
+        ];
         foreach ($monthStarts as $mStart) {
             $dt = $this->firstWeekdayOfMonth($mStart, $weekday);
             $dt = new DateTimeImmutable($dt->format('Y-m-d') . ' ' . $mapTime, $tz);
             while ($dt < $afterLastMonth) {
                 $key = $dt->format('Y-m-d H:i:s');
-                if (!isset($byDateTime[$key])) {
-                    $byDateTime[$key] = $emptyBucket;
+                $isGlobalWeek = isset($globalWeekIso[$dt->format('o-\WW')]);
+                if ($isGlobalWeek) {
+                    if (!isset($byDateTime[$key])) {
+                        $byDateTime[$key] = $globalBucket;
+                    }
+                } else {
+                    if (!isset($byDateTime[$key])) {
+                        $byDateTime[$key] = $emptyBucket;
+                    }
+                    $byDateTime[$key]['servers'][$s->id] = [
+                        'id' => (int)$s->id, 'name' => $s->name, 'monitoring_name' => $s->monitoring_name,
+                        'link' => $s->getLink('stats'), 'text_ip' => $s->text_ip, 'wt' => 7,
+                    ];
+                    $byDateTime[$key]['weekly7_count']++;
+                    $byDateTime[$key]['names7'][] = $s->monitoring_name ?: $s->name;
                 }
-                $byDateTime[$key]['servers'][$s->id] = [
-                    'id' => (int)$s->id, 'name' => $s->name, 'monitoring_name' => $s->monitoring_name,
-                    'link' => $s->getLink('stats'), 'text_ip' => $s->text_ip, 'wt' => 7,
-                ];
-                $byDateTime[$key]['weekly7_count']++;
-                $byDateTime[$key]['names7'][] = $s->monitoring_name ?: $s->name;
                 $dt = $dt->modify('+7 days');
             }
         }
