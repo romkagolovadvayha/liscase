@@ -129,10 +129,10 @@ class WipeCalendarController extends BaseApiController
         }));
         $countNon30 = count($non30Active);
 
-        // === 1) Официальные (первый четверг — обновление игры) и наши глобалы (первый пятница) + блок-недели ===
+        // === 1) Официальные (первый четверг — обновление игры) и наши глобалы (первый пятница) + блок только даты глобала ===
         $officialByDateTime = []; // первый четверг — только подпись «Обновление игры»
         $globalByDateTime   = []; // первый пятница — глобальный вайп на наших серверах
-        $blockedIsoWeeks    = []; // неделя первого пятницы: в эту неделю нет пятничных вайпов карты
+        $blockedGlobalDates = []; // даты первого пятницы: в этот день нет вайпов карты (глобал)
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4); // четверг
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);  // пятница
@@ -140,7 +140,7 @@ class WipeCalendarController extends BaseApiController
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
+            $blockedGlobalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
@@ -177,21 +177,20 @@ class WipeCalendarController extends BaseApiController
             ];
         }
 
-        // === 3) 7-дневные: каждая пятница, КРОМЕ недели глобала ===
+        // === 3) 7-дневные: каждый wipe_weekday, кроме даты глобала (первая пятница) ===
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 7) {
                 $this->addFridaysWeeklyBlockedByGlobal(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $mapTime, $s, $tz
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedGlobalDates, $mapTime, $s, $tz
                 );
             }
         }
 
-        // === 4) 14-дневные: по пятницам, начиная с пятницы после глобала,
-        // но неделя глобала заблокирована → первый слот = через неделю после глобала, далее +14 ===
+        // === 4) 14-дневные: по wipe_weekday, начиная после глобала; дата глобала заблокирована ===
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 14) {
                 $this->addFridaysBiWeeklyAfterGlobalBlocked(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $globalTime, $mapTime, $s, $tz
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedGlobalDates, $globalTime, $mapTime, $s, $tz
                 );
             }
         }
@@ -438,10 +437,10 @@ class WipeCalendarController extends BaseApiController
         }
         $afterLastMonth = $firstMonthStart->modify('+' . $months . ' month');
 
-        // === 1) Официальные (первый четверг) и наши глобалы (первый пятница) ===
+        // === 1) Официальные (первый четверг) и наши глобалы (первый пятница); блок только даты глобала ===
         $officialByDateTime = [];
         $globalByDateTime   = [];
-        $blockedIsoWeeks    = [];
+        $blockedGlobalDates = [];
         foreach ($monthStarts as $mStart) {
             $firstThu = $this->firstWeekdayOfMonth($mStart, 4);
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
@@ -449,7 +448,7 @@ class WipeCalendarController extends BaseApiController
             $globalDT   = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $officialByDateTime[$officialDT->format('Y-m-d H:i:s')] = true;
             $globalByDateTime[$globalDT->format('Y-m-d H:i:s')] = true;
-            $blockedIsoWeeks[$globalDT->format('o-\WW')] = true;
+            $blockedGlobalDates[$firstFri->format('Y-m-d')] = true;
         }
 
         // === 2) Слоты по точному времени ===
@@ -484,14 +483,14 @@ class WipeCalendarController extends BaseApiController
         if ((int)$server->wipe_type !== 30) {
             $wt = (int)$server->wipe_type;
             if ($wt === 7) {
-                // 7-дневные: каждый день недели сервера, пропускаем ISO-недели глобала
+                // 7-дневные: каждый день недели сервера, пропускаем только дату глобала (первая пятница)
                 foreach ($monthStarts as $mStart) {
                     $firstDay = $this->firstWeekdayOfMonth($mStart, $serverWipeWeekday);
                     $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
                     
                     while ($dt < $afterLastMonth) {
-                        $iso = $dt->format('o-\WW');
-                        if (!isset($blockedIsoWeeks[$iso])) {
+                        $dateKey = $dt->format('Y-m-d');
+                        if (!isset($blockedGlobalDates[$dateKey])) {
                             $key = $dt->format('Y-m-d H:i:s');
                             if (!isset($byDateTime[$key])) {
                                 $byDateTime[$key] = [
@@ -515,13 +514,12 @@ class WipeCalendarController extends BaseApiController
                 foreach ($monthStarts as $mStart) {
                     $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
                     $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
-                    $anchorFri = $globalDT;
-                    $firstAllowed = $anchorFri->modify('+14 days');
+                    $firstAllowed = $globalDT->modify('+14 days');
                     $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $serverWipeWeekday, $mapTime, $tz);
 
                     while ($dt < $afterLastMonth) {
-                        $iso = $dt->format('o-\WW');
-                        if (!isset($blockedIsoWeeks[$iso])) {
+                        $dateKey = $dt->format('Y-m-d');
+                        if (!isset($blockedGlobalDates[$dateKey])) {
                             $key = $dt->format('Y-m-d H:i:s');
                             if (!isset($byDateTime[$key])) {
                                 $byDateTime[$key] = [
@@ -618,8 +616,8 @@ class WipeCalendarController extends BaseApiController
         ]);
     }
 
-    /** 7-дневные: каждый выбранный день недели (wipe_weekday), пропускаем ISO-недели глобала */
-    private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedIsoWeeks, $mapTime, Servers $s, DateTimeZone $tz)
+    /** 7-дневные: каждый выбранный день недели (wipe_weekday), пропускаем только дату глобала (первая пятница) */
+    private function addFridaysWeeklyBlockedByGlobal(array &$byDateTime, array $monthStarts, DateTimeImmutable $afterLastMonth, array $blockedGlobalDates, $mapTime, Servers $s, DateTimeZone $tz)
     {
         $weekday = (int)($s->wipe_weekday ?? 5);
         if ($weekday < 1 || $weekday > 7) {
@@ -630,8 +628,8 @@ class WipeCalendarController extends BaseApiController
             $dt = new DateTimeImmutable($firstDay->format('Y-m-d') . ' ' . $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
-                $iso = $dt->format('o-\WW');
-                if (!isset($blockedIsoWeeks[$iso])) {
+                $dateKey = $dt->format('Y-m-d');
+                if (!isset($blockedGlobalDates[$dateKey])) {
                     $key = $dt->format('Y-m-d H:i:s');
                     if (!isset($byDateTime[$key])) {
                         $byDateTime[$key] = [
@@ -663,15 +661,14 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * 14-дневные: пятница после глобала, НО неделя глобала блокируется.
-     * Значит первый слот = anchor + 7 дней, далее шаг +14. Также пропускаем любые пятницы,
-     * попадающие в ISO-недели глобала (на случай нескольких месяцев в диапазоне).
+     * 14-дневные: первый слот = через 14 дней после глобала (по wipe_weekday), далее +14.
+     * Пропускаем только дату глобала (первая пятница), не всю неделю.
      */
     private function addFridaysBiWeeklyAfterGlobalBlocked(
         array &$byDateTime,
         array $monthStarts,
         DateTimeImmutable $afterLastMonth,
-        array $blockedIsoWeeks,
+        array $blockedGlobalDates,
         $globalTime,
         $mapTime,
         Servers $s,
@@ -685,13 +682,12 @@ class WipeCalendarController extends BaseApiController
             // глобал — первая пятница месяца
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
-            $anchorFri = $globalDT;
-            $firstAllowed = $anchorFri->modify('+14 days');
+            $firstAllowed = $globalDT->modify('+14 days');
             $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $weekday, $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
-                $iso = $dt->format('o-\WW');
-                if (!isset($blockedIsoWeeks[$iso])) {
+                $dateKey = $dt->format('Y-m-d');
+                if (!isset($blockedGlobalDates[$dateKey])) {
                     $key = $dt->format('Y-m-d H:i:s');
                     if (!isset($byDateTime[$key])) {
                         $byDateTime[$key] = [
