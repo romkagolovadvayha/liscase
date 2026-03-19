@@ -130,8 +130,9 @@ class WipeCalendarController extends BaseApiController
         $countNon30 = count($non30Active);
 
         // === 1) Официальные (первый четверг), глобалы (первый пятница). Неделя глобала = неделя обновления игры ===
-        // 7-дневные: в эту неделю только глобал, вайпов карты нет (blockedIsoWeeks).
-        // 14-дневные: блокируем только дату глобала (blockedGlobalDates). 30-дневные: только глобал раз в месяц.
+        // Пример: сервер wipe_weekday=Пн, wipe_type=7 → в любой понедельник вайп, кроме недели глобала (там только глобал), далее Пн вайп карты, до первой недели след. месяца.
+        // wipe_type=14 → то же, но слоты каждые 14 дней: первая неделя глобал, через 2 недели в Пн вайп карты, через 2 недели глобал и т.д. Слоты в неделю глобала не показываем.
+        // 30-дневные: только глобал раз в месяц (не в non30Active).
         $officialByDateTime = [];
         $globalByDateTime   = [];
         $blockedIsoWeeks   = []; // неделя первого пятницы — для 7-дневных: в эту неделю нет вайпов карты
@@ -190,11 +191,11 @@ class WipeCalendarController extends BaseApiController
             }
         }
 
-        // === 4) 14-дневные: по wipe_weekday, начиная после глобала; дата глобала заблокирована ===
+        // === 4) 14-дневные: первый вайп карты через 14 дней после глобала (по wipe_weekday), далее +14 дней; слоты в неделю глобала не показываем ===
         foreach ($non30Active as $s) {
             if ((int)$s->wipe_type === 14) {
                 $this->addFridaysBiWeeklyAfterGlobalBlocked(
-                    $byDateTime, $monthStarts, $afterLastMonth, $blockedGlobalDates, $globalTime, $mapTime, $s, $tz
+                    $byDateTime, $monthStarts, $afterLastMonth, $blockedIsoWeeks, $blockedGlobalDates, $globalTime, $mapTime, $s, $tz
                 );
             }
         }
@@ -516,7 +517,7 @@ class WipeCalendarController extends BaseApiController
                     }
                 }
             } elseif ($wt === 14) {
-                // 14-дневные: первый слот — день недели сервера на или после (глобал + 14 дней)
+                // 14-дневные: первый слот через 14 дней после глобала; не показываем слоты в неделю глобала
                 foreach ($monthStarts as $mStart) {
                     $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
                     $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
@@ -524,8 +525,9 @@ class WipeCalendarController extends BaseApiController
                     $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $serverWipeWeekday, $mapTime, $tz);
 
                     while ($dt < $afterLastMonth) {
+                        $iso = $dt->format('o-\WW');
                         $dateKey = $dt->format('Y-m-d');
-                        if (!isset($blockedGlobalDates[$dateKey])) {
+                        if (!isset($blockedIsoWeeks[$iso]) && !isset($blockedGlobalDates[$dateKey])) {
                             $key = $dt->format('Y-m-d H:i:s');
                             if (!isset($byDateTime[$key])) {
                                 $byDateTime[$key] = [
@@ -667,13 +669,14 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * 14-дневные: первый слот = через 14 дней после глобала (по wipe_weekday), далее +14.
-     * Пропускаем только дату глобала (первая пятница), не всю неделю.
+     * 14-дневные: первый слот = через 14 дней после глобала (по wipe_weekday), далее +14 дней.
+     * Не показываем слоты в неделю глобала (blockedIsoWeeks) и на дату глобала (blockedGlobalDates).
      */
     private function addFridaysBiWeeklyAfterGlobalBlocked(
         array &$byDateTime,
         array $monthStarts,
         DateTimeImmutable $afterLastMonth,
+        array $blockedIsoWeeks,
         array $blockedGlobalDates,
         $globalTime,
         $mapTime,
@@ -685,15 +688,18 @@ class WipeCalendarController extends BaseApiController
             $weekday = 5;
         }
         foreach ($monthStarts as $mStart) {
-            // глобал — первая пятница месяца
+            // глобал — первая пятница месяца; первый вайп карты — через 14 дней
             $firstFri = $this->firstWeekdayOfMonth($mStart, 5);
             $globalDT = new DateTimeImmutable($firstFri->format('Y-m-d') . ' ' . $globalTime, $tz);
             $firstAllowed = $globalDT->modify('+14 days');
             $dt = $this->nextWeekdayOnOrAfter($firstAllowed, $weekday, $mapTime, $tz);
 
             while ($dt < $afterLastMonth) {
+                $iso = $dt->format('o-\WW');
                 $dateKey = $dt->format('Y-m-d');
-                if (!isset($blockedGlobalDates[$dateKey])) {
+                $inBlockedWeek = isset($blockedIsoWeeks[$iso]);
+                $isGlobalDate = isset($blockedGlobalDates[$dateKey]);
+                if (!$inBlockedWeek && !$isGlobalDate) {
                     $key = $dt->format('Y-m-d H:i:s');
                     if (!isset($byDateTime[$key])) {
                         $byDateTime[$key] = [
