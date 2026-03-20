@@ -93,6 +93,8 @@ $config = [
                 'v1/clans/rankings' => 'v1/clans/rankings',
                 'v1/clans/my-invites' => 'v1/clans/my-invites',
                 'v1/clans/my-memberships' => 'v1/clans/my-memberships',
+                /** Полный ЧПУ-сегмент (например my-clan-12): точное совпадение, без ошибочного разбора id */
+                'v1/clans/<serverTag:[\w-]+>/lookup' => 'v1/clans/lookup-by-slug',
                 'v1/clans/invite-link/<token:[a-fA-F0-9]+>' => 'v1/clans/invite-link-preview',
                 ['pattern' => 'v1/clans/invite-link/<token:[a-fA-F0-9]+>/join', 'route' => 'v1/clans/invite-link-join', 'verb' => ['POST']],
                 ['pattern' => 'v1/clans/invites/<inviteId:\d+>/accept', 'route' => 'v1/clans/accept-invite', 'verb' => ['POST']],

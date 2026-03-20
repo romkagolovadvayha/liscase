@@ -275,6 +275,39 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * GET /v1/clans/{serverTag}/lookup?slug=my-clan-12 — карточка по полному URL-slug (как в списке кланов).
+     */
+    public function actionLookupBySlug($serverTag)
+    {
+        $slug = trim((string)Yii::$app->request->get('slug', ''));
+        if ($slug === '') {
+            throw new BadRequestHttpException('slug is required');
+        }
+
+        $server = Servers::find()
+            ->where('LOWER(tag) = :tag', [':tag' => mb_strtolower(trim($serverTag), 'UTF-8')])
+            ->one();
+        if (!$server) {
+            throw new NotFoundHttpException('Server not found');
+        }
+
+        $clans = Clan::find()
+            ->where(['server_id' => $server->id])
+            ->with(['leaderUser.userProfile', 'server'])
+            ->all();
+
+        foreach ($clans as $clan) {
+            if ($this->getClanUrlSlug($clan) === $slug) {
+                $currentMember = $this->getActiveMember($clan);
+
+                return $this->successResponse($this->serializeClanDetail($clan, $currentMember));
+            }
+        }
+
+        throw new NotFoundHttpException('Clan not found');
+    }
+
+    /**
      * PATCH/PUT /v1/clans/{serverTag}/{id}
      */
     public function actionUpdate($serverTag, $id)
@@ -1395,7 +1428,9 @@ class ClansController extends BaseApiController
 
     protected function findClanByServerTag(string $serverTag, int $id): Clan
     {
-        $server = Servers::findOne(['tag' => $serverTag]);
+        $server = Servers::find()
+            ->where('LOWER(tag) = :tag', [':tag' => mb_strtolower(trim($serverTag), 'UTF-8')])
+            ->one();
         if (!$server) {
             throw new NotFoundHttpException('Server not found');
         }
@@ -1458,6 +1493,17 @@ class ClansController extends BaseApiController
         ];
     }
 
+    /** ЧПУ-сегмент URL: как в фронте /clans/{serverTag}/{slug} */
+    protected function getClanUrlSlug(Clan $clan): string
+    {
+        $slugBase = Inflector::slug((string)$clan->name);
+        if ($slugBase === '') {
+            $slugBase = 'clan';
+        }
+
+        return $slugBase . '-' . (int)$clan->id;
+    }
+
     protected function serializeClanListItem(Clan $clan): array
     {
         $memberCount = (int)ClanMember::find()
@@ -1465,16 +1511,11 @@ class ClansController extends BaseApiController
             ->andWhere(['IS', 'leave_date', null])
             ->count();
 
-        $slugBase = Inflector::slug((string)$clan->name);
-        if ($slugBase === '') {
-            $slugBase = 'clan';
-        }
-
         return [
             'id' => (int)$clan->id,
             'name' => $clan->name,
             'tag' => $clan->tag,
-            'slug' => $slugBase . '-' . (int)$clan->id,
+            'slug' => $this->getClanUrlSlug($clan),
             'server_id' => (int)$clan->server_id,
             'server_tag' => $clan->server ? $clan->server->tag : null,
             'leader' => $clan->leaderUser ? $this->serializeUser($clan->leaderUser) : null,
