@@ -5,6 +5,7 @@ namespace api\controllers\v1;
 use Yii;
 use yii\web\NotFoundHttpException;
 use common\helpers\ServersCacheHelper;
+use common\models\box\Drop;
 use common\models\servers\Servers;
 use common\models\servers\ServersTags;
 use common\models\stats\Wipe;
@@ -355,6 +356,70 @@ class ServersController extends BaseApiController
         }
 
         return $this->successResponse($wipeBlocks);
+    }
+
+    /**
+     * Предметы вайп-блока (сгруппированы по времени блокировки в часах)
+     *
+     * @OA\Get(
+     *     path="/v1/servers/wipe-block/items",
+     *     operationId="getWipeBlockItems",
+     *     tags={"Servers"},
+     *     summary="Получить список предметов вайп-блока",
+     *     description="Публичный метод, авторизация не требуется.",
+     *     @OA\Response(
+     *         response=200,
+     *         description="Список предметов вайп-блока по группам blocked_hour",
+     *         @OA\MediaType(mediaType="application/json")
+     *     )
+     * )
+     */
+    public function actionWipeBlockItems()
+    {
+        $cacheKey = 'api_servers_wipe_block_items_' . Yii::$app->language;
+        $cached = Yii::$app->cache->get($cacheKey);
+
+        if ($cached !== false) {
+            return $this->successResponse($cached);
+        }
+
+        $drops = Drop::find()
+            ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+            ->andWhere('blocked_hour IS NOT NULL')
+            ->orderBy(['blocked_hour' => SORT_ASC, 'id' => SORT_ASC])
+            ->all();
+
+        $images = Drop::productsImages();
+        $groups = [];
+
+        foreach ($drops as $drop) {
+            $blockedHour = (int)$drop->blocked_hour;
+            $groupKey = (string)$blockedHour;
+
+            if (!isset($groups[$groupKey])) {
+                $groups[$groupKey] = [
+                    'blocked_hour' => $blockedHour,
+                    'items' => [],
+                ];
+            }
+
+            $imageUrl = $images[$drop->id]['150px'] ?? '';
+            if (empty($imageUrl) && $drop->imageOrig) {
+                $imageUrl = $drop->imageOrig->getImagePubUrl();
+            }
+
+            $groups[$groupKey]['items'][] = [
+                'id' => (int)$drop->id,
+                'name' => Yii::t('database', $drop->name ?: ''),
+                'image' => (string)$imageUrl,
+                'rust_id' => $drop->rust_id !== null ? (string)$drop->rust_id : '',
+            ];
+        }
+
+        $result = array_values($groups);
+        Yii::$app->cache->set($cacheKey, $result, 300);
+
+        return $this->successResponse($result);
     }
 
     /**

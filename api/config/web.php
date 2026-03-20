@@ -112,11 +112,12 @@ $config = [
 
                 // Servers
                 'v1/servers' => 'v1/servers/index',
+                'v1/servers/wipe-block/items' => 'v1/servers/wipe-block-items',
+                'v1/servers/wipe-block' => 'v1/servers/wipe-block',
                 'v1/servers/<tag:[\w-]+>' => 'v1/servers/view',
                 'v1/servers/tag/<tagLink:[\w-]+>' => 'v1/servers/tag',
                 'v1/servers/<serverTag:[\w-]+>/rules' => 'v1/servers/rules',
                 'v1/servers/<serverTag:[\w-]+>/wipe-info' => 'v1/servers/wipe-info',
-                'v1/servers/wipe-block' => 'v1/servers/wipe-block',
                 'v1/servers/stats' => 'v1/stats/stats', // публичный, без обязательной авторизации
 
                 // Stats
