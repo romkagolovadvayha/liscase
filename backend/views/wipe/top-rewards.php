@@ -30,20 +30,16 @@ $this->title = Yii::t('common', 'Начисления за ТОП по вайп�
             <form method="get" action="/wipe/top-rewards">
                 <div class="mb-3">
                     <label for="wipe" class="form-label"><?= Yii::t('common', 'Вайп') ?></label>
-                    <input
-                        class="form-control"
-                        id="wipe"
-                        name="wipe"
-                        list="wipe-list"
-                        value="<?= Html::encode($wipe) ?>"
-                        placeholder="2026-02-15/2026-03-01"
-                        required
-                    >
-                    <datalist id="wipe-list">
+                    <select class="form-select" id="wipe" name="wipe" required>
                         <?php foreach ($availableWipes as $availableWipe): ?>
-                            <option value="<?= Html::encode($availableWipe) ?>"></option>
+                            <option value="<?= Html::encode($availableWipe) ?>" <?= $wipe === $availableWipe ? 'selected' : '' ?>>
+                                <?= Html::encode($availableWipe) ?>
+                            </option>
                         <?php endforeach; ?>
-                    </datalist>
+                    </select>
+                    <?php if (empty($availableWipes)): ?>
+                        <small class="text-warning"><?= Yii::t('common', 'Для выбранных серверов не найдено вайпов в statistics.') ?></small>
+                    <?php endif; ?>
                 </div>
 
                 <div class="mb-3">

@@ -415,12 +415,15 @@ class WipeController extends Controller
         $wipe = (string)Yii::$app->request->post('wipe', Yii::$app->request->get('wipe', ''));
         $wipe = trim($wipe);
 
-        $availableWipes = UserTop::find()
+        $wipeQuery = Statistics::find()
             ->select('wipe')
             ->distinct()
+            ->andWhere(['IN', 'server_tag', $selectedServerTags])
+            ->andWhere(['<>', 'wipe', ''])
             ->orderBy(['wipe' => SORT_DESC])
-            ->limit(200)
-            ->column();
+            ->limit(500);
+
+        $availableWipes = $wipeQuery->column();
 
         if (empty($wipe) && !empty($availableWipes)) {
             $wipe = (string)$availableWipes[0];
