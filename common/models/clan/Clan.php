@@ -205,10 +205,21 @@ class Clan extends ActiveRecord
      */
     public function getLogoUrl()
     {
-        if ($this->logo && file_exists(Yii::getAlias('@frontend/web') . $this->logo)) {
+        if (!$this->logo) {
+            return '/images/default-clan-logo.png';
+        }
+        if (strpos($this->logo, 'http://') === 0 || strpos($this->logo, 'https://') === 0) {
             return $this->logo;
         }
-        return '/images/default-clan-logo.png'; // Дефолтный логотип
+        // Ключ в S3 (uploads/clans/...)
+        if (strpos($this->logo, 'uploads/') === 0 && Yii::$app->has('s3Api')) {
+            return Yii::$app->s3Api->getPublicUrl($this->logo);
+        }
+        if (file_exists(Yii::getAlias('@frontend/web') . $this->logo)) {
+            return $this->logo;
+        }
+
+        return '/images/default-clan-logo.png';
     }
 
     /**

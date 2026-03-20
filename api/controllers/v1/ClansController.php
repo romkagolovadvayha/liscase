@@ -3,11 +3,15 @@
 namespace api\controllers\v1;
 
 use api\components\jwt\JwtAuthFilter;
+use common\components\clan\ApplicantTrustHelper;
 use common\models\clan\Clan;
 use common\models\clan\ClanAchievement;
+use common\models\clan\ClanApplication;
 use common\models\clan\ClanEvent;
 use common\models\clan\ClanInvite;
+use common\models\clan\ClanInviteLink;
 use common\models\clan\ClanMember;
+use common\models\clan\ClanPost;
 use common\models\clan\ClanMemberStatistics;
 use common\models\clan\ClanPermission;
 use common\models\clan\ClanRanking;
@@ -19,6 +23,9 @@ use yii\web\BadRequestHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\UnauthorizedHttpException;
+use yii\web\UploadedFile;
+use yii\helpers\Inflector;
+use yii\imagine\Image;
 
 /**
  * API кланов: просмотр — всем; изменение — только лидеру или участникам с нужными правами.
@@ -371,7 +378,7 @@ class ClansController extends BaseApiController
 
         return $this->successResponse([
             'wipe' => $resolvedWipe,
-            'statistics' => $stats ? $stats->getAttributes() : null,
+            'statistics' => $stats ? $stats->getStatisticsForApi() : null,
         ]);
     }
 
@@ -837,6 +844,547 @@ class ClansController extends BaseApiController
         return $this->successResponse($this->serializeMember($targetMember, $clan, $actor));
     }
 
+    /**
+     * GET /v1/clans/invite-link/{token} — превью клана по ссылке (без JWT).
+     */
+    public function actionInviteLinkPreview($token)
+    {
+        $token = preg_replace('/[^a-fA-F0-9]/', '', (string)$token);
+        if (strlen($token) < 16) {
+            throw new NotFoundHttpException('Invalid invite link');
+        }
+
+        $link = ClanInviteLink::find()->where(['token' => $token])->with(['clan.server', 'clan.leaderUser.userProfile'])->one();
+        if (!$link || !$link->clan) {
+            throw new NotFoundHttpException('Invite link not found');
+        }
+        if ($link->isExpired() || $link->isUseLimitReached()) {
+            return $this->errorResponse('INVITE_EXPIRED', 'Invite link expired or limit reached', [], 410);
+        }
+
+        $clan = $link->clan;
+        if ($clan->privacy === Clan::PRIVACY_CLOSED) {
+            return $this->successResponse([
+                'valid' => false,
+                'reason' => 'closed',
+                'message' => 'This clan is closed — submit an application instead.',
+                'clan' => $this->serializeClanListItem($clan),
+                'server_tag' => $clan->server ? $clan->server->tag : null,
+            ]);
+        }
+
+        return $this->successResponse([
+            'valid' => true,
+            'token' => $link->token,
+            'expires_at' => $link->expires_at,
+            'clan' => $this->serializeClanListItem($clan),
+            'server_tag' => $clan->server ? $clan->server->tag : null,
+        ]);
+    }
+
+    /**
+     * POST /v1/clans/invite-link/{token}/join — вступить по ссылке (JWT).
+     */
+    public function actionInviteLinkJoin($token)
+    {
+        $user = $this->getCurrentUser();
+        $token = preg_replace('/[^a-fA-F0-9]/', '', (string)$token);
+        $link = ClanInviteLink::find()->where(['token' => $token])->with('clan.server')->one();
+        if (!$link || !$link->clan) {
+            throw new NotFoundHttpException('Invite link not found');
+        }
+        if ($link->isExpired() || $link->isUseLimitReached()) {
+            return $this->errorResponse('INVITE_EXPIRED', 'Invite link expired or limit reached', [], 410);
+        }
+
+        $clan = $link->clan;
+        if ($clan->privacy === Clan::PRIVACY_CLOSED) {
+            return $this->errorResponse('CLAN_CLOSED', 'Clan is closed — use application', [], 400);
+        }
+
+        if ($this->hasActiveClanOnServer($user->id, $clan->server_id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'Already in a clan on this server', [], 400);
+        }
+
+        $tx = Yii::$app->db->beginTransaction();
+        try {
+            $link->uses_count = (int)$link->uses_count + 1;
+            if (!$link->save(false)) {
+                throw new \RuntimeException('Could not update link');
+            }
+            $member = $clan->addMember($user->id);
+            if (!$member) {
+                $tx->rollBack();
+                return $this->errorResponse('JOIN_FAILED', 'Could not join clan', [], 400);
+            }
+            $clan->addEvent('member_joined', Yii::t('common', 'Игрок вступил по ссылке-приглашению'), $user->id);
+            $tx->commit();
+        } catch (\Throwable $e) {
+            $tx->rollBack();
+            Yii::error($e->getMessage(), 'clan');
+
+            return $this->errorResponse('JOIN_FAILED', 'Could not join clan', [], 500);
+        }
+
+        return $this->successResponse(['joined' => true, 'clan_id' => (int)$clan->id]);
+    }
+
+    /**
+     * GET /v1/clans/{serverTag}/{id}/invite-links — список ссылек (с правом invite).
+     */
+    public function actionInviteLinksList($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canInvite()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $links = ClanInviteLink::find()->where(['clan_id' => $clan->id])->orderBy(['id' => SORT_DESC])->limit(50)->all();
+        $items = [];
+        foreach ($links as $l) {
+            $items[] = $this->serializeInviteLink($l);
+        }
+
+        return $this->successResponse(['items' => $items]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/invite-links — создать ссылку.
+     */
+    public function actionInviteLinksCreate($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canInvite()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $body = $this->getJsonBody();
+        $days = isset($body['expires_in_days']) ? (int)$body['expires_in_days'] : 7;
+        $maxUses = isset($body['max_uses']) ? (int)$body['max_uses'] : 0;
+
+        $link = new ClanInviteLink();
+        $link->clan_id = $clan->id;
+        $link->inviter_user_id = $user->id;
+        $link->token = ClanInviteLink::generateToken();
+        $link->created_at = time();
+        $link->max_uses = max(0, $maxUses);
+        $link->uses_count = 0;
+        if ($days > 0) {
+            $link->expires_at = date('Y-m-d H:i:s', time() + $days * 86400);
+        } else {
+            $link->expires_at = null;
+        }
+
+        if (!$link->save()) {
+            return $this->validationErrorResponse($link);
+        }
+
+        return $this->successResponse($this->serializeInviteLink($link), [], 201);
+    }
+
+    /**
+     * DELETE /v1/clans/{serverTag}/{id}/invite-links/{linkId}
+     */
+    public function actionInviteLinksDelete($serverTag, $id, $linkId)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canInvite()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $link = ClanInviteLink::findOne(['id' => (int)$linkId, 'clan_id' => $clan->id]);
+        if (!$link) {
+            throw new NotFoundHttpException('Link not found');
+        }
+        $link->delete();
+
+        return $this->successResponse(['deleted' => true]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/apply — заявка в клан.
+     */
+    public function actionApply($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+
+        if ($clan->privacy === Clan::PRIVACY_INVITE_ONLY) {
+            return $this->errorResponse('INVITE_ONLY', 'This clan accepts invites only', [], 400);
+        }
+
+        if ($this->hasActiveClanOnServer($user->id, $clan->server_id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'Already in a clan on this server', [], 400);
+        }
+
+        $pending = ClanApplication::find()
+            ->where(['clan_id' => $clan->id, 'user_id' => $user->id, 'status' => ClanApplication::STATUS_PENDING])
+            ->exists();
+        if ($pending) {
+            return $this->errorResponse('APPLICATION_PENDING', 'Application already pending', [], 400);
+        }
+
+        $body = $this->getJsonBody();
+        $message = isset($body['message']) ? (string)$body['message'] : null;
+
+        $app = new ClanApplication();
+        $app->clan_id = $clan->id;
+        $app->user_id = $user->id;
+        $app->message = $message ? mb_substr($message, 0, 2000) : null;
+        $app->status = ClanApplication::STATUS_PENDING;
+        $app->created_at = time();
+
+        if (!$app->save()) {
+            return $this->validationErrorResponse($app);
+        }
+
+        $clan->addEvent('application_submitted', Yii::t('common', 'Новая заявка в клан'), $user->id);
+
+        return $this->successResponse($this->serializeApplication($app, false, null), [], 201);
+    }
+
+    /**
+     * GET /v1/clans/{serverTag}/{id}/applications — заявки (лидер/офицер).
+     */
+    public function actionApplicationsList($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->isLeader() && !$member->canPromoteDemote()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $apps = ClanApplication::find()
+            ->where(['clan_id' => $clan->id, 'status' => ClanApplication::STATUS_PENDING])
+            ->with(['user.userProfile'])
+            ->orderBy(['id' => SORT_DESC])
+            ->limit(100)
+            ->all();
+
+        $items = [];
+        foreach ($apps as $a) {
+            $items[] = $this->serializeApplication($a, true, $clan);
+        }
+
+        return $this->successResponse(['items' => $items]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/applications/{appId}/accept
+     */
+    public function actionApplicationAccept($serverTag, $id, $appId)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->isLeader() && !$member->canPromoteDemote()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $app = ClanApplication::findOne(['id' => (int)$appId, 'clan_id' => $clan->id]);
+        if (!$app || $app->status !== ClanApplication::STATUS_PENDING) {
+            throw new NotFoundHttpException('Application not found');
+        }
+
+        if ($this->hasActiveClanOnServer($app->user_id, $clan->server_id)) {
+            $app->status = ClanApplication::STATUS_REJECTED;
+            $app->resolved_at = time();
+            $app->resolved_by_user_id = $user->id;
+            $app->save(false);
+
+            return $this->errorResponse('USER_BUSY', 'User already in a clan', [], 400);
+        }
+
+        $tx = Yii::$app->db->beginTransaction();
+        try {
+            $app->status = ClanApplication::STATUS_ACCEPTED;
+            $app->resolved_at = time();
+            $app->resolved_by_user_id = $user->id;
+            $app->save(false);
+
+            $m = $clan->addMember($app->user_id);
+            if (!$m) {
+                throw new \RuntimeException('addMember failed');
+            }
+            $clan->addEvent('application_accepted', Yii::t('common', 'Заявка принята'), $user->id);
+            $tx->commit();
+        } catch (\Throwable $e) {
+            $tx->rollBack();
+            Yii::error($e->getMessage(), 'clan');
+
+            return $this->errorResponse('ACCEPT_FAILED', 'Could not accept', [], 500);
+        }
+
+        return $this->successResponse(['accepted' => true]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/applications/{appId}/reject
+     */
+    public function actionApplicationReject($serverTag, $id, $appId)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->isLeader() && !$member->canPromoteDemote()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $app = ClanApplication::findOne(['id' => (int)$appId, 'clan_id' => $clan->id]);
+        if (!$app || $app->status !== ClanApplication::STATUS_PENDING) {
+            throw new NotFoundHttpException('Application not found');
+        }
+
+        $app->status = ClanApplication::STATUS_REJECTED;
+        $app->resolved_at = time();
+        $app->resolved_by_user_id = $user->id;
+        $app->save(false);
+
+        return $this->successResponse(['rejected' => true]);
+    }
+
+    /**
+     * GET /v1/clans/{serverTag}/{id}/posts
+     */
+    public function actionPostsList($serverTag, $id)
+    {
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $viewer = $this->getActiveMember($clan);
+
+        $q = ClanPost::find()->where(['clan_id' => $clan->id, 'is_published' => 1]);
+        if (!$viewer) {
+            $q->andWhere(['visibility' => ClanPost::VIS_PUBLIC]);
+        } elseif ($viewer->isLeader()) {
+            // лидер видит скрытые посты
+        } else {
+            $q->andWhere(['in', 'visibility', [ClanPost::VIS_PUBLIC, ClanPost::VIS_MEMBERS]]);
+        }
+
+        $posts = $q->with(['author.userProfile'])->orderBy(['published_at' => SORT_DESC])->limit(50)->all();
+        $items = [];
+        foreach ($posts as $p) {
+            $items[] = $this->serializePost($p);
+        }
+
+        return $this->successResponse(['items' => $items]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/posts
+     */
+    public function actionPostCreate($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canEditClan() && !$member->isLeader()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $body = $this->getJsonBody();
+        $post = new ClanPost();
+        $post->clan_id = $clan->id;
+        $post->author_user_id = $user->id;
+        $post->type = isset($body['type']) && $body['type'] === ClanPost::TYPE_PAGE ? ClanPost::TYPE_PAGE : ClanPost::TYPE_NEWS;
+        $post->visibility = isset($body['visibility']) ? (string)$body['visibility'] : ClanPost::VIS_PUBLIC;
+        if (!in_array($post->visibility, [ClanPost::VIS_PUBLIC, ClanPost::VIS_MEMBERS, ClanPost::VIS_HIDDEN], true)) {
+            $post->visibility = ClanPost::VIS_PUBLIC;
+        }
+        $post->title = isset($body['title']) ? mb_substr((string)$body['title'], 0, 255) : '';
+        $post->body = isset($body['body']) ? (string)$body['body'] : '';
+        $post->is_published = isset($body['is_published']) ? (int)(bool)$body['is_published'] : 1;
+        $now = time();
+        $post->published_at = $now;
+        $post->created_at = $now;
+        $post->updated_at = $now;
+
+        if ($post->title === '') {
+            return $this->errorResponse('VALIDATION', 'Title required', [], 400);
+        }
+
+        if (!$post->save()) {
+            return $this->validationErrorResponse($post);
+        }
+
+        return $this->successResponse($this->serializePost($post), [], 201);
+    }
+
+    /**
+     * PATCH /v1/clans/{serverTag}/{id}/posts/{postId}
+     */
+    public function actionPostUpdate($serverTag, $id, $postId)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canEditClan() && !$member->isLeader()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $post = ClanPost::findOne(['id' => (int)$postId, 'clan_id' => $clan->id]);
+        if (!$post) {
+            throw new NotFoundHttpException('Post not found');
+        }
+
+        $body = $this->getJsonBody();
+        if (isset($body['title'])) {
+            $post->title = mb_substr((string)$body['title'], 0, 255);
+        }
+        if (array_key_exists('body', $body)) {
+            $post->body = (string)$body['body'];
+        }
+        if (isset($body['visibility'])) {
+            $v = (string)$body['visibility'];
+            if (in_array($v, [ClanPost::VIS_PUBLIC, ClanPost::VIS_MEMBERS, ClanPost::VIS_HIDDEN], true)) {
+                $post->visibility = $v;
+            }
+        }
+        if (isset($body['is_published'])) {
+            $post->is_published = (int)(bool)$body['is_published'];
+        }
+        $post->updated_at = time();
+
+        if (!$post->save()) {
+            return $this->validationErrorResponse($post);
+        }
+
+        return $this->successResponse($this->serializePost($post));
+    }
+
+    /**
+     * DELETE /v1/clans/{serverTag}/{id}/posts/{postId}
+     */
+    public function actionPostDelete($serverTag, $id, $postId)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canEditClan() && !$member->isLeader()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        $post = ClanPost::findOne(['id' => (int)$postId, 'clan_id' => $clan->id]);
+        if (!$post) {
+            throw new NotFoundHttpException('Post not found');
+        }
+        $post->delete();
+
+        return $this->successResponse(['deleted' => true]);
+    }
+
+    /**
+     * POST /v1/clans/{serverTag}/{id}/logo — multipart logo → S3.
+     */
+    public function actionUploadLogo($serverTag, $id)
+    {
+        $user = $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $member = $this->requireClanMember($clan);
+        if (!$member->canEditClan() && !$member->isLeader()) {
+            throw new ForbiddenHttpException('No permission');
+        }
+
+        if (!Yii::$app->has('s3Api')) {
+            return $this->errorResponse('S3_UNAVAILABLE', 'Storage not configured', [], 503);
+        }
+
+        $file = UploadedFile::getInstanceByName('file');
+        if (!$file || !$file->tempName) {
+            return $this->errorResponse('NO_FILE', 'File required (field name: file)', [], 400);
+        }
+
+        $ext = strtolower($file->extension ?: 'png');
+        if (!in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif'], true)) {
+            return $this->errorResponse('BAD_TYPE', 'Allowed: png, jpg, webp, gif', [], 400);
+        }
+
+        $content = file_get_contents($file->tempName);
+        if ($content === false || strlen($content) > 5 * 1024 * 1024) {
+            return $this->errorResponse('TOO_LARGE', 'Max 5MB', [], 400);
+        }
+
+        try {
+            $img = Image::getImagine()->load($content);
+            $size = $img->getSize();
+            if ($size->getWidth() > 512 || $size->getHeight() > 512) {
+                $img = Image::thumbnail($img, 512, 512);
+            }
+            $pngData = $img->get('png');
+        } catch (\Throwable $e) {
+            return $this->errorResponse('IMAGE_ERROR', 'Invalid image', [], 400);
+        }
+
+        $key = 'uploads/clans/logo_' . $clan->id . '_' . bin2hex(random_bytes(6)) . '.png';
+        if (Yii::$app->s3Api->putFile($key, $pngData, 'image/png') === false) {
+            return $this->errorResponse('UPLOAD_FAILED', 'S3 upload failed', [], 500);
+        }
+
+        $clan->logo = $key;
+        if (!$clan->save(false)) {
+            return $this->errorResponse('SAVE_FAILED', 'Could not save clan', [], 500);
+        }
+
+        return $this->successResponse([
+            'logo_url' => $clan->getLogoUrl(),
+        ]);
+    }
+
+    protected function serializeInviteLink(ClanInviteLink $l): array
+    {
+        return [
+            'id' => (int)$l->id,
+            'token' => $l->token,
+            'expires_at' => $l->expires_at,
+            'max_uses' => (int)$l->max_uses,
+            'uses_count' => (int)$l->uses_count,
+            'created_at' => (int)$l->created_at,
+        ];
+    }
+
+    protected function serializeApplication(ClanApplication $a, bool $includeReviewerTrust, ?Clan $clan): array
+    {
+        $data = [
+            'id' => (int)$a->id,
+            'clan_id' => (int)$a->clan_id,
+            'user_id' => (int)$a->user_id,
+            'message' => $a->message,
+            'status' => $a->status,
+            'created_at' => (int)$a->created_at,
+            'resolved_at' => $a->resolved_at !== null ? (int)$a->resolved_at : null,
+            'user' => $a->user ? $this->serializeUser($a->user) : null,
+        ];
+
+        if ($includeReviewerTrust && $clan !== null && $a->user) {
+            $data['trust'] = ApplicantTrustHelper::summarize($a->user, $clan);
+        }
+
+        return $data;
+    }
+
+    protected function serializePost(ClanPost $p): array
+    {
+        return [
+            'id' => (int)$p->id,
+            'clan_id' => (int)$p->clan_id,
+            'type' => $p->type,
+            'visibility' => $p->visibility,
+            'title' => $p->title,
+            'body' => $p->body,
+            'is_published' => (int)$p->is_published,
+            'published_at' => (int)$p->published_at,
+            'created_at' => (int)$p->created_at,
+            'updated_at' => (int)$p->updated_at,
+            'author' => $p->author ? $this->serializeUser($p->author) : null,
+        ];
+    }
+
     // --- helpers ---
 
     protected function getJsonBody(): array
@@ -917,10 +1465,16 @@ class ClansController extends BaseApiController
             ->andWhere(['IS', 'leave_date', null])
             ->count();
 
+        $slugBase = Inflector::slug((string)$clan->name);
+        if ($slugBase === '') {
+            $slugBase = 'clan';
+        }
+
         return [
             'id' => (int)$clan->id,
             'name' => $clan->name,
             'tag' => $clan->tag,
+            'slug' => $slugBase . '-' . (int)$clan->id,
             'server_id' => (int)$clan->server_id,
             'server_tag' => $clan->server ? $clan->server->tag : null,
             'leader' => $clan->leaderUser ? $this->serializeUser($clan->leaderUser) : null,

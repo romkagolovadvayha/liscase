@@ -107,116 +107,13 @@ class m260127_103915_create_clan_system_tables extends Migration
         // MySQL не поддерживает частичные индексы напрямую, используем составной индекс
         $this->createIndex('idx-clan_members-active-unique', 'clan_members', ['clan_id', 'user_id', 'leave_date']);
 
-        // Таблица статистики клана
+        // Таблица статистики клана (заголовок за вайп; метрики — в clan_statistics_values)
         $this->createTable('clan_statistics', [
             'id' => self::PRIMARY_KEY,
             'clan_id' => self::INT_FIELD_NOT_NULL . ' COMMENT \'ID клана\'',
             'server_id' => $serverIdType->notNull()->comment('ID сервера'),
             'wipe' => 'VARCHAR(255) DEFAULT NULL COMMENT \'Дата вайпа\'',
-            
-            // Боевая статистика
-            'total_kills' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_deaths' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_scientists' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_wounded' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_tcs_destroyed' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_nude_kills' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Попадания
-            'total_hits_head' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_neck' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_chest' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_lowerspine' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_lefthand' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_leftleg' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_leftfoot' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_righthand' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_rightleg' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_hits_rightfoot' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Рейдер
-            'total_c4thrown' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_satchelsthrown' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_rocket_basic' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_rocket_hv' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_rocket_fire' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_ammo_explosive' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_grenade_f1_deployed' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_grenade_molotov_deployed' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_grenade_beancan_deployed' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Фармер
-            'total_wood' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_stones' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_metal_ore' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_sulfur_ore' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Рыбак
-            'total_f_fish_anchovy' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_catfish' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_herring' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_orangeroughy' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_salmon' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_sardine' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_smallshark' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_troutsmall' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_f_fish_yellowperch' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Охотник
-            'total_chicken' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_bear' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_boar' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_polarbear' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_stag' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_horse' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_wolf2' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_wolf' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_simpleshark' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_panther' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_crocodile' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_tiger' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Фермер
-            'total_gathered_cloth' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_pumpkin' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_corn' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_green_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_blue_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_yellow_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_red_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_white_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_black_berry' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_potato' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_orchid' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_rose' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_sunflower' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_gathered_wheat' => 'INT(10) UNSIGNED DEFAULT 0',
-            
-            // Другое
-            'total_playtime' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_crate_open' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_barrel' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_helicopters' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_bradleys' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_research_table_looted' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_excavator_mined' => 'INT(10) UNSIGNED DEFAULT 0',
-            'raids_completed' => 'INT(10) UNSIGNED DEFAULT 0',
-            'raids_defended' => 'INT(10) UNSIGNED DEFAULT 0',
-            'wars_won' => 'INT(10) UNSIGNED DEFAULT 0',
-            'wars_lost' => 'INT(10) UNSIGNED DEFAULT 0',
-            'total_activity_days' => 'INT(10) UNSIGNED DEFAULT 0',
             'last_activity_date' => 'DATETIME DEFAULT NULL',
-            
-            // Расчетные значения
-            'top_reider' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_kills' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_scientists' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_playtime' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_farmer' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_fishing' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_hunter' => 'DECIMAL(10,2) DEFAULT 0',
-            'top_fermer' => 'DECIMAL(10,2) DEFAULT 0',
-            
             'updated_at' => 'INT(10) UNSIGNED NOT NULL',
         ], self::TABLE_OPTIONS);
 
@@ -239,6 +136,30 @@ class m260127_103915_create_clan_system_tables extends Migration
             'clan_statistics',
             'server_id',
             'servers',
+            'id',
+            'CASCADE'
+        );
+
+        $this->createTable('clan_statistics_values', [
+            'id' => self::PRIMARY_KEY,
+            'clan_statistics_id' => self::INT_FIELD_NOT_NULL . ' COMMENT \'Запись clan_statistics\'',
+            'stat_key' => "VARCHAR(80) NOT NULL COMMENT 'Ключ метрики (total_*, top_*, …)'",
+            'value' => 'DECIMAL(24, 6) NOT NULL DEFAULT 0 COMMENT \'Значение (целое или дробное для топов)\'',
+        ], self::TABLE_OPTIONS);
+
+        $this->createIndex(
+            'idx-clan_statistics_values-unique',
+            'clan_statistics_values',
+            ['clan_statistics_id', 'stat_key'],
+            true
+        );
+        $this->createIndex('idx-clan_statistics_values-key', 'clan_statistics_values', 'stat_key');
+
+        $this->addForeignKey(
+            'fk-clan_statistics_values-header',
+            'clan_statistics_values',
+            'clan_statistics_id',
+            'clan_statistics',
             'id',
             'CASCADE'
         );
@@ -614,6 +535,7 @@ class m260127_103915_create_clan_system_tables extends Migration
         $this->dropTable('clan_permissions');
         $this->dropTable('clan_invites');
         $this->dropTable('clan_member_statistics');
+        $this->dropTable('clan_statistics_values');
         $this->dropTable('clan_statistics');
         $this->dropTable('clan_members');
         $this->dropTable('clans');
