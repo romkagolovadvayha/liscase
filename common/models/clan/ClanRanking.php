@@ -109,13 +109,21 @@ class ClanRanking extends ActiveRecord
      */
     public static function calculateRankings($serverId, $period = self::PERIOD_ALL_TIME)
     {
+        $server = Servers::findOne((int)$serverId);
+        if (!$server) {
+            return;
+        }
+
+        $wipe = $server->currentWipe();
+
         $clans = Clan::find()
             ->where(['server_id' => $serverId])
             ->all();
 
         foreach ($clans as $clan) {
-            $statistics = $clan->getStatistics();
-            if (!$statistics) {
+            // getStatistics() — relation query (hasMany), не модель. Нужна строка clan_statistics за текущий вайп.
+            $statistics = $clan->getClanStatistics($wipe);
+            if ($statistics === null) {
                 continue;
             }
 

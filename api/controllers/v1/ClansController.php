@@ -418,6 +418,10 @@ class ClansController extends BaseApiController
             $items[] = $this->serializeMember($m, $clan, $viewer, $row);
         }
 
+        if ($includeFormer) {
+            $items = $this->mergeClanMemberItemsByUserId($items);
+        }
+
         return $this->successResponse([
             'items' => $items,
             'include_former' => $includeFormer,
@@ -943,6 +947,178 @@ class ClansController extends BaseApiController
         ];
 
         return $data;
+    }
+
+    /**
+     * В UI один пользователь = одна строка: при нескольких записях clan_members (вышел и снова вступил)
+     * объединяем по user_id. Технически id остаётся от активного членства (кик/права); вклад за вайп — сумма периодов.
+     *
+     * @param array<int, array<string, mixed>> $items
+     * @return array<int, array<string, mixed>>
+     */
+    protected function mergeClanMemberItemsByUserId(array $items): array
+    {
+        $groups = [];
+        $withoutUserId = [];
+        foreach ($items as $item) {
+            $uid = (int)($item['user_id'] ?? 0);
+            if ($uid <= 0) {
+                $withoutUserId[] = $item;
+                continue;
+            }
+            $groups[$uid][] = $item;
+        }
+
+        $out = [];
+        foreach ($groups as $uid => $group) {
+            if (count($group) === 1) {
+                $out[] = $group[0];
+                continue;
+            }
+
+            usort($group, static function (array $a, array $b): int {
+                $ja = strtotime((string)($a['join_date'] ?? '')) ?: 0;
+                $jb = strtotime((string)($b['join_date'] ?? '')) ?: 0;
+
+                return $ja <=> $jb;
+            });
+
+            $activeRow = null;
+            foreach ($group as $row) {
+                if (!empty($row['is_active'])) {
+                    $activeRow = $row;
+                    break;
+                }
+            }
+
+            $lastSpell = $group[count($group) - 1];
+            $primary = $activeRow ?? $lastSpell;
+
+            $firstJoin = $group[0]['join_date'] ?? null;
+            $lastLeave = null;
+            $lastLeaveTs = 0;
+            foreach ($group as $row) {
+                if (empty($row['leave_date'])) {
+                    continue;
+                }
+                $t = strtotime((string)$row['leave_date']);
+                if ($t !== false && $t >= $lastLeaveTs) {
+                    $lastLeaveTs = $t;
+                    $lastLeave = $row['leave_date'];
+                }
+            }
+
+            $statsParts = [];
+            foreach ($group as $row) {
+                if (!empty($row['wipe_statistics']) && is_array($row['wipe_statistics'])) {
+                    $statsParts[] = $row['wipe_statistics'];
+                }
+            }
+            $mergedStats = $this->mergeSerializedMemberStatistics($statsParts);
+
+            $merged = $primary;
+            $merged['id'] = (int)$primary['id'];
+            $merged['user_id'] = $uid;
+            $merged['join_date'] = $firstJoin;
+            $merged['leave_date'] = $activeRow ? null : $lastLeave;
+            $merged['is_active'] = $activeRow !== null;
+            $merged['role'] = $primary['role'];
+            $merged['permission_keys'] = $primary['permission_keys'] ?? [];
+            $merged['user'] = $primary['user'] ?? null;
+
+            if ($mergedStats !== null) {
+                if ($activeRow !== null) {
+                    $mergedStats['member_status'] = ClanMemberStatistics::STATUS_ACTIVE;
+                    $mergedStats['frozen_at'] = null;
+                } else {
+                    $mergedStats['member_status'] = ClanMemberStatistics::STATUS_FORMER;
+                    if (!isset($mergedStats['frozen_at'])) {
+                        $maxFrozen = 0;
+                        foreach ($statsParts as $p) {
+                            if (isset($p['frozen_at']) && (int)$p['frozen_at'] > $maxFrozen) {
+                                $maxFrozen = (int)$p['frozen_at'];
+                            }
+                        }
+                        $mergedStats['frozen_at'] = $maxFrozen > 0 ? $maxFrozen : null;
+                    }
+                }
+                $merged['wipe_statistics'] = $mergedStats;
+            } else {
+                unset($merged['wipe_statistics']);
+            }
+
+            $merged['membership_periods'] = count($group);
+            $out[] = $merged;
+        }
+
+        usort($out, static function (array $a, array $b): int {
+            $order = ['leader' => 0, 'officer' => 1, 'member' => 2];
+            $ra = $order[$a['role'] ?? ''] ?? 9;
+            $rb = $order[$b['role'] ?? ''] ?? 9;
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+            $aa = !empty($a['is_active']);
+            $ab = !empty($b['is_active']);
+            if ($aa !== $ab) {
+                return $aa ? -1 : 1;
+            }
+            $ja = strtotime((string)($a['join_date'] ?? '')) ?: 0;
+            $jb = strtotime((string)($b['join_date'] ?? '')) ?: 0;
+
+            return $ja <=> $jb;
+        });
+
+        return array_merge($out, $withoutUserId);
+    }
+
+    /**
+     * Суммируем счётчики вклада за вайп по нескольким clan_member_id одного user_id; top_* и level/exp — по max.
+     *
+     * @param array<int, array<string, mixed>> $parts
+     * @return array<string, mixed>|null
+     */
+    protected function mergeSerializedMemberStatistics(array $parts): ?array
+    {
+        $parts = array_values(array_filter($parts));
+        if ($parts === []) {
+            return null;
+        }
+        if (count($parts) === 1) {
+            return $parts[0];
+        }
+
+        $skip = [
+            'id', 'clan_member_id', 'clan_id', 'user_id', 'server_id', 'wipe',
+            'created_at', 'updated_at', 'member_status', 'frozen_at',
+        ];
+        $maxOnlyKeys = ['level', 'experience'];
+
+        $merged = $parts[0];
+        for ($i = 1, $n = count($parts); $i < $n; $i++) {
+            $s = $parts[$i];
+            foreach ($s as $k => $v) {
+                if (in_array($k, $skip, true)) {
+                    continue;
+                }
+                if ($v === null || $v === '') {
+                    continue;
+                }
+                if (!is_numeric($v)) {
+                    continue;
+                }
+                $prev = $merged[$k] ?? 0;
+                if (strpos((string)$k, 'top_') === 0) {
+                    $merged[$k] = max((float)$prev, (float)$v);
+                } elseif (in_array($k, $maxOnlyKeys, true)) {
+                    $merged[$k] = max((int)$prev, (int)$v);
+                } else {
+                    $merged[$k] = (int)$prev + (int)$v;
+                }
+            }
+        }
+
+        return $merged;
     }
 
     protected function serializeMember(ClanMember $member, Clan $clan, ?ClanMember $viewer, ?ClanMemberStatistics $wipeStatistics = null): array
