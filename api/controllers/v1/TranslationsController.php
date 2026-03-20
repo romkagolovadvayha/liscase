@@ -26,7 +26,8 @@ class TranslationsController extends BaseApiController
      * Ответ: { "key": "translation", ... } — ключ как в language_source.message.
      * Ключи: GET ?keys= (для коротких без запятых) или POST body JSON {"keys": ["текст1", "текст2"]}.
      */
-    private const TRANSLATIONS_CACHE_TTL = 1800; // 30 минут
+    private const TRANSLATIONS_CACHE_TTL = 300; // 5 минут
+    private const NEW_FRONT_CACHE_TTL = 300; // 5 минут
 
     public function actionIndex()
     {
@@ -55,7 +56,7 @@ class TranslationsController extends BaseApiController
         foreach ($rows as $row) {
             $data[$row['message']] = (string) ($row['translation'] ?? $row['message']);
         }
-        Yii::$app->cache->set($cacheKey, $data, self::TRANSLATIONS_CACHE_TTL);
+        Yii::$app->cache->set($cacheKey, $data, self::NEW_FRONT_CACHE_TTL);
 
         return $this->successResponse($data);
     }
@@ -163,6 +164,10 @@ class TranslationsController extends BaseApiController
                 Yii::warning('telegramChats sendMessage failed: ' . $e->getMessage(), __METHOD__);
             }
         }
+
+        // Инвалидируем кэш new_front для текущего языка после report-missing,
+        // чтобы новый/добавленный перевод был доступен сразу.
+        Yii::$app->cache->delete('api_translations_new_front_' . $language);
 
         return $this->successResponse(['reported' => true, 'translation' => $translatedText]);
     }

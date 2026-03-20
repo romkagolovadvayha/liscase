@@ -71,6 +71,9 @@ class SettingsController extends BaseApiController
      */
     public function actionIndex()
     {
+        Yii::$app->response->headers->set('Cache-Control', 'public, max-age=' . SettingsCacheHelper::CACHE_TTL);
+        Yii::$app->response->headers->set('Vary', 'Accept-Language');
+
         $categoriesParam = Yii::$app->request->get('categories');
         $requestedCategories = $categoriesParam ? explode(',', $categoriesParam) : null;
 
