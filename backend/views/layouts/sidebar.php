@@ -104,6 +104,14 @@ if ($moderOrSupport) {
 }
 if ($moder) {
     $moderationItems[] = [
+        'label' => Yii::t('common', 'Кланы'),
+        'icon' => 'fas fa-users-gear',
+        'url' => ['/clan/index'],
+        'active' => _checkActive('/clan'),
+    ];
+}
+if ($moder) {
+    $moderationItems[] = [
         'label' => Yii::t('common', 'Постройки'),
         'icon' => 'fa-solid fa-house',
         'badgeDanger' => $buildingBadge,

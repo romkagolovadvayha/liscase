@@ -58,6 +58,15 @@ $config['modules']['crontask'] = [
             'command' => 'support/check',
             'min'     => '*',
         ],
+        'clanRefreshActiveMembersCache' => [
+            'command' => 'clan/refresh-active-members-cache',
+            'min'     => '*/5',
+        ],
+        /** Полный пересчёт клановой статистики по серверам (после пакетов stats в statistics). */
+        'clanUpdateStatistics' => [
+            'command' => 'clan/update-statistics',
+            'min'     => '*/15',
+        ],
         'userUpdate'       => [
             'command' => 'user/update',
             'min'     => '*',

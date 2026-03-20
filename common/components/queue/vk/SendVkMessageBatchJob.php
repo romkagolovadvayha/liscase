@@ -107,3 +107,7 @@ class SendVkMessageBatchJob extends BaseObject implements JobInterface
     }
 }
 
+
+
+
+

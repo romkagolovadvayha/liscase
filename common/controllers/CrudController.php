@@ -104,6 +104,9 @@ abstract class CrudController extends WebController
 
         if ($id) {
             $formModel = $className::findOne($id);
+            if ($formModel === null) {
+                throw new NotFoundHttpException(Yii::t('yii', 'Page not found.'));
+            }
         } else {
             $formModel = new $className();
         }

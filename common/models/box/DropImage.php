@@ -329,4 +329,84 @@ class DropImage extends ActiveRecord
         }
         return file_exists($destinationPath) && is_readable($destinationPath);
     }
+
+    /**
+     * Обрезка по меньшей стороне и ресайз до квадрата targetSize x targetSize.
+     * Центральный квадрат min(width, height) вырезается и масштабируется до targetSize.
+     *
+     * @param string $sourcePath      путь к исходному файлу
+     * @param string $destinationPath путь к результату (PNG)
+     * @param int    $targetSize      сторона квадрата в пикселях (например 250)
+     * @return bool
+     */
+    public static function resizeImageByMinSide($sourcePath, $destinationPath, $targetSize)
+    {
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+        if ($extension === 'svg') {
+            return false;
+        }
+        if (!file_exists($sourcePath) || !is_readable($sourcePath)) {
+            \Yii::error('Source image file does not exist or is not readable: ' . $sourcePath, __METHOD__);
+            return false;
+        }
+        try {
+            $image = Image::getImagine()->open($sourcePath);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to open image: ' . $sourcePath . ' - ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        $size = $image->getSize();
+        $originalWidth = $size->getWidth();
+        $originalHeight = $size->getHeight();
+        if ($originalWidth <= 0 || $originalHeight <= 0) {
+            return false;
+        }
+        $cropSide = min($originalWidth, $originalHeight);
+        $startX = (int) floor(($originalWidth - $cropSide) / 2);
+        $startY = (int) floor(($originalHeight - $cropSide) / 2);
+        $cropBox = new \Imagine\Image\Box($cropSide, $cropSide);
+        $point = new \Imagine\Image\Point($startX, $startY);
+        try {
+            $cropped = $image->crop($point, $cropBox);
+            $resizedImage = $cropped->resize(new \Imagine\Image\Box($targetSize, $targetSize));
+        } catch (\Exception $e) {
+            \Yii::error('Failed to crop/resize image by min side: ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        $destinationDir = dirname($destinationPath);
+        if ($destinationDir !== '.' && $destinationDir !== '/' && !file_exists($destinationDir)) {
+            @mkdir($destinationDir, 0777, true);
+        }
+        try {
+            $resizedImage->save($destinationPath, [
+                'format' => 'png',
+                'png_compression_level' => 9,
+                'flatten' => false,
+            ]);
+        } catch (\Exception $e) {
+            \Yii::error('Failed to save resized image: ' . $e->getMessage(), __METHOD__);
+            return false;
+        }
+        if ($targetSize === 250) {
+            try {
+                if (method_exists('\Tinify\Tinify', 'setTimeout')) {
+                    \Tinify\Tinify::setTimeout(3);
+                }
+                \Tinify\setKey("dY4rkCVRZxqxWD3wZcCdysWBbM7CGWB8");
+                $source = \Tinify\fromFile($destinationPath);
+                $source->toFile($destinationPath);
+            } catch (\Tinify\Exception $e) {
+                try {
+                    \Tinify\setKey("SQMyJN0ZNs1zQfzrwBjMcsRHCnpffCbl");
+                    $source = \Tinify\fromFile($destinationPath);
+                    $source->toFile($destinationPath);
+                } catch (\Tinify\Exception $e2) {
+                    \Yii::info('Tinify skip for video poster 250: ' . $e2->getMessage(), __METHOD__);
+                }
+            } catch (\Exception $e) {
+                \Yii::info('Tinify error: ' . $e->getMessage(), __METHOD__);
+            }
+        }
+        return file_exists($destinationPath) && is_readable($destinationPath);
+    }
 }

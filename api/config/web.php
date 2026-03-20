@@ -88,6 +88,33 @@ $config = [
                 'v1/user/promocode' => 'v1/user/promocode',
                 'v1/user/promocode/activate' => 'v1/user/activate-promocode',
 
+                // Clans (просмотр без JWT; управление — с Bearer JWT)
+                'v1/clans/permissions' => 'v1/clans/permissions',
+                'v1/clans/rankings' => 'v1/clans/rankings',
+                'v1/clans/my-invites' => 'v1/clans/my-invites',
+                'v1/clans/my-memberships' => 'v1/clans/my-memberships',
+                ['pattern' => 'v1/clans/invites/<inviteId:\d+>/accept', 'route' => 'v1/clans/accept-invite', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/invites/<inviteId:\d+>/decline', 'route' => 'v1/clans/decline-invite', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans', 'route' => 'v1/clans/create', 'verb' => ['POST']],
+                'v1/clans' => 'v1/clans/index',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics/member/<memberId:\d+>' => 'v1/clans/member-statistics',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics' => 'v1/clans/statistics',
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members/<memberId:\d+>/permissions', 'route' => 'v1/clans/member-permissions', 'verb' => ['GET', 'POST', 'PUT', 'PATCH']],
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members' => 'v1/clans/members',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/history' => 'v1/clans/history',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/achievements' => 'v1/clans/achievements',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/invites' => 'v1/clans/invites-list',
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/invite', 'route' => 'v1/clans/invite', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/leave', 'route' => 'v1/clans/leave', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/kick', 'route' => 'v1/clans/kick', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/promote', 'route' => 'v1/clans/promote', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/demote', 'route' => 'v1/clans/demote', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/transfer-leadership', 'route' => 'v1/clans/transfer-leadership', 'verb' => ['POST']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/privacy', 'route' => 'v1/clans/privacy', 'verb' => ['PATCH', 'PUT']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>', 'route' => 'v1/clans/delete', 'verb' => ['DELETE']],
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>', 'route' => 'v1/clans/update', 'verb' => ['PATCH', 'PUT']],
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>' => 'v1/clans/view',
+
                 // Settings
                 'v1/settings' => 'v1/settings/index',
 

@@ -9,6 +9,10 @@ use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
 
+/**
+ * Пакетно пишет дельты в {@see Statistics}. Пересчёт кланов не делается здесь — только cron
+ * `console yii clan/update-statistics` → {@see \common\components\queue\clan\UpdateClanStatisticsJob}.
+ */
 class UpdateStatsUsersJob extends BaseObject implements JobInterface
 {
     /** @var array [steam_id => [key => value, ...], ...] */

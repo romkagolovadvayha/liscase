@@ -12,7 +12,7 @@ use common\models\site\SiteSetting;
 class SettingsCacheHelper
 {
     /** Категории по умолчанию (как в SettingsController::ALLOWED_CATEGORIES). */
-    public const DEFAULT_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip'];
+    public const DEFAULT_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot'];
 
     /** TTL кэша в секундах (1 час). */
     public const CACHE_TTL = 3600;
@@ -47,6 +47,12 @@ class SettingsCacheHelper
             foreach ($categorySettings as $setting) {
                 $key = $setting->code;
                 $fullKey = $category . '_' . $key;
+
+                // Категория tgbot публично отдает только login (без токенов/chatId и прочих служебных полей)
+                if ($category === 'tgbot' && $key !== 'login') {
+                    continue;
+                }
+
                 if (self::isSecretKey($fullKey)) {
                     continue;
                 }

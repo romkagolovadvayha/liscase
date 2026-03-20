@@ -81,6 +81,7 @@ class ServersCacheHelper
             'nextWipeTimestamp' => $server->next_wipe ? (($ts = strtotime($server->next_wipe)) !== false ? $ts : null) : null,
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
             'wipe_type' => (int) ($server->wipe_type ?? 0),
+            'wipe_weekday' => (int) ($server->wipe_weekday ?? 5),
             'current_wipe' => $server->wipe ?? null,
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,
