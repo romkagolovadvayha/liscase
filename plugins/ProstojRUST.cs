@@ -14,7 +14,7 @@ using WebSocketSharp;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.4.1")]
+    [Info("ProstojRUST", "prostoj.store", "0.4.2")]
     public class ProstojRUST : RustPlugin
     {
         #region References
@@ -87,8 +87,14 @@ namespace Oxide.Plugins
 
             public class Interface
             {
+                [JsonProperty("Включить интерфейс /store")]
+                public bool EnableStoreUI = true;
+                [JsonProperty("Загружать стандартные изображения через клиент")]
+                public bool LoadSpriteImages = true;
+                [JsonProperty("Выполнять instant-команды, если игрок не на сервере")]
+                public bool ExecuteInstantCommandsWhenNotInServer = true;
                 [JsonProperty("Включить изображение корзины")]
-                public bool BucketEnable = true;
+                public bool BucketEnable = false;
                 [JsonProperty("Включить отображение названий предметов")]
                 public bool TextShow = true;
                 [JsonProperty("Ссылка на изображение корзины (BUCKET - стандартное изображение)")]
@@ -161,6 +167,7 @@ namespace Oxide.Plugins
                 try
                 {
                     if (data.ContainsKey("id")) ID = data["id"].ToString();
+                    if (string.IsNullOrEmpty(ID) && data.ContainsKey("basketId")) ID = data["basketId"].ToString();
 
                     if (data.ContainsKey("name")) Name = data["name"].ToString();
                     if (data.ContainsKey("item_id"))
@@ -198,10 +205,12 @@ namespace Oxide.Plugins
 							isBlockedBuilding = false;
 					}
 
-                    if (data.ContainsKey("block_date") && data["block_date"] is int)
-                    {
-                        double.TryParse(data["block_date"].ToString(), out Block_Date);
-                    }
+                    if (data.ContainsKey("block_date"))
+                        Block_Date = ParseBlockDate(data["block_date"]);
+                    if (data.ContainsKey("blocked_at"))
+                        Block_Date = Math.Max(Block_Date, ParseBlockDate(data["blocked_at"]));
+                    if (data.ContainsKey("blockedAt"))
+                        Block_Date = Math.Max(Block_Date, ParseBlockDate(data["blockedAt"]));
 
                     if (data.ContainsKey("type"))
                     {
@@ -286,6 +295,24 @@ namespace Oxide.Plugins
                     Interface.Oxide.LogError(JsonConvert.SerializeObject(data));
                 }
             }
+
+            private static double ParseBlockDate(object value)
+            {
+                if (value == null) return 0;
+                var text = value.ToString();
+                if (string.IsNullOrEmpty(text)) return 0;
+
+                if (double.TryParse(text, out var unix))
+                {
+                    if (unix > 9999999999) unix /= 1000d;
+                    return unix;
+                }
+
+                if (DateTime.TryParse(text, out var dt))
+                    return (dt.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds;
+
+                return 0;
+            }
 			// Хелпер для добавления SubDrop
 			void ParseSubDrop(JObject subObj)
 			{
@@ -310,15 +337,19 @@ namespace Oxide.Plugins
         private static bool SecureConnection = true;
         private static ProstojRUST instance;
         private static Configuration Settings = new Configuration();
-        private string ShopURL = "UNDEFINED";
+        private string ShopURL = "PROSTOJ.STORE";
         private int StartBalance = 0;
         public string NoImageID = "";
         public string LoadingImageID = "";
         private Coroutine LoadingCoroutine;
         private Dictionary<int, Dictionary<ulong, int>> ListTimeOutCommand = new Dictionary<int, Dictionary<ulong, int>>();
         private Dictionary<ulong, List<int>> playersBasketCache = new Dictionary<ulong, List<int>>();
+        private readonly Dictionary<ulong, List<WItem>> playerBaskets = new Dictionary<ulong, List<WItem>>();
         private HashSet<ulong> ListBannedCommandUserID = new HashSet<ulong>();
         private Timer TimerCheckInstant;
+        private const string StoreLayer = "ProstojRUST.Store";
+        private const string HelpLayer = "ProstojRUST.Help";
+        private const string IconLayer = "ProstojRUST.Icon";
         private string MainApiLink = "https://prostoj.store/api/";
         private string ReserveApiLink = "https://prostoj.store/api/";
         //private string BaseRequest => $"https://gamestores.app/api/?shop_id={Settings.APISettings.ShopID}&secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
@@ -589,7 +620,9 @@ namespace Oxide.Plugins
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
             foreach (var pl in BasePlayer.activePlayerList)
             {
-                OnPlayerConnected(pl);
+                CuiHelper.DestroyUi(pl, IconLayer);
+                CuiHelper.DestroyUi(pl, StoreLayer);
+                CuiHelper.DestroyUi(pl, HelpLayer);
             }
         }
 
@@ -609,6 +642,8 @@ namespace Oxide.Plugins
                 NextTick(() => OnPlayerConnected(player));
                 return;
             }
+
+            InitializeIcon(player);
         }
 
         #endregion
@@ -761,10 +796,46 @@ namespace Oxide.Plugins
         [ChatCommand("store")]
         private void CmdChatStore(BasePlayer player, string command, string[] args)
         {
-			player.SendConsoleCommand("chat.add", 0, 76561198394504608, "Чтобы вывести предметы перейдите по ссылке prostoj.store/store");
-			return;
+            if (!Initialized || initialization)
+            {
+                player.ChatMessage(_(player, "PluginNotInitialized"));
+                return;
+            }
+
+            if (!Settings.InterfaceSettings.EnableStoreUI)
+            {
+                player.SendConsoleCommand("chat.add", 0, 76561198394504608, "Чтобы вывести предметы перейдите по ссылке prostoj.store/store");
+                return;
+            }
+
+            ShowStoreUI(player, 0);
         }
-		
+
+        [ConsoleCommand("UI_ProstojRUST")]
+        private void CmdStoreUi(ConsoleSystem.Arg args)
+        {
+            var player = args.Player();
+            if (player == null || !args.HasArgs()) return;
+
+            var action = args.Args[0];
+            switch (action)
+            {
+                case "page":
+                    ShowStoreUI(player, args.GetInt(1), false);
+                    return;
+                case "help":
+                    ShowHelpUI(player);
+                    return;
+                case "take":
+                    RequestTakeFromBasket(player, args.GetInt(1), args.GetInt(2));
+                    return;
+                case "close":
+                    CuiHelper.DestroyUi(player, StoreLayer);
+                    CuiHelper.DestroyUi(player, HelpLayer);
+                    return;
+            }
+        }
+
        [ConsoleCommand("store.take")]
         private void GoDraw(ConsoleSystem.Arg args) {
             if (!args.IsAdmin || args.IsClientside) 
@@ -908,6 +979,481 @@ namespace Oxide.Plugins
 
 			return !closestTc.IsAuthed(player);
 		}
+
+        private int BasketItemsPerPage => Settings.InterfaceSettings.ItemOnString * Settings.InterfaceSettings.StringAmount;
+
+        private void ShowStoreUI(BasePlayer player, int page, bool first = true)
+        {
+            CuiHelper.DestroyUi(player, HelpLayer);
+            CuiHelper.DestroyUi(player, StoreLayer);
+
+            var container = new CuiElementContainer();
+            container.Add(new CuiPanel
+            {
+                CursorEnabled = true,
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                Image = { Color = "0 0 0 0.9", Material = "assets/content/ui/uibackgroundblur.mat" }
+            }, "Overlay", StoreLayer, StoreLayer);
+
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.92", AnchorMax = "1 0.98" },
+                Text = { Text = _(player, "BASKET"), Align = TextAnchor.MiddleCenter, FontSize = 30, Font = "robotocondensed-bold.ttf" }
+            }, StoreLayer);
+
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.87", AnchorMax = "1 0.92" },
+                Text = { Text = _(player, "BASKET.DESCRIPTION"), Align = TextAnchor.MiddleCenter, FontSize = 18, Font = "robotocondensed-regular.ttf" }
+            }, StoreLayer);
+
+            container.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0.02 0.92", AnchorMax = "0.13 0.975" },
+                Button = { Color = "0.2 0.2 0.2 0.9", Command = "UI_ProstojRUST help" },
+                Text = { Text = _(player, "HELP"), Align = TextAnchor.MiddleCenter, FontSize = 18, Font = "robotocondensed-bold.ttf" }
+            }, StoreLayer);
+
+            container.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0.87 0.92", AnchorMax = "0.98 0.975" },
+                Button = { Color = "0.55 0.2 0.2 0.9", Command = "UI_ProstojRUST close", Close = StoreLayer },
+                Text = { Text = _(player, "EXIT"), Align = TextAnchor.MiddleCenter, FontSize = 18, Font = "robotocondensed-bold.ttf" }
+            }, StoreLayer);
+
+            container.Add(new CuiPanel
+            {
+                RectTransform = { AnchorMin = "0.05 0.08", AnchorMax = "0.95 0.84" },
+                Image = { Color = "0 0 0 0.25" }
+            }, StoreLayer, StoreLayer + ".BlockPanel", StoreLayer + ".BlockPanel");
+
+            CuiHelper.AddUi(player, container);
+
+            if (first) RequestBasket(player, page);
+            else ShowBasketItemsUI(player, page);
+        }
+
+        private void ShowHelpUI(BasePlayer player)
+        {
+            CuiHelper.DestroyUi(player, StoreLayer);
+            CuiHelper.DestroyUi(player, HelpLayer);
+
+            var container = new CuiElementContainer();
+            container.Add(new CuiPanel
+            {
+                CursorEnabled = true,
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                Image = { Color = "0 0 0 0.9", Material = "assets/content/ui/uibackgroundblur.mat" }
+            }, "Overlay", HelpLayer, HelpLayer);
+
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.6", AnchorMax = "1 0.78" },
+                Text = { Text = _(player, "USER.MANUAL"), Align = TextAnchor.MiddleCenter, FontSize = 34, Font = "robotocondensed-bold.ttf" }
+            }, HelpLayer);
+
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.3", AnchorMax = "1 0.72" },
+                Text = { Text = _(player, "USER.MANUAL.DESCRIPTION"), Align = TextAnchor.MiddleCenter, FontSize = 22, Font = "robotocondensed-regular.ttf" }
+            }, HelpLayer);
+
+            var addText = StartBalance > 0 ? _(player, "USER.MANUAL.BALANCE", StartBalance) : string.Empty;
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.1", AnchorMax = "1 0.48" },
+                Text = { Text = $"{addText}\n{ShopURL.ToUpper()}", Align = TextAnchor.MiddleCenter, FontSize = 30, Font = "robotocondensed-regular.ttf" }
+            }, HelpLayer);
+
+            container.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                Button = { Color = "0 0 0 0", Command = "chat.say /store", Close = HelpLayer },
+                Text = { Text = string.Empty }
+            }, HelpLayer);
+
+            CuiHelper.AddUi(player, container);
+        }
+
+        private void ShowNotify(BasePlayer player, string text, float destroyTime = 2.5f)
+        {
+            var notifyName = StoreLayer + ".Notify";
+            CuiHelper.DestroyUi(player, notifyName);
+            var container = new CuiElementContainer();
+            container.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0 0.77", AnchorMax = "1 0.87" },
+                Text = { Text = text, Align = TextAnchor.UpperCenter, Font = "robotocondensed-regular.ttf", FontSize = 16 }
+            }, StoreLayer, notifyName, notifyName);
+            CuiHelper.AddUi(player, container);
+            if (destroyTime > 0f) timer.Once(destroyTime, () => CuiHelper.DestroyUi(player, notifyName));
+        }
+
+        private void RequestBasket(BasePlayer player, int page)
+        {
+            Request($"&method=basket&basket=true&steam_id={player.UserIDString}", (code, response) =>
+            {
+                if (code != 200 || string.IsNullOrEmpty(response))
+                {
+                    ShowNotify(player, _(player, "BASKET.UNAVAILABLE"));
+                    return;
+                }
+
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
+                if (data == null || !data.ContainsKey("result") || data["result"]?.ToString() != "success")
+                {
+                    ShowNotify(player, _(player, "BASKET.NO.AUTH"));
+                    return;
+                }
+
+                var newItems = new List<WItem>();
+                var list = data.ContainsKey("data") ? data["data"] as List<object> : null;
+                if (list != null)
+                {
+                    foreach (var obj in list)
+                    {
+                        var raw = obj as Dictionary<string, object>;
+                        if (raw == null) continue;
+                        var item = new WItem(raw);
+                        if (!string.IsNullOrEmpty(item.ID)) newItems.Add(item);
+                    }
+                }
+
+                playerBaskets[player.userID] = newItems;
+                ShowBasketItemsUI(player, page);
+            }, player);
+        }
+
+        private void ShowBasketItemsUI(BasePlayer player, int page)
+        {
+            CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel.Content");
+
+            if (!playerBaskets.TryGetValue(player.userID, out var basket))
+            {
+                ShowNotify(player, _(player, "BASKET.EMPTY"));
+                return;
+            }
+
+            var content = new CuiElementContainer();
+            var contentRoot = StoreLayer + ".BlockPanel.Content";
+            content.Add(new CuiPanel
+            {
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                Image = { Color = "0 0 0 0" }
+            }, StoreLayer + ".BlockPanel", contentRoot, contentRoot);
+
+            var start = Math.Max(0, page * BasketItemsPerPage);
+            var pageItems = basket.Skip(start).Take(BasketItemsPerPage).ToList();
+
+            content.Add(new CuiLabel
+            {
+                RectTransform = { AnchorMin = "0.45 -0.04", AnchorMax = "0.55 0.04" },
+                Text = { Text = (page + 1).ToString(), Align = TextAnchor.MiddleCenter, FontSize = 28, Font = "robotocondensed-bold.ttf" }
+            }, contentRoot);
+
+            content.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0.37 -0.04", AnchorMax = "0.44 0.04" },
+                Button = { Color = "0 0 0 0.35", Command = page > 0 ? $"UI_ProstojRUST page {page - 1}" : string.Empty },
+                Text = { Text = "<", Align = TextAnchor.MiddleCenter, FontSize = 34 }
+            }, contentRoot);
+
+            content.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0.56 -0.04", AnchorMax = "0.63 0.04" },
+                Button = { Color = "0 0 0 0.35", Command = (start + BasketItemsPerPage) < basket.Count ? $"UI_ProstojRUST page {page + 1}" : string.Empty },
+                Text = { Text = ">", Align = TextAnchor.MiddleCenter, FontSize = 34 }
+            }, contentRoot);
+
+            for (var i = 0; i < pageItems.Count; i++)
+            {
+                double x = 0;
+                double y = 0;
+                UI_RecountPosition(ref x, ref y, i, BasketItemsPerPage);
+                var item = pageItems[i];
+                var itemRoot = $"{contentRoot}.item.{i}";
+                var itemId = 0;
+                int.TryParse(item.ID, out itemId);
+
+                content.Add(new CuiPanel
+                {
+                    RectTransform =
+                    {
+                        AnchorMin = "0.5 0.58",
+                        AnchorMax = "0.5 0.58",
+                        OffsetMin = $"{x} {y - Settings.InterfaceSettings.ItemSide}",
+                        OffsetMax = $"{x + Settings.InterfaceSettings.ItemSide} {y}"
+                    },
+                    Image = { Color = "0.12 0.12 0.12 0.85" }
+                }, contentRoot, itemRoot, itemRoot);
+
+                if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
+                {
+                    content.Add(new CuiElement
+                    {
+                        Parent = itemRoot,
+                        Components =
+                        {
+                            new CuiImageComponent { ItemId = item.ItemID },
+                            new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "5 5", OffsetMax = "-5 -5" }
+                        }
+                    });
+                }
+                else if (!string.IsNullOrEmpty(item.ImageUrl))
+                {
+                    var isUrl = item.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+                    if (isUrl)
+                    {
+                        content.Add(new CuiElement
+                        {
+                            Parent = itemRoot,
+                            Components =
+                            {
+                                new CuiRawImageComponent { Url = item.ImageUrl },
+                                new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "5 5", OffsetMax = "-5 -5" }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        content.Add(new CuiElement
+                        {
+                            Parent = itemRoot,
+                            Components =
+                            {
+                                new CuiRawImageComponent { Png = item.ImageUrl },
+                                new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "5 5", OffsetMax = "-5 -5" }
+                            }
+                        });
+                    }
+                }
+
+                if (item.Amount > 1)
+                {
+                    content.Add(new CuiLabel
+                    {
+                        RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "0 4", OffsetMax = "-6 -4" },
+                        Text = { Text = "x" + item.Amount, Align = TextAnchor.LowerRight, FontSize = 20, Font = "robotocondensed-bold.ttf" }
+                    }, itemRoot);
+                }
+
+                content.Add(new CuiButton
+                {
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                    Button = { Color = "0 0 0 0", Command = $"UI_ProstojRUST take {i} {itemId}" },
+                    Text = { Text = string.Empty }
+                }, itemRoot);
+
+                var blockedLeft = item.Block_Date - CurrentTime();
+                if (item.Blocked || blockedLeft > 0)
+                {
+                    content.Add(new CuiButton
+                    {
+                        RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMax = "0 0" },
+                        Button = { FadeIn = 1f, Color = "1 0.5 0.5 0.2", Command = $"UI_ProstojRUST take {i} {itemId}" },
+                        Text =
+                        {
+                            Text = $"ЗАБЛОКИРОВАНО\n{FormatLeftTime(blockedLeft)}",
+                            Align = TextAnchor.MiddleCenter,
+                            Font = "robotocondensed-bold.ttf",
+                            Color = "1 0.7 0.7 1",
+                            FontSize = 12
+                        }
+                    }, itemRoot, itemRoot + ".blocked", itemRoot + ".blocked");
+                }
+
+                if (Settings.InterfaceSettings.TextShow)
+                {
+                    content.Add(new CuiLabel
+                    {
+                        RectTransform = { AnchorMin = "0 0", AnchorMax = "1 0", OffsetMin = "0 -22", OffsetMax = "0 0" },
+                        Text = { Text = item.Name ?? "Item", Align = TextAnchor.MiddleCenter, FontSize = 14, Color = "1 1 1 0.8" }
+                    }, itemRoot);
+                }
+            }
+
+            if (pageItems.Count == 0)
+            {
+                content.Add(new CuiLabel
+                {
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                    Text = { Text = _(player, "BASKET.EMPTY"), Align = TextAnchor.MiddleCenter, FontSize = 22, Font = "robotocondensed-bold.ttf" }
+                }, contentRoot);
+            }
+
+            CuiHelper.AddUi(player, content);
+        }
+
+        private void RequestTakeFromBasket(BasePlayer player, int index, int basketId)
+        {
+            if (basketId <= 0)
+            {
+                ShowNotify(player, _(player, "ItemNotFound"));
+                return;
+            }
+
+            if (playerBaskets.TryGetValue(player.userID, out var basketItems))
+            {
+                var selected = basketItems.FirstOrDefault(x => int.TryParse(x.ID, out var id) && id == basketId);
+                if (selected != null)
+                {
+                    var leftTime = selected.Block_Date - CurrentTime();
+                    if (selected.Blocked || leftTime > 0)
+                    {
+                        ShowNotify(player, _(player, "TAKE.ITEM.BLOCKED", FormatLeftTime(leftTime)));
+                        return;
+                    }
+                }
+            }
+
+            if (ListBannedCommandUserID.Contains(player.userID))
+            {
+                ShowNotify(player, _(player, "PlayerFloodBlock"));
+                ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                return;
+            }
+
+            if (player.IsDead() || player.IsWounded())
+            {
+                ShowNotify(player, "Игрок мертв или ранен");
+                ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                return;
+            }
+
+            ShowNotify(player, _(player, "TAKE.REQUEST.PROCESSING"));
+            ShowItemStateOverlay(player, index, basketId, "TAKE.WAIT", "1 1 1 0.2", "1 1 1 0.4", false);
+
+            Request($"&method=item&item=true&steam_id={player.UserIDString}&id={basketId}", (code, response) =>
+            {
+                if (code != 200 || string.IsNullOrEmpty(response))
+                {
+                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
+                    ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                    return;
+                }
+
+                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
+                if (data == null || !data.ContainsKey("data"))
+                {
+                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
+                    ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                    return;
+                }
+
+                Request($"&method=gived&gived=true&id={basketId}", (markCode, markResponse) =>
+                {
+                    if (markCode != 200 || JsonConvert.DeserializeObject<JObject>(markResponse)?["result"]?.ToString() != "success")
+                    {
+                        ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
+                        ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                        return;
+                    }
+
+                    ProcessTake(player, data["data"] as Dictionary<string, object>);
+                    ShowNotify(player, _(player, "TAKE.GIVE.SUCCESS"));
+                    ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.SUCCESS", "0.5 1 0.5 0.2", "0.7 1 0.7 1", false);
+
+                    if (playerBaskets.TryGetValue(player.userID, out var list))
+                    {
+                        var idx = list.FindIndex(x => int.TryParse(x.ID, out var id) && id == basketId);
+                        if (idx >= 0) list.RemoveAt(idx);
+                    }
+                }, player);
+            }, player);
+        }
+
+        private void ShowItemStateOverlay(BasePlayer player, int index, int basketId, string textKey, string color, string textColor, bool keepClickable = true)
+        {
+            var itemRoot = StoreLayer + ".BlockPanel.Content.item." + index;
+            var overlay = itemRoot + ".Open";
+            CuiHelper.DestroyUi(player, overlay);
+
+            var container = new CuiElementContainer();
+            container.Add(new CuiButton
+            {
+                RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMax = "0 0" },
+                Button =
+                {
+                    FadeIn = 1f,
+                    Color = color,
+                    Close = keepClickable ? overlay : string.Empty,
+                    Command = keepClickable ? $"UI_ProstojRUST take {index} {basketId}" : string.Empty
+                },
+                Text =
+                {
+                    Text = _(player, textKey),
+                    Align = TextAnchor.MiddleCenter,
+                    Font = "robotocondensed-bold.ttf",
+                    Color = textColor,
+                    FontSize = 12
+                }
+            }, itemRoot, overlay, overlay);
+            CuiHelper.AddUi(player, container);
+        }
+
+        private string FormatLeftTime(double seconds)
+        {
+            var sec = Math.Max(0, (int)Math.Ceiling(seconds));
+            if (sec <= 0) return "0 сек.";
+            var ts = TimeSpan.FromSeconds(sec);
+            if (ts.TotalDays >= 1) return $"{(int)ts.TotalDays} дн. {ts.Hours} ч.";
+            if (ts.TotalHours >= 1) return $"{(int)ts.TotalHours} ч. {ts.Minutes} мин.";
+            if (ts.TotalMinutes >= 1) return $"{(int)ts.TotalMinutes} мин. {ts.Seconds} сек.";
+            return $"{ts.Seconds} сек.";
+        }
+
+        private void InitializeIcon(BasePlayer player)
+        {
+            if (player == null || !Settings.InterfaceSettings.EnableStoreUI || !Settings.InterfaceSettings.BucketEnable) return;
+
+            CuiHelper.DestroyUi(player, IconLayer);
+            var container = new CuiElementContainer();
+
+            if (Settings.InterfaceSettings.BucketURL.Contains("http") && ImageLibrary != null && (bool)ImageLibrary.Call("HasImage", "ProstojRUSTBucket"))
+            {
+                container.Add(new CuiElement
+                {
+                    Parent = "Overlay",
+                    Name = IconLayer,
+                    DestroyUi = IconLayer,
+                    Components =
+                    {
+                        new CuiRawImageComponent { Png = (string) ImageLibrary.Call("GetImage", "ProstojRUSTBucket") },
+                        new CuiRectTransformComponent
+                        {
+                            AnchorMin = Settings.InterfaceSettings.BucketPosition.AnchorMin,
+                            AnchorMax = Settings.InterfaceSettings.BucketPosition.AnchorMax,
+                            OffsetMin = Settings.InterfaceSettings.BucketPosition.OffsetMin,
+                            OffsetMax = Settings.InterfaceSettings.BucketPosition.OffsetMax
+                        }
+                    }
+                });
+
+                container.Add(new CuiButton
+                {
+                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
+                    Button = { Color = "0 0 0 0", Command = "chat.say /store" },
+                    Text = { Text = string.Empty }
+                }, IconLayer);
+            }
+            else
+            {
+                container.Add(new CuiButton
+                {
+                    RectTransform =
+                    {
+                        AnchorMin = Settings.InterfaceSettings.BucketPosition.AnchorMin,
+                        AnchorMax = Settings.InterfaceSettings.BucketPosition.AnchorMax,
+                        OffsetMin = Settings.InterfaceSettings.BucketPosition.OffsetMin,
+                        OffsetMax = Settings.InterfaceSettings.BucketPosition.OffsetMax
+                    },
+                    Button = { Color = "1 1 1 0.6", Sprite = "assets/icons/open.png", Command = "chat.say /store" },
+                    Text = { Text = string.Empty }
+                }, "Overlay", IconLayer, IconLayer);
+            }
+
+            CuiHelper.AddUi(player, container);
+        }
         #endregion
 
         #region Utils
@@ -1158,6 +1704,13 @@ namespace Oxide.Plugins
                                     {
                                         if (product.ContainsKey("id"))
                                         {
+                                            if (!Settings.InterfaceSettings.ExecuteInstantCommandsWhenNotInServer && product.ContainsKey("steam_id"))
+                                            {
+                                                var steamId = product["steam_id"]?.ToString();
+                                                if (!string.IsNullOrEmpty(steamId) && covalence.Players.FindPlayerById(steamId) == null)
+                                                    continue;
+                                            }
+
                                             timer.Once(i, () => { TakeInstant(Convert.ToInt32(product["id"]), product["steam_id"].ToString()); } );
                                             i++;
                                         }

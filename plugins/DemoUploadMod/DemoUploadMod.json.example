@@ -1,0 +1,6 @@
+{
+  "upload_url": "https://yoursite.com/api/rust/highlights/upload",
+  "api_key": "",
+  "enabled": true,
+  "use_folder_watcher_fallback": false
+}

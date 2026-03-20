@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>DemoUploadMod</AssemblyName>
+    <RootNamespace>DemoUploadMod</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)bin\</OutputPath>
+    <!-- Путь к серверу Rust (переопредели в Directory.Build.props). Пример: D:\Server или D:\Server\rustds -->
+    <RustServerPath Condition="'$(RustServerPath)' == ''">D:\Server</RustServerPath>
+    <RustManagedPath>$(RustServerPath)\RustDedicated_Data\Managed</RustManagedPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(RustManagedPath)\*.dll">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

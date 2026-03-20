@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Путь к Managed-сборкам Rust Dedicated Server (для IntelliSense и переходов в код движка).
+       Поменяй на свой, если сервер установлен в другое место. -->
+  <PropertyGroup>
+    <RustManagedPath>D:\Server\rustds\RustDedicated_Data\Managed</RustManagedPath>
+  </PropertyGroup>
+</Project>

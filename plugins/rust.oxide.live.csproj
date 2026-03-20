@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <RootNamespace>Oxide.Plugins</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <!-- Путь к Managed: переопределяется в Directory.Build.props под твой сервер -->
+    <RustManagedPath Condition="'$(RustManagedPath)' == ''">D:\Server\rustds\RustDedicated_Data\Managed</RustManagedPath>
+    <!-- Не собирать плагины в одну DLL — проект только для редактирования и IntelliSense -->
+    <OutputPath>$(MSBuildThisFileDirectory)bin\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+  <!-- Все .cs в папке плагинов подключаются автоматически (SDK), подсветка и переход в движок работают -->
+  <!-- Ссылки на движок Rust + Oxide из папки сервера (путь задаётся в Directory.Build.props) -->
+  <ItemGroup>
+    <Reference Include="$(RustManagedPath)\*.dll">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>HighlightCaptureMod</AssemblyName>
+    <RootNamespace>HighlightCaptureMod</RootNamespace>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)bin\</OutputPath>
+    <RustServerPath Condition="'$(RustServerPath)' == ''">D:\Server</RustServerPath>
+    <RustManagedPath>$(RustServerPath)\RustDedicated_Data\Managed</RustManagedPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(RustManagedPath)\*.dll">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

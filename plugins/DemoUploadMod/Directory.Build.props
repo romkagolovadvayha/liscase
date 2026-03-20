@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Путь к папке сервера Rust (та, где лежит RustDedicated_Data) -->
+  <PropertyGroup>
+    <RustServerPath>D:\Server\rustds</RustServerPath>
+  </PropertyGroup>
+</Project>

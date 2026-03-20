@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "api_url": "https://yoursite.com/api/rust/highlights",
+  "upload_api_url": "",
+  "api_key": "",
+  "server_id": "main",
+  "seconds_before_kill": 15,
+  "seconds_after_kill": 15,
+  "upload_demo": false,
+  "log_to_console": false
+}
