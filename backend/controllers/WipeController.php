@@ -444,8 +444,13 @@ class WipeController extends Controller
                 return $this->redirect(['top-rewards', 'wipe' => $wipe, 'server_tags' => $selectedServerTags]);
             }
 
-            $result = $this->applyTopRewardsPlan($plan);
-            Yii::$app->session->addFlash('success', "Начисления выполнены. Создано выплат: {$result['count']}, сумма: {$result['amount']} РУБ.");
+            Yii::$app->queueProcess->push(Yii::createObject([
+                'class' => 'common\components\queue\process\TopRewardsApplyJob',
+                'wipe' => $wipe,
+                'serverTags' => $selectedServerTags,
+            ]));
+
+            Yii::$app->session->addFlash('success', 'Начисление поставлено в очередь. Обновите страницу через 1-2 минуты, чтобы проверить результат.');
             return $this->redirect(['top-rewards', 'wipe' => $wipe, 'server_tags' => $selectedServerTags]);
         }
 
