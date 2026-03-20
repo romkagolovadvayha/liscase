@@ -74,6 +74,11 @@ class WipeController extends Controller
                 'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
                 'data' => ['confirm' => Yii::t('common', 'Обнулить промокод WIPE? Пользователи смогут ввести его заново.'), 'method' => 'post'],
             ],
+            [
+                'label' => '<i class="bi bi-trophy-fill"></i> ' . Yii::t('common', 'Начисления за прошлый вайп'),
+                'url' => ['/wipe/top-rewards'],
+                'class' => 'ds-btn ds-btn--primary ds-btn--sm',
+            ],
         ];
         return $this->render('index');
     }
@@ -386,6 +391,69 @@ class WipeController extends Controller
 
         Yii::$app->session->addFlash('success', 'Награды распределены успешно!');
         return $this->redirect('index');
+    }
+
+    public function actionTopRewards()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        $serverOptions = ArrayHelper::map($servers, 'tag', function (Servers $server) {
+            return "{$server->name} ({$server->tag})";
+        });
+
+        $selectedServerTags = (array)Yii::$app->request->post('server_tags', Yii::$app->request->get('server_tags', []));
+        $selectedServerTags = array_values(array_intersect($selectedServerTags, array_keys($serverOptions)));
+        if (empty($selectedServerTags)) {
+            $selectedServerTags = array_keys($serverOptions);
+        }
+
+        $wipe = (string)Yii::$app->request->post('wipe', Yii::$app->request->get('wipe', ''));
+        $wipe = trim($wipe);
+
+        $availableWipes = UserTop::find()
+            ->select('wipe')
+            ->distinct()
+            ->orderBy(['wipe' => SORT_DESC])
+            ->limit(200)
+            ->column();
+
+        if (empty($wipe) && !empty($availableWipes)) {
+            $wipe = (string)$availableWipes[0];
+        }
+
+        $selectedServers = array_values(array_filter($servers, static function (Servers $server) use ($selectedServerTags) {
+            return in_array($server->tag, $selectedServerTags, true);
+        }));
+
+        $plan = null;
+        if (!empty($wipe) && !empty($selectedServers)) {
+            $plan = $this->buildTopRewardsPlan($selectedServers, $wipe);
+        }
+
+        if (Yii::$app->request->isPost && Yii::$app->request->post('confirm') === '1') {
+            if (empty($plan) || empty($plan['payableRows'])) {
+                Yii::$app->session->addFlash('warning', 'Нет доступных начислений для подтверждения.');
+                return $this->redirect(['top-rewards', 'wipe' => $wipe, 'server_tags' => $selectedServerTags]);
+            }
+
+            $result = $this->applyTopRewardsPlan($plan);
+            Yii::$app->session->addFlash('success', "Начисления выполнены. Создано выплат: {$result['count']}, сумма: {$result['amount']} РУБ.");
+            return $this->redirect(['top-rewards', 'wipe' => $wipe, 'server_tags' => $selectedServerTags]);
+        }
+
+        return $this->render('top-rewards', [
+            'servers' => $servers,
+            'serverOptions' => $serverOptions,
+            'selectedServerTags' => $selectedServerTags,
+            'availableWipes' => $availableWipes,
+            'wipe' => $wipe,
+            'plan' => $plan,
+        ]);
     }
 
     public function actionPromocode()
@@ -918,6 +986,140 @@ class WipeController extends Controller
                 'command' => $rconCommand,
             ];
         }
+    }
+
+    /**
+     * @param Servers[] $servers
+     * @param string $wipe
+     * @return array
+     */
+    private function buildTopRewardsPlan(array $servers, string $wipe): array
+    {
+        $rows = [];
+        $payableRows = [];
+        $totalAmount = 0;
+        $payableAmount = 0;
+        $skippedCount = 0;
+
+        foreach ($servers as $server) {
+            $tops = UserTop::getUserTops($server, $wipe);
+            foreach ($tops as $top) {
+                $label = (string)$top['label'];
+                foreach ($top['items'] as $position => $item) {
+                    $steamId = (string)$item['steam_id'];
+                    $amount = (int)$item['amount'];
+                    $user = User::findBySteamId($steamId, false, 'top-rewards-plan');
+                    $balance = $user ? $user->getPersonalBalance() : null;
+
+                    $comment = "Награда за первое место в топе \"{$label}\"";
+                    if ($position === 1) {
+                        $comment = "Награда за второе место в топе \"{$label}\"";
+                    } elseif ($position === 2) {
+                        $comment = "Награда за третье место в топе \"{$label}\"";
+                    }
+
+                    $skipReason = null;
+                    if (empty($user)) {
+                        $skipReason = 'Пользователь не найден';
+                    } elseif (empty($balance) || empty($balance->id)) {
+                        $skipReason = 'Не найден персональный баланс';
+                    }
+
+                    $row = [
+                        'server_id' => $server->id,
+                        'server_name' => $server->name,
+                        'server_tag' => $server->tag,
+                        'wipe' => $wipe,
+                        'label' => $label,
+                        'position' => $position + 1,
+                        'steam_id' => $steamId,
+                        'username' => $item['username'] ?? $steamId,
+                        'amount' => $amount,
+                        'comment' => $comment,
+                        'user_id' => $user ? $user->id : null,
+                        'user_balance_id' => $balance ? $balance->id : null,
+                        'telegram_chat_id' => $user ? $user->telegram_chat_id : null,
+                        'can_pay' => $skipReason === null,
+                        'skip_reason' => $skipReason,
+                    ];
+
+                    $rows[] = $row;
+                    $totalAmount += $amount;
+
+                    if ($row['can_pay']) {
+                        $payableRows[] = $row;
+                        $payableAmount += $amount;
+                    } else {
+                        $skippedCount++;
+                    }
+                }
+            }
+        }
+
+        return [
+            'wipe' => $wipe,
+            'rows' => $rows,
+            'payableRows' => $payableRows,
+            'totalAmount' => $totalAmount,
+            'payableAmount' => $payableAmount,
+            'totalCount' => count($rows),
+            'payableCount' => count($payableRows),
+            'skippedCount' => $skippedCount,
+        ];
+    }
+
+    /**
+     * @param array $plan
+     * @return array{count:int,amount:int}
+     */
+    private function applyTopRewardsPlan(array $plan): array
+    {
+        $createdCount = 0;
+        $createdAmount = 0;
+        $tgMessage = [];
+
+        foreach ($plan['payableRows'] as $row) {
+            $profit = new Profit();
+            $profit->status = 1;
+            $profit->type = Profit::TYPE_TOP;
+            $profit->amount = (int)$row['amount'];
+            $profit->user_balance_id = (int)$row['user_balance_id'];
+            $profit->comment = $row['comment'];
+            $profit->created_at = date('Y-m-d H:i:s');
+            $profit->save(false);
+
+            $createdCount++;
+            $createdAmount += (int)$row['amount'];
+
+            if (!empty($row['telegram_chat_id'])) {
+                $emoji = '🥇';
+                if ((int)$row['position'] === 2) {
+                    $emoji = '🥈';
+                } elseif ((int)$row['position'] === 3) {
+                    $emoji = '🥉';
+                }
+                $text = "{$emoji} {$row['comment']} - <b>{$row['amount']} РУБ</b>";
+                if (!empty($tgMessage[$row['steam_id']])) {
+                    $tgMessage[$row['steam_id']] .= PHP_EOL . $text;
+                } else {
+                    $tgMessage[$row['steam_id']] = "Вам начислены награды за ТОП на сервере {$row['server_name']}" . PHP_EOL . $text;
+                }
+            }
+        }
+
+        if (YII_ENV_PROD) {
+            foreach ($tgMessage as $steamId => $message) {
+                $user = User::findBySteamId($steamId, false, 'top-rewards-notify');
+                if (!empty($user) && !empty($user->telegram_chat_id)) {
+                    Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
+                }
+            }
+        }
+
+        return [
+            'count' => $createdCount,
+            'amount' => $createdAmount,
+        ];
     }
 
 }
