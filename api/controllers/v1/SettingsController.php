@@ -18,7 +18,7 @@ class SettingsController extends BaseApiController
     /**
      * Список разрешенных категорий для фронтенда
      */
-    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip'];
+    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot'];
 
     /**
      * Список исключаемых ключей (секретные данные)
@@ -42,11 +42,11 @@ class SettingsController extends BaseApiController
      *     operationId="getSettings",
      *     tags={"Settings"},
      *     summary="Получить публичные настройки сайта",
-     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip",
+     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot",
      *     @OA\Parameter(
      *         name="categories",
      *         in="query",
-     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip",
+     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot",
      *         required=false,
      *         @OA\Schema(type="string", example="design,social")
      *     ),
