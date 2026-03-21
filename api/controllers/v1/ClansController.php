@@ -217,6 +217,117 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * GET /v1/clans/podium?server_tag= — топ-3 клана по overall / all_time и топ участников по киллам за текущий вайп.
+     */
+    public function actionPodium()
+    {
+        $serverTag = Yii::$app->request->get('server_tag');
+        if ($serverTag === null || $serverTag === '') {
+            throw new BadRequestHttpException('server_tag is required');
+        }
+
+        $server = Servers::findOne(['tag' => $serverTag]);
+        if (!$server) {
+            return $this->successResponse(['items' => [], 'current_wipe' => null]);
+        }
+
+        $wipe = $server->currentWipe();
+        $rankRows = ClanRanking::find()
+            ->where([
+                'server_id' => $server->id,
+                'ranking_type' => ClanRanking::RANKING_OVERALL,
+                'period' => ClanRanking::PERIOD_ALL_TIME,
+            ])
+            ->orderBy(['position' => SORT_ASC])
+            ->limit(3)
+            ->with(['clan.leaderUser.userProfile', 'clan.server'])
+            ->all();
+
+        if ($rankRows === []) {
+            return $this->successResponse(['items' => [], 'current_wipe' => $wipe]);
+        }
+
+        $clanIds = [];
+        foreach ($rankRows as $r) {
+            if ($r->clan) {
+                $clanIds[] = (int)$r->clan->id;
+            }
+        }
+        $clanIds = array_values(array_unique($clanIds));
+
+        $membersByClan = [];
+        $allMemberIds = [];
+        if ($clanIds !== []) {
+            $members = ClanMember::find()
+                ->where(['clan_id' => $clanIds])
+                ->andWhere(['IS', 'leave_date', null])
+                ->with(['user.userProfile'])
+                ->all();
+            foreach ($members as $m) {
+                $cid = (int)$m->clan_id;
+                if (!isset($membersByClan[$cid])) {
+                    $membersByClan[$cid] = [];
+                }
+                $membersByClan[$cid][] = $m;
+                $allMemberIds[] = (int)$m->id;
+            }
+        }
+
+        $statsByMemberId = [];
+        if ($wipe !== null && $wipe !== '' && $allMemberIds !== []) {
+            $statModels = ClanMemberStatistics::find()
+                ->where([
+                    'server_id' => $server->id,
+                    'wipe' => $wipe,
+                    'clan_member_id' => $allMemberIds,
+                ])
+                ->with('statValues')
+                ->all();
+            foreach ($statModels as $sm) {
+                $statsByMemberId[(int)$sm->clan_member_id] = $sm;
+            }
+        }
+
+        $items = [];
+        foreach ($rankRows as $r) {
+            if (!$r->clan) {
+                continue;
+            }
+            $clan = $r->clan;
+            $cid = (int)$clan->id;
+            $enriched = [];
+            foreach ($membersByClan[$cid] ?? [] as $m) {
+                $stat = $statsByMemberId[(int)$m->id] ?? null;
+                $kills = $stat ? (int)$stat->getStatValue('kills') : 0;
+                $deaths = $stat ? (int)$stat->getStatValue('deaths') : 0;
+                $kd = $deaths > 0 ? round($kills / $deaths, 2) : (float)$kills;
+                $enriched[] = [
+                    'kills' => $kills,
+                    'deaths' => $deaths,
+                    'kd' => $kd,
+                    'user' => $m->user ? $this->serializeUser($m->user) : null,
+                ];
+            }
+            usort($enriched, static function ($a, $b) {
+                return $b['kills'] <=> $a['kills'];
+            });
+            $topMembers = array_slice($enriched, 0, 8);
+
+            $items[] = [
+                'position' => (int)$r->position,
+                'score' => (float)$r->score,
+                'clan' => $this->serializeClanListItem($clan),
+                'top_members' => $topMembers,
+            ];
+        }
+
+        return $this->successResponse([
+            'items' => $items,
+            'current_wipe' => $wipe,
+        ]);
+    }
+
+    /**
      * GET /v1/clans/my-invites — входящие приглашения (текущий пользователь)
      */
     public function actionMyInvites()

@@ -91,6 +91,7 @@ $config = [
                 // Clans (просмотр без JWT; управление — с Bearer JWT)
                 'v1/clans/permissions' => 'v1/clans/permissions',
                 'v1/clans/rankings' => 'v1/clans/rankings',
+                'v1/clans/podium' => 'v1/clans/podium',
                 'v1/clans/my-invites' => 'v1/clans/my-invites',
                 'v1/clans/my-memberships' => 'v1/clans/my-memberships',
                 /** Полный ЧПУ-сегмент (например my-clan-12): точное совпадение, без ошибочного разбора id */

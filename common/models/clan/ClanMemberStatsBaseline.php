@@ -21,6 +21,12 @@ use yii\db\ActiveRecord;
  */
 class ClanMemberStatsBaseline extends ActiveRecord
 {
+    /**
+     * Служебный ключ: «baseline уже снят», когда все игровые метрики на вступлении были 0
+     * (реальные нули в БД не храним — в расчёте дельты отсутствие строки = 0).
+     */
+    public const MARKER_STAT_KEY = '_baseline_captured';
+
     public static function tableName(): string
     {
         return 'clan_member_stats_baseline';
@@ -79,6 +85,7 @@ class ClanMemberStatsBaseline extends ActiveRecord
 
     /**
      * Снимок baseline при вступлении (или ленивая инициализация, если строк ещё нет).
+     * Нули не пишем: нет строки по ключу ⇒ baseline для него 0 (см. {@see ClanStatistics::calculateMemberStatistics}).
      */
     public static function captureBaseline(ClanMember $member, int $serverId, string $wipe): void
     {
@@ -92,34 +99,77 @@ class ClanMemberStatsBaseline extends ActiveRecord
         $keys = self::getTrackedStatKeys();
         $currentMap = self::getCurrentStatisticsValuesMap($user->steam_id, $server->tag, $wipe, $keys);
 
-        foreach ($keys as $statKey) {
-            $current = (int)($currentMap[$statKey] ?? 0);
+        $tx = Yii::$app->db->beginTransaction();
+        try {
+            foreach ($keys as $statKey) {
+                $current = (int)($currentMap[$statKey] ?? 0);
 
-            $model = static::find()
+                $model = static::find()
+                    ->where([
+                        'clan_member_id' => $member->id,
+                        'server_id' => $serverId,
+                        'wipe' => $wipe,
+                        'stat_key' => $statKey,
+                    ])
+                    ->one();
+
+                if ($current === 0) {
+                    if ($model !== null) {
+                        $model->delete();
+                    }
+
+                    continue;
+                }
+
+                if ($model === null) {
+                    $model = new static();
+                    $model->clan_member_id = $member->id;
+                    $model->server_id = $serverId;
+                    $model->wipe = $wipe;
+                    $model->stat_key = $statKey;
+                    $model->created_at = $now;
+                }
+
+                $model->value = $current;
+                $model->save(false);
+            }
+
+            $hasRealRow = static::find()
                 ->where([
                     'clan_member_id' => $member->id,
                     'server_id' => $serverId,
                     'wipe' => $wipe,
-                    'stat_key' => $statKey,
                 ])
-                ->one();
+                ->andWhere(['!=', 'stat_key', self::MARKER_STAT_KEY])
+                ->exists();
 
-            if (!$model) {
-                $model = new static();
-                $model->clan_member_id = $member->id;
-                $model->server_id = $serverId;
-                $model->wipe = $wipe;
-                $model->stat_key = $statKey;
-                $model->created_at = $now;
+            static::deleteAll([
+                'clan_member_id' => $member->id,
+                'server_id' => $serverId,
+                'wipe' => $wipe,
+                'stat_key' => self::MARKER_STAT_KEY,
+            ]);
+
+            if (!$hasRealRow) {
+                $marker = new static();
+                $marker->clan_member_id = $member->id;
+                $marker->server_id = $serverId;
+                $marker->wipe = $wipe;
+                $marker->stat_key = self::MARKER_STAT_KEY;
+                $marker->value = 1;
+                $marker->created_at = $now;
+                $marker->save(false);
             }
 
-            $model->value = $current;
-            $model->save(false);
+            $tx->commit();
+        } catch (\Throwable $e) {
+            $tx->rollBack();
+            throw $e;
         }
     }
 
     /**
-     * @return array<string, int> stat_key => baseline value
+     * @return array<string, int> stat_key => baseline value (только игровые ключи; служебный маркер не отдаём)
      */
     public static function getBaselineMap(int $clanMemberId, int $serverId, string $wipe): array
     {
@@ -130,6 +180,7 @@ class ClanMemberStatsBaseline extends ActiveRecord
                 'server_id' => $serverId,
                 'wipe' => $wipe,
             ])
+            ->andWhere(['!=', 'stat_key', self::MARKER_STAT_KEY])
             ->asArray()
             ->all();
 

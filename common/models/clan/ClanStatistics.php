@@ -11,6 +11,7 @@ use yii\base\UnknownPropertyException;
 
 /**
  * Заголовок статистики клана за вайп; числовые метрики — в [[ClanStatisticsValue]] (stat_key / value).
+ * В БД не хранятся нули: нет строки ⇒ {@see getStatValue()} / отображение как 0.
  *
  * @property int $id
  * @property int $clan_id
@@ -108,7 +109,7 @@ class ClanStatistics extends ActiveRecord
     }
 
     /**
-     * Плоский массив для API / JSON: заголовок + все stat_key.
+     * Плоский массив для API / JSON: заголовок + ненулевые stat_key (остальные при отображении — 0).
      *
      * @return array<string, mixed>
      */
@@ -248,7 +249,11 @@ class ClanStatistics extends ActiveRecord
         }
         $batch = [];
         foreach ($this->_statsMap as $key => $value) {
-            $batch[] = [(int)$this->id, (string)$key, (float)$value];
+            $v = (float)$value;
+            if (abs($v) < 1e-10) {
+                continue;
+            }
+            $batch[] = [(int)$this->id, (string)$key, $v];
         }
         if ($batch === []) {
             return;
@@ -261,18 +266,37 @@ class ClanStatistics extends ActiveRecord
     }
 
     /**
-     * Обновление статистики клана
+     * Пересчёт агрегата клана в clan_statistics_values.
+     *
+     * Сумма вкладов участников за вайп: у каждого {@see ClanMemberStatistics} хранится дельта
+     * «текущие {@see Statistics} игрока − {@see ClanMemberStatsBaseline} на момент вступления в этот spell».
+     * Пока участник в клане — дельта обновляется; после выхода строка заморожена ({@see ClanMemberStatistics::finalizeAndFreeze}).
+     * Реджойн = новый clan_member_id и новый baseline → отдельная строка; сумма по spell’ам даёт полный вклад за вайп.
+     *
+     * В сумму попадают только участники, чьё членство пересекает границы вайпа ({@see ClanMemberStatistics::isMemberRelevantForWipe}).
      */
     public function updateStatistics(): bool
     {
+        $server = Servers::findOne($this->server_id);
+        if (!$server) {
+            return false;
+        }
+
         $memberStatistics = ClanMemberStatistics::find()
             ->where(['clan_id' => $this->clan_id, 'server_id' => $this->server_id, 'wipe' => $this->wipe])
-            ->with('statValues')
+            ->with(['statValues', 'clanMember'])
             ->all();
 
         $this->resetStatistics();
 
         foreach ($memberStatistics as $memberStat) {
+            $member = $memberStat->clanMember;
+            if ($member === null) {
+                continue;
+            }
+            if (!ClanMemberStatistics::isMemberRelevantForWipe($member, $server, (string)$this->wipe)) {
+                continue;
+            }
             $this->aggregateMemberStatistics($memberStat);
         }
 
@@ -486,7 +510,8 @@ class ClanStatistics extends ActiveRecord
     }
 
     /**
-     * Вклад участника в клан за вайп: дельта (текущее значение statistics − baseline на момент вступления).
+     * Вклад участника за вайп по одному spell членства: дельта (текущие {@see Statistics} − baseline при вступлении в этот spell).
+     * Вне клана накопление в глобальной statistics не зачитывается: baseline снимается в {@see Clan::addMember}, при выходе дельта фиксируется в {@see ClanMemberStatistics::finalizeAndFreeze}.
      */
     public static function calculateMemberStatistics($member, $serverId, $wipe): array
     {
@@ -515,6 +540,7 @@ class ClanStatistics extends ActiveRecord
         $result = [];
         foreach ($statisticsKeys as $key) {
             $current = (int)($currentMap[$key] ?? 0);
+            // Нулевые baseline в БД не храним — нет строки ⇒ base = 0.
             $base = isset($baselineMap[$key]) ? (int)$baselineMap[$key] : 0;
             $delta = max(0, $current - $base);
 
