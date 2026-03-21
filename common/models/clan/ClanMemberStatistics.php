@@ -7,9 +7,10 @@ use common\models\servers\Servers;
 use common\models\user\User;
 use common\models\user\UserTop;
 use Yii;
+use yii\base\UnknownPropertyException;
 
 /**
- * This is the model class for table "clan_member_statistics".
+ * Заголовок статистики участника за вайп; числовые метрики — в [[ClanMemberStatisticsValue]] (stat_key / value).
  *
  * @property int $id
  * @property int $clan_member_id
@@ -17,16 +18,6 @@ use Yii;
  * @property int $user_id
  * @property int $server_id
  * @property string|null $wipe
- * @property int $kills
- * @property int $deaths
- * @property float $top_reider
- * @property float $top_kills
- * @property float $top_scientists
- * @property float $top_playtime
- * @property float $top_farmer
- * @property float $top_fishing
- * @property float $top_hunter
- * @property float $top_fermer
  * @property int $updated_at
  * @property string $member_status active|former
  * @property int|null $frozen_at
@@ -35,32 +26,96 @@ use Yii;
  * @property Clan $clan
  * @property User $user
  * @property Servers $server
+ * @property ClanMemberStatisticsValue[] $statValues
  */
 class ClanMemberStatistics extends ActiveRecord
 {
     public const STATUS_ACTIVE = 'active';
     public const STATUS_FORMER = 'former';
 
-    /**
-     * {@inheritdoc}
-     */
-    public static function tableName()
+    /** @var array<string, float> */
+    private $_statsMap = [];
+
+    public static function tableName(): string
     {
         return 'clan_member_statistics';
     }
 
     /**
-     * {@inheritdoc}
+     * Ключи колонок дельты (как в statistics / baseline), совпадают с именами в values.
+     *
+     * @return string[]
      */
-    public function rules()
+    public static function getMemberDeltaStatDbKeys(): array
+    {
+        $keys = ClanMemberStatsBaseline::getTrackedStatKeys();
+        $out = [];
+        foreach ($keys as $key) {
+            $out[] = str_replace('.', '_', $key);
+        }
+
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * Любой ключ stat_key в EAV: буква + буквы/цифры/подчёркивания (kills, top_kills, gathered_green_berry, …).
+     */
+    private function isMemberStatMagicKey(string $name): bool
+    {
+        if ($this->hasAttribute($name)) {
+            return false;
+        }
+
+        return (bool)preg_match('/^[a-z][a-z0-9_]*$/', $name);
+    }
+
+    public function init(): void
+    {
+        parent::init();
+        $this->_statsMap = [];
+    }
+
+    public function afterFind(): void
+    {
+        parent::afterFind();
+        if ($this->isRelationPopulated('statValues')) {
+            $this->_statsMap = [];
+            foreach ($this->statValues as $sv) {
+                $this->_statsMap[(string)$sv->stat_key] = (float)$sv->value;
+            }
+        } else {
+            $this->loadStatsMapFromDatabase();
+        }
+    }
+
+    private function loadStatsMapFromDatabase(): void
+    {
+        $this->_statsMap = [];
+        if (!$this->id) {
+            return;
+        }
+        $rows = ClanMemberStatisticsValue::find()
+            ->select(['stat_key', 'value'])
+            ->where(['clan_member_statistics_id' => $this->id])
+            ->asArray()
+            ->all();
+        foreach ($rows as $row) {
+            $this->_statsMap[(string)$row['stat_key']] = (float)$row['value'];
+        }
+    }
+
+    public function getStatValues(): \yii\db\ActiveQuery
+    {
+        return $this->hasMany(ClanMemberStatisticsValue::class, ['clan_member_statistics_id' => 'id']);
+    }
+
+    public function rules(): array
     {
         return [
             [['clan_member_id', 'clan_id', 'user_id', 'server_id'], 'required'],
             [['member_status'], 'string', 'max' => 20],
             [['frozen_at'], 'integer'],
-            [['clan_member_id', 'clan_id', 'user_id', 'server_id', 'kills', 'deaths', 'scientists', 'wounded', 'tcs_destroyed', 'nude_kills'], 'integer'],
-            [['helicopters', 'bradleys', 'research_table_looted', 'excavator_mined'], 'integer'],
-            [['top_reider', 'top_kills', 'top_scientists', 'top_playtime', 'top_farmer', 'top_fishing', 'top_hunter', 'top_fermer'], 'number'],
+            [['clan_member_id', 'clan_id', 'user_id', 'server_id', 'updated_at'], 'integer'],
             [['wipe'], 'string', 'max' => 255],
             [['clan_member_id', 'server_id', 'wipe'], 'unique', 'targetAttribute' => ['clan_member_id', 'server_id', 'wipe']],
             [['clan_member_id'], 'exist', 'skipOnError' => true, 'targetClass' => ClanMember::class, 'targetAttribute' => ['clan_member_id' => 'id']],
@@ -70,10 +125,7 @@ class ClanMemberStatistics extends ActiveRecord
         ];
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function attributeLabels()
+    public function attributeLabels(): array
     {
         return [
             'id' => 'ID',
@@ -82,50 +134,175 @@ class ClanMemberStatistics extends ActiveRecord
             'user_id' => Yii::t('common', 'Пользователь'),
             'server_id' => Yii::t('common', 'Сервер'),
             'wipe' => Yii::t('common', 'Вайп'),
-            'kills' => Yii::t('common', 'Убийства'),
-            'deaths' => Yii::t('common', 'Смерти'),
             'updated_at' => Yii::t('common', 'Дата обновления'),
         ];
     }
 
     /**
-     * Gets query for [[ClanMember]].
-     *
-     * @return \yii\db\ActiveQuery
+     * {@inheritdoc}
+     * В toArray()/сериализацию включаются и метрики из clan_member_statistics_values.
      */
-    public function getClanMember()
+    public function fields(): array
+    {
+        $fields = parent::fields();
+        foreach (array_keys($this->_statsMap) as $key) {
+            $k = $key;
+            $fields[$k] = function ($model, $field) use ($k) {
+                /** @var self $model */
+                return $model->getStatValue($k);
+            };
+        }
+
+        return $fields;
+    }
+
+    public function getClanMember(): \yii\db\ActiveQuery
     {
         return $this->hasOne(ClanMember::class, ['id' => 'clan_member_id']);
     }
 
-    /**
-     * Gets query for [[Clan]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getClan()
+    public function getClan(): \yii\db\ActiveQuery
     {
         return $this->hasOne(Clan::class, ['id' => 'clan_id']);
     }
 
-    /**
-     * Gets query for [[User]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getUser()
+    public function getUser(): \yii\db\ActiveQuery
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
     }
 
-    /**
-     * Gets query for [[Server]].
-     *
-     * @return \yii\db\ActiveQuery
-     */
-    public function getServer()
+    public function getServer(): \yii\db\ActiveQuery
     {
         return $this->hasOne(Servers::class, ['id' => 'server_id']);
+    }
+
+    public function getStatValue(string $key): float
+    {
+        return (float)($this->_statsMap[$key] ?? 0);
+    }
+
+    private function setStatValue(string $key, $value): void
+    {
+        $this->_statsMap[$key] = (float)$value;
+    }
+
+    /**
+     * Плоский массив для API: заголовок + все stat_key.
+     *
+     * @return array<string, mixed>
+     */
+    public function getStatisticsForApi(): array
+    {
+        $base = $this->getAttributes();
+        foreach ($this->_statsMap as $k => $v) {
+            $base[$k] = $v;
+        }
+
+        return $base;
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function getStatsMap(): array
+    {
+        return $this->_statsMap;
+    }
+
+    public function beforeSave($insert)
+    {
+        if (!parent::beforeSave($insert)) {
+            return false;
+        }
+        if ($this->updated_at === null || $this->updated_at === '') {
+            $this->updated_at = time();
+        }
+
+        return true;
+    }
+
+    public function save($runValidation = true, $attributeNames = null)
+    {
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            if (!parent::save($runValidation, $attributeNames)) {
+                $transaction->rollBack();
+
+                return false;
+            }
+            $this->persistStatsMap();
+            $transaction->commit();
+
+            return true;
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            throw $e;
+        }
+    }
+
+    private function persistStatsMap(): void
+    {
+        if (!$this->id) {
+            throw new \yii\base\InvalidCallException('ClanMemberStatistics must be saved before persisting stat values.');
+        }
+        ClanMemberStatisticsValue::deleteAll(['clan_member_statistics_id' => $this->id]);
+        if ($this->_statsMap === []) {
+            return;
+        }
+        $batch = [];
+        foreach ($this->_statsMap as $key => $value) {
+            $batch[] = [(int)$this->id, (string)$key, (float)$value];
+        }
+        Yii::$app->db->createCommand()->batchInsert(
+            ClanMemberStatisticsValue::tableName(),
+            ['clan_member_statistics_id', 'stat_key', 'value'],
+            $batch
+        )->execute();
+    }
+
+    public function __get($name)
+    {
+        try {
+            return parent::__get($name);
+        } catch (UnknownPropertyException $e) {
+            if ($this->isMemberStatMagicKey($name)) {
+                return $this->getStatValue($name);
+            }
+            throw $e;
+        }
+    }
+
+    public function __isset($name)
+    {
+        if (parent::__isset($name)) {
+            return true;
+        }
+
+        return $this->isMemberStatMagicKey($name);
+    }
+
+    public function __set($name, $value)
+    {
+        if ($this->hasAttribute($name)) {
+            parent::__set($name, $value);
+
+            return;
+        }
+        if ($this->isMemberStatMagicKey($name)) {
+            $this->setStatValue($name, $value);
+
+            return;
+        }
+        parent::__set($name, $value);
+    }
+
+    public function canSetProperty($name, $checkVars = true, $checkBehaviors = true)
+    {
+        if ($this->isMemberStatMagicKey($name)) {
+            return true;
+        }
+
+        return parent::canSetProperty($name, $checkVars, $checkBehaviors);
     }
 
     /**
@@ -196,9 +373,7 @@ class ClanMemberStatistics extends ActiveRecord
         }
 
         foreach ($statsData as $key => $value) {
-            if ($statistics->hasAttribute($key)) {
-                $statistics->$key = $value;
-            }
+            $statistics->$key = $value;
         }
 
         $statistics->calculateTopRatings();
@@ -211,13 +386,8 @@ class ClanMemberStatistics extends ActiveRecord
 
     /**
      * Обновление статистики участника
-     *
-     * @param ClanMember $member
-     * @param int $serverId
-     * @param string $wipe
-     * @return bool
      */
-    public static function updateMemberStatistics($member, $serverId, $wipe)
+    public static function updateMemberStatistics($member, $serverId, $wipe): bool
     {
         $server = Servers::findOne($serverId);
         if (!$server || $wipe === null || $wipe === '' || !static::isMemberRelevantForWipe($member, $server, $wipe)) {
@@ -252,9 +422,7 @@ class ClanMemberStatistics extends ActiveRecord
         }
 
         foreach ($statsData as $key => $value) {
-            if ($statistics->hasAttribute($key)) {
-                $statistics->$key = $value;
-            }
+            $statistics->$key = $value;
         }
 
         $statistics->calculateTopRatings();
@@ -267,13 +435,8 @@ class ClanMemberStatistics extends ActiveRecord
 
     /**
      * Получение статистики участника
-     *
-     * @param int $memberId
-     * @param int $serverId
-     * @param string|null $wipe
-     * @return static|null
      */
-    public static function getMemberStatistics($memberId, $serverId, $wipe = null)
+    public static function getMemberStatistics($memberId, $serverId, $wipe = null): ?self
     {
         $query = static::find()
             ->where(['clan_member_id' => $memberId, 'server_id' => $serverId]);
@@ -282,52 +445,28 @@ class ClanMemberStatistics extends ActiveRecord
             $query->andWhere(['wipe' => $wipe]);
         }
 
-        return $query->one();
+        return $query->with('statValues')->one();
     }
 
     /**
-     * Общая статистика участника по всем вайпам
+     * Сумма по всем вайпам (счётчики суммируются; top_* пропускаются).
      *
-     * @param int $memberId
-     * @param int $serverId
-     * @return array
+     * @return array<string, int|float>
      */
-    public static function getTotalStatistics($memberId, $serverId)
+    public static function getTotalStatistics($memberId, $serverId): array
     {
         $statistics = static::find()
             ->where(['clan_member_id' => $memberId, 'server_id' => $serverId])
             ->all();
 
-        $total = [
-            'kills' => 0,
-            'deaths' => 0,
-            'scientists' => 0,
-            'wounded' => 0,
-            'tcs_destroyed' => 0,
-            'nude_kills' => 0,
-            'playtime' => 0,
-            'crate_open' => 0,
-            'barrel' => 0,
-            'helicopters' => 0,
-            'bradleys' => 0,
-            'research_table_looted' => 0,
-            'excavator_mined' => 0,
-        ];
-
+        $total = [];
         foreach ($statistics as $stat) {
-            $total['kills'] += $stat->kills;
-            $total['deaths'] += $stat->deaths;
-            $total['scientists'] += $stat->scientists;
-            $total['wounded'] += $stat->wounded;
-            $total['tcs_destroyed'] += $stat->tcs_destroyed;
-            $total['nude_kills'] += $stat->nude_kills;
-            $total['playtime'] += $stat->playtime;
-            $total['crate_open'] += $stat->crate_open;
-            $total['barrel'] += $stat->barrel;
-            $total['helicopters'] += $stat->helicopters;
-            $total['bradleys'] += $stat->bradleys;
-            $total['research_table_looted'] += $stat->research_table_looted;
-            $total['excavator_mined'] += $stat->excavator_mined;
+            foreach ($stat->getStatsMap() as $k => $v) {
+                if (strpos((string)$k, 'top_') === 0) {
+                    continue;
+                }
+                $total[$k] = ($total[$k] ?? 0) + (int)$v;
+            }
         }
 
         return $total;
@@ -335,14 +474,11 @@ class ClanMemberStatistics extends ActiveRecord
 
     /**
      * Расчет рейтингов для топов на основе сохраненных данных
-     *
-     * @return void
      */
-    public function calculateTopRatings()
+    public function calculateTopRatings(): void
     {
         $rating = UserTop::getRaiting();
 
-        // Рейдер
         $this->top_reider = round(
             $this->c4thrown * ($rating[UserTop::TYPE_REIDER]['c4thrown'] ?? 1) +
             $this->satchelsthrown * ($rating[UserTop::TYPE_REIDER]['satchelsthrown'] ?? 0.2) +
@@ -355,16 +491,10 @@ class ClanMemberStatistics extends ActiveRecord
             $this->grenade_beancan_deployed * ($rating[UserTop::TYPE_REIDER]['grenade.beancan.deployed'] ?? 0.05)
         );
 
-        // Kills
         $this->top_kills = $this->kills;
-
-        // Scientists
         $this->top_scientists = $this->scientists;
-
-        // Playtime
         $this->top_playtime = $this->playtime;
 
-        // Farmer
         $this->top_farmer = round(
             $this->wood * ($rating[UserTop::TYPE_FARMER]['wood'] ?? 0.05) +
             $this->stones * ($rating[UserTop::TYPE_FARMER]['stones'] ?? 0.3) +
@@ -372,7 +502,6 @@ class ClanMemberStatistics extends ActiveRecord
             $this->sulfur_ore * ($rating[UserTop::TYPE_FARMER]['sulfur.ore'] ?? 1)
         );
 
-        // Fishing
         $this->top_fishing = round(
             $this->f_fish_anchovy * ($rating[UserTop::TYPE_FISHING]['f_fish.anchovy'] ?? 10) +
             $this->f_fish_catfish * ($rating[UserTop::TYPE_FISHING]['f_fish.catfish'] ?? 32) +
@@ -385,8 +514,7 @@ class ClanMemberStatistics extends ActiveRecord
             $this->f_fish_yellowperch * ($rating[UserTop::TYPE_FISHING]['f_fish.yellowperch'] ?? 25)
         );
 
-        // Hunter
-        $this->top_hunter = 
+        $this->top_hunter =
             $this->chicken +
             $this->bear +
             $this->boar +
@@ -400,7 +528,6 @@ class ClanMemberStatistics extends ActiveRecord
             $this->crocodile +
             $this->tiger;
 
-        // Fermer
         $this->top_fermer = round(
             $this->gathered_cloth * ($rating[UserTop::TYPE_FERMER]['gathered_cloth'] ?? 0.05) +
             $this->gathered_pumpkin * ($rating[UserTop::TYPE_FERMER]['gathered_pumpkin'] ?? 0.5) +
@@ -419,4 +546,3 @@ class ClanMemberStatistics extends ActiveRecord
         );
     }
 }
-

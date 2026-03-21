@@ -446,6 +446,7 @@ class ClansController extends BaseApiController
                         'server_id' => $clan->server_id,
                         'wipe' => $wipe,
                     ])
+                    ->with('statValues')
                     ->indexBy('clan_member_id')
                     ->all();
                 $statsByMemberId = $statRows;
@@ -849,6 +850,7 @@ class ClansController extends BaseApiController
                             'server_id' => $clan->server_id,
                             'wipe' => $w,
                         ])
+                        ->with('statValues')
                         ->one();
                 }
             }
@@ -1752,13 +1754,9 @@ class ClansController extends BaseApiController
      */
     protected function serializeMemberStatistics(ClanMemberStatistics $row): array
     {
-        $data = $row->getAttributes();
-        if ($row->hasAttribute('member_status')) {
-            $data['member_status'] = $row->member_status;
-        }
-        if ($row->hasAttribute('frozen_at')) {
-            $data['frozen_at'] = $row->frozen_at !== null ? (int)$row->frozen_at : null;
-        }
+        $data = $row->getStatisticsForApi();
+        $data['member_status'] = $row->member_status;
+        $data['frozen_at'] = $row->frozen_at !== null ? (int)$row->frozen_at : null;
 
         return $data;
     }

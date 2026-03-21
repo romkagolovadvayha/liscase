@@ -267,6 +267,7 @@ class ClanStatistics extends ActiveRecord
     {
         $memberStatistics = ClanMemberStatistics::find()
             ->where(['clan_id' => $this->clan_id, 'server_id' => $this->server_id, 'wipe' => $this->wipe])
+            ->with('statValues')
             ->all();
 
         $this->resetStatistics();
@@ -509,7 +510,7 @@ class ClanStatistics extends ActiveRecord
             $wipe,
             $statisticsKeys
         );
-        $schema = new ClanMemberStatistics();
+        $allowedDeltaKeys = array_flip(ClanMemberStatistics::getMemberDeltaStatDbKeys());
 
         $result = [];
         foreach ($statisticsKeys as $key) {
@@ -518,7 +519,7 @@ class ClanStatistics extends ActiveRecord
             $delta = max(0, $current - $base);
 
             $dbKey = str_replace('.', '_', $key);
-            if ($schema->hasAttribute($dbKey)) {
+            if (isset($allowedDeltaKeys[$dbKey])) {
                 $result[$dbKey] = $delta;
             }
         }

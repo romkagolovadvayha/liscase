@@ -142,6 +142,7 @@ class ClanController extends BackendController
                     'server_id' => $model->server_id,
                     'wipe' => $wipe,
                 ])
+                ->with('statValues')
                 ->indexBy('clan_member_id')
                 ->all();
         }

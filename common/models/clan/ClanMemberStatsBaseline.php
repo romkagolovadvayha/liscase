@@ -27,7 +27,7 @@ class ClanMemberStatsBaseline extends ActiveRecord
     }
 
     /**
-     * Все ключи метрик, которые пишутся в clan_member_statistics.
+     * Все ключи метрик, которые пишутся в clan_member_statistics_values (дельта за вайп).
      */
     public static function getTrackedStatKeys(): array
     {
