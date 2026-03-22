@@ -301,11 +301,15 @@ class ClansController extends BaseApiController
                 $kills = $stat ? (int)$stat->getStatValue('kills') : 0;
                 $deaths = $stat ? (int)$stat->getStatValue('deaths') : 0;
                 $kd = $deaths > 0 ? round($kills / $deaths, 2) : (float)$kills;
+                $displayStatus = $m->user ? $m->user->getDisplayStatus() : null;
                 $enriched[] = [
                     'kills' => $kills,
                     'deaths' => $deaths,
                     'kd' => $kd,
                     'user' => $m->user ? $this->serializeUser($m->user) : null,
+                    /** как в UserTop / tops: null если VIP скрыл статус */
+                    'status' => $displayStatus === null ? null : (bool) $displayStatus,
+                    'is_hidden' => $m->user !== null && $displayStatus === null,
                 ];
             }
             usort($enriched, static function ($a, $b) {

@@ -42,7 +42,7 @@ class SettingsController extends BaseApiController
      *     operationId="getSettings",
      *     tags={"Settings"},
      *     summary="Получить публичные настройки сайта",
-     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot, clans",
+     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot",
      *     @OA\Parameter(
      *         name="categories",
      *         in="query",
@@ -62,7 +62,8 @@ class SettingsController extends BaseApiController
      *                     @OA\Property(property="design", type="object"),
      *                     @OA\Property(property="social", type="object"),
      *                     @OA\Property(property="section", type="object"),
-     *                     @OA\Property(property="metrics", type="object")
+     *                     @OA\Property(property="metrics", type="object"),
+     *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — изображения подиума")
      *                 )
      *             )
      *         )
