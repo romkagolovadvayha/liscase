@@ -84,7 +84,14 @@ if ($moderOrSupport) {
                 'icon' => 'fas fa-folder-tree',
                 'url' => ['/ftp-manager/index'],
                 'visibility' => $admin,
-                'active' => _checkActive('/ftp-manager'),
+                'active' => _checkActive('/ftp-manager/index') || ( _checkActive('/ftp-manager') && !_checkActive('/ftp-manager/broadcast') ),
+            ],
+            [
+                'label' => 'FTP: все сервера',
+                'icon' => 'fas fa-cloud-arrow-up',
+                'url' => ['/ftp-manager/broadcast'],
+                'visibility' => $admin,
+                'active' => _checkActive('/ftp-manager/broadcast'),
             ],
             [
                 'label' => 'Карты',

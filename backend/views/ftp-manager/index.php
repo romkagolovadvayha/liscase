@@ -37,7 +37,10 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
 <div class="ftp-manager-page w-full flex flex-col min-h-0 flex-1">
     <div class="flex items-center justify-between gap-4 flex-wrap p-4 border-b border-[hsl(0_0%_15.3%_/_1)]">
-        <h2 class="text-sm font-semibold text-white uppercase tracking-wide m-0">FTP менеджер</h2>
+        <div class="flex items-center gap-4 flex-wrap">
+            <h2 class="text-sm font-semibold text-white uppercase tracking-wide m-0">FTP менеджер</h2>
+            <?= Html::a('<i class="fas fa-cloud-arrow-up mr-1"></i> Все сервера (одна папка)', ['broadcast'], ['class' => 'text-xs text-blue-400 hover:text-blue-300 whitespace-nowrap']) ?>
+        </div>
         <div class="flex items-center gap-2">
             <label class="text-xs text-gray-400">Открыть сервер:</label>
             <select id="ftp-server-select" class="ds-select bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] text-white rounded px-3 py-1.5 text-sm min-w-[200px]">

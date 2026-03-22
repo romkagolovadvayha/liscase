@@ -35,6 +35,7 @@ class FtpManagerController extends BackendController
                 'class' => VerbFilter::class,
                 'actions' => [
                     'upload' => ['POST'],
+                    'upload-all' => ['POST'],
                     'delete' => ['POST'],
                     'save-content' => ['POST'],
                     'create-dir' => ['POST'],
@@ -62,6 +63,126 @@ class FtpManagerController extends BackendController
         return $this->render('index', [
             'serversWithFtp' => $serversWithFtp,
         ]);
+    }
+
+    /**
+     * Одна директория на всех серверах: вкладки со списками и загрузка файла сразу на все FTP.
+     */
+    public function actionBroadcast()
+    {
+        $serversWithFtp = Servers::find()
+            ->andWhere(['not', ['ftp_login' => null]])
+            ->andWhere(['<>', 'ftp_login', ''])
+            ->andWhere(['not', ['ftp_password' => null]])
+            ->andWhere(['<>', 'ftp_password', ''])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->params['showFilters'] = false;
+
+        return $this->render('broadcast', [
+            'serversWithFtp' => $serversWithFtp,
+        ]);
+    }
+
+    /**
+     * API: загрузить один файл в указанную директорию на всех серверах с FTP (или на выбранных).
+     */
+    public function actionUploadAll()
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $path = (string)Yii::$app->request->post('path', '/');
+        $file = UploadedFile::getInstanceByName('file');
+        if (!$file) {
+            return ['success' => false, 'error' => 'Файл не выбран'];
+        }
+
+        $rawIds = Yii::$app->request->post('server_ids');
+        if (is_string($rawIds)) {
+            $decoded = json_decode($rawIds, true);
+            $serverIds = is_array($decoded) ? $decoded : [];
+        } elseif (is_array($rawIds)) {
+            $serverIds = $rawIds;
+        } else {
+            $serverIds = [];
+        }
+        $serverIds = array_values(array_unique(array_filter(array_map('intval', $serverIds))));
+
+        $query = Servers::find()
+            ->andWhere(['not', ['ftp_login' => null]])
+            ->andWhere(['<>', 'ftp_login', ''])
+            ->andWhere(['not', ['ftp_password' => null]])
+            ->andWhere(['<>', 'ftp_password', ''])
+            ->orderBy(['sort' => SORT_ASC]);
+        if ($serverIds !== []) {
+            $query->andWhere(['id' => $serverIds]);
+        }
+        /** @var Servers[] $servers */
+        $servers = $query->all();
+        if ($servers === []) {
+            return ['success' => false, 'error' => 'Нет серверов с настроенным FTP'];
+        }
+
+        $safeName = preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->name) ?: 'upload.bin';
+        $tmpPath = Yii::getAlias('@runtime') . '/ftp_upload_all_' . uniqid('', true) . '_' . $safeName;
+        if (!$file->saveAs($tmpPath)) {
+            return ['success' => false, 'error' => 'Не удалось сохранить файл для отправки'];
+        }
+
+        $remotePath = rtrim(str_replace('\\', '/', $path), '/') . '/' . $file->name;
+        $results = [];
+        $okCount = 0;
+        try {
+            foreach ($servers as $server) {
+                $helper = new FtpHelper($server);
+                if (!$helper->connect()) {
+                    $results[] = [
+                        'server_id' => (int)$server->id,
+                        'name' => $server->name,
+                        'success' => false,
+                        'error' => 'Не удалось подключиться к FTP',
+                    ];
+                    continue;
+                }
+                try {
+                    if ($helper->upload($tmpPath, $remotePath)) {
+                        $results[] = [
+                            'server_id' => (int)$server->id,
+                            'name' => $server->name,
+                            'success' => true,
+                        ];
+                        $okCount++;
+                    } else {
+                        $results[] = [
+                            'server_id' => (int)$server->id,
+                            'name' => $server->name,
+                            'success' => false,
+                            'error' => 'Ошибка загрузки на сервер',
+                        ];
+                    }
+                } finally {
+                    $helper->disconnect();
+                }
+            }
+        } finally {
+            if (is_file($tmpPath)) {
+                @unlink($tmpPath);
+            }
+        }
+
+        $total = count($results);
+        $allOk = $okCount === $total;
+
+        return [
+            'success' => $allOk,
+            'results' => $results,
+            'summary' => [
+                'ok' => $okCount,
+                'fail' => $total - $okCount,
+                'total' => $total,
+            ],
+        ];
     }
 
     /**
