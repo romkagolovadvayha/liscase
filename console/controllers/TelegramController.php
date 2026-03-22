@@ -2,6 +2,7 @@
 
 namespace console\controllers;
 
+use common\components\telegram\TelegramCurlProxy;
 use common\models\user\User;
 use yii\console\Controller;
 
@@ -19,6 +20,7 @@ class TelegramController extends Controller
             CURLOPT_POSTFIELDS => json_encode($params, JSON_UNESCAPED_UNICODE),
             CURLOPT_TIMEOUT => 15,
         ]);
+        TelegramCurlProxy::applyFromSettings($ch);
         $raw = curl_exec($ch);
         $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);

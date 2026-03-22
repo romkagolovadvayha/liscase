@@ -23,6 +23,7 @@ class TelegramSupport
         curl_setopt($ch, CURLOPT_USERAGENT, "PostManGoBot 1.0");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        TelegramCurlProxy::applyFromSettings($ch);
 
         if (!empty($params)) {
             $attachments = ['photo', 'audio', 'document', 'video'];

@@ -41,6 +41,7 @@ class TelegramApiHelper extends \yii\base\Component
         curl_setopt($ch, CURLOPT_USERAGENT, "PostManGoBot 1.0");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        TelegramCurlProxy::applyFromSettings($ch);
 
         if (!empty($params)) {
 
@@ -80,7 +81,7 @@ class TelegramApiHelper extends \yii\base\Component
 
         $answer = curl_exec($ch);
         if ($answer === false) {
-            Yii::$app->telegramChats->sendMessage('empty telegram query answer ' . curl_error($ch));
+            Yii::error('empty telegram query answer ' . curl_error($ch), __METHOD__);
         }
 
         curl_close($ch);

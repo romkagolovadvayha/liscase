@@ -111,6 +111,7 @@ class TelegramChannelHelper extends \yii\base\Component
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        TelegramCurlProxy::applyFromSettings($ch);
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

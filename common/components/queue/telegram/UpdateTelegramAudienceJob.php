@@ -2,6 +2,7 @@
 
 namespace common\components\queue\telegram;
 
+use common\components\telegram\TelegramCurlProxy;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
@@ -90,6 +91,7 @@ class UpdateTelegramAudienceJob extends BaseObject implements JobInterface
             CURLOPT_POSTFIELDS => json_encode($params, JSON_UNESCAPED_UNICODE),
             CURLOPT_TIMEOUT => 15,
         ]);
+        TelegramCurlProxy::applyFromSettings($ch);
         $raw = curl_exec($ch);
         $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
