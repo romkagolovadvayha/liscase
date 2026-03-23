@@ -11,10 +11,10 @@ use common\models\user\UserTop;
  */
 class StatsCacheHelper
 {
-    /** Ключ кэша: api_stats_{serverTag}_{wipe} */
+    /** Ключ кэша: api_stats_v2_{serverTag}_{wipe} (v2 — с avatar_frame_url в топах) */
     public static function cacheKey(string $serverTag, ?string $wipe): string
     {
-        return 'api_stats_' . $serverTag . '_' . ($wipe ?? 'current');
+        return 'api_stats_v2_' . $serverTag . '_' . ($wipe ?? 'current');
     }
 
     /** TTL кэша в секундах (5 минут, как в API). */

@@ -314,7 +314,8 @@ ORDER BY server_id, `key`, value DESC;
      */
     public static function getUserTops($server, $wipe, $update = false)
     {
-        $cacheKey = "User_Top___getUserTops_{$server->id}_{$wipe}";
+        // v2: записи в items с avatar_frame_url; смена суффикса сбрасывает старый кэш без полей
+        $cacheKey = "User_Top___getUserTops_v2_{$server->id}_{$wipe}";
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             $items = Yii::$app->cache->get($cacheKey);
         }
