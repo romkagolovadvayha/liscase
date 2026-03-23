@@ -1620,6 +1620,12 @@ class ClansController extends BaseApiController
     {
         $countryCode = $user->getCountryByIp();
         $displayStatus = $user->getDisplayStatus();
+        $lastVisitAt = null;
+        if (!empty($user->last_visit_server_at)) {
+            $ts = strtotime($user->last_visit_server_at);
+            $lastVisitAt = $ts !== false ? (int)$ts : null;
+        }
+
         return [
             'id' => (int)$user->id,
             'username' => $user->username,
@@ -1630,6 +1636,8 @@ class ClansController extends BaseApiController
             'avatar_frame_url' => $user->getAvatarFrameImageUrl(),
             'status' => $displayStatus === null ? null : (bool)$displayStatus,
             'is_hidden' => $displayStatus === null,
+            /** Unix time — последний заход на сервер (для активности за неделю в UI кланов и т.п.) */
+            'last_visit_server_at' => $lastVisitAt,
         ];
     }
 
