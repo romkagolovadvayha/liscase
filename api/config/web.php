@@ -117,6 +117,7 @@ $config = [
                 ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/posts', 'route' => 'v1/clans/post-create', 'verb' => ['POST', 'OPTIONS']],
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/posts' => 'v1/clans/posts-list',
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics/member/<memberId:\d+>' => 'v1/clans/member-statistics',
+                'v1/clans/<serverTag:[\w-]+>/<id:\d+>/player-kills' => 'v1/clans/player-kills',
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics' => 'v1/clans/statistics',
                 ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members/<memberId:\d+>/permissions', 'route' => 'v1/clans/member-permissions', 'verb' => ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS']],
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members' => 'v1/clans/members',

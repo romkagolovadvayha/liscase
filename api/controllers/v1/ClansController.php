@@ -16,6 +16,7 @@ use common\models\clan\ClanMemberStatistics;
 use common\models\clan\ClanPermission;
 use common\models\clan\ClanRanking;
 use common\models\servers\Servers;
+use common\models\statistics\Kills as KillsStats;
 use common\models\user\User;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -548,6 +549,84 @@ class ClansController extends BaseApiController
         $clan = Clan::find()->where(['id' => $clan->id])->with(['leaderUser.userProfile', 'server'])->one();
 
         return $this->successResponse($this->serializeClanDetail($clan, $this->getActiveMember($clan)));
+    }
+
+    /**
+     * GET /v1/clans/{serverTag}/{id}/player-kills
+     * История убийств по всем активным участникам за вайп (как вкладка «Убийства» у игрока, без дуэлей).
+     */
+    public function actionPlayerKills($serverTag, $id)
+    {
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $server = $clan->server;
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $wipeParam = Yii::$app->request->get('wipe');
+        $resolvedWipe = ($wipeParam !== null && $wipeParam !== '')
+            ? (string)$wipeParam
+            : $server->currentWipe();
+
+        $members = $clan->getMembers()
+            ->andWhere(['IS', 'leave_date', null])
+            ->with('user')
+            ->all();
+        $steamIds = [];
+        foreach ($members as $m) {
+            $u = $m->user;
+            if ($u && !empty($u->steam_id) && strlen((string)$u->steam_id) === 17) {
+                $steamIds[] = (string)$u->steam_id;
+            }
+        }
+        $steamIds = array_values(array_unique($steamIds));
+
+        $wipeKey = str_replace('/', '_', (string)($resolvedWipe ?? 'current'));
+        $cacheKey = 'api_clan_player_kills_' . $serverTag . '_' . (int)$id . '_' . $wipeKey . '_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached === false) {
+            $killsList = KillsStats::getKillsForSteamIds($server, $steamIds, 30, $resolvedWipe);
+            $cached = [
+                'kills' => $this->mapClanKillsForApi($killsList),
+                'medical' => [],
+            ];
+            Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
+
+        return $this->successResponse($cached);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $killsList
+     * @return array<int, array<string, mixed>>
+     */
+    private function mapClanKillsForApi(array $killsList): array
+    {
+        return array_map(function ($k) {
+            return [
+                'id' => (int)($k['id'] ?? 0),
+                'type' => $k['type'] ?? 'kill',
+                'steam_id' => $k['steam_id'] ?? '',
+                'dead' => $k['dead'] ?? '',
+                'weapon' => $k['weapon'] ?? null,
+                'weapon_name' => $k['weapon_name'] ?? null,
+                'weapon_image' => $k['weapon_image'] ?? null,
+                'distance' => (int)($k['distance'] ?? 0),
+                'name' => $k['name'] ?? null,
+                'link' => $k['link'] ?? null,
+                'avatar' => $k['avatar'] ?? null,
+                'dead_name' => $k['dead_name'] ?? null,
+                'dead_link' => $k['dead_link'] ?? null,
+                'dead_avatar' => $k['dead_avatar'] ?? null,
+                'deadLink' => $k['dead_link'] ?? null,
+                'signs' => $k['signs'] ?? null,
+                'wears' => $k['wears'] ?? null,
+                'bot' => !empty($k['bot']),
+                'animal' => $k['animal'] ?? null,
+                'animal2' => $k['animal2'] ?? null,
+                'created_at' => $k['created_at'] ?? '',
+            ];
+        }, $killsList);
     }
 
     /**
