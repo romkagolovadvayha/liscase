@@ -1594,11 +1594,13 @@ class ClansController extends BaseApiController
 
     protected function serializeUser(User $user): array
     {
+        $countryCode = $user->getCountryByIp();
         return [
             'id' => (int)$user->id,
             'username' => $user->username,
             'steam_id' => $user->steam_id,
             'avatar' => $user->getAvatar(),
+            'country_code' => $countryCode ? strtoupper($countryCode) : null,
         ];
     }
 

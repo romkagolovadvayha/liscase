@@ -85,6 +85,9 @@ use yii\web\JsExpression;
  * @property bool            $is_telegram_blocked
  * @property bool            $is_wipe_calendar_visitor
  * @property int             $floating_price_percent
+ * @property string|null     $ip_country_code
+ * @property string|null     $ip_country_source_ip
+ * @property int|null        $ip_country_updated_at
  *
  * @property UserProfile     $userProfile
  * @property UserBalance[]   $userBalances
@@ -1379,12 +1382,35 @@ class User extends ActiveRecord implements IdentityInterface
         if (empty($this->ip)) {
             return null;
         }
+
+        $currentIp = trim((string)$this->ip);
+        if ($this->hasAttribute('ip_country_source_ip') && $this->hasAttribute('ip_country_code')) {
+            $cachedIp = trim((string)$this->ip_country_source_ip);
+            $cachedCode = trim((string)$this->ip_country_code);
+            if ($cachedCode !== '' && $cachedIp !== '' && $cachedIp === $currentIp) {
+                return strtolower($cachedCode);
+            }
+        }
+
         try {
             $reader = new Reader(__DIR__ . '/countries/GeoLite2-Country.mmdb');
-            $record = $reader->country($this->ip);
-            return strtolower($record->country->isoCode);
+            $record = $reader->country($currentIp);
+            $countryCode = strtolower((string)$record->country->isoCode);
+            if (
+                $countryCode !== ''
+                && $this->hasAttribute('ip_country_code')
+                && $this->hasAttribute('ip_country_source_ip')
+                && $this->hasAttribute('ip_country_updated_at')
+            ) {
+                $this->ip_country_code = strtoupper($countryCode);
+                $this->ip_country_source_ip = $currentIp;
+                $this->ip_country_updated_at = time();
+                $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
+            }
+
+            return $countryCode;
         } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage("getCountryByIp: {$this->ip} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            Yii::$app->telegramChats->sendMessage("getCountryByIp: {$currentIp} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             return null;
         }
     }
