@@ -10,7 +10,6 @@ use common\models\statistics\Statistics;
 use common\models\statistics\Kills;
 use common\models\statistics\Reports;
 use common\models\user\User;
-use common\models\avatar\AvatarFrame;
 use common\models\tasks_v2\TaskV2;
 use common\models\tasks_v2\TaskV2UserCompletion;
 use common\models\user\UserTop;
@@ -891,15 +890,17 @@ class StatsController extends BaseApiController
         // Всегда подставляем актуальный текущий вайп сервера для отображения на фронте
         $cached['player']['current_wipe'] = $server->currentWipe();
 
-        // Рамка может меняться в любой момент (выбор VIP), поэтому подставляем актуальную из БД поверх кеша.
+        // Рамка и VIP — актуальные из БД поверх кеша (VIP мог истечь; без VIP рамку не отдаём, хотя в БД может остаться avatar_frame).
         $userNow = User::findOne(['steam_id' => $steamId]);
-        $frameId = (int)($userNow ? $userNow->avatar_frame : 0);
-        $cached['player']['avatar_frame_id'] = $frameId > 0 ? $frameId : null;
+        $cached['player']['avatar_frame_id'] = null;
         $cached['player']['avatar_frame_url'] = null;
-        if ($frameId > 0) {
-            $frame = AvatarFrame::find()->where(['id' => $frameId, 'is_active' => 1])->one();
-            if ($frame) {
-                $cached['player']['avatar_frame_url'] = $frame->getImageUrl();
+        if ($userNow) {
+            $cached['player']['has_vip'] = $userNow->hasVip();
+            $frameUrl = $userNow->getAvatarFrameImageUrl();
+            if ($frameUrl !== null) {
+                $fid = (int)($userNow->avatar_frame ?? 0);
+                $cached['player']['avatar_frame_id'] = $fid > 0 ? $fid : null;
+                $cached['player']['avatar_frame_url'] = $frameUrl;
             }
         }
 

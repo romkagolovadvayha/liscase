@@ -351,6 +351,7 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
+                            'avatar_frame_url' => $user->getAvatarFrameImageUrl(),
                             'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
                             'is_hidden' => $displayStatus === null,
                         ];
@@ -378,6 +379,7 @@ ORDER BY server_id, `key`, value DESC;
                             'link' => "/servers/{$server->tag}/{$user->steam_id}",
                             'username' => $user->username,
                             'avatar' => $user->getAvatar(),
+                            'avatar_frame_url' => $user->getAvatarFrameImageUrl(),
                             'status' => $displayStatus === null ? null : ($displayStatus ? true : false),
                             'is_hidden' => $displayStatus === null,
                         ];

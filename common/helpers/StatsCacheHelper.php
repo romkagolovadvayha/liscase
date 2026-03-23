@@ -86,6 +86,7 @@ class StatsCacheHelper
                         'link' => $item['link'] ?? '',
                         'username' => $item['username'] ?? '',
                         'avatar' => $item['avatar'] ?? '',
+                        'avatar_frame_url' => $item['avatar_frame_url'] ?? null,
                         'status' => $item['status'] ?? null,
                         'is_hidden' => $item['is_hidden'] ?? false,
                     ];

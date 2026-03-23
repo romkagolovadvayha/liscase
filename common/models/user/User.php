@@ -9,6 +9,7 @@ use common\components\queue\process\DiscordRolesUserJob;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\components\web\Cookie;
+use common\models\avatar\AvatarFrame;
 use common\models\auth\AuthAssignment;
 use common\models\bans\Bans;
 use common\models\box\Drop;
@@ -838,6 +839,19 @@ class User extends ActiveRecord implements IdentityInterface
             return Yii::$app->settings->get('site_cdnUrl') . $this->userProfile->avatar;
         }
         return '';
+    }
+
+    /**
+     * URL PNG рамки VIP-аватара (для топов, профиля и т.д.). Без VIP или без рамки — null.
+     */
+    public function getAvatarFrameImageUrl(): ?string
+    {
+        $fid = (int)($this->avatar_frame ?? 0);
+        if ($fid <= 0 || !$this->hasVip()) {
+            return null;
+        }
+        $frame = AvatarFrame::find()->where(['id' => $fid, 'is_active' => 1])->one();
+        return $frame ? $frame->getImageUrl() : null;
     }
 
     public function getStatus() {
