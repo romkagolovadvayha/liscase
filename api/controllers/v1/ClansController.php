@@ -874,34 +874,12 @@ class ClansController extends BaseApiController
      */
     public function actionPromote($serverTag, $id)
     {
-        $user = $this->getCurrentUser();
-        $clan = $this->findClanByServerTag($serverTag, (int)$id);
-        $member = $this->requireClanMember($clan);
-        if (!$member->canPromoteDemote()) {
-            throw new ForbiddenHttpException('No permission to promote members');
-        }
-
-        $body = $this->getJsonBody();
-        $targetUserId = isset($body['user_id']) ? (int)$body['user_id'] : 0;
-        if (! $targetUserId) {
-            throw new BadRequestHttpException('user_id is required');
-        }
-
-        $targetMember = ClanMember::find()
-            ->where(['clan_id' => $clan->id, 'user_id' => $targetUserId])
-            ->andWhere(['IS', 'leave_date', null])
-            ->one();
-
-        if (!$targetMember || $targetMember->role === ClanMember::ROLE_OFFICER) {
-            throw new NotFoundHttpException('Member not found or already officer');
-        }
-
-        $targetMember->role = ClanMember::ROLE_OFFICER;
-        if ($targetMember->save()) {
-            $clan->addEvent('member_promoted', Yii::t('common', 'Пользователь {username} повышен до офицера', ['username' => $targetMember->user->username]), $user->id);
-        }
-
-        return $this->successResponse(['promoted' => true]);
+        return $this->errorResponse(
+            'OFFICER_ROLE_REMOVED',
+            'Officer role is removed. Manage member capabilities using permission keys.',
+            [],
+            410
+        );
     }
 
     /**
@@ -909,37 +887,12 @@ class ClansController extends BaseApiController
      */
     public function actionDemote($serverTag, $id)
     {
-        $user = $this->getCurrentUser();
-        $clan = $this->findClanByServerTag($serverTag, (int)$id);
-        $member = $this->requireClanMember($clan);
-        if (!$member->canPromoteDemote()) {
-            throw new ForbiddenHttpException('No permission to demote members');
-        }
-
-        $body = $this->getJsonBody();
-        $targetUserId = isset($body['user_id']) ? (int)$body['user_id'] : 0;
-        if (! $targetUserId) {
-            throw new BadRequestHttpException('user_id is required');
-        }
-
-        $targetMember = ClanMember::find()
-            ->where(['clan_id' => $clan->id, 'user_id' => $targetUserId])
-            ->andWhere(['IS', 'leave_date', null])
-            ->one();
-
-        if (!$targetMember || $targetMember->role === ClanMember::ROLE_MEMBER) {
-            throw new NotFoundHttpException('Member not found or already member');
-        }
-        if ($targetMember->isLeader()) {
-            return $this->errorResponse('CANNOT_DEMOTE_LEADER', 'Cannot demote the leader', [], 400);
-        }
-
-        $targetMember->role = ClanMember::ROLE_MEMBER;
-        if ($targetMember->save()) {
-            $clan->addEvent('member_demoted', Yii::t('common', 'Пользователь {username} понижен до участника', ['username' => $targetMember->user->username]), $user->id);
-        }
-
-        return $this->successResponse(['demoted' => true]);
+        return $this->errorResponse(
+            'OFFICER_ROLE_REMOVED',
+            'Officer role is removed. Manage member capabilities using permission keys.',
+            [],
+            410
+        );
     }
 
     /**
@@ -1803,7 +1756,8 @@ class ClansController extends BaseApiController
         }
 
         usort($out, static function (array $a, array $b): int {
-            $order = ['leader' => 0, 'officer' => 1, 'member' => 2];
+            // Officer rank is deprecated; sort it as a regular member.
+            $order = ['leader' => 0, 'member' => 1, 'officer' => 1];
             $ra = $order[$a['role'] ?? ''] ?? 9;
             $rb = $order[$b['role'] ?? ''] ?? 9;
             if ($ra !== $rb) {

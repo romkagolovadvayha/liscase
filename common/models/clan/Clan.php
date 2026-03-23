@@ -441,8 +441,8 @@ class Clan extends ActiveRecord
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
-            // Старый лидер становится офицером
-            $oldLeader->role = ClanMember::ROLE_OFFICER;
+            // Старый лидер становится обычным участником (офицерский ранг больше не используется)
+            $oldLeader->role = ClanMember::ROLE_MEMBER;
             $oldLeader->save(false);
             
             // Новый лидер
