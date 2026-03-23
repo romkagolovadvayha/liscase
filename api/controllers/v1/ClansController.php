@@ -1438,7 +1438,31 @@ class ClansController extends BaseApiController
         }
 
         $file = UploadedFile::getInstanceByName('file');
-        if (!$file || !$file->tempName) {
+        if ($file === null) {
+            return $this->errorResponse('NO_FILE', 'File required (field name: file)', [], 400);
+        }
+        if ($file->hasError) {
+            $phpErr = (int)$file->error;
+            if ($phpErr === UPLOAD_ERR_INI_SIZE || $phpErr === UPLOAD_ERR_FORM_SIZE) {
+                return $this->errorResponse(
+                    'FILE_TOO_LARGE',
+                    'File exceeds PHP upload limits (upload_max_filesize / post_max_size). Max image size after processing is 5MB.',
+                    ['php_upload_error' => $phpErr],
+                    400
+                );
+            }
+            if ($phpErr === UPLOAD_ERR_PARTIAL) {
+                return $this->errorResponse('UPLOAD_ERROR', 'File partially uploaded', ['php_upload_error' => $phpErr], 400);
+            }
+
+            return $this->errorResponse(
+                'UPLOAD_ERROR',
+                'Upload failed (PHP code ' . $phpErr . ')',
+                ['php_upload_error' => $phpErr],
+                400
+            );
+        }
+        if ($file->tempName === '' || $file->tempName === null) {
             return $this->errorResponse('NO_FILE', 'File required (field name: file)', [], 400);
         }
 
@@ -1595,12 +1619,17 @@ class ClansController extends BaseApiController
     protected function serializeUser(User $user): array
     {
         $countryCode = $user->getCountryByIp();
+        $displayStatus = $user->getDisplayStatus();
         return [
             'id' => (int)$user->id,
             'username' => $user->username,
             'steam_id' => $user->steam_id,
             'avatar' => $user->getAvatar(),
             'country_code' => $countryCode ? strtoupper($countryCode) : null,
+            'has_vip' => $user->hasVip(),
+            'avatar_frame_url' => $user->getAvatarFrameImageUrl(),
+            'status' => $displayStatus === null ? null : (bool)$displayStatus,
+            'is_hidden' => $displayStatus === null,
         ];
     }
 
