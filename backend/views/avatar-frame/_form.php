@@ -1,0 +1,39 @@
+<?php
+
+use common\models\avatar\AvatarFrame;
+use yii\helpers\Html;
+use yii\widgets\ActiveForm;
+
+/** @var yii\web\View $this */
+/** @var AvatarFrame $model */
+?>
+
+<div class="p-4 max-w-[720px]">
+    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
+
+    <?= $form->field($model, 'name')->textInput(['maxlength' => true]) ?>
+    <?= $form->field($model, 'sort')->textInput(['type' => 'number']) ?>
+    <?= $form->field($model, 'is_active')->dropDownList([1 => 'Да', 0 => 'Нет']) ?>
+
+    <div class="form-group mb-3">
+        <label class="control-label">Файл рамки (PNG/WebP)</label>
+        <input type="file" name="frame_file" class="form-control" accept=".png,.webp,image/png,image/webp">
+        <div class="help-block text-muted small mt-1">Рекомендуется квадрат 140x140 или больше, прозрачный фон.</div>
+    </div>
+
+    <?php if (!$model->isNewRecord && $model->getImageUrl()): ?>
+        <div class="mb-3">
+            <div class="small text-muted mb-2">Текущая рамка:</div>
+            <img src="<?= Html::encode($model->getImageUrl()) ?>" alt="" style="width:84px;height:84px;object-fit:contain;background:#101214;border-radius:10px;padding:3px;">
+        </div>
+    <?php endif; ?>
+
+    <?= $form->field($model, 'image_key')->textInput(['maxlength' => true, 'readonly' => true]) ?>
+
+    <div class="form-group mt-4">
+        <?= Html::submitButton($model->isNewRecord ? 'Создать' : 'Сохранить', ['class' => 'btn btn-success']) ?>
+    </div>
+
+    <?php ActiveForm::end(); ?>
+</div>
+

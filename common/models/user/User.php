@@ -1380,6 +1380,21 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function getCountryByIp() {
         if (empty($this->ip)) {
+            if (
+                $this->hasAttribute('ip_country_code')
+                && $this->hasAttribute('ip_country_source_ip')
+                && $this->hasAttribute('ip_country_updated_at')
+                && (
+                    !empty($this->ip_country_code)
+                    || !empty($this->ip_country_source_ip)
+                    || !empty($this->ip_country_updated_at)
+                )
+            ) {
+                $this->ip_country_code = null;
+                $this->ip_country_source_ip = null;
+                $this->ip_country_updated_at = time();
+                $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
+            }
             return null;
         }
 
@@ -1406,10 +1421,31 @@ class User extends ActiveRecord implements IdentityInterface
                 $this->ip_country_source_ip = $currentIp;
                 $this->ip_country_updated_at = time();
                 $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
+            } elseif (
+                $this->hasAttribute('ip_country_code')
+                && $this->hasAttribute('ip_country_source_ip')
+                && $this->hasAttribute('ip_country_updated_at')
+            ) {
+                // Если IP уже новый, но код страны не определился — очищаем старый кэш.
+                $this->ip_country_code = null;
+                $this->ip_country_source_ip = $currentIp;
+                $this->ip_country_updated_at = time();
+                $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
             }
 
             return $countryCode;
         } catch (\Exception $e) {
+            if (
+                $this->hasAttribute('ip_country_code')
+                && $this->hasAttribute('ip_country_source_ip')
+                && $this->hasAttribute('ip_country_updated_at')
+            ) {
+                // Не оставляем страну от старого IP.
+                $this->ip_country_code = null;
+                $this->ip_country_source_ip = $currentIp;
+                $this->ip_country_updated_at = time();
+                $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
+            }
             Yii::$app->telegramChats->sendMessage("getCountryByIp: {$currentIp} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             return null;
         }

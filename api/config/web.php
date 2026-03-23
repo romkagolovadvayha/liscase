@@ -136,6 +136,8 @@ $config = [
 
                 // Settings
                 'v1/settings' => 'v1/settings/index',
+                ['pattern' => 'v1/avatar-frames/select', 'route' => 'v1/avatar-frame/select', 'verb' => ['POST', 'OPTIONS']],
+                'v1/avatar-frames' => 'v1/avatar-frame/index',
 
                 // Translations (i18n для фронта — один запрос все ключи)
                 'v1/translations/report-missing' => 'v1/translations/report-missing',

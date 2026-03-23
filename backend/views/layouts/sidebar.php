@@ -161,6 +161,14 @@ if ($moder) {
         'active' => _checkActive('/support-sticker'),
     ];
 }
+if ($moderOrSupport) {
+    $moderationItems[] = [
+        'label' => Yii::t('common', 'Рамки аватаров'),
+        'icon' => 'fa-regular fa-square',
+        'url' => ['/avatar-frame/index'],
+        'active' => _checkActive('/avatar-frame'),
+    ];
+}
 
 // Управление
 if ($admin) {
