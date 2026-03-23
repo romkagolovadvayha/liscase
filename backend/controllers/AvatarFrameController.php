@@ -60,6 +60,8 @@ class AvatarFrameController extends Controller
     {
         $model = new AvatarFrame();
         if ($this->request->isPost && $model->load($this->request->post())) {
+            $model->name = 'frame_' . uniqid('', false);
+            $model->sort = $this->getNextSort();
             if ($this->uploadFrameFile($model, null) && $model->save()) {
                 Yii::$app->session->setFlash('success', Yii::t('common', 'Рамка добавлена'));
                 return $this->redirect(['index']);
@@ -123,7 +125,7 @@ class AvatarFrameController extends Controller
             return false;
         }
 
-        $newKey = 'uploads/avatar-frames/frame_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+        $newKey = 'uploads/avatar-frames/frame_' . uniqid('', true) . '.' . $ext;
         $uploaded = Yii::$app->s3Api->putFile($newKey, $file->tempName, $file->type ?: 'image/png');
         if ($uploaded === false) {
             $model->addError('image_key', 'Не удалось загрузить файл в S3');
@@ -136,6 +138,12 @@ class AvatarFrameController extends Controller
         }
 
         return true;
+    }
+
+    private function getNextSort(): int
+    {
+        $maxSort = (int)AvatarFrame::find()->max('sort');
+        return $maxSort > 0 ? $maxSort + 1 : 1;
     }
 }
 

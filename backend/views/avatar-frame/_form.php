@@ -11,8 +11,6 @@ use yii\widgets\ActiveForm;
 <div class="p-4 max-w-[720px]">
     <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data']]); ?>
 
-    <?= $form->field($model, 'name')->textInput(['maxlength' => true]) ?>
-    <?= $form->field($model, 'sort')->textInput(['type' => 'number']) ?>
     <?= $form->field($model, 'is_active')->dropDownList([1 => 'Да', 0 => 'Нет']) ?>
 
     <div class="form-group mb-3">
@@ -27,8 +25,6 @@ use yii\widgets\ActiveForm;
             <img src="<?= Html::encode($model->getImageUrl()) ?>" alt="" style="width:84px;height:84px;object-fit:contain;background:#101214;border-radius:10px;padding:3px;">
         </div>
     <?php endif; ?>
-
-    <?= $form->field($model, 'image_key')->textInput(['maxlength' => true, 'readonly' => true]) ?>
 
     <div class="form-group mt-4">
         <?= Html::submitButton($model->isNewRecord ? 'Создать' : 'Сохранить', ['class' => 'btn btn-success']) ?>
