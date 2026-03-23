@@ -342,6 +342,7 @@ class ClanStatistics extends ActiveRecord
             'total_gathered_sunflower', 'total_gathered_wheat',
             'total_playtime', 'total_crate_open', 'total_barrel', 'total_helicopters', 'total_bradleys',
             'total_research_table_looted', 'total_excavator_mined',
+            'total_codelockedhackablecrate_oilrig', 'total_codelockedhackablecrate', 'total_crate_elite', 'total_crate_normal', 'total_supply_drop',
         ];
     }
 
@@ -429,6 +430,11 @@ class ClanStatistics extends ActiveRecord
         $this->addToStat('total_gathered_wheat', $memberStat->gathered_wheat);
 
         $this->addToStat('total_playtime', $memberStat->playtime);
+        $this->addToStat('total_codelockedhackablecrate_oilrig', $memberStat->codelockedhackablecrate_oilrig);
+        $this->addToStat('total_codelockedhackablecrate', $memberStat->codelockedhackablecrate);
+        $this->addToStat('total_crate_elite', $memberStat->crate_elite);
+        $this->addToStat('total_crate_normal', $memberStat->crate_normal);
+        $this->addToStat('total_supply_drop', $memberStat->supply_drop);
         $this->addToStat('total_crate_open', $memberStat->crate_open);
         $this->addToStat('total_barrel', $memberStat->barrel);
         $this->addToStat('total_helicopters', $memberStat->helicopters);

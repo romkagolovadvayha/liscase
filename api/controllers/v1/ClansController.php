@@ -17,6 +17,7 @@ use common\models\clan\ClanPermission;
 use common\models\clan\ClanRanking;
 use common\models\servers\Servers;
 use common\models\statistics\Kills as KillsStats;
+use common\models\statistics\Statistics;
 use common\models\user\User;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -642,9 +643,44 @@ class ClansController extends BaseApiController
             : ($server ? $server->currentWipe() : null);
         $stats = $resolvedWipe ? $clan->getClanStatistics($resolvedWipe) : $clan->getClanStatistics(null);
 
+        $lootWidget = null;
+        if ($stats) {
+            $images = Statistics::productsImages();
+            $crateCombined = (int)($stats->getStatValue('total_codelockedhackablecrate') + $stats->getStatValue('total_codelockedhackablecrate_oilrig'));
+            $lootWidget = [
+                'items' => [
+                    [
+                        'key' => 'crate_combined',
+                        'name' => Yii::t('common', 'Крейт'),
+                        'image' => Statistics::getImageLarge($images, 'codelockedhackablecrate'),
+                        'count' => $crateCombined,
+                    ],
+                    [
+                        'key' => 'crate_elite',
+                        'name' => Yii::t('common', 'Элитный ящик'),
+                        'image' => Statistics::getImageLarge($images, 'crate_elite'),
+                        'count' => (int)$stats->getStatValue('total_crate_elite'),
+                    ],
+                    [
+                        'key' => 'crate_normal',
+                        'name' => Yii::t('common', 'Армейский ящик'),
+                        'image' => Statistics::getImageLarge($images, 'crate_normal'),
+                        'count' => (int)$stats->getStatValue('total_crate_normal'),
+                    ],
+                    [
+                        'key' => 'supply_drop',
+                        'name' => Yii::t('common', 'Аирдроп'),
+                        'image' => Statistics::getImageLarge($images, 'supply_drop'),
+                        'count' => (int)$stats->getStatValue('total_supply_drop'),
+                    ],
+                ],
+            ];
+        }
+
         return $this->successResponse([
             'wipe' => $resolvedWipe,
             'statistics' => $stats ? $stats->getStatisticsForApi() : null,
+            'loot_widget' => $lootWidget,
         ]);
     }
 

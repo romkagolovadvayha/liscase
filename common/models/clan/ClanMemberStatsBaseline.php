@@ -39,6 +39,14 @@ class ClanMemberStatsBaseline extends ActiveRecord
     {
         $keys = UserTop::getRaitingKeys();
         $keys = array_merge($keys, ['helicopters', 'bradleys', 'research_table_looted', 'excavator_mined']);
+        // Лут (ящики / аирдроп) — те же ключи, что во вкладке «Лут и РТ» у игрока
+        $keys = array_merge($keys, [
+            'codelockedhackablecrate_oilrig',
+            'codelockedhackablecrate',
+            'crate_elite',
+            'crate_normal',
+            'supply_drop',
+        ]);
 
         return array_values(array_unique($keys));
     }
