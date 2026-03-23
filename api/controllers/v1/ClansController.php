@@ -15,6 +15,7 @@ use common\models\clan\ClanPost;
 use common\models\clan\ClanMemberStatistics;
 use common\models\clan\ClanPermission;
 use common\models\clan\ClanRanking;
+use common\models\clan\ClanStatistics;
 use common\models\servers\Servers;
 use common\models\statistics\Kills as KillsStats;
 use common\models\statistics\Statistics;
@@ -681,7 +682,83 @@ class ClansController extends BaseApiController
             'wipe' => $resolvedWipe,
             'statistics' => $stats ? $stats->getStatisticsForApi() : null,
             'loot_widget' => $lootWidget,
+            'loot_crafts' => $stats ? $this->buildClanLootCraftsData($stats) : null,
         ]);
+    }
+
+    /**
+     * Тот же формат, что GET /v1/stats/player-loot-crafts: лут, карты, чертежи — из сумм total_* по клану.
+     *
+     * @return array{loot: array<int, array<string, mixed>>, access_cards: array<int, array<string, mixed>>, blueprints: array<int, array<string, mixed>>}
+     */
+    private function buildClanLootCraftsData(ClanStatistics $clanStats): array
+    {
+        $images = Statistics::productsImages();
+
+        $lootKeys = [
+            'codelockedhackablecrate_oilrig' => Yii::t('common', 'Крейт на нефтевышке'),
+            'codelockedhackablecrate' => Yii::t('common', 'Крейт'),
+            'crate_elite' => Yii::t('common', 'Элитный ящик'),
+            'crate_normal' => Yii::t('common', 'Армейский ящик'),
+            'crate_underwater_advanced' => Yii::t('common', 'Подводный ящик (продвинутый)'),
+            'crate_underwater_basic' => Yii::t('common', 'Подводный ящик (базовый)'),
+            'supply_drop' => Yii::t('common', 'Аирдроп'),
+            'barrel' => Yii::t('common', 'Разбито бочек'),
+            'crate_open' => Yii::t('common', 'Обычный ящик'),
+            'bradleys' => Yii::t('common', 'Взорванные танки'),
+            'helicopters' => Yii::t('common', 'Патрульные вертолёты'),
+        ];
+
+        $loot = [];
+        foreach ($lootKeys as $key => $name) {
+            $count = (int) $clanStats->getStatValue('total_' . $key);
+            $loot[] = [
+                'key' => $key,
+                'name' => $name,
+                'image' => Statistics::getImageLarge($images, $key),
+                'image_large' => Statistics::getImageLarge($images, $key),
+                'count' => $count,
+            ];
+        }
+
+        $accessCardKeys = [
+            ['key' => 'card_level_1', 'name' => Yii::t('common', 'Зелёная карта доступа'), 'imageKey' => 'card_level_1'],
+            ['key' => 'card_level_2', 'name' => Yii::t('common', 'Синяя карта доступа'), 'imageKey' => 'card_level_2'],
+            ['key' => 'card_level_3', 'name' => Yii::t('common', 'Красная карта доступа'), 'imageKey' => 'card_level_3'],
+        ];
+        $access_cards = [];
+        foreach ($accessCardKeys as $item) {
+            $count = (int) $clanStats->getStatValue('total_' . $item['key']);
+            $access_cards[] = [
+                'key' => $item['key'],
+                'name' => $item['name'],
+                'image' => Statistics::getImageLarge($images, $item['imageKey']),
+                'count' => $count,
+            ];
+        }
+
+        $blueprintKeys = [
+            'basicblueprintfragment' => Yii::t('common', 'Фрагмент простого чертежа'),
+            'advancedblueprintfragment' => Yii::t('common', 'Фрагмент продвинутого чертежа'),
+        ];
+        $blueprints = [];
+        foreach ($blueprintKeys as $key => $name) {
+            $count = (int) $clanStats->getStatValue('total_' . $key);
+            if ($count > 0) {
+                $blueprints[] = [
+                    'key' => $key,
+                    'name' => $name,
+                    'image' => Statistics::getImageLarge($images, $key),
+                    'count' => $count,
+                ];
+            }
+        }
+
+        return [
+            'loot' => $loot,
+            'access_cards' => $access_cards,
+            'blueprints' => $blueprints,
+        ];
     }
 
     /**
