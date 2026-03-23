@@ -423,6 +423,45 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * GET /v1/clans/lookup-global?slug=my-clan-12 — карточка по ЧПУ без указания сервера (slug оканчивается на -{id}).
+     */
+    public function actionLookupGlobal()
+    {
+        $slug = trim((string)Yii::$app->request->get('slug', ''));
+        if ($slug === '') {
+            throw new BadRequestHttpException('slug is required');
+        }
+
+        if (preg_match('/^\d+$/', $slug)) {
+            $clan = Clan::find()
+                ->where(['id' => (int)$slug])
+                ->with(['leaderUser.userProfile', 'server'])
+                ->one();
+            if ($clan) {
+                $currentMember = $this->getActiveMember($clan);
+
+                return $this->successResponse($this->serializeClanDetail($clan, $currentMember));
+            }
+            throw new NotFoundHttpException('Clan not found');
+        }
+
+        if (preg_match('/-(\d+)$/', $slug, $m)) {
+            $id = (int)$m[1];
+            $clan = Clan::find()
+                ->where(['id' => $id])
+                ->with(['leaderUser.userProfile', 'server'])
+                ->one();
+            if ($clan && $this->getClanUrlSlug($clan) === $slug) {
+                $currentMember = $this->getActiveMember($clan);
+
+                return $this->successResponse($this->serializeClanDetail($clan, $currentMember));
+            }
+        }
+
+        throw new NotFoundHttpException('Clan not found');
+    }
+
+    /**
      * PATCH/PUT /v1/clans/{serverTag}/{id}
      */
     public function actionUpdate($serverTag, $id)
@@ -1610,7 +1649,7 @@ class ClansController extends BaseApiController
         ];
     }
 
-    /** ЧПУ-сегмент URL: как в фронте /clans/{serverTag}/{slug} */
+    /** ЧПУ-сегмент URL: как в публичном фронте /clans/{slug} */
     protected function getClanUrlSlug(Clan $clan): string
     {
         $slugBase = Inflector::slug((string)$clan->name);

@@ -94,6 +94,8 @@ $config = [
                 'v1/clans/podium' => 'v1/clans/podium',
                 'v1/clans/my-invites' => 'v1/clans/my-invites',
                 'v1/clans/my-memberships' => 'v1/clans/my-memberships',
+                /** GET /v1/clans/lookup-global?slug= — карточка по ЧПУ без serverTag (суффикс -id глобально уникален) */
+                'v1/clans/lookup-global' => 'v1/clans/lookup-global',
                 /** Полный ЧПУ-сегмент (например my-clan-12): точное совпадение, без ошибочного разбора id */
                 'v1/clans/<serverTag:[\w-]+>/lookup' => 'v1/clans/lookup-by-slug',
                 'v1/clans/invite-link/<token:[a-fA-F0-9]+>' => 'v1/clans/invite-link-preview',
