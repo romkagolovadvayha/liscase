@@ -712,30 +712,26 @@ class ClansController extends BaseApiController
             ->where(['clan_id' => $clan->id])
             ->andWhere(['IS', 'leave_date', null])
             ->column();
-        if ($attackerIds === []) {
-            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
-        }
+        $attackerIds = array_map('intval', $attackerIds);
 
-        $otherMembers = User::find()
-            ->alias('u')
-            ->select(['u.steam_id', 'c.id AS clan_id'])
-            ->innerJoin(['m' => ClanMember::tableName()], 'm.user_id = u.id')
+        $activeMembershipRows = ClanMember::find()
+            ->alias('m')
+            ->select(['m.user_id', 'm.clan_id', 'u.steam_id'])
             ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
+            ->innerJoin(['u' => User::tableName()], 'u.id = m.user_id')
             ->where(['c.server_id' => (int)$clan->server_id])
-            ->andWhere(['<>', 'c.id', (int)$clan->id])
             ->andWhere(['IS', 'm.leave_date', null])
             ->andWhere(['not', ['u.steam_id' => null]])
             ->asArray()
             ->all();
-        if ($otherMembers === []) {
-            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
-        }
 
         $targetClanIdsBySteam = [];
-        $allTargetClanIds = [];
-        foreach ($otherMembers as $row) {
+        $userToClanId = [];
+        $allClanIds = [(int)$clan->id => true];
+        foreach ($activeMembershipRows as $row) {
             $sid = (string)($row['steam_id'] ?? '');
             $cid = (int)($row['clan_id'] ?? 0);
+            $uid = (int)($row['user_id'] ?? 0);
             if ($sid === '' || $cid <= 0) {
                 continue;
             }
@@ -743,14 +739,14 @@ class ClansController extends BaseApiController
                 $targetClanIdsBySteam[$sid] = [];
             }
             $targetClanIdsBySteam[$sid][$cid] = true;
-            $allTargetClanIds[$cid] = true;
-        }
-        if ($targetClanIdsBySteam === []) {
-            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
+            if ($uid > 0 && !isset($userToClanId[$uid])) {
+                $userToClanId[$uid] = $cid;
+            }
+            $allClanIds[$cid] = true;
         }
 
         $targetClans = Clan::find()
-            ->where(['id' => array_keys($allTargetClanIds)])
+            ->where(['id' => array_keys($allClanIds)])
             ->with('server')
             ->all();
         $targetClanMap = [];
@@ -760,12 +756,25 @@ class ClansController extends BaseApiController
 
         $raidsQuery = UserRaid::find()
             ->select(['id', 'user_id', 'owners', 'created_at', 'location', 'type'])
-            ->where(['user_id' => $attackerIds])
             ->andWhere(['server_id' => (int)$clan->server_id])
             // В прод-данных type может быть "cupboard" или содержать префиксы/суффиксы.
             ->andWhere(['like', 'type', 'cupboard']);
         if ($wipe !== null && $wipe !== '') {
             $raidsQuery->andWhere(['wipe' => $wipe]);
+        }
+        $relatedOr = ['or'];
+        if ($attackerIds !== []) {
+            $relatedOr[] = ['user_id' => $attackerIds];
+        }
+        foreach (array_keys($targetClanIdsBySteam) as $steamId) {
+            if (isset($targetClanIdsBySteam[$steamId][(int)$clan->id])) {
+                $relatedOr[] = ['like', 'owners', $steamId];
+            }
+        }
+        if (count($relatedOr) > 1) {
+            $raidsQuery->andWhere($relatedOr);
+        } else {
+            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
         }
         $raidsQuery->orderBy(['created_at' => SORT_DESC]);
 
@@ -783,7 +792,9 @@ class ClansController extends BaseApiController
         ];
         $attackerUsers = User::find()
             ->select(['id', 'username'])
-            ->where(['id' => $attackerIds])
+            ->where(['id' => array_values(array_unique(array_map(static function ($r) {
+                return (int)($r['user_id'] ?? 0);
+            }, $rows)))])
             ->indexBy('id')
             ->all();
 
@@ -809,6 +820,12 @@ class ClansController extends BaseApiController
                 }
             }
             if ($targetIdsSet === []) {
+                $targetIdsSet = [];
+            }
+
+            $attackerClanId = $userToClanId[(int)$row['user_id']] ?? null;
+            $isRelated = ($attackerClanId !== null && (int)$attackerClanId === (int)$clan->id) || isset($targetIdsSet[(int)$clan->id]);
+            if (!$isRelated) {
                 continue;
             }
 
@@ -826,12 +843,11 @@ class ClansController extends BaseApiController
                     'server_tag' => $targetClan->server ? (string)$targetClan->server->tag : null,
                 ];
             }
-            if ($targets === []) {
-                continue;
-            }
-
             $total++;
             if (count($items) < 8) {
+                $attackerClan = ($attackerClanId !== null && isset($targetClanMap[(int)$attackerClanId]))
+                    ? $targetClanMap[(int)$attackerClanId]
+                    : null;
                 $items[] = [
                     'id' => (int)$row['id'],
                     'created_at' => (string)($row['created_at'] ?? ''),
@@ -842,7 +858,13 @@ class ClansController extends BaseApiController
                         'username' => (string)$attackerUsers[(int)$row['user_id']]->username,
                         'avatar' => (string)$attackerUsers[(int)$row['user_id']]->getAvatar(),
                     ] : null,
-                    'attacker_clan' => $attackerClanPayload,
+                    'attacker_clan' => $attackerClan ? [
+                        'id' => (int)$attackerClan->id,
+                        'name' => (string)$attackerClan->name,
+                        'tag' => (string)$attackerClan->tag,
+                        'logo_url' => (string)$attackerClan->getLogoUrl(),
+                        'server_tag' => $attackerClan->server ? (string)$attackerClan->server->tag : null,
+                    ] : $attackerClanPayload,
                     'target_clans' => $targets,
                 ];
             }
