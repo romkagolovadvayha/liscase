@@ -757,7 +757,7 @@ class ClansController extends BaseApiController
 
         $targetClans = Clan::find()
             ->where(['id' => array_keys($allClanIds)])
-            ->with('server')
+            ->with(['server', 'leaderUser'])
             ->all();
         $targetClanMap = [];
         foreach ($targetClans as $c) {
@@ -784,13 +784,27 @@ class ClansController extends BaseApiController
         if (count($relatedOr) > 1) {
             $raidsQuery->andWhere($relatedOr);
         } else {
-            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
+            return [
+                'raids_against_clans' => 0,
+                'outgoing_count' => 0,
+                'incoming_count' => 0,
+                'total' => 0,
+                'more_count' => 0,
+                'items' => [],
+            ];
         }
         $raidsQuery->orderBy(['created_at' => SORT_DESC]);
 
         $rows = $raidsQuery->asArray()->all();
         if ($rows === []) {
-            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
+            return [
+                'raids_against_clans' => 0,
+                'outgoing_count' => 0,
+                'incoming_count' => 0,
+                'total' => 0,
+                'more_count' => 0,
+                'items' => [],
+            ];
         }
 
         $attackerClanPayload = [
@@ -799,6 +813,7 @@ class ClansController extends BaseApiController
             'tag' => (string)$clan->tag,
             'logo_url' => (string)$clan->getLogoUrl(),
             'server_tag' => $clan->server ? (string)$clan->server->tag : null,
+            'leader_country_code' => $clan->leaderUser ? strtoupper((string)$clan->leaderUser->getCountryByIp()) : null,
         ];
         $attackerUsers = User::find()
             ->select(['id', 'username'])
@@ -810,6 +825,8 @@ class ClansController extends BaseApiController
 
         $items = [];
         $total = 0;
+        $outgoingCount = 0;
+        $incomingCount = 0;
         foreach ($rows as $row) {
             $ownersRaw = $row['owners'] ?? null;
             if (!is_string($ownersRaw) || $ownersRaw === '') {
@@ -864,6 +881,7 @@ class ClansController extends BaseApiController
                     'tag' => (string)$targetClan->tag,
                     'logo_url' => (string)$targetClan->getLogoUrl(),
                     'server_tag' => $targetClan->server ? (string)$targetClan->server->tag : null,
+                    'leader_country_code' => $targetClan->leaderUser ? strtoupper((string)$targetClan->leaderUser->getCountryByIp()) : null,
                 ];
             }
             // Если рейд входящий по нашему клану, но в targets наш клан не попал (например владелец уже не активен),
@@ -881,49 +899,80 @@ class ClansController extends BaseApiController
                 }
             }
 
-            $total++;
-            if (count($items) < 8) {
-                $attackerClan = null;
+            $attackerClan = null;
+            foreach ($attackerClanIds as $cid) {
+                if ($cid !== (int)$clan->id && isset($targetClanMap[$cid])) {
+                    $attackerClan = $targetClanMap[$cid];
+                    break;
+                }
+            }
+            if ($attackerClan === null) {
                 foreach ($attackerClanIds as $cid) {
-                    if ($cid !== (int)$clan->id && isset($targetClanMap[$cid])) {
+                    if (isset($targetClanMap[$cid])) {
                         $attackerClan = $targetClanMap[$cid];
                         break;
                     }
                 }
-                if ($attackerClan === null) {
-                    foreach ($attackerClanIds as $cid) {
-                        if (isset($targetClanMap[$cid])) {
-                            $attackerClan = $targetClanMap[$cid];
-                            break;
-                        }
-                    }
-                }
-                $items[] = [
-                    'id' => (int)$row['id'],
-                    'created_at' => (string)($row['created_at'] ?? ''),
-                    'location' => (string)($row['location'] ?? ''),
-                    'type' => (string)($row['type'] ?? ''),
-                    'raider_user' => isset($attackerUsers[(int)$row['user_id']]) ? [
-                        'id' => (int)$attackerUsers[(int)$row['user_id']]->id,
-                        'username' => (string)$attackerUsers[(int)$row['user_id']]->username,
-                        'avatar' => (string)$attackerUsers[(int)$row['user_id']]->getAvatar(),
-                    ] : null,
-                    'attacker_clan' => $attackerClan ? [
-                        'id' => (int)$attackerClan->id,
-                        'name' => (string)$attackerClan->name,
-                        'tag' => (string)$attackerClan->tag,
-                        'logo_url' => (string)$attackerClan->getLogoUrl(),
-                        'server_tag' => $attackerClan->server ? (string)$attackerClan->server->tag : null,
-                    ] : $attackerClanPayload,
-                    'target_clans' => $targets,
-                ];
             }
+            if ($attackerClan === null) {
+                $attackerClan = $clan;
+            }
+            $attackerPayload = [
+                'id' => (int)$attackerClan->id,
+                'name' => (string)$attackerClan->name,
+                'tag' => (string)$attackerClan->tag,
+                'logo_url' => (string)$attackerClan->getLogoUrl(),
+                'server_tag' => $attackerClan->server ? (string)$attackerClan->server->tag : null,
+                'leader_country_code' => $attackerClan->leaderUser ? strtoupper((string)$attackerClan->leaderUser->getCountryByIp()) : null,
+            ];
+
+            // Бэкенд-фильтр "неизвестный клан": оставляем только валидные цели и исключаем атакующего из списка целей.
+            $targets = array_values(array_filter($targets, static function ($tgt) use ($attackerPayload) {
+                return isset($tgt['id']) && (int)$tgt['id'] > 0 && (int)$tgt['id'] !== (int)$attackerPayload['id'];
+            }));
+            if ($targets === []) {
+                continue;
+            }
+            // Исключаем некорректные случаи "клан атаковал сам себя".
+            $hasOpponent = false;
+            foreach ($targets as $tgt) {
+                if ((int)($tgt['id'] ?? 0) !== (int)$attackerPayload['id']) {
+                    $hasOpponent = true;
+                    break;
+                }
+            }
+            if (!$hasOpponent) {
+                continue;
+            }
+
+            if ($isOutgoingForThisClan) {
+                $outgoingCount++;
+            }
+            if ($isIncomingForThisClan) {
+                $incomingCount++;
+            }
+            $total++;
+            $items[] = [
+                'id' => (int)$row['id'],
+                'created_at' => (string)($row['created_at'] ?? ''),
+                'location' => (string)($row['location'] ?? ''),
+                'type' => (string)($row['type'] ?? ''),
+                'raider_user' => isset($attackerUsers[(int)$row['user_id']]) ? [
+                    'id' => (int)$attackerUsers[(int)$row['user_id']]->id,
+                    'username' => (string)$attackerUsers[(int)$row['user_id']]->username,
+                    'avatar' => (string)$attackerUsers[(int)$row['user_id']]->getAvatar(),
+                ] : null,
+                'attacker_clan' => $attackerPayload,
+                'target_clans' => $targets,
+            ];
         }
 
         return [
             'raids_against_clans' => $total,
+            'outgoing_count' => $outgoingCount,
+            'incoming_count' => $incomingCount,
             'total' => $total,
-            'more_count' => max(0, $total - count($items)),
+            'more_count' => max(0, $total - 8),
             'items' => $items,
         ];
     }
