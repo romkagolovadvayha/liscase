@@ -48,47 +48,49 @@ class UpdateSingleClanMemberStatisticsJob extends BaseObject implements JobInter
             return;
         }
 
-        $member = ClanMember::find()
+        $members = ClanMember::find()
             ->alias('m')
             ->innerJoin(['c' => Clan::tableName()], '[[c]].[[id]] = [[m]].[[clan_id]]')
-            ->where(['m.user_id' => $user->id, 'c.server_id' => $this->serverId])
+            ->where(['m.user_id' => $user->id])
             ->andWhere(['IS', 'm.leave_date', null])
             ->with('user')
-            ->one();
+            ->all();
 
-        if (!$member) {
+        if ($members === []) {
             return;
         }
 
-        try {
-            ClanMemberStatistics::updateMemberStatistics($member, $this->serverId, $wipe);
-        } catch (\Throwable $e) {
-            Yii::error('UpdateSingleClanMemberStatisticsJob member stats: ' . $e->getMessage(), 'clan');
-            return;
-        }
-
-        $clanStatistics = ClanStatistics::find()
-            ->where([
-                'clan_id' => $member->clan_id,
-                'server_id' => $this->serverId,
-                'wipe' => $wipe,
-            ])
-            ->one();
-
-        if (!$clanStatistics) {
-            $clanStatistics = new ClanStatistics();
-            $clanStatistics->clan_id = $member->clan_id;
-            $clanStatistics->server_id = $this->serverId;
-            $clanStatistics->wipe = $wipe;
-            if (!$clanStatistics->save(false)) {
-                return;
+        foreach ($members as $member) {
+            try {
+                ClanMemberStatistics::updateMemberStatistics($member, $this->serverId, $wipe);
+            } catch (\Throwable $e) {
+                Yii::error('UpdateSingleClanMemberStatisticsJob member stats: ' . $e->getMessage(), 'clan');
+                continue;
             }
-        }
 
-        try {
-            $clanStatistics->updateStatistics();
-        } catch (\Throwable $e) {
-            Yii::error('UpdateSingleClanMemberStatisticsJob clan aggregate: ' . $e->getMessage(), 'clan');
+            $clanStatistics = ClanStatistics::find()
+                ->where([
+                    'clan_id' => $member->clan_id,
+                    'server_id' => $this->serverId,
+                    'wipe' => $wipe,
+                ])
+                ->one();
+
+            if (!$clanStatistics) {
+                $clanStatistics = new ClanStatistics();
+                $clanStatistics->clan_id = $member->clan_id;
+                $clanStatistics->server_id = $this->serverId;
+                $clanStatistics->wipe = $wipe;
+                if (!$clanStatistics->save(false)) {
+                    continue;
+                }
+            }
+
+            try {
+                $clanStatistics->updateStatistics();
+            } catch (\Throwable $e) {
+                Yii::error('UpdateSingleClanMemberStatisticsJob clan aggregate: ' . $e->getMessage(), 'clan');
+            }
         }
     }
 }

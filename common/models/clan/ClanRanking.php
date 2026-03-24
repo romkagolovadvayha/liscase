@@ -117,7 +117,11 @@ class ClanRanking extends ActiveRecord
         $wipe = $server->currentWipe();
 
         $clans = Clan::find()
-            ->where(['server_id' => $serverId])
+            ->innerJoin(
+                ['cs' => ClanStatistics::tableName()],
+                '[[cs]].[[clan_id]] = [[clans]].[[id]] AND [[cs]].[[server_id]] = :sid AND [[cs]].[[wipe]] = :wipe',
+                [':sid' => (int)$serverId, ':wipe' => (string)$wipe]
+            )
             ->all();
 
         foreach ($clans as $clan) {

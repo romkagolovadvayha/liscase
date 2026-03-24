@@ -36,16 +36,20 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
 
         $wipe = $this->wipe ?: $server->currentWipe();
 
-        // Получаем все кланы на сервере
-        $clans = Clan::find()
-            ->where(['server_id' => $this->serverId])
-            ->all();
+        // Получаем кланы, у которых есть активные/бывшие участники (источник истины для межсерверной статистики)
+        $clanIds = ClanMember::find()
+            ->select('clan_id')
+            ->groupBy('clan_id')
+            ->column();
+        if ($clanIds === []) {
+            return;
+        }
 
-        foreach ($clans as $clan) {
+        foreach ($clanIds as $clanId) {
             try {
-                $this->updateClanStatistics($clan, $this->serverId, $wipe);
+                $this->updateClanStatistics((int)$clanId, $this->serverId, $wipe);
             } catch (\Exception $e) {
-                Yii::error("Error updating clan statistics for clan {$clan->id}: " . $e->getMessage(), 'clan');
+                Yii::error("Error updating clan statistics for clan {$clanId}: " . $e->getMessage(), 'clan');
             }
         }
 
@@ -58,17 +62,22 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
     /**
      * Обновление статистики клана
      *
-     * @param Clan $clan
+     * @param int $clanId
      * @param int $serverId
      * @param string $wipe
      * @return void
      */
-    protected function updateClanStatistics($clan, $serverId, $wipe)
+    protected function updateClanStatistics($clanId, $serverId, $wipe)
     {
+        $clan = Clan::findOne((int)$clanId);
+        if ($clan === null) {
+            return;
+        }
+
         // Получаем или создаем запись статистики клана
         $clanStatistics = ClanStatistics::find()
             ->where([
-                'clan_id' => $clan->id,
+                'clan_id' => $clanId,
                 'server_id' => $serverId,
                 'wipe' => $wipe,
             ])
@@ -76,7 +85,7 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
 
         if (!$clanStatistics) {
             $clanStatistics = new ClanStatistics();
-            $clanStatistics->clan_id = $clan->id;
+            $clanStatistics->clan_id = $clanId;
             $clanStatistics->server_id = $serverId;
             $clanStatistics->wipe = $wipe;
             $clanStatistics->save(false);
@@ -84,7 +93,7 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
 
         // Обновляем статистику всех участников
         $members = ClanMember::find()
-            ->where(['clan_id' => $clan->id])
+            ->where(['clan_id' => $clanId])
             ->all();
 
         foreach ($members as $member) {
@@ -94,9 +103,8 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
 
         // Обновляем общую статистику клана
         $clanStatistics->updateStatistics();
-
-        // Проверяем и разблокируем достижения
         $clan->checkAchievements();
+
     }
 }
 
