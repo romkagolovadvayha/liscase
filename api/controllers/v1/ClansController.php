@@ -725,6 +725,17 @@ class ClansController extends BaseApiController
             ->asArray()
             ->all();
 
+        // Для входящих рейдов ("атаковали наш клан") учитываем всех участников клана,
+        // включая бывших: в owners могут быть steam_id игроков, которые уже вышли.
+        $thisClanSteamIds = User::find()
+            ->alias('u')
+            ->select('u.steam_id')
+            ->innerJoin(['m' => ClanMember::tableName()], 'm.user_id = u.id')
+            ->where(['m.clan_id' => (int)$clan->id])
+            ->andWhere(['not', ['u.steam_id' => null]])
+            ->column();
+        $thisClanSteamIdSet = array_fill_keys(array_map('strval', $thisClanSteamIds), true);
+
         $targetClanIdsBySteam = [];
         $userToClanId = [];
         $allClanIds = [(int)$clan->id => true];
@@ -766,8 +777,8 @@ class ClansController extends BaseApiController
         if ($attackerIds !== []) {
             $relatedOr[] = ['user_id' => $attackerIds];
         }
-        foreach (array_keys($targetClanIdsBySteam) as $steamId) {
-            if (isset($targetClanIdsBySteam[$steamId][(int)$clan->id])) {
+        foreach (array_keys($thisClanSteamIdSet) as $steamId) {
+            if ($steamId !== '') {
                 $relatedOr[] = ['like', 'owners', $steamId];
             }
         }
@@ -824,7 +835,17 @@ class ClansController extends BaseApiController
             }
 
             $attackerClanId = $userToClanId[(int)$row['user_id']] ?? null;
-            $isRelated = ($attackerClanId !== null && (int)$attackerClanId === (int)$clan->id) || isset($targetIdsSet[(int)$clan->id]);
+            $isIncomingForThisClan = false;
+            foreach ($owners as $ownerSteamId) {
+                $sid = (string)$ownerSteamId;
+                if ($sid !== '' && isset($thisClanSteamIdSet[$sid])) {
+                    $isIncomingForThisClan = true;
+                    break;
+                }
+            }
+            $isRelated = ($attackerClanId !== null && (int)$attackerClanId === (int)$clan->id)
+                || isset($targetIdsSet[(int)$clan->id])
+                || $isIncomingForThisClan;
             if (!$isRelated) {
                 continue;
             }
@@ -843,6 +864,21 @@ class ClansController extends BaseApiController
                     'server_tag' => $targetClan->server ? (string)$targetClan->server->tag : null,
                 ];
             }
+            // Если рейд входящий по нашему клану, но в targets наш клан не попал (например владелец уже не активен),
+            // добавляем наш клан явно в цели для корректного отображения.
+            if ($isIncomingForThisClan) {
+                $hasThisClanTarget = false;
+                foreach ($targets as $tgt) {
+                    if ((int)($tgt['id'] ?? 0) === (int)$clan->id) {
+                        $hasThisClanTarget = true;
+                        break;
+                    }
+                }
+                if (!$hasThisClanTarget) {
+                    array_unshift($targets, $attackerClanPayload);
+                }
+            }
+
             $total++;
             if (count($items) < 8) {
                 $attackerClan = ($attackerClanId !== null && isset($targetClanMap[(int)$attackerClanId]))
