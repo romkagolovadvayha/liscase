@@ -762,7 +762,8 @@ class ClansController extends BaseApiController
             ->select(['id', 'user_id', 'owners', 'created_at', 'location', 'type'])
             ->where(['user_id' => $attackerIds])
             ->andWhere(['server_id' => (int)$clan->server_id])
-            ->andWhere(['type' => 'cupboard']);
+            // В прод-данных type может быть "cupboard" или содержать префиксы/суффиксы.
+            ->andWhere(['like', 'type', 'cupboard']);
         if ($wipe !== null && $wipe !== '') {
             $raidsQuery->andWhere(['wipe' => $wipe]);
         }
