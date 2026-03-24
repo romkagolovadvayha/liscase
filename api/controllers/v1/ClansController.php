@@ -759,9 +759,10 @@ class ClansController extends BaseApiController
         }
 
         $raidsQuery = UserRaid::find()
-            ->select(['id', 'owners', 'created_at', 'location', 'type'])
+            ->select(['id', 'user_id', 'owners', 'created_at', 'location', 'type'])
             ->where(['user_id' => $attackerIds])
-            ->andWhere(['server_id' => (int)$clan->server_id]);
+            ->andWhere(['server_id' => (int)$clan->server_id])
+            ->andWhere(['type' => 'cupboard']);
         if ($wipe !== null && $wipe !== '') {
             $raidsQuery->andWhere(['wipe' => $wipe]);
         }
@@ -779,6 +780,11 @@ class ClansController extends BaseApiController
             'logo_url' => (string)$clan->getLogoUrl(),
             'server_tag' => $clan->server ? (string)$clan->server->tag : null,
         ];
+        $attackerUsers = User::find()
+            ->select(['id', 'username', 'avatar'])
+            ->where(['id' => $attackerIds])
+            ->indexBy('id')
+            ->all();
 
         $items = [];
         $total = 0;
@@ -830,6 +836,11 @@ class ClansController extends BaseApiController
                     'created_at' => (string)($row['created_at'] ?? ''),
                     'location' => (string)($row['location'] ?? ''),
                     'type' => (string)($row['type'] ?? ''),
+                    'raider_user' => isset($attackerUsers[(int)$row['user_id']]) ? [
+                        'id' => (int)$attackerUsers[(int)$row['user_id']]->id,
+                        'username' => (string)$attackerUsers[(int)$row['user_id']]->username,
+                        'avatar' => (string)$attackerUsers[(int)$row['user_id']]->getAvatar(),
+                    ] : null,
                     'attacker_clan' => $attackerClanPayload,
                     'target_clans' => $targets,
                 ];
