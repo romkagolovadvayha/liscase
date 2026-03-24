@@ -680,9 +680,7 @@ class ClansController extends BaseApiController
             ];
         }
 
-        $raidWidget = [
-            'raids_against_clans' => $this->countClanRaidsAgainstOtherClans($clan, $resolvedWipe),
-        ];
+        $raidWidget = $this->buildClanRaidsWidget($clan, $resolvedWipe);
 
         return $this->successResponse([
             'wipe' => $resolvedWipe,
@@ -694,10 +692,20 @@ class ClansController extends BaseApiController
     }
 
     /**
-     * Количество рейдов из user_raid, где атакующий — активный участник текущего клана,
-     * а среди owners есть участник другого активного клана на этом же сервере.
+     * Полный виджет рейдов из user_raid:
+     * - последние 8 рейдов клана по другим кланам (на том же сервере, в рамках wipe),
+     * - total / more_count для подписи "и еще N".
+     *
+     * Рейд считается "по клану", если среди owners есть steam_id участника другого активного клана.
+     *
+     * @return array{
+     *   raids_against_clans:int,
+     *   total:int,
+     *   more_count:int,
+     *   items:array<int, array<string,mixed>>
+     * }
      */
-    private function countClanRaidsAgainstOtherClans(Clan $clan, ?string $wipe): int
+    private function buildClanRaidsWidget(Clan $clan, ?string $wipe): array
     {
         $attackerIds = ClanMember::find()
             ->select('user_id')
@@ -705,38 +713,75 @@ class ClansController extends BaseApiController
             ->andWhere(['IS', 'leave_date', null])
             ->column();
         if ($attackerIds === []) {
-            return 0;
+            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
         }
 
-        $otherClanSteamIds = User::find()
+        $otherMembers = User::find()
             ->alias('u')
-            ->select('u.steam_id')
+            ->select(['u.steam_id', 'c.id AS clan_id'])
             ->innerJoin(['m' => ClanMember::tableName()], 'm.user_id = u.id')
             ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
             ->where(['c.server_id' => (int)$clan->server_id])
             ->andWhere(['<>', 'c.id', (int)$clan->id])
             ->andWhere(['IS', 'm.leave_date', null])
             ->andWhere(['not', ['u.steam_id' => null]])
-            ->column();
-        if ($otherClanSteamIds === []) {
-            return 0;
+            ->asArray()
+            ->all();
+        if ($otherMembers === []) {
+            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
         }
-        $otherClanSteamIdSet = array_fill_keys(array_map('strval', $otherClanSteamIds), true);
+
+        $targetClanIdsBySteam = [];
+        $allTargetClanIds = [];
+        foreach ($otherMembers as $row) {
+            $sid = (string)($row['steam_id'] ?? '');
+            $cid = (int)($row['clan_id'] ?? 0);
+            if ($sid === '' || $cid <= 0) {
+                continue;
+            }
+            if (!isset($targetClanIdsBySteam[$sid])) {
+                $targetClanIdsBySteam[$sid] = [];
+            }
+            $targetClanIdsBySteam[$sid][$cid] = true;
+            $allTargetClanIds[$cid] = true;
+        }
+        if ($targetClanIdsBySteam === []) {
+            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
+        }
+
+        $targetClans = Clan::find()
+            ->where(['id' => array_keys($allTargetClanIds)])
+            ->with('server')
+            ->all();
+        $targetClanMap = [];
+        foreach ($targetClans as $c) {
+            $targetClanMap[(int)$c->id] = $c;
+        }
 
         $raidsQuery = UserRaid::find()
-            ->select(['id', 'owners'])
+            ->select(['id', 'owners', 'created_at', 'location', 'type'])
             ->where(['user_id' => $attackerIds])
             ->andWhere(['server_id' => (int)$clan->server_id]);
         if ($wipe !== null && $wipe !== '') {
             $raidsQuery->andWhere(['wipe' => $wipe]);
         }
+        $raidsQuery->orderBy(['created_at' => SORT_DESC]);
 
         $rows = $raidsQuery->asArray()->all();
         if ($rows === []) {
-            return 0;
+            return ['raids_against_clans' => 0, 'total' => 0, 'more_count' => 0, 'items' => []];
         }
 
-        $count = 0;
+        $attackerClanPayload = [
+            'id' => (int)$clan->id,
+            'name' => (string)$clan->name,
+            'tag' => (string)$clan->tag,
+            'logo_url' => (string)$clan->getLogoUrl(),
+            'server_tag' => $clan->server ? (string)$clan->server->tag : null,
+        ];
+
+        $items = [];
+        $total = 0;
         foreach ($rows as $row) {
             $ownersRaw = $row['owners'] ?? null;
             if (!is_string($ownersRaw) || $ownersRaw === '') {
@@ -746,16 +791,57 @@ class ClansController extends BaseApiController
             if (!is_array($owners) || $owners === []) {
                 continue;
             }
+            $targetIdsSet = [];
             foreach ($owners as $ownerSteamId) {
                 $sid = (string)$ownerSteamId;
-                if ($sid !== '' && isset($otherClanSteamIdSet[$sid])) {
-                    $count++;
-                    break;
+                if ($sid === '' || !isset($targetClanIdsBySteam[$sid])) {
+                    continue;
                 }
+                foreach (array_keys($targetClanIdsBySteam[$sid]) as $targetId) {
+                    $targetIdsSet[(int)$targetId] = true;
+                }
+            }
+            if ($targetIdsSet === []) {
+                continue;
+            }
+
+            $targets = [];
+            foreach (array_keys($targetIdsSet) as $targetId) {
+                $targetClan = $targetClanMap[(int)$targetId] ?? null;
+                if ($targetClan === null) {
+                    continue;
+                }
+                $targets[] = [
+                    'id' => (int)$targetClan->id,
+                    'name' => (string)$targetClan->name,
+                    'tag' => (string)$targetClan->tag,
+                    'logo_url' => (string)$targetClan->getLogoUrl(),
+                    'server_tag' => $targetClan->server ? (string)$targetClan->server->tag : null,
+                ];
+            }
+            if ($targets === []) {
+                continue;
+            }
+
+            $total++;
+            if (count($items) < 8) {
+                $items[] = [
+                    'id' => (int)$row['id'],
+                    'created_at' => (string)($row['created_at'] ?? ''),
+                    'location' => (string)($row['location'] ?? ''),
+                    'type' => (string)($row['type'] ?? ''),
+                    'attacker_clan' => $attackerClanPayload,
+                    'target_clans' => $targets,
+                ];
             }
         }
 
-        return $count;
+        return [
+            'raids_against_clans' => $total,
+            'total' => $total,
+            'more_count' => max(0, $total - count($items)),
+            'items' => $items,
+        ];
     }
 
     /**
