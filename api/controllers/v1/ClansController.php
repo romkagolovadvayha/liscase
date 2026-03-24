@@ -716,9 +716,7 @@ class ClansController extends BaseApiController
         $membershipRows = ClanMember::find()
             ->alias('m')
             ->select(['m.user_id', 'm.clan_id', 'u.steam_id'])
-            ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
             ->innerJoin(['u' => User::tableName()], 'u.id = m.user_id')
-            ->where(['c.server_id' => (int)$clan->server_id])
             ->andWhere(['not', ['u.steam_id' => null]])
             ->asArray()
             ->all();
@@ -735,7 +733,7 @@ class ClansController extends BaseApiController
         $thisClanSteamIdSet = array_fill_keys(array_map('strval', $thisClanSteamIds), true);
 
         $targetClanIdsBySteam = [];
-        $userToClanId = [];
+        $userToClanIds = [];
         $allClanIds = [(int)$clan->id => true];
         foreach ($membershipRows as $row) {
             $sid = (string)($row['steam_id'] ?? '');
@@ -748,8 +746,11 @@ class ClansController extends BaseApiController
                 $targetClanIdsBySteam[$sid] = [];
             }
             $targetClanIdsBySteam[$sid][$cid] = true;
-            if ($uid > 0 && !isset($userToClanId[$uid])) {
-                $userToClanId[$uid] = $cid;
+            if ($uid > 0) {
+                if (!isset($userToClanIds[$uid])) {
+                    $userToClanIds[$uid] = [];
+                }
+                $userToClanIds[$uid][$cid] = true;
             }
             $allClanIds[$cid] = true;
         }
@@ -832,7 +833,9 @@ class ClansController extends BaseApiController
                 $targetIdsSet = [];
             }
 
-            $attackerClanId = $userToClanId[(int)$row['user_id']] ?? null;
+            $attackerClanIds = isset($userToClanIds[(int)$row['user_id']])
+                ? array_map('intval', array_keys($userToClanIds[(int)$row['user_id']]))
+                : [];
             $isIncomingForThisClan = false;
             foreach ($owners as $ownerSteamId) {
                 $sid = (string)$ownerSteamId;
@@ -841,7 +844,8 @@ class ClansController extends BaseApiController
                     break;
                 }
             }
-            $isRelated = ($attackerClanId !== null && (int)$attackerClanId === (int)$clan->id)
+            $isOutgoingForThisClan = in_array((int)$clan->id, $attackerClanIds, true);
+            $isRelated = $isOutgoingForThisClan
                 || isset($targetIdsSet[(int)$clan->id])
                 || $isIncomingForThisClan;
             if (!$isRelated) {
@@ -879,9 +883,21 @@ class ClansController extends BaseApiController
 
             $total++;
             if (count($items) < 8) {
-                $attackerClan = ($attackerClanId !== null && isset($targetClanMap[(int)$attackerClanId]))
-                    ? $targetClanMap[(int)$attackerClanId]
-                    : null;
+                $attackerClan = null;
+                foreach ($attackerClanIds as $cid) {
+                    if ($cid !== (int)$clan->id && isset($targetClanMap[$cid])) {
+                        $attackerClan = $targetClanMap[$cid];
+                        break;
+                    }
+                }
+                if ($attackerClan === null) {
+                    foreach ($attackerClanIds as $cid) {
+                        if (isset($targetClanMap[$cid])) {
+                            $attackerClan = $targetClanMap[$cid];
+                            break;
+                        }
+                    }
+                }
                 $items[] = [
                     'id' => (int)$row['id'],
                     'created_at' => (string)($row['created_at'] ?? ''),
