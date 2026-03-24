@@ -19,6 +19,7 @@ use common\models\clan\ClanStatistics;
 use common\models\servers\Servers;
 use common\models\statistics\Kills as KillsStats;
 use common\models\statistics\Statistics;
+use common\models\user\UserRaid;
 use common\models\user\User;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -645,6 +646,7 @@ class ClansController extends BaseApiController
         $stats = $resolvedWipe ? $clan->getClanStatistics($resolvedWipe) : $clan->getClanStatistics(null);
 
         $lootWidget = null;
+        $raidWidget = null;
         if ($stats) {
             $images = Statistics::productsImages();
             $crateCombined = (int)($stats->getStatValue('total_codelockedhackablecrate') + $stats->getStatValue('total_codelockedhackablecrate_oilrig'));
@@ -678,12 +680,82 @@ class ClansController extends BaseApiController
             ];
         }
 
+        $raidWidget = [
+            'raids_against_clans' => $this->countClanRaidsAgainstOtherClans($clan, $resolvedWipe),
+        ];
+
         return $this->successResponse([
             'wipe' => $resolvedWipe,
             'statistics' => $stats ? $stats->getStatisticsForApi() : null,
             'loot_widget' => $lootWidget,
+            'raid_widget' => $raidWidget,
             'loot_crafts' => $stats ? $this->buildClanLootCraftsData($stats) : null,
         ]);
+    }
+
+    /**
+     * Количество рейдов из user_raid, где атакующий — активный участник текущего клана,
+     * а среди owners есть участник другого активного клана на этом же сервере.
+     */
+    private function countClanRaidsAgainstOtherClans(Clan $clan, ?string $wipe): int
+    {
+        $attackerIds = ClanMember::find()
+            ->select('user_id')
+            ->where(['clan_id' => $clan->id])
+            ->andWhere(['IS', 'leave_date', null])
+            ->column();
+        if ($attackerIds === []) {
+            return 0;
+        }
+
+        $otherClanSteamIds = User::find()
+            ->alias('u')
+            ->select('u.steam_id')
+            ->innerJoin(['m' => ClanMember::tableName()], 'm.user_id = u.id')
+            ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
+            ->where(['c.server_id' => (int)$clan->server_id])
+            ->andWhere(['<>', 'c.id', (int)$clan->id])
+            ->andWhere(['IS', 'm.leave_date', null])
+            ->andWhere(['not', ['u.steam_id' => null]])
+            ->column();
+        if ($otherClanSteamIds === []) {
+            return 0;
+        }
+        $otherClanSteamIdSet = array_fill_keys(array_map('strval', $otherClanSteamIds), true);
+
+        $raidsQuery = UserRaid::find()
+            ->select(['id', 'owners'])
+            ->where(['user_id' => $attackerIds])
+            ->andWhere(['server_id' => (int)$clan->server_id]);
+        if ($wipe !== null && $wipe !== '') {
+            $raidsQuery->andWhere(['wipe' => $wipe]);
+        }
+
+        $rows = $raidsQuery->asArray()->all();
+        if ($rows === []) {
+            return 0;
+        }
+
+        $count = 0;
+        foreach ($rows as $row) {
+            $ownersRaw = $row['owners'] ?? null;
+            if (!is_string($ownersRaw) || $ownersRaw === '') {
+                continue;
+            }
+            $owners = json_decode($ownersRaw, true);
+            if (!is_array($owners) || $owners === []) {
+                continue;
+            }
+            foreach ($owners as $ownerSteamId) {
+                $sid = (string)$ownerSteamId;
+                if ($sid !== '' && isset($otherClanSteamIdSet[$sid])) {
+                    $count++;
+                    break;
+                }
+            }
+        }
+
+        return $count;
     }
 
     /**
