@@ -710,17 +710,15 @@ class ClansController extends BaseApiController
         $attackerIds = ClanMember::find()
             ->select('user_id')
             ->where(['clan_id' => $clan->id])
-            ->andWhere(['IS', 'leave_date', null])
             ->column();
         $attackerIds = array_map('intval', $attackerIds);
 
-        $activeMembershipRows = ClanMember::find()
+        $membershipRows = ClanMember::find()
             ->alias('m')
             ->select(['m.user_id', 'm.clan_id', 'u.steam_id'])
             ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
             ->innerJoin(['u' => User::tableName()], 'u.id = m.user_id')
             ->where(['c.server_id' => (int)$clan->server_id])
-            ->andWhere(['IS', 'm.leave_date', null])
             ->andWhere(['not', ['u.steam_id' => null]])
             ->asArray()
             ->all();
@@ -739,7 +737,7 @@ class ClansController extends BaseApiController
         $targetClanIdsBySteam = [];
         $userToClanId = [];
         $allClanIds = [(int)$clan->id => true];
-        foreach ($activeMembershipRows as $row) {
+        foreach ($membershipRows as $row) {
             $sid = (string)($row['steam_id'] ?? '');
             $cid = (int)($row['clan_id'] ?? 0);
             $uid = (int)($row['user_id'] ?? 0);
