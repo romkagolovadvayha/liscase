@@ -782,7 +782,7 @@ class ClansController extends BaseApiController
             'server_tag' => $clan->server ? (string)$clan->server->tag : null,
         ];
         $attackerUsers = User::find()
-            ->select(['id', 'username', 'avatar'])
+            ->select(['id', 'username'])
             ->where(['id' => $attackerIds])
             ->indexBy('id')
             ->all();
