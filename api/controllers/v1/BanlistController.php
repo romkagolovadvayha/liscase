@@ -92,7 +92,8 @@ class BanlistController extends BaseApiController
      *           @OA\Property(property="server_id", type="integer", nullable=true),
      *           @OA\Property(property="server_name", type="string"),
      *           @OA\Property(property="server_tag", type="string", nullable=true),
-     *           @OA\Property(property="first_seen", type="string", format="date-time", nullable=true)
+     *           @OA\Property(property="first_seen", type="string", format="date-time", nullable=true),
+     *           @OA\Property(property="country_code", type="string", nullable=true)
      *         )
      *       ),
      *       @OA\Property(
@@ -251,6 +252,7 @@ class BanlistController extends BaseApiController
                         'server_name' => $server ? $server->monitoring_name : 'Все сервера',
                         'server_tag' => $server ? $server->tag : null,
                         'first_seen' => $user ? $user->created_at : null,
+                        'country_code' => $user ? strtoupper((string)$user->getCountryByIp()) : null,
                     ];
                 }
 
