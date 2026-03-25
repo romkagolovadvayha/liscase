@@ -154,7 +154,7 @@ class BanlistController extends BaseApiController
             if (!$hasFilters && $sortField === 'banned_at' && $sortOrder === SORT_DESC) {
                 $page = (int)$request->get('page', 1);
                 if ($page === 1) {
-                    $cacheKey = 'api_banlist_base';
+                    $cacheKey = 'api_banlist_base_v2';
                     $cache = Yii::$app->cache;
                     $cachedData = $cache->get($cacheKey);
                     
@@ -252,7 +252,7 @@ class BanlistController extends BaseApiController
                         'server_name' => $server ? $server->monitoring_name : 'Все сервера',
                         'server_tag' => $server ? $server->tag : null,
                         'first_seen' => $user ? $user->created_at : null,
-                        'country_code' => $user ? strtoupper((string)$user->getCountryByIp()) : null,
+                        'country_code' => $user ? strtoupper(trim((string)$user->getCountryByIp())) : null,
                     ];
                 }
 
