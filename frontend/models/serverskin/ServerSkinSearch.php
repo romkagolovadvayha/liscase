@@ -4,6 +4,7 @@ namespace frontend\models\serverskin;
 use common\models\serverskin\ServerSkin;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
+use yii\db\Expression;
 
 class ServerSkinSearch extends ServerSkin
 {
@@ -55,7 +56,11 @@ class ServerSkinSearch extends ServerSkin
             // альтернативно: $query->andFilterWhere(['server_skin_category_id' => $this->server_skin_category_id]);
         }
 
-        $query->andFilterWhere(['like', 'name', $this->name]);
+        $query->andFilterWhere([
+            'like',
+            new Expression('CONVERT([[name]] USING utf8mb4) COLLATE utf8mb4_unicode_ci'),
+            $this->name,
+        ]);
 
         return $dataProvider;
     }
