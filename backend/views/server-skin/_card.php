@@ -49,7 +49,7 @@ $statusBadgeClass = $model->status == ServerSkin::STATUS_ACTIVE ? 'ds-badge--suc
                 <?= Html::a('<i class="fas fa-check"></i> ' . Yii::t('common', 'Принять'), ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'ds-btn ds-btn--success ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Принять скин?'), 'method' => 'post']]) ?>
             <?php endif; ?>
             <?php if ($model->status !== ServerSkin::STATUS_REJECT): ?>
-                <?= Html::a('<i class="fas fa-times"></i> ' . Yii::t('common', 'Отклонить'), ['reject', 'id' => $model->id], ['class' => 'ds-btn ds-btn--danger ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Отклонить скин?'), 'method' => 'post']]) ?>
+                <?= Html::a('<i class="fas fa-times"></i> ' . Yii::t('common', 'Отклонить'), ['reject', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'ds-btn ds-btn--danger ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Отклонить скин?'), 'method' => 'post']]) ?>
             <?php endif; ?>
             <?= Html::a('<i class="fas fa-eye"></i>', ['view', 'id' => $model->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm', 'title' => Yii::t('common', 'Просмотр')]) ?>
             <?= Html::a('<i class="fas fa-pen"></i>', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm', 'title' => Yii::t('common', 'Изменить')]) ?>

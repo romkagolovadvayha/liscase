@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <?= Html::a('Принять', ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'btn btn-success', 'data' => ['method' => 'post']]) ?>
         <?php endif; ?>
         <?php if ($model->status !== ServerSkin::STATUS_REJECT): ?>
-            <?= Html::a('Отклонить', ['reject', 'id' => $model->id], ['class' => 'btn btn-danger']) ?>
+            <?= Html::a('Отклонить', ['reject', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'btn btn-danger', 'data' => ['method' => 'post']]) ?>
         <?php endif; ?>
     </p>
     <p>

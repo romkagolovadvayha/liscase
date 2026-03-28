@@ -4,6 +4,8 @@ namespace common\models\statistics;
 
 use common\components\base\ActiveRecord;
 use common\components\google\TranslateApi;
+use common\components\queue\serverskin\ServerSkinAddSkinRconJob;
+use common\components\queue\serverskin\ServerSkinRemoveSkinRconJob;
 use common\models\building\Building;
 use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
@@ -242,7 +244,12 @@ class Chats extends ActiveRecord
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
             }
-            RconTasks::execute("skinbox.addskin {$model->skin_id}");
+            $queue = Yii::$app->get('queueProcess', false);
+            if ($queue) {
+                $queue->push(new ServerSkinAddSkinRconJob(['skinId' => $model->skin_id]));
+            } else {
+                RconTasks::execute("skinbox.addskin {$model->skin_id}");
+            }
             return [
                 'editMessageReplyMarkup' => true,
                 'buttons' =>        [
@@ -274,7 +281,12 @@ class Chats extends ActiveRecord
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин не прошел модерацию!');
             }
-            RconTasks::execute("skinbox.removeskin {$model->skin_id}");
+            $queue = Yii::$app->get('queueProcess', false);
+            if ($queue) {
+                $queue->push(new ServerSkinRemoveSkinRconJob(['skinId' => $model->skin_id]));
+            } else {
+                RconTasks::execute("skinbox.removeskin {$model->skin_id}");
+            }
             return [
                 'editMessageReplyMarkup' => true,
                 'buttons' =>        [
