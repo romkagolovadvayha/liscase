@@ -213,7 +213,7 @@ class UserController extends CrudController
     }
 
     /**
-     * Выполняет addgroup vip_status на сервере, где сейчас играет пользователь.
+     * Выполняет removegroup/addgroup vip_status на сервере, где сейчас играет пользователь.
      * Только для админов. Дни VIP подставляются из оставшегося срока VIP пользователя.
      */
     public function actionRunVipOnServer($userId)
@@ -228,6 +228,8 @@ class UserController extends CrudController
         }
         $days = $user->getVipDaysLeft();
         $steamId = $user->steam_id;
+        $removeCommand = "removegroup {$steamId} vip_status";
+        RconTasks::execute($removeCommand, [$user->server->tag]);
         $command = "addgroup {$steamId} vip_status {$days}d";
         $results = RconTasks::executeWithResults($command, [$user->server->tag]);
         $first = reset($results);

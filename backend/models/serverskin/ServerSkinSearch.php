@@ -40,11 +40,19 @@ class ServerSkinSearch extends ServerSkin
      */
     public function search($params)
     {
+        $table = ServerSkin::tableName();
         $query = ServerSkin::find()->joinWith(['user']);
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort'       => [
+                'attributes' => [
+                    'id' => [
+                        'asc' => ["{$table}.id" => SORT_ASC],
+                        'desc' => ["{$table}.id" => SORT_DESC],
+                        'default' => SORT_DESC,
+                    ],
+                ],
                 'defaultOrder' => ['id' => SORT_DESC],
             ],
             'pagination' => [
@@ -60,16 +68,16 @@ class ServerSkinSearch extends ServerSkin
             return $dataProvider;
         }
 
-        // grid filtering conditions
+        // Qualify columns: user join also has id, status, created_at.
         $query->andFilterWhere([
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'status' => $this->status,
-            'skin_id' => $this->skin_id,
-            'created_at' => $this->created_at,
+            "{$table}.id" => $this->id,
+            "{$table}.user_id" => $this->user_id,
+            "{$table}.status" => $this->status,
+            "{$table}.skin_id" => $this->skin_id,
+            "{$table}.created_at" => $this->created_at,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name]);
+        $query->andFilterWhere(['like', "{$table}.name", $this->name]);
 
         return $dataProvider;
     }
