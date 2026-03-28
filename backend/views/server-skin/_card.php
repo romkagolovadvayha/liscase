@@ -46,7 +46,7 @@ $statusBadgeClass = $model->status == ServerSkin::STATUS_ACTIVE ? 'ds-badge--suc
         </div>
         <div class="server-skin-index-card__actions">
             <?php if ($model->status === ServerSkin::STATUS_WAIT): ?>
-                <?= Html::a('<i class="fas fa-check"></i> ' . Yii::t('common', 'Принять'), ['success', 'id' => $model->id], ['class' => 'ds-btn ds-btn--success ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Принять скин?'), 'method' => 'post']]) ?>
+                <?= Html::a('<i class="fas fa-check"></i> ' . Yii::t('common', 'Принять'), ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'ds-btn ds-btn--success ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Принять скин?'), 'method' => 'post']]) ?>
             <?php endif; ?>
             <?php if ($model->status !== ServerSkin::STATUS_REJECT): ?>
                 <?= Html::a('<i class="fas fa-times"></i> ' . Yii::t('common', 'Отклонить'), ['reject', 'id' => $model->id], ['class' => 'ds-btn ds-btn--danger ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Отклонить скин?'), 'method' => 'post']]) ?>

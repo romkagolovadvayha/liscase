@@ -3,6 +3,7 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\components\queue\serverskin\ServerSkinAddSkinRconJob;
 use common\models\rcon\RconTasks;
 use common\models\serverskin\ServerSkin;
 use common\models\tasks\Task;
@@ -164,13 +165,38 @@ class ServerSkinController extends Controller
             if (!empty($model->user->telegram_chat_id)) {
                 Yii::$app->personalBotTelegram->sendMessage($model->user->telegram_chat_id, '👕 Ваш скин успешно прошел модерацию и добавлен на сервера!');
             }
-            RconTasks::execute("skinbox.addskin {$model->skin_id}");
-            return $this->redirect(['view', 'id' => $model->id]);
+            $queue = Yii::$app->get('queueProcess', false);
+            if ($queue) {
+                $queue->push(new ServerSkinAddSkinRconJob(['skinId' => $model->skin_id]));
+                Yii::$app->session->addFlash(
+                    'success',
+                    Yii::t('common', 'Скин принят. Команда добавления на сервера поставлена в очередь и выполнится в фоне.')
+                );
+            } else {
+                RconTasks::execute("skinbox.addskin {$model->skin_id}");
+            }
+            return $this->redirect($this->resolveServerSkinReturnUrl(['view', 'id' => $model->id]));
         }
 
         return $this->render('view', [
             'model' => $model,
         ]);
+    }
+
+    /**
+     * Редирект после модерации: на страницу из returnUrl (относительный путь), иначе на $default.
+     */
+    private function resolveServerSkinReturnUrl(array $default)
+    {
+        $candidate = Yii::$app->request->post('returnUrl', Yii::$app->request->get('returnUrl'));
+        if (!is_string($candidate) || $candidate === '') {
+            return $default;
+        }
+        $candidate = urldecode($candidate);
+        if (!str_starts_with($candidate, '/') || str_starts_with($candidate, '//')) {
+            return $default;
+        }
+        return $candidate;
     }
 
     public function actionReject($id)

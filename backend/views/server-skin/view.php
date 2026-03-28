@@ -16,7 +16,7 @@ $this->params['breadcrumbs'][] = $this->title;
 <div class="building-view">
     <p>
         <?php if ($model->status !== ServerSkin::STATUS_ACTIVE): ?>
-            <?= Html::a('Принять', ['success', 'id' => $model->id], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Принять', ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'btn btn-success', 'data' => ['method' => 'post']]) ?>
         <?php endif; ?>
         <?php if ($model->status !== ServerSkin::STATUS_REJECT): ?>
             <?= Html::a('Отклонить', ['reject', 'id' => $model->id], ['class' => 'btn btn-danger']) ?>
