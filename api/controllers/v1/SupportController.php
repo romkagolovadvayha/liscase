@@ -13,6 +13,7 @@ use common\models\support\SupportFile;
 use common\models\support\SupportSticker;
 use common\models\support\SupportRead;
 use common\models\user\User;
+use common\models\statistics\Reports;
 use common\components\helpers\Role;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
@@ -307,6 +308,12 @@ class SupportController extends BaseApiController
             throw new NotFoundHttpException('Тикет не найден');
         }
 
+        // Сервер тикета, профиль и steam_id нужны для блока USER_INFO (как в frontend/views/support/message/_user_info.php)
+        $ticket = Support::find()
+            ->where(['id' => $ticket->id])
+            ->with(['user', 'user.userProfile', 'server'])
+            ->one();
+
         // Просмотр тикета (в т.ч. закрытого) разрешён: создателю, админу, модератору, поддержке
         $isCreator = (int) $ticket->user_id === (int) $user->id;
         $isStaff = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
@@ -336,7 +343,47 @@ class SupportController extends BaseApiController
         return $this->successResponse([
             'ticket' => $this->formatTicketDetail($ticket),
             'messages' => $formattedMessages,
+            'reports' => $this->formatTicketOwnerReports($ticket),
         ]);
+    }
+
+    /**
+     * Последние репорты, отправленные владельцем тикета (steam_id в servers_reports — автор жалобы).
+     */
+    protected function formatTicketOwnerReports(Support $ticket): array
+    {
+        $owner = $ticket->user;
+        if (!$owner || $owner->steam_id === null || $owner->steam_id === '') {
+            return [];
+        }
+
+        $rows = Reports::find()
+            ->with('user')
+            ->andWhere(['steam_id' => $owner->steam_id])
+            ->orderBy(['id' => SORT_DESC])
+            ->limit(3)
+            ->all();
+
+        $out = [];
+        foreach ($rows as $row) {
+            if (empty($row->user)) {
+                continue;
+            }
+            $u = $row->user;
+            $out[] = [
+                'id' => (int) $row->id,
+                'user' => [
+                    'id' => (int) $u->id,
+                    'username' => $u->username,
+                    'steam_id' => $u->steam_id,
+                    'avatar' => $u->getAvatar(),
+                ],
+                'reason' => (string) $row->reason,
+                'created_at' => $row->created_at,
+            ];
+        }
+
+        return $out;
     }
 
     /**
@@ -1118,20 +1165,39 @@ class SupportController extends BaseApiController
      */
     protected function formatTicketDetail($ticket)
     {
-        return [
-            'id' => $ticket->getNumber(),
-            'number' => $ticket->getNumber(),
-            'user_id' => $ticket->user_id,
-            'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
-            'status_name' => Support::getStatusList()[$ticket->status] ?? null,
-            'user' => $ticket->user ? [
+        $userPayload = null;
+        if ($ticket->user) {
+            $profile = $ticket->user->userProfile;
+            $userPayload = [
                 'id' => $ticket->user->id,
                 'username' => $ticket->user->username,
                 'avatar' => $ticket->user->getAvatar(),
                 'blocked_support' => (bool) $ticket->user->blocked_support,
                 'blocked_support_at' => $ticket->user->blocked_support_at,
                 'status' => (int) $ticket->user->status,
-            ] : null,
+                'steam_id' => $ticket->user->steam_id,
+                'trade_link' => ($profile && !empty($profile->trade_link)) ? $profile->trade_link : null,
+            ];
+        }
+
+        $serverPayload = null;
+        if ($ticket->server) {
+            $serverPayload = [
+                'id' => (int) $ticket->server->id,
+                'name' => Yii::t('database', $ticket->server->name),
+                'tag' => $ticket->server->tag,
+            ];
+        }
+
+        return [
+            'id' => $ticket->getNumber(),
+            'number' => $ticket->getNumber(),
+            'user_id' => $ticket->user_id,
+            'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
+            'status_name' => Support::getStatusList()[$ticket->status] ?? null,
+            'user' => $userPayload,
+            /** Сервер тикета (по server_tag), как $model->support->server в _user_info.php */
+            'server' => $serverPayload,
             'server_tag' => $ticket->server_tag,
             'created_at' => $ticket->created_at,
             'updated_at' => $ticket->updated_at,
