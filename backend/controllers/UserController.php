@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use backend\forms\userProfile\BalanceTransferForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
@@ -161,6 +162,7 @@ class UserController extends CrudController
             'roleForm' => new RoleForm(),
             'bonusForm' => new BonusForm(),
             'payoutForm' => new PayoutForm(),
+            'balanceTransferForm' => new BalanceTransferForm(),
         ];
 
         foreach ($forms as $form) {
@@ -173,10 +175,14 @@ class UserController extends CrudController
             'User' => 'Пользователь успешно изменен!',
             'BonusForm' => 'Бонус успешно начислен!',
             'PayoutForm' => 'Вывод успешно проведен!',
+            'BalanceTransferForm' => 'Перевод выполнен.',
         ];
 
         foreach ($messages as $formName => $message) {
             if (!empty($bodyParams[$formName])) {
+                if ($formName === 'BalanceTransferForm' && !Yii::$app->user->can(Role::ROLE_ADMIN)) {
+                    continue;
+                }
                 $form = $formName === 'User' ? $user : $forms[lcfirst($formName)];
                 if ($form->load(Yii::$app->request->post()) && 
                     ($formName === 'User' ? $form->save() : $form->saveRecord())) {

@@ -26,6 +26,8 @@ class Invoice extends \common\components\base\ActiveRecord
     const TYPE_PAYMENT_BOX         = 1;
     const TYPE_PAYMENT_MARKET_DROP      = 2;
     const TYPE_PAYMENT_RADIO_FIRST      = 3;
+    /** Списание при ручном переводе баланса между пользователями (админка) */
+    public const TYPE_ADMIN_TRANSFER = 4;
 
     /**
      * @return array
@@ -36,6 +38,7 @@ class Invoice extends \common\components\base\ActiveRecord
             self::TYPE_PAYMENT_BOX         => Yii::t('common', 'Оплата контейнера'),
             self::TYPE_PAYMENT_MARKET_DROP         => Yii::t('common', 'Оплата предмета на маркете'),
             self::TYPE_PAYMENT_RADIO_FIRST         => Yii::t('common', 'Оплата постановки трека первым в очередь'),
+            self::TYPE_ADMIN_TRANSFER => Yii::t('common', 'Перевод баланса (админ.)'),
         ];
     }
 

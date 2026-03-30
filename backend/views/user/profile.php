@@ -5,6 +5,7 @@ use common\models\user\User;
 use backend\forms\userProfile\RoleForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PayoutForm;
+use backend\forms\userProfile\BalanceTransferForm;
 use common\components\helpers\Role;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
@@ -16,6 +17,7 @@ use frontend\widgets\Alert;
 /** @var RoleForm $roleForm */
 /** @var BonusForm $bonusForm */
 /** @var PayoutForm $payoutForm */
+/** @var BalanceTransferForm $balanceTransferForm */
 
 $this->title = Html::encode($user->username);
 
@@ -160,6 +162,9 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             </button>
                             <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
                                 <i class="fas fa-coins"></i> <?= Yii::t('common', 'Пополнить') ?>
+                            </button>
+                            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="balance_transfer_form" data-bs-target="#modalForm">
+                                <i class="fas fa-exchange-alt"></i> <?= Yii::t('common', 'Перевод') ?>
                             </button>
                         </div>
                     </div>
@@ -363,6 +368,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
             <div id="role_form" style="display: none;"><?= $this->render('_form_role', compact('roleForm')) ?></div>
             <div id="bonus_form" style="display: none;"><?= $this->render('_form_personal_bonus', compact('bonusForm')) ?></div>
             <div id="payout_form" style="display: none;"><?= $this->render('_form_payout_form', compact('payoutForm')) ?></div>
+            <div id="balance_transfer_form" style="display: none;"><?= $this->render('_form_balance_transfer', compact('balanceTransferForm')) ?></div>
         </div>
     </div>
 </div>
@@ -437,3 +443,19 @@ $this->registerJs(<<<JS
 JS
 );
 ?>
+
+<?php if ($balanceTransferForm->hasErrors()): ?>
+<?php
+$this->registerJs(<<<JS
+(function() {
+    var modalEl = document.getElementById('modalForm');
+    if (!modalEl || !window.bootstrap) return;
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    $('#modalForm .modal-content > *').hide();
+    $('#balance_transfer_form').show();
+    modal.show();
+})();
+JS
+);
+?>
+<?php endif; ?>
