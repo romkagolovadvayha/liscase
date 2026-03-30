@@ -26,14 +26,8 @@ $userProfile = $user->userProfile;
 $usersTree = UserTree::find()
     ->andWhere(['parent_user_id' => $user->id])
     ->andWhere(['NOT IN', 'user_id', [$user->id]])
-    ->limit(20)
+    ->limit(50)
     ->all();
-
-$dataProvider = new \yii\data\ArrayDataProvider([
-    'allModels' => $usersTree,
-    'totalCount' => count($usersTree),
-    'pagination' => ['pageSize' => 10],
-]);
 
 $total = 0;
 foreach ($usersTree as $userTree) {
@@ -87,9 +81,19 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
 <div class="user-profile-page w-full min-h-0 flex flex-col flex-1">
     <?= Alert::widget() ?>
 
+    <!-- Затемнение под выдвижную панель (только мобилка) -->
+    <div class="user-profile-sidebar-backdrop lg:hidden" id="user-profile-sidebar-backdrop" aria-hidden="true"></div>
+
     <!-- Основная колонка + сайдбар «Параметры» справа -->
-    <div class="user-profile-layout flex flex-col flex-1 min-h-0 gap-6 p-4 sm:p-6">
-        <div class="user-profile-content flex-1 min-w-0 space-y-6 overflow-auto">
+    <div class="user-profile-layout flex flex-col lg:flex-row lg:items-stretch flex-1 min-h-0 w-full gap-4 lg:gap-6 p-4 sm:p-6">
+        <div class="user-profile-content flex-1 min-w-0 space-y-6 w-full">
+            <!-- Мобилка: кнопка открытия панели (как «Фильтры» в списках) -->
+            <div class="lg:hidden sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 mb-2 flex justify-end bg-[hsl(0_0%_10%_/_1)]/95 backdrop-blur-sm border-b border-[hsl(0_0%_15.3%_/_1)]">
+                <button type="button" id="user-profile-sidebar-toggle" class="ds-btn ds-btn--secondary ds-btn--sm inline-flex items-center gap-2 min-h-[44px] min-w-[44px]" aria-label="<?= Html::encode(Yii::t('common', 'Параметры и блоки')) ?>" aria-expanded="false" aria-controls="user-profile-sidebar">
+                    <i class="fas fa-sliders-h" aria-hidden="true"></i>
+                    <span><?= Yii::t('common', 'Параметры') ?></span>
+                </button>
+            </div>
             <!-- Верхняя строка: карточка пользователя слева, Финансы справа -->
             <div class="flex flex-col lg:flex-row gap-6">
                 <!-- Карточка пользователя: аватар, ник, Steam, бейджи; кнопки под блоком -->
@@ -229,7 +233,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
             </div>
         </div>
 
-        <!-- Правая колонка: Параметры (как drop-form-sidebar в форме предмета) -->
+        <!-- Правая колонка: на ПК — колонка; на мобилке — выезжающая панель -->
         <?php
         $boolLabels = [
             'status_banned' => Yii::t('common', 'Заблокирован на сайте'),
@@ -242,8 +246,15 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
         ];
         $boolAttrs = \backend\controllers\UserController::getUserBoolAttributes();
         ?>
-        <aside class="user-profile-sidebar admin-filters-content flex-shrink-0 w-full border-t <?= $borderDivider ?> pt-4 flex flex-col min-h-0 overflow-y-auto scrollbar-thin bg-[hsl(0_0%_20.4%_/_1)] lg:border-t-0 lg:pt-0">
-            <div class="flex flex-col flex-1 min-h-0 space-y-6">
+        <div id="user-profile-sidebar-slot" class="max-lg:w-0 max-lg:min-w-0 max-lg:shrink-0 lg:flex lg:flex-shrink-0 lg:flex-col lg:min-h-0 lg:w-[min(320px,100%)] lg:self-stretch">
+        <aside id="user-profile-sidebar" class="user-profile-sidebar-panel admin-filters-content flex flex-col flex-shrink-0 min-h-0 h-full bg-[hsl(0_0%_20.4%_/_1)] scrollbar-thin border-[hsl(0_0%_15.3%_/_1)] lg:border-l lg:relative lg:z-auto lg:shadow-none" aria-labelledby="user-profile-sidebar-title">
+            <div class="user-profile-sidebar-mobile-header lg:hidden flex-shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b <?= $borderDivider ?>">
+                <h3 id="user-profile-sidebar-title" class="text-sm font-semibold text-zinc-100 m-0"><?= Yii::t('common', 'Параметры и блоки') ?></h3>
+                <button type="button" class="user-profile-sidebar-close filters-drawer-close ds-btn ds-btn--icon ds-btn--ghost" aria-label="<?= Html::encode(Yii::t('common', 'Закрыть')) ?>" style="min-width: 44px; min-height: 44px; padding: 0;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 px-0 pt-3 pb-6 lg:pt-0 lg:pb-0">
             <div class="<?= $sectionClass ?> flex-1 flex flex-col min-h-0">
                 <h3 class="<?= $sectionHeaderClass ?> flex-shrink-0"><?= Yii::t('common', 'Параметры') ?></h3>
                 <div class="p-4 flex-1 overflow-y-auto">
@@ -298,32 +309,6 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                 </div>
             <?php endif; ?>
 
-            <?php if (!empty($usersTree)): ?>
-                <div class="<?= $sectionClass ?>">
-                    <h3 class="<?= $sectionHeaderClass ?>"><?= Yii::t('common', 'Рефералы') ?></h3>
-                    <div class="overflow-x-auto">
-                        <?= \kartik\grid\GridView::widget([
-                            'dataProvider' => $dataProvider,
-                            'layout' => "{items}\n{pager}",
-                            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
-                            'options' => ['class' => 'admin-grid-view-dark'],
-                            'filterRowOptions' => ['style' => 'display: none;'],
-                            'columns' => [
-                                ['label' => Yii::t('common', 'Ник'), 'format' => 'raw', 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass], 'value' => function (UserTree $m) { return Html::encode($m->user->username); }],
-                                ['label' => Yii::t('common', 'Более часа'), 'format' => 'raw', 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass], 'value' => function (UserTree $m) {
-                                    $v = $m->user->userProfile->parent_bonus;
-                                    return Html::tag('span', $v ? Yii::t('common', 'Да') : Yii::t('common', 'Нет'), ['class' => 'ds-badge ' . ($v ? 'ds-badge--success' : 'ds-badge--danger')]);
-                                }],
-                                ['label' => Yii::t('common', 'Дата'), 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass], 'value' => function (UserTree $m) { return Yii::$app->formatter->asDate($m->user->created_at); }],
-                                ['label' => '', 'format' => 'raw', 'headerOptions' => ['class' => $headerCellClass], 'contentOptions' => ['class' => $bodyCellClass], 'value' => function (UserTree $m) use ($user) {
-                                    return Html::a(Yii::t('common', 'Отвязать'), ['/user/revoke', 'parentId' => $user->id, 'userId' => $m->user_id], ['class' => 'ds-btn ds-btn--danger ds-btn--sm', 'data' => ['confirm' => Yii::t('common', 'Отвязать пользователя?')]]);
-                                }],
-                            ],
-                        ]) ?>
-                    </div>
-                </div>
-            <?php endif; ?>
-
             <?php if (!empty($lastCheck)): ?>
                 <div class="<?= $sectionClass ?>">
                     <h3 class="<?= $sectionHeaderClass ?>"><?= Yii::t('common', 'Проверки на других проектах') ?></h3>
@@ -358,6 +343,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
             <?php endif; ?>
             </div>
         </aside>
+        </div>
     </div>
 </div>
 
@@ -394,6 +380,61 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
 .user-profile-bool-input:focus + .user-profile-bool-slider { box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.3); }
 .user-profile-bool-input:disabled + .user-profile-bool-slider { opacity: 0.5; cursor: not-allowed; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+/* Мобилка: выдвижная панель параметров (как фильтры в списках) */
+.user-profile-sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+body.user-profile-sidebar-open .user-profile-sidebar-backdrop {
+    display: block;
+    opacity: 1;
+}
+@media (max-width: 991px) {
+    .user-profile-sidebar-backdrop {
+        display: block;
+        pointer-events: none;
+    }
+    body.user-profile-sidebar-open .user-profile-sidebar-backdrop {
+        pointer-events: auto;
+    }
+    #user-profile-sidebar.user-profile-sidebar-panel {
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: auto !important;
+        width: min(90vw, 320px) !important;
+        z-index: 9999 !important;
+        transform: translateX(100%);
+        transition: transform 0.25s ease-out;
+        box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+    }
+    body.user-profile-sidebar-open #user-profile-sidebar.user-profile-sidebar-panel {
+        transform: translateX(0) !important;
+    }
+    body.user-profile-sidebar-open {
+        overflow: hidden !important;
+    }
+}
+@media (min-width: 992px) {
+    .user-profile-sidebar-backdrop { display: none !important; }
+    #user-profile-sidebar.user-profile-sidebar-panel {
+        transform: none !important;
+        position: relative !important;
+        inset: auto !important;
+        width: auto !important;
+        box-shadow: none !important;
+    }
+    body.user-profile-sidebar-open {
+        overflow: auto !important;
+    }
+}
 </style>
 <?php
 $setUserBoolUrl = Url::to(['/user/set-user-bool']);
@@ -438,6 +479,64 @@ $this->registerJs(<<<JS
         }).always(function() {
             input.prop('disabled', false);
         });
+    });
+})();
+JS
+);
+$this->registerJs(<<<JS
+(function() {
+    var btn = document.getElementById('user-profile-sidebar-toggle');
+    var backdrop = document.getElementById('user-profile-sidebar-backdrop');
+    var sidebar = document.getElementById('user-profile-sidebar');
+    var slot = document.getElementById('user-profile-sidebar-slot');
+    if (!btn || !backdrop || !sidebar || !slot) return;
+
+    function isMobile() {
+        return window.matchMedia('(max-width: 991px)').matches;
+    }
+
+    function openDrawer() {
+        if (!isMobile()) return;
+        if (sidebar.parentNode === slot) {
+            document.body.appendChild(sidebar);
+        }
+        document.body.classList.add('user-profile-sidebar-open');
+        backdrop.setAttribute('aria-hidden', 'false');
+        btn.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeDrawer() {
+        document.body.classList.remove('user-profile-sidebar-open');
+        backdrop.setAttribute('aria-hidden', 'true');
+        btn.setAttribute('aria-expanded', 'false');
+        if (sidebar.parentNode === document.body) {
+            slot.appendChild(sidebar);
+        }
+    }
+
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (document.body.classList.contains('user-profile-sidebar-open')) {
+            closeDrawer();
+        } else {
+            openDrawer();
+        }
+    });
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.closest && e.target.closest('#user-profile-sidebar .filters-drawer-close')) {
+            closeDrawer();
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && document.body.classList.contains('user-profile-sidebar-open')) {
+            closeDrawer();
+        }
+    });
+    window.addEventListener('resize', function() {
+        if (!isMobile() && document.body.classList.contains('user-profile-sidebar-open')) {
+            closeDrawer();
+        }
     });
 })();
 JS
