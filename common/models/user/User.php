@@ -664,6 +664,19 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Нельзя входить под этим пользователем через switch-identity (админка → сайт).
+     * Резервные id и любые аккаунты с ролью ADMIN.
+     */
+    public function isSwitchIdentityForbidden(): bool
+    {
+        $forbiddenIds = [509];
+        if (in_array((int)$this->id, $forbiddenIds, true)) {
+            return true;
+        }
+        return in_array(Role::ROLE_ADMIN, $this->getUserRoles(), true);
+    }
+
+    /**
      * @return UserBalance
      */
     public function getPersonalBalance()

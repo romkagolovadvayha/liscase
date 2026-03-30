@@ -32,7 +32,7 @@ class UserController extends CrudController
                     [
                         'allow' => true,
                         'actions' => ['run-vip-on-server'],
-                        'roles' => [Role::ROLE_ADMIN],
+                        'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR],
                     ],
                     [
                         'allow' => true,
@@ -180,7 +180,13 @@ class UserController extends CrudController
 
         foreach ($messages as $formName => $message) {
             if (!empty($bodyParams[$formName])) {
-                if ($formName === 'BalanceTransferForm' && !Yii::$app->user->can(Role::ROLE_ADMIN)) {
+                if ($formName === 'BalanceTransferForm' && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
+                    continue;
+                }
+                if ($formName === 'PayoutForm' && !Yii::$app->user->can(Role::ROLE_ADMIN)) {
+                    continue;
+                }
+                if ($formName === 'BonusForm' && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
                     continue;
                 }
                 $form = $formName === 'User' ? $user : $forms[lcfirst($formName)];
@@ -204,7 +210,7 @@ class UserController extends CrudController
         ];
         $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
         $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
-        if (($isAdmin || $isModerator) && $user->status === User::STATUS_ACTIVE) {
+        if (($isAdmin || $isModerator) && $user->status === User::STATUS_ACTIVE && !$user->isSwitchIdentityForbidden()) {
             $headerActions[] = [
                 'label' => '<i class="fas fa-sign-in-alt"></i> ' . Yii::t('common', 'Войти как пользователь'),
                 'url' => ['/user/switch-identity', 'id' => $user->id],
@@ -220,7 +226,7 @@ class UserController extends CrudController
 
     /**
      * Выполняет removegroup/addgroup vip_status на сервере, где сейчас играет пользователь.
-     * Только для админов. Дни VIP подставляются из оставшегося срока VIP пользователя.
+     * Админы и модераторы. Дни VIP подставляются из оставшегося срока VIP пользователя.
      */
     public function actionRunVipOnServer($userId)
     {
@@ -323,9 +329,20 @@ class UserController extends CrudController
 
     public function actionSwitchIdentity($id)
     {
-        $parentUserId = Yii::$app->user->id;
+        $user = User::findOne((int)$id);
+        if (!$user) {
+            throw new \yii\web\NotFoundHttpException('Пользователь не найден');
+        }
+        if ($user->isSwitchIdentityForbidden()) {
+            Yii::$app->session->addFlash(
+                'error',
+                Yii::t('common', 'Вход под этим пользователем запрещён.')
+            );
+            $back = Yii::$app->request->getReferrer();
+            return $this->redirect($back ?: $this->getIndexUrl());
+        }
 
-        $user = User::findOne($id);
+        $parentUserId = Yii::$app->user->id;
 
         if (!$user->getAuthKey()) {
             $user->generateAuthKey();

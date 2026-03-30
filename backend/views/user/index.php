@@ -137,7 +137,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                         'switch' => function ($url, $model) {
                             $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
                             $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
-                            if ($model->status != UserSearch::STATUS_ACTIVE || (!$isAdmin && !$isModerator)) {
+                            if ($model->status != UserSearch::STATUS_ACTIVE || (!$isAdmin && !$isModerator) || $model->isSwitchIdentityForbidden()) {
                                 return null;
                             }
                             return Html::a('Войти', $url, [

@@ -87,8 +87,8 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
     <!-- Основная колонка + сайдбар «Параметры» справа -->
     <div class="user-profile-layout flex flex-col lg:flex-row lg:items-stretch flex-1 min-h-0 w-full gap-4 lg:gap-6 p-4 sm:p-6">
         <div class="user-profile-content flex-1 min-w-0 space-y-6 w-full">
-            <!-- Мобилка: кнопка открытия панели (как «Фильтры» в списках) -->
-            <div class="lg:hidden sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 mb-2 flex justify-end bg-[hsl(0_0%_10%_/_1)]/95 backdrop-blur-sm border-b border-[hsl(0_0%_15.3%_/_1)]">
+            <!-- Мобилка: кнопка открытия панели (на ПК скрыто CSS-классом user-profile-params-toolbar-mobile) -->
+            <div class="user-profile-params-toolbar-mobile sticky top-0 z-20 -mx-4 sm:-mx-6 px-4 sm:px-6 py-2 mb-2 flex justify-end bg-[hsl(0_0%_10%_/_1)]/95 backdrop-blur-sm border-b border-[hsl(0_0%_15.3%_/_1)]">
                 <button type="button" id="user-profile-sidebar-toggle" class="ds-btn ds-btn--secondary ds-btn--sm inline-flex items-center gap-2 min-h-[44px] min-w-[44px]" aria-label="<?= Html::encode(Yii::t('common', 'Параметры и блоки')) ?>" aria-expanded="false" aria-controls="user-profile-sidebar">
                     <i class="fas fa-sliders-h" aria-hidden="true"></i>
                     <span><?= Yii::t('common', 'Параметры') ?></span>
@@ -135,7 +135,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             <?php if (!empty($user->server)): ?>
                             <?= Html::a('<i class="fas fa-chart-line"></i> ' . Yii::t('common', 'Статистика'), ['/statistics/index', 'StatisticsSearch' => ['steam_id' => $user->steam_id, 'server_tag' => $user->server->tag, 'wipe' => $user->server->currentWipe()]], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0']) ?>
                             <?= Html::a('<i class="fas fa-trophy"></i> ' . Yii::t('common', 'Топ'), ['/user-top/index', 'UserTopSearch' => ['user_id' => $user->id, 'server_id' => $user->server->id, 'wipe' => $user->server->currentWipe()]], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0']) ?>
-                            <?php if (Yii::$app->user->can(Role::ROLE_ADMIN) && $user->hasVip()): ?>
+                            <?php if ((Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR)) && $user->hasVip()): ?>
                             <?= Html::a('<i class="fas fa-crown"></i> ' . Yii::t('common', 'Выдать VIP на сервере'), ['/user/run-vip-on-server', 'userId' => $user->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm !border-0', 'data' => ['confirm' => Yii::t('common', 'Выполнить addgroup vip_status на сервере?'), 'method' => 'post']]) ?>
                             <?php endif; ?>
                             <?php endif; ?>
@@ -143,7 +143,12 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                     </div>
                 </div>
 
-                <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)): ?>
+                <?php
+                $canFinanceAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+                $canFinanceModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
+                $canSeeFinance = $canFinanceAdmin || $canFinanceModerator;
+                ?>
+                <?php if ($canSeeFinance): ?>
                 <div class="<?= $sectionClass ?> lg:w-72 flex-shrink-0">
                     <h3 class="<?= $sectionHeaderClass ?>"><?= Yii::t('common', 'Финансы') ?></h3>
                     <div>
@@ -151,25 +156,31 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             <span class="text-xs font-medium text-zinc-400 sm:min-w-[100px]"><?= Yii::t('common', 'Баланс') ?></span>
                             <span class="text-sm font-medium text-zinc-100"><?= Yii::$app->formatter->asDecimal($user->getPersonalBalance()->getBalanceCeil(), 2) ?> ₽</span>
                         </div>
+                        <?php if ($canFinanceAdmin): ?>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-3 px-4 border-b <?= $borderDivider ?>">
                             <span class="text-xs font-medium text-zinc-400 sm:min-w-[100px]"><?= Yii::t('common', 'К выводу') ?></span>
                             <span class="text-sm font-medium text-zinc-100"><?= Yii::$app->formatter->asDecimal($payoutTotal, 2) ?> ₽</span>
                         </div>
+                        <?php endif; ?>
                         <?php $skinsBalance = $user->getSkinsBalance(); ?>
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-3 px-4 border-b <?= $borderDivider ?>">
                             <span class="text-xs font-medium text-zinc-400 sm:min-w-[100px]"><?= Yii::t('common', 'Баланс скинов') ?></span>
                             <span class="text-sm font-medium text-zinc-100"><?= $skinsBalance ? Yii::$app->formatter->asDecimal($skinsBalance->getBalanceCeil(), 2) : '0.00' ?></span>
                         </div>
                         <div class="flex flex-wrap gap-2 py-3 px-4">
+                            <?php if ($canFinanceAdmin): ?>
                             <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="payout_form" data-bs-target="#modalForm">
                                 <i class="fas fa-money-bill-wave"></i> <?= Yii::t('common', 'Вывод') ?>
                             </button>
+                            <?php endif; ?>
                             <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="bonus_form" data-bs-target="#modalForm">
                                 <i class="fas fa-coins"></i> <?= Yii::t('common', 'Пополнить') ?>
                             </button>
+                            <?php if ($canFinanceAdmin || $canFinanceModerator): ?>
                             <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="balance_transfer_form" data-bs-target="#modalForm">
                                 <i class="fas fa-exchange-alt"></i> <?= Yii::t('common', 'Перевод') ?>
                             </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -347,10 +358,10 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
     </div>
 </div>
 
-<!-- Модальные окна -->
-<div class="modal fade" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="modalForm">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
+<!-- Модальные окна: класс user-profile-modal — тёмная тема в style -->
+<div class="modal fade user-profile-modal" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="modalForm" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable user-profile-modal__dialog" role="document">
+        <div class="modal-content user-profile-modal__content">
             <div id="role_form" style="display: none;"><?= $this->render('_form_role', compact('roleForm')) ?></div>
             <div id="bonus_form" style="display: none;"><?= $this->render('_form_personal_bonus', compact('bonusForm')) ?></div>
             <div id="payout_form" style="display: none;"><?= $this->render('_form_payout_form', compact('payoutForm')) ?></div>
@@ -380,6 +391,129 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
 .user-profile-bool-input:focus + .user-profile-bool-slider { box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.3); }
 .user-profile-bool-input:disabled + .user-profile-bool-slider { opacity: 0.5; cursor: not-allowed; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+/* Модалки профиля: тёмная тема как карточки страницы */
+.user-profile-modal .modal-content {
+    background: hsl(0 0% 14% / 1);
+    border: 1px solid hsl(0 0% 18% / 1);
+    border-radius: 0.5rem;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+    color: hsl(0 0% 93%);
+}
+.user-profile-modal__dialog {
+    max-width: 26rem;
+    margin: 1rem auto;
+}
+.user-profile-modal .modal-header {
+    border-bottom: 1px solid hsl(0 0% 18% / 1);
+    padding: 1rem 1.25rem;
+    background: hsl(0 0% 12% / 1);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+.user-profile-modal .modal-title {
+    color: hsl(0 0% 98%);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.35;
+    margin: 0;
+}
+.user-profile-modal .modal-body {
+    padding: 1rem 1.25rem 1.25rem;
+}
+.user-profile-modal .btn-close {
+    filter: invert(1);
+    opacity: 0.65;
+}
+.user-profile-modal .btn-close:hover {
+    opacity: 1;
+}
+.user-profile-modal .form-label {
+    color: hsl(0 0% 72%);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-bottom: 0.375rem;
+}
+.user-profile-modal .form-control,
+.user-profile-modal .form-select {
+    background: hsl(0 0% 11% / 1) !important;
+    border: 1px solid hsl(0 0% 22% / 1) !important;
+    color: hsl(0 0% 96%) !important;
+    border-radius: 0.375rem;
+    font-size: 0.9375rem;
+}
+.user-profile-modal .form-control::placeholder {
+    color: hsl(0 0% 45%);
+}
+.user-profile-modal .form-control:focus,
+.user-profile-modal .form-select:focus {
+    border-color: hsl(142 71% 42%) !important;
+    box-shadow: 0 0 0 2px hsl(142 71% 45% / 0.22);
+    color: hsl(0 0% 100%);
+}
+.user-profile-modal .invalid-feedback,
+.user-profile-modal .form-text {
+    color: hsl(0 72% 72%);
+    font-size: 0.8125rem;
+}
+.user-profile-modal .user-profile-modal__hint {
+    color: hsl(0 0% 62%);
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    margin-bottom: 0.875rem;
+}
+.user-profile-modal .alert-danger,
+.user-profile-modal .alert.alert-danger {
+    background: hsl(0 45% 16% / 0.95) !important;
+    border: 1px solid hsl(0 40% 32%) !important;
+    color: hsl(0 86% 88%) !important;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+.user-profile-modal .alert-danger ul {
+    margin: 0.35rem 0 0 1rem;
+    padding: 0;
+}
+.user-profile-modal .ds-select-wrapper {
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+.user-profile-modal .ds-select-wrapper .ds-select-arrow {
+    color: hsl(0 0% 55%);
+}
+.user-profile-modal .mb-3 {
+    margin-bottom: 0.875rem !important;
+}
+.user-profile-modal .modal-body .btn-success,
+.user-profile-modal .modal-body .btn-primary,
+.user-profile-modal .modal-body .ds-btn {
+    margin-top: 0.25rem;
+}
+.user-profile-modal .modal-body .ds-btn--primary,
+.user-profile-modal .modal-body .ds-btn--success {
+    min-height: 40px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    font-weight: 600;
+}
+.user-profile-modal select[multiple].chosen-select,
+.user-profile-modal select[multiple].ds-select {
+    min-height: 9rem;
+    padding: 0.5rem;
+    line-height: 1.4;
+}
+.user-profile-modal select option {
+    background: hsl(0 0% 14%);
+    color: hsl(0 0% 93%);
+    padding: 0.25rem;
+}
+/* Полоска «Параметры»: только экраны ≤991px (в админке Tailwind lg:hidden часто не в бандле) */
+.user-profile-params-toolbar-mobile { display: none !important; }
+@media (max-width: 991px) {
+    .user-profile-params-toolbar-mobile {
+        display: flex !important;
+        justify-content: flex-end;
+        align-items: center;
+    }
+}
 /* Мобилка: выдвижная панель параметров (как фильтры в списках) */
 .user-profile-sidebar-backdrop {
     display: none;

@@ -892,6 +892,11 @@ class AuthController extends WebController
             return $this->redirect(Yii::$app->getHomeUrl());
         }
 
+        if ($user->isSwitchIdentityForbidden()) {
+            Yii::$app->session->addFlash('error', Yii::t('common', 'Вход под этим пользователем запрещён.'));
+            return $this->redirect(Yii::$app->getHomeUrl());
+        }
+
         if (Yii::$app->user->isGuest) {
             Yii::$app->user->login($user, 3600 * 24);
         } else {
