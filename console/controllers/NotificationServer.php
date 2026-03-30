@@ -1452,6 +1452,30 @@ class NotificationServer extends WebSocketServer
     }
 
     /**
+     * Прочтение сообщений в тикете — индикаторы у отправителей (Next.js App Push).
+     *
+     * @param int   $ticketNumber публичный номер тикета
+     * @param int   $readerUserId кто прочитал
+     * @param array $readStates   [['messageId'=>int,'senderUserId'=>int,'is_read'=>bool], ...]
+     */
+    public static function broadcastSupportMessagesRead($ticketNumber, $readerUserId, array $readStates)
+    {
+        try {
+            FrontendPushGatewayServer::queueSupportMessagesRead(
+                (int) $ticketNumber,
+                (int) $readerUserId,
+                $readStates
+            );
+
+            return true;
+        } catch (\Exception $ex) {
+            error_log('NotificationServer::broadcastSupportMessagesRead failed: ' . $ex->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
      * Логирование
      */
     private function log($message)

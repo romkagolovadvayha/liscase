@@ -240,15 +240,16 @@ class SupportGameStoresController extends BaseApiController
             ->orderBy(['created_at' => SORT_ASC])
             ->all();
 
-        // Отмечаем сообщения как прочитанные
+        // Отмечаем сообщения как прочитанные и оповещаем WebSocket
         if (!empty($messages)) {
-            SupportRead::readedAll($ticket->id, $user->id);
+            $markedRead = SupportRead::readedAllReturningMessageIds($ticket->id, $user->id);
+            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int) $user->id, $markedRead);
         }
 
         // Форматируем сообщения
         $formattedMessages = [];
         foreach ($messages as $message) {
-            $formattedMessages[] = $this->formatMessage($message);
+            $formattedMessages[] = $this->formatMessage($message, $ticket, (int) $user->id);
         }
 
         return $this->successResponse([
@@ -512,8 +513,8 @@ class SupportGameStoresController extends BaseApiController
             $ticket->updated_at = date('Y-m-d H:i:s');
             $ticket->save(false);
 
-            // Отмечаем сообщение как прочитанное для отправителя
-            SupportRead::readedAll($ticket->id, $user->id);
+            $markedRead = SupportRead::readedAllReturningMessageIds($ticket->id, $user->id);
+            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int) $user->id, $markedRead);
             // Создаем непрочитанные записи для получателей (владелец + staff, кроме отправителя).
             SupportRead::createRecord((int) $ticket->user_id, (int) $user->id, (int) $supportMessage->id, (int) $ticket->id);
 
@@ -541,7 +542,7 @@ class SupportGameStoresController extends BaseApiController
 
             Yii::$app->response->statusCode = 201;
             return $this->successResponse([
-                'message' => $this->formatMessage($supportMessage),
+                'message' => $this->formatMessage($supportMessage, $ticket, (int) $user->id),
             ]);
 
         } catch (\Exception $e) {
@@ -596,8 +597,12 @@ class SupportGameStoresController extends BaseApiController
 
     /**
      * Форматирование сообщения
+     *
+     * @param SupportMessage $message
+     * @param Support|null $ticket
+     * @param int|null $viewerUserId
      */
-    protected function formatMessage($message)
+    protected function formatMessage($message, $ticket = null, $viewerUserId = null)
     {
         $files = [];
         $hasFiles = !empty($message->supportFiles);
@@ -659,7 +664,7 @@ class SupportGameStoresController extends BaseApiController
             $formattedDate = date('d.m.Y H:i', $timestamp);
         }
 
-        return [
+        $data = [
             'id' => $message->id,
             'support_id' => $message->support_id,
             'user_id' => $message->user_id,
@@ -668,10 +673,26 @@ class SupportGameStoresController extends BaseApiController
                 'id' => $message->user->id,
                 'username' => $message->user->username,
                 'avatar' => $message->user->getAvatar(),
+                'avatar_frame_url' => $message->user->getAvatarFrameImageUrl(),
             ] : null,
             'files' => $files,
             'created_at' => $formattedDate,
         ];
+
+        if (
+            $ticket !== null
+            && $viewerUserId !== null
+            && $message->user_id !== null
+            && (int) $message->user_id === (int) $viewerUserId
+        ) {
+            $data['is_read'] = SupportRead::isOutgoingRead(
+                (int) $message->id,
+                (int) $message->user_id,
+                (int) $ticket->user_id
+            );
+        }
+
+        return $data;
     }
 
     /**

@@ -33,6 +33,8 @@ class FrontendPushGatewayServer extends WebSocketServer
     public const EVENT_SUPPORT_TICKET_NEW = 'support.ticket.new';
     public const EVENT_SUPPORT_MESSAGE_UPDATED = 'support.message.updated';
     public const EVENT_SUPPORT_MESSAGE_DELETED = 'support.message.deleted';
+    /** Прочтение сообщений собеседником — обновление галочек у отправителя */
+    public const EVENT_SUPPORT_MESSAGES_READ = 'support.messages.read';
     public const EVENT_SUPPORT_USER_BLOCKED = 'support.user.blocked';
     public const EVENT_BALANCE_UPDATED = 'balance.updated';
 
@@ -529,6 +531,32 @@ class FrontendPushGatewayServer extends WebSocketServer
         $this->sendToMany($recipients, self::EVENT_SUPPORT_MESSAGE_DELETED, $payload);
     }
 
+    /**
+     * @param array<int, array{messageId: int, senderUserId: int, is_read: bool}> $readStates
+     */
+    private function dispatchSupportMessagesRead(int $ticketNumber, int $readerUserId, array $readStates): void
+    {
+        $ticket = $this->resolveSupportTicketByAnyNumber($ticketNumber);
+        $ownerUserId = $ticket ? (int) $ticket->user_id : null;
+        $payload = [
+            'ticketNumber' => $ticketNumber,
+            'readerUserId' => $readerUserId,
+            'readStates' => $readStates,
+        ];
+        $recipients = [];
+        foreach ($this->getAdminClients() as $c) {
+            $recipients[] = $c;
+        }
+        if ($ownerUserId) {
+            foreach ($this->getClientsByUserId($ownerUserId) as $c) {
+                if (!in_array($c, $recipients, true)) {
+                    $recipients[] = $c;
+                }
+            }
+        }
+        $this->sendToMany($recipients, self::EVENT_SUPPORT_MESSAGES_READ, $payload);
+    }
+
     private function dispatchPurchase(int $userId, $newBalance): void
     {
         $this->sendToMany(
@@ -805,6 +833,41 @@ class FrontendPushGatewayServer extends WebSocketServer
                 Yii::$app->cache->set($userBlocksQueueKey, $userBlocksQueue, 10);
             }
         }
+
+        $readReceiptsQueueKey = 'fp_ws_support_messages_read_queue';
+        $readReceiptsQueue = Yii::$app->cache->get($readReceiptsQueueKey);
+        if (!is_array($readReceiptsQueue)) {
+            $readReceiptsQueue = [];
+        }
+        $processedRr = [];
+        foreach ($readReceiptsQueue as $uniq => $queueTimestamp) {
+            if (($now - $queueTimestamp) > 8) {
+                continue;
+            }
+            $readCacheKey = 'fp_ws_support_messages_read_payload_' . $uniq;
+            $readData = Yii::$app->cache->get($readCacheKey);
+            if ($readData && isset($readData['type']) && $readData['type'] === 'support.messages.read') {
+                if (isset($readData['timestamp']) && ($now - $readData['timestamp']) < 8) {
+                    Yii::$app->cache->delete($readCacheKey);
+                    $this->dispatchSupportMessagesRead(
+                        (int) $readData['ticketId'],
+                        (int) $readData['readerUserId'],
+                        isset($readData['readStates']) && is_array($readData['readStates']) ? $readData['readStates'] : []
+                    );
+                    $processedRr[] = $uniq;
+                }
+            }
+        }
+        if (!empty($processedRr)) {
+            foreach ($processedRr as $uniq) {
+                unset($readReceiptsQueue[$uniq]);
+            }
+            if (empty($readReceiptsQueue)) {
+                Yii::$app->cache->delete($readReceiptsQueueKey);
+            } else {
+                Yii::$app->cache->set($readReceiptsQueueKey, $readReceiptsQueue, 15);
+            }
+        }
     }
 
     private function log(string $message): void
@@ -1020,6 +1083,42 @@ class FrontendPushGatewayServer extends WebSocketServer
             return true;
         } catch (\Exception $ex) {
             error_log('FrontendPushGatewayServer::queueMessageDelete: ' . $ex->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @param array<int, array{messageId: int, senderUserId: int, is_read: bool}> $readStates
+     */
+    public static function queueSupportMessagesRead(int $ticketNumber, int $readerUserId, array $readStates): bool
+    {
+        try {
+            $uniq = str_replace('.', '_', uniqid('rr', true));
+            $cacheKey = 'fp_ws_support_messages_read_payload_' . $uniq;
+            $data = [
+                'type' => 'support.messages.read',
+                'ticketId' => $ticketNumber,
+                'readerUserId' => $readerUserId,
+                'readStates' => $readStates,
+                'timestamp' => time(),
+            ];
+            Yii::$app->cache->set($cacheKey, $data, 15);
+            $queueKey = 'fp_ws_support_messages_read_queue';
+            $queue = Yii::$app->cache->get($queueKey);
+            if (!is_array($queue)) {
+                $queue = [];
+            }
+            $queue[$uniq] = time();
+            if (count($queue) > 1000) {
+                arsort($queue);
+                $queue = array_slice($queue, 0, 1000, true);
+            }
+            Yii::$app->cache->set($queueKey, $queue, 15);
+
+            return true;
+        } catch (\Exception $ex) {
+            error_log('FrontendPushGatewayServer::queueSupportMessagesRead: ' . $ex->getMessage());
+
             return false;
         }
     }

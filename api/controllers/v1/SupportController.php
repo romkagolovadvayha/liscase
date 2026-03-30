@@ -318,15 +318,16 @@ class SupportController extends BaseApiController
             ->orderBy(['created_at' => SORT_ASC])
             ->all();
 
-        // Отмечаем сообщения как прочитанные
+        // Отмечаем сообщения как прочитанные и оповещаем WebSocket (индикаторы прочтения у отправителей)
         if (!empty($messages)) {
-            SupportRead::readedAll($ticket->id, $user->id);
+            $markedRead = SupportRead::readedAllReturningMessageIds($ticket->id, $user->id);
+            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int) $user->id, $markedRead);
         }
 
         // Форматируем сообщения
         $formattedMessages = [];
         foreach ($messages as $message) {
-            $formattedMessages[] = $this->formatMessage($message);
+            $formattedMessages[] = $this->formatMessage($message, $ticket, (int) $user->id);
         }
 
         return $this->successResponse([
@@ -671,8 +672,9 @@ class SupportController extends BaseApiController
             $ticket->updated_at = date('Y-m-d H:i:s');
             $ticket->save(false);
 
-            // Отмечаем сообщение как прочитанное для отправителя
-            SupportRead::readedAll($ticket->id, $user->id);
+            // Отмечаем входящие как прочитанные для отправителя и рассылаем read-receipt по WS
+            $markedRead = SupportRead::readedAllReturningMessageIds($ticket->id, $user->id);
+            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int) $user->id, $markedRead);
             // Создаем непрочитанные записи для получателей (владелец + staff, кроме отправителя).
             SupportRead::createRecord((int) $ticket->user_id, (int) $user->id, (int) $supportMessage->id, (int) $ticket->id);
 
@@ -690,7 +692,7 @@ class SupportController extends BaseApiController
 
             Yii::$app->response->statusCode = 201;
             return $this->successResponse([
-                'message' => $this->formatMessage($supportMessage),
+                'message' => $this->formatMessage($supportMessage, $ticket, (int) $user->id),
             ]);
 
         } catch (\Exception $e) {
@@ -759,8 +761,8 @@ class SupportController extends BaseApiController
             $ticket->status = Support::STATUS_CLOSED;
             $ticket->save(false);
 
-            // Отмечаем все сообщения как прочитанные
-            SupportRead::readedAll($ticket->id);
+            $markedRead = SupportRead::readedAllReturningMessageIds($ticket->id, null);
+            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int) $user->id, $markedRead);
 
             // Отправляем уведомления через WebSocket
             try {
@@ -895,7 +897,7 @@ class SupportController extends BaseApiController
             }
 
             return $this->successResponse([
-                'message' => $this->formatMessage($message),
+                'message' => $this->formatMessage($message, $ticket, (int) $user->id),
             ]);
         } catch (\Exception $e) {
             Yii::error('Error updating message: ' . $e->getMessage());
@@ -1469,8 +1471,12 @@ class SupportController extends BaseApiController
 
     /**
      * Форматирование сообщения
+     *
+     * @param SupportMessage $message
+     * @param Support|null $ticket
+     * @param int|null $viewerUserId текущий пользователь (для is_read на своих сообщениях)
      */
-    protected function formatMessage($message)
+    protected function formatMessage($message, $ticket = null, $viewerUserId = null)
     {
         $files = [];
         foreach ($message->supportFiles as $file) {
@@ -1483,7 +1489,7 @@ class SupportController extends BaseApiController
             ];
         }
 
-        return [
+        $data = [
             'id' => $message->id,
             'support_id' => $message->support_id,
             'user_id' => $message->user_id, // Добавляем user_id для проверки в frontend
@@ -1492,10 +1498,26 @@ class SupportController extends BaseApiController
                 'id' => $message->user->id,
                 'username' => $message->user->username,
                 'avatar' => $message->user->getAvatar(),
+                'avatar_frame_url' => $message->user->getAvatarFrameImageUrl(),
             ] : null,
             'files' => $files,
             'created_at' => $message->created_at,
         ];
+
+        if (
+            $ticket !== null
+            && $viewerUserId !== null
+            && $message->user_id !== null
+            && (int) $message->user_id === (int) $viewerUserId
+        ) {
+            $data['is_read'] = SupportRead::isOutgoingRead(
+                (int) $message->id,
+                (int) $message->user_id,
+                (int) $ticket->user_id
+            );
+        }
+
+        return $data;
     }
 }
 
