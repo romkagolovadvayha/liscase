@@ -671,11 +671,9 @@ class SupportGameStoresController extends BaseApiController
         } elseif ($hasFiles || $hasImageLink) {
             // Если сообщение содержит файлы ИЛИ ссылку на изображение, заменяем текст
             $formattedMessage = 'Вам отправили файл, чтобы его посмотреть зайдите в раздел поддержки на сайте';
-        } elseif ($formattedMessage === '{USER_INFO}') {
-            $formattedMessage = $this->formatUserInfoMessage($message);
-        } elseif ($formattedMessage === '{ALERT_REPORT}') {
-            $formattedMessage = $this->formatAlertReportMessage();
         }
+        // {USER_INFO} / {ALERT_REPORT} не подменяем на плоский текст — фронтенд (React) рендерит виджеты,
+        // как в SupportController::formatMessage.
 
         // Форматируем дату в формат дд.мм.гггг чч:мм
         $formattedDate = '';
@@ -694,6 +692,7 @@ class SupportGameStoresController extends BaseApiController
                 'username' => $message->user->username,
                 'avatar' => $message->user->getAvatar(),
                 'avatar_frame_url' => $message->user->getAvatarFrameImageUrl(),
+                'steam_id' => $message->user->steam_id,
             ] : null,
             'files' => $files,
             'created_at' => $formattedDate,

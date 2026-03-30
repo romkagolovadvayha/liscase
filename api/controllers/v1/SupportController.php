@@ -1584,6 +1584,7 @@ class SupportController extends BaseApiController
                 'username' => $message->user->username,
                 'avatar' => $message->user->getAvatar(),
                 'avatar_frame_url' => $message->user->getAvatarFrameImageUrl(),
+                'steam_id' => $message->user->steam_id,
             ] : null,
             'files' => $files,
             'created_at' => $message->created_at,
