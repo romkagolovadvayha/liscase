@@ -20,6 +20,7 @@ class ServerWsController extends Controller
         if ($port) {
             $server->port = $port;
         }
+        $this->killProcessListeningOnPort((int) $server->port);
         $server->start();
     }
 
@@ -33,6 +34,7 @@ class ServerWsController extends Controller
         if ($port) {
             $server->port = $port;
         }
+        $this->killProcessListeningOnPort((int) $server->port);
         $server->start();
     }
 
@@ -51,6 +53,7 @@ class ServerWsController extends Controller
         } else {
             $server->port = (int) (Yii::$app->params['frontendPushWsPort'] ?? 8092);
         }
+        $this->killProcessListeningOnPort((int) $server->port);
         $server->start();
     }
 
@@ -97,5 +100,76 @@ class ServerWsController extends Controller
             echo $response;
             break;
         }
+    }
+
+    /**
+     * Завершает процессы, которые слушают указанный TCP-порт (перед повторным запуском WS).
+     * Windows: netstat + taskkill; Linux/macOS: lsof + kill.
+     */
+    private function killProcessListeningOnPort(int $port): void
+    {
+        if ($port <= 0 || $port > 65535) {
+            return;
+        }
+        $pids = $this->findPidsListeningOnPort($port);
+        foreach ($pids as $pid) {
+            $pid = (int) $pid;
+            if ($pid <= 4) {
+                continue;
+            }
+            if (PHP_OS_FAMILY === 'Windows') {
+                @exec('taskkill /F /PID ' . $pid . ' 2>NUL', $out, $code);
+            } else {
+                @exec('kill -9 ' . $pid . ' 2>/dev/null', $out, $code);
+            }
+        }
+        if ($pids !== []) {
+            $this->stdout(sprintf("Порт %d: остановлены процессы PID: %s\n", $port, implode(', ', $pids)));
+            usleep(200000);
+        }
+    }
+
+    /**
+     * @return int[]
+     */
+    private function findPidsListeningOnPort(int $port): array
+    {
+        $pids = [];
+        $port = (int) $port;
+        if (PHP_OS_FAMILY === 'Windows') {
+            @exec('netstat -ano', $lines, $code);
+            if ($code !== 0 || empty($lines)) {
+                return [];
+            }
+            $needle = ':' . $port;
+            foreach ($lines as $line) {
+                if (stripos($line, 'LISTENING') === false) {
+                    continue;
+                }
+                if (strpos($line, $needle) === false) {
+                    continue;
+                }
+                if (!preg_match('/:' . preg_quote((string) $port, '/') . '(?:\s|$)/', $line)) {
+                    continue;
+                }
+                $parts = preg_split('/\s+/', trim($line));
+                $pid = (int) end($parts);
+                if ($pid > 4) {
+                    $pids[] = $pid;
+                }
+            }
+        } else {
+            @exec('lsof -ti :' . $port . ' 2>/dev/null', $out, $code);
+            if (!empty($out)) {
+                foreach ($out as $line) {
+                    $pid = (int) trim($line);
+                    if ($pid > 4) {
+                        $pids[] = $pid;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique($pids));
     }
 }
