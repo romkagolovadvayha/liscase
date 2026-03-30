@@ -11,7 +11,7 @@ use yii\base\Model;
 
 class BalanceTransferForm extends Model
 {
-    public $recipientUserId;
+    public $recipientSteamId;
     public $amount;
 
     /** @var User */
@@ -20,7 +20,7 @@ class BalanceTransferForm extends Model
     public function attributeLabels()
     {
         return [
-            'recipientUserId' => 'ID получателя',
+            'recipientSteamId' => 'Steam ID получателя',
             'amount' => 'Сумма (₽)',
         ];
     }
@@ -28,10 +28,11 @@ class BalanceTransferForm extends Model
     public function rules()
     {
         return [
-            [['recipientUserId', 'amount', 'sender'], 'required'],
-            [['recipientUserId'], 'integer', 'min' => 1],
+            [['recipientSteamId', 'amount', 'sender'], 'required'],
+            [['recipientSteamId'], 'trim'],
+            [['recipientSteamId'], 'match', 'pattern' => '/^\d{8,20}$/', 'message' => 'Укажите корректный Steam ID (только цифры).'],
             [['amount'], 'number', 'min' => 0.01],
-            [['recipientUserId'], 'validateRecipient'],
+            [['recipientSteamId'], 'validateRecipient'],
             [['amount'], 'validateAmount'],
         ];
     }
@@ -44,6 +45,13 @@ class BalanceTransferForm extends Model
         $this->sender = User::findOne($userId);
         if (empty($this->sender)) {
             $this->addError('formError', 'Пользователь не найден');
+            return;
+        }
+        if ($this->amount === null || $this->amount === '') {
+            $b = $this->sender->getPersonalBalance();
+            if ($b) {
+                $this->amount = round((float)$b->balance, 2);
+            }
         }
     }
 
@@ -52,13 +60,13 @@ class BalanceTransferForm extends Model
         if ($this->hasErrors()) {
             return;
         }
-        $rid = (int)$this->recipientUserId;
-        if ($rid === (int)$this->sender->id) {
+        $sid = (string)$this->recipientSteamId;
+        if ($sid === (string)$this->sender->steam_id) {
             $this->addError($attribute, 'Получатель не может совпадать с отправителем.');
             return;
         }
-        if (!User::find()->andWhere(['id' => $rid])->exists()) {
-            $this->addError($attribute, 'Пользователь с таким ID не найден.');
+        if (!User::find()->andWhere(['steam_id' => $sid])->exists()) {
+            $this->addError($attribute, 'Пользователь с таким Steam ID не найден.');
         }
     }
 
@@ -83,9 +91,9 @@ class BalanceTransferForm extends Model
         if (!$this->validate()) {
             return false;
         }
-        $recipient = User::findOne((int)$this->recipientUserId);
+        $recipient = User::find()->where(['steam_id' => (string)$this->recipientSteamId])->one();
         if (!$recipient) {
-            $this->addError('recipientUserId', 'Пользователь не найден.');
+            $this->addError('recipientSteamId', 'Пользователь не найден.');
             return false;
         }
 
@@ -93,27 +101,28 @@ class BalanceTransferForm extends Model
 
         $amt = round((float)$this->amount, 2);
         $commentOut = sprintf(
-            'Перевод пользователю %d (%s)',
+            'Перевод пользователю %d (%s), steam %s',
             $recipient->id,
-            $recipient->username
+            $recipient->username,
+            $recipient->steam_id
         );
         $commentIn = sprintf(
-            'Перевод от пользователя %d (%s)',
+            'Перевод от пользователя %d (%s), steam %s',
             $this->sender->id,
-            $this->sender->username
+            $this->sender->username,
+            $this->sender->steam_id
         );
 
         $db = Yii::$app->db;
         $transaction = $db->beginTransaction();
         try {
-            // Списание: лицевой счёт считается как sum(profit)+deposits−sum(invoice), не unsigned profit
             $invoice = new Invoice();
             $invoice->user_id = $this->sender->id;
             $invoice->type = Invoice::TYPE_ADMIN_TRANSFER;
             $invoice->amount = $amt;
-            $invoice->box_id = 0;
-            $invoice->sets_id = 0;
-            $invoice->drop_id = 0;
+            $invoice->box_id = null;
+            $invoice->sets_id = null;
+            $invoice->drop_id = null;
             $invoice->comment = $commentOut;
             $invoice->created_at = date('Y-m-d H:i:s');
             if (!$invoice->save(false)) {
@@ -137,7 +146,6 @@ class BalanceTransferForm extends Model
 
             $transaction->commit();
 
-            // Явный пересчёт у обоих (после commit; свежие строки из БД, не статический кэш getBalance)
             $senderBalance = UserBalance::findOne([
                 'user_id' => $this->sender->id,
                 'type' => UserBalance::TYPE_PERSONAL,

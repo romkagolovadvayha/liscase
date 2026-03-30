@@ -11,9 +11,9 @@ use yii\base\BaseObject;
  *
  * @property int         $id
  * @property int         $user_id
- * @property int         $box_id
- * @property int         $sets_id
- * @property int         $drop_id
+ * @property int|null    $box_id
+ * @property int|null    $sets_id
+ * @property int|null    $drop_id
  * @property int         $type
  * @property string      $comment
  * @property string      $amount
@@ -57,7 +57,8 @@ class Invoice extends \common\components\base\ActiveRecord
     {
         return [
             [['user_id', 'type', 'amount'], 'required'],
-            [['user_id', 'box_id', 'type'], 'integer'],
+            [['user_id', 'type'], 'integer'],
+            [['box_id', 'sets_id', 'drop_id'], 'integer', 'skipOnEmpty' => true],
             [['amount'], 'number', 'min' => 0.01],
             [['created_at'], 'safe'],
         ];
