@@ -716,7 +716,6 @@ class AuthController extends WebController
                     );
                     if ($auth->save(false)) {
                         $transaction->commit();
-                        Yii::$app->telegramChats->sendMessage('Новая регистрация на сайте: ' . $user->username);
                         Yii::$app->queueProcess->push(new UserSteamInfoUpdateJob(['steamId' => $user->steam_id]));
 //                        $userBalance = $user->getPersonalBalance();
 //                        $model = new Profit();
