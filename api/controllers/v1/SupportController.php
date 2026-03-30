@@ -673,6 +673,8 @@ class SupportController extends BaseApiController
 
             // Отмечаем сообщение как прочитанное для отправителя
             SupportRead::readedAll($ticket->id, $user->id);
+            // Создаем непрочитанные записи для получателей (владелец + staff, кроме отправителя).
+            SupportRead::createRecord((int) $ticket->user_id, (int) $user->id, (int) $supportMessage->id, (int) $ticket->id);
 
             // Отправляем уведомления через WebSocket (если настроено)
             try {
