@@ -12,7 +12,7 @@ use common\models\site\SiteSetting;
 class SettingsCacheHelper
 {
     /** Категории по умолчанию (как в SettingsController::ALLOWED_CATEGORIES). */
-    public const DEFAULT_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans'];
+    public const DEFAULT_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi'];
 
     /** TTL кэша в секундах (1 час). */
     public const CACHE_TTL = 3600;

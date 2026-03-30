@@ -18,7 +18,7 @@ class SettingsController extends BaseApiController
     /**
      * Список разрешенных категорий для фронтенда
      */
-    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans'];
+    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi'];
 
     /**
      * Список исключаемых ключей (секретные данные)
@@ -42,11 +42,11 @@ class SettingsController extends BaseApiController
      *     operationId="getSettings",
      *     tags={"Settings"},
      *     summary="Получить публичные настройки сайта",
-     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot",
+     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot, clans, openAi (avatar, username — бот поддержки; секреты openAi не отдаются)",
      *     @OA\Parameter(
      *         name="categories",
      *         in="query",
-     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot,clans",
+     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot,clans,openAi",
      *         required=false,
      *         @OA\Schema(type="string", example="design,social")
      *     ),
@@ -63,7 +63,8 @@ class SettingsController extends BaseApiController
      *                     @OA\Property(property="social", type="object"),
      *                     @OA\Property(property="section", type="object"),
      *                     @OA\Property(property="metrics", type="object"),
-     *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — изображения подиума")
+     *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — изображения подиума"),
+     *                     @OA\Property(property="openAi", type="object", description="Публичные поля бота: avatar, username")
      *                 )
      *             )
      *         )
