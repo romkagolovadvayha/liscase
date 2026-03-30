@@ -39,6 +39,9 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                              ->cache(60)
                              ->andWhere(['tag' => $this->serverTag])
                              ->one();
+            if ($server === null) {
+                return;
+            }
             $playTimeCount = 5;
             foreach ($request['users'] as $item) {
                 try {

@@ -92,9 +92,14 @@ class RustTm
             return [];
         }
 
+        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+        $content = trim($content);
         $decoded = json_decode($content, true);
         if (!is_array($decoded)) {
-            Yii::error('RustTm prices invalid JSON: ' . $content, __METHOD__);
+            Yii::error(
+                'RustTm prices invalid JSON: ' . json_last_error_msg() . ' (len=' . strlen($content) . ')',
+                __METHOD__
+            );
             return [];
         }
 
@@ -191,58 +196,64 @@ class RustTm
         $itemsName = [];
         $categories = [];
         foreach ($items as $id => $item) {
-            if ($item['price'] > 5000) {
+            if (!is_array($item)) {
                 continue;
             }
-            if ($item['price'] < 5) {
+            $priceRaw = (float)($item['price'] ?? 0);
+            if ($priceRaw > 5000) {
                 continue;
             }
-            if (empty($item['avg_price'])) {
+            if ($priceRaw < 5) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], 'Key') !== false) {
+            $avgPrice = isset($item['avg_price']) && $item['avg_price'] !== null && $item['avg_price'] !== ''
+                ? (float)$item['avg_price']
+                : $priceRaw;
+            $marketName = (string)($item['market_hash_name'] ?? '');
+            $ruName = (string)($item['ru_name'] ?? '');
+            if (strpos($marketName, 'Key') !== false) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], 'Case') !== false) {
+            if (strpos($marketName, 'Case') !== false) {
                 continue;
             }
-            if (strpos($item['ru_name'], 'Наклейка') !== false) {
+            if (strpos($ruName, 'Наклейка') !== false) {
                 continue;
             }
-            if (strpos($item['market_hash_name'], '2017') !== false
-                || strpos($item['market_hash_name'], '2018') !== false
-                || strpos($item['market_hash_name'], '2019') !== false
-                || strpos($item['market_hash_name'], '2020') !== false
-                || strpos($item['market_hash_name'], '2021') !== false
-                || strpos($item['market_hash_name'], '2022') !== false
-                || strpos($item['market_hash_name'], '2023') !== false
-                || strpos($item['market_hash_name'], '2024') !== false
-                || strpos($item['market_hash_name'], 'Operation') !== false
-                || strpos($item['market_hash_name'], 'Music') !== false
-                || strpos($item['market_hash_name'], 'Patch ') !== false
-                || strpos($item['market_hash_name'], 'Graffiti') !== false
-                || strpos($item['market_hash_name'], 'Capsule') !== false
-                || strpos($item['market_hash_name'], ' Pin') !== false
-                || strpos($item['market_hash_name'], 'Sticker') !== false) {
+            if (strpos($marketName, '2017') !== false
+                || strpos($marketName, '2018') !== false
+                || strpos($marketName, '2019') !== false
+                || strpos($marketName, '2020') !== false
+                || strpos($marketName, '2021') !== false
+                || strpos($marketName, '2022') !== false
+                || strpos($marketName, '2023') !== false
+                || strpos($marketName, '2024') !== false
+                || strpos($marketName, 'Operation') !== false
+                || strpos($marketName, 'Music') !== false
+                || strpos($marketName, 'Patch ') !== false
+                || strpos($marketName, 'Graffiti') !== false
+                || strpos($marketName, 'Capsule') !== false
+                || strpos($marketName, ' Pin') !== false
+                || strpos($marketName, 'Sticker') !== false) {
                 continue;
             }
-            $diff = round(($item['avg_price'] - $item['price']) / $item['price'] * 100, 2);
+            $diff = $priceRaw > 0 ? round(($avgPrice - $priceRaw) / $priceRaw * 100, 2) : 0;
             if ($diff < -10) {
                 continue;
             }
 //            if (in_array($item['market_hash_name'], ['Weapon Barrel','Neanderthal Chestplate','Tooth Monster Pants','Pumpkin Hoodie','Cargo Heli Hatchet','Twisted Metal Furnace','Cardboard Sheet Metal Door','Cargo Heli Hatchet','Gore AR','Gingerbread Python','Gift Stack Backpack','Slime Monster Helmet','Adobe Furnace','Cheese Poncho','Air Conditioner Box','White Holographic Pants','Heater AR','Air Conditioner Box','Nightmare Clown Burlap Pants','Tooth Monster Hoodie','Oasis Door','Zombie Facemask','Beyond Reason Wood Door','Nightmare Clown Balaclava','Danger Barricade','High Quality Bag', 'High Quality Crate', 'Low Quality Bag', 'Black Diamond Gloves', 'Ultramarine Small Box', 'Ultramarine Large Box', 'Pumpkin Pants', 'Wrapped Facemask', 'Nightmare Clown Burlap Shirt', 'Mummy Wrap Jacket'])) {
 //                continue;
 //            }
-            $ceilPrice = ceil($item['price']);
-            if (in_array($item['market_hash_name'] . "_" . $ceilPrice, $itemsName)) {
+            $ceilPrice = ceil($priceRaw);
+            if (in_array($marketName . "_" . $ceilPrice, $itemsName)) {
                 continue;
             }
-            $title = explode(' | ', $item['market_hash_name']);
+            $title = explode(' | ', $marketName);
             $title = $title[count($title) - 1];
-            $name = urlencode($item['market_hash_name']);
+            $name = urlencode($marketName);
             $name = str_replace('+', '%20', $name);
 
-            $category = $item['market_hash_name'];
+            $category = $marketName;
             $statTrak = false;
             if (strpos($category, 'StatTrak™') !== false) {
                 $category = str_replace('StatTrak™ ', ' ', $category);
@@ -255,23 +266,24 @@ class RustTm
                 $categories[] = $category;
             }
 
-            $titleRu = explode(' | ', $item['ru_name']);
+            $titleRu = explode(' | ', $ruName);
             $titleRu = $titleRu[count($titleRu) - 1];
-            $titleRu = str_replace(' (' . $item['ru_quality'] . ')', '', $titleRu);
-            $itemsName[] = $item['market_hash_name'] . "_" . $ceilPrice;
+            $ruQuality = (string)($item['ru_quality'] ?? '');
+            $titleRu = str_replace(' (' . $ruQuality . ')', '', $titleRu);
+            $itemsName[] = $marketName . "_" . $ceilPrice;
             $result[$id] = [
                 "id" => $id,
                 "diff" => $diff,
-                "name_search" => $item['market_hash_name'] . $item['ru_name'],
+                "name_search" => $marketName . $ruName,
                 "name" => $title,
                 "ru_name" => $titleRu,
-                "market_hash_name" => $item['market_hash_name'],
+                "market_hash_name" => $marketName,
                 "category" => $category,
                 // Округляем цену в большую сторону (умножаем на 1.3 и применяем ceil)
-                "price" => ceil($item['price'] * 1.3),
-                "popularity_7d" => $item['popularity_7d'],
-                "ru_quality" => $item['ru_quality'],
-                "text_color" => $item['text_color'],
+                "price" => ceil($priceRaw * 1.3),
+                "popularity_7d" => $item['popularity_7d'] ?? null,
+                "ru_quality" => $ruQuality,
+                "text_color" => $item['text_color'] ?? '',
                 "image" => "https://cdn.rust.tm/item/" . $name . "/100.png",
                 "image300" => "https://cdn.rust.tm/item/" . $name . "/300.png",
                 "statTrak" => $statTrak,

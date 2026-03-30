@@ -564,7 +564,6 @@ class Servers extends \common\components\base\ActiveRecord
     public function goDraw() {
         $minOnline = Yii::$app->settings->get('skindrops_minOnline');
         if ($this->players < $minOnline || $this->status !== Servers::STATUS_ACTIVE) {
-            \Yii::$app->telegramChats->sendMessage("Минимальный онлайн: {$minOnline}\nТекущий онлайн: {$this->players}\nСервер: {$this->name}\nРозыгрыш отменен!");
             return;
         }
         $winner = $this->getWinner();
@@ -590,6 +589,10 @@ class Servers extends \common\components\base\ActiveRecord
             }
             $skin = $item;
             break;
+        }
+
+        if ($skin === null) {
+            return;
         }
 
         $price = $skin['price'];
