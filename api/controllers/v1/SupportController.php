@@ -129,6 +129,13 @@ class SupportController extends BaseApiController
 
         return $this->successResponse([
             'tickets' => $formattedTickets,
+            /** Текущий пользователь JWT — для формы «новый тикет» и списка без отдельного /me */
+            'viewer' => [
+                'blocked_support' => (bool) $user->blocked_support,
+                'blocked_support_at' => $user->blocked_support_at,
+                'status' => (int) $user->status,
+                'viewer_can_write' => !$user->isSupportWritingBlocked(),
+            ],
         ]);
     }
 
