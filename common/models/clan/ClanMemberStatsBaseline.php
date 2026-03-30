@@ -33,7 +33,8 @@ class ClanMemberStatsBaseline extends ActiveRecord
     }
 
     /**
-     * Все ключи метрик, которые пишутся в clan_member_statistics_values (дельта за вайп).
+     * Ключи метрик, для которых снимается baseline при вступлении (дельта = текущее statistics − baseline).
+     * В {@see ClanMemberStatisticsValue} попадают все метрики из statistics с положительной дельтой и валидным ключом, не только этот список.
      */
     public static function getTrackedStatKeys(): array
     {
@@ -86,6 +87,31 @@ class ClanMemberStatsBaseline extends ActiveRecord
         $map = [];
         foreach ($rows as $row) {
             $map[$row['key']] = (int)$row['value'];
+        }
+
+        return $map;
+    }
+
+    /**
+     * Все key => value из statistics за вайп (одним запросом), для дельты по всем счётчикам игрока.
+     *
+     * @return array<string, int>
+     */
+    public static function getAllCurrentStatisticsValuesMap(string $steamId, string $serverTag, string $wipe): array
+    {
+        $rows = Statistics::find()
+            ->select(['key', 'value'])
+            ->where([
+                'steam_id' => $steamId,
+                'server_tag' => $serverTag,
+                'wipe' => $wipe,
+            ])
+            ->asArray()
+            ->all();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(string)$row['key']] = (int)$row['value'];
         }
 
         return $map;

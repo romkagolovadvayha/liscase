@@ -534,24 +534,31 @@ class ClanStatistics extends ActiveRecord
         ClanMemberStatsBaseline::ensureBaselineExists($member, $serverId, $wipe);
         $baselineMap = ClanMemberStatsBaseline::getBaselineMap($member->id, $serverId, $wipe);
 
-        $statisticsKeys = ClanMemberStatsBaseline::getTrackedStatKeys();
-        $currentMap = ClanMemberStatsBaseline::getCurrentStatisticsValuesMap(
+        $currentMap = ClanMemberStatsBaseline::getAllCurrentStatisticsValuesMap(
             $user->steam_id,
             $server->tag,
-            $wipe,
-            $statisticsKeys
+            $wipe
         );
-        $allowedDeltaKeys = array_flip(ClanMemberStatistics::getMemberDeltaStatDbKeys());
+
+        $allKeys = array_unique(array_merge(array_keys($baselineMap), array_keys($currentMap)));
 
         $result = [];
-        foreach ($statisticsKeys as $key) {
+        foreach ($allKeys as $key) {
+            if ($key === '' || strpos((string)$key, 'top_') === 0) {
+                continue;
+            }
+
+            $dbKey = str_replace('.', '_', (string)$key);
+            if (!ClanMemberStatistics::isValidMemberStatDbKey($dbKey)) {
+                continue;
+            }
+
             $current = (int)($currentMap[$key] ?? 0);
             // Нулевые baseline в БД не храним — нет строки ⇒ base = 0.
             $base = isset($baselineMap[$key]) ? (int)$baselineMap[$key] : 0;
             $delta = max(0, $current - $base);
 
-            $dbKey = str_replace('.', '_', $key);
-            if (isset($allowedDeltaKeys[$dbKey])) {
+            if ($delta > 0) {
                 $result[$dbKey] = $delta;
             }
         }

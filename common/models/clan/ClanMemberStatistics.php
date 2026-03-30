@@ -42,7 +42,8 @@ class ClanMemberStatistics extends ActiveRecord
     }
 
     /**
-     * Ключи колонок дельты (как в statistics / baseline), совпадают с именами в values.
+     * Ключи из {@see ClanMemberStatsBaseline::getTrackedStatKeys()} в виде stat_key EAV (точки → подчёркивания).
+     * Используются при снятии baseline; сами значения дельты в EAV считаются по всем строкам statistics (см. {@see ClanStatistics::calculateMemberStatistics}).
      *
      * @return string[]
      */
@@ -58,6 +59,14 @@ class ClanMemberStatistics extends ActiveRecord
     }
 
     /**
+     * Допустимое имя stat_key в EAV: строчная буква, далее [a-z0-9_].
+     */
+    public static function isValidMemberStatDbKey(string $dbKey): bool
+    {
+        return (bool)preg_match('/^[a-z][a-z0-9_]*$/', $dbKey);
+    }
+
+    /**
      * Любой ключ stat_key в EAV: буква + буквы/цифры/подчёркивания (kills, top_kills, gathered_green_berry, …).
      */
     private function isMemberStatMagicKey(string $name): bool
@@ -66,7 +75,7 @@ class ClanMemberStatistics extends ActiveRecord
             return false;
         }
 
-        return (bool)preg_match('/^[a-z][a-z0-9_]*$/', $name);
+        return static::isValidMemberStatDbKey($name);
     }
 
     public function init(): void
@@ -209,6 +218,15 @@ class ClanMemberStatistics extends ActiveRecord
         return $this->_statsMap;
     }
 
+    /**
+     * Перед записью свежих дельт из {@see ClanStatistics::calculateMemberStatistics()} —
+     * иначе метрики с нулевой дельтой останутся из предыдущего снимка EAV.
+     */
+    public function clearMemberStatsMapCache(): void
+    {
+        $this->_statsMap = [];
+    }
+
     public function beforeSave($insert)
     {
         if (!parent::beforeSave($insert)) {
@@ -251,7 +269,14 @@ class ClanMemberStatistics extends ActiveRecord
         }
         $batch = [];
         foreach ($this->_statsMap as $key => $value) {
-            $batch[] = [(int)$this->id, (string)$key, (float)$value];
+            $v = (float)$value;
+            if ($v == 0.0) {
+                continue;
+            }
+            $batch[] = [(int)$this->id, (string)$key, $v];
+        }
+        if ($batch === []) {
+            return;
         }
         Yii::$app->db->createCommand()->batchInsert(
             ClanMemberStatisticsValue::tableName(),
@@ -372,6 +397,7 @@ class ClanMemberStatistics extends ActiveRecord
             $statistics->wipe = $wipe;
         }
 
+        $statistics->clearMemberStatsMapCache();
         foreach ($statsData as $key => $value) {
             $statistics->$key = $value;
         }
@@ -421,6 +447,7 @@ class ClanMemberStatistics extends ActiveRecord
             $statistics->wipe = $wipe;
         }
 
+        $statistics->clearMemberStatsMapCache();
         foreach ($statsData as $key => $value) {
             $statistics->$key = $value;
         }

@@ -1088,6 +1088,33 @@ class ClansController extends BaseApiController
                     ->all();
                 $statsByMemberId = $statRows;
             }
+
+            $missingMemberIds = [];
+            foreach ($members as $m) {
+                if (!isset($statsByMemberId[$m->id])) {
+                    $missingMemberIds[] = (int)$m->id;
+                }
+            }
+            if ($missingMemberIds !== []) {
+                $candidates = ClanMemberStatistics::find()
+                    ->where([
+                        'clan_id' => $clan->id,
+                        'server_id' => $clan->server_id,
+                        'clan_member_id' => $missingMemberIds,
+                    ])
+                    ->with('statValues')
+                    ->all();
+                $bestByMember = [];
+                foreach ($candidates as $statRow) {
+                    $mid = (int)$statRow->clan_member_id;
+                    if (!isset($bestByMember[$mid]) || (int)$statRow->updated_at > (int)$bestByMember[$mid]->updated_at) {
+                        $bestByMember[$mid] = $statRow;
+                    }
+                }
+                foreach ($bestByMember as $mid => $statRow) {
+                    $statsByMemberId[$mid] = $statRow;
+                }
+            }
         }
 
         $items = [];
