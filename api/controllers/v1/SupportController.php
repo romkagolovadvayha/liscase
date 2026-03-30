@@ -1147,12 +1147,16 @@ class SupportController extends BaseApiController
         return [
             'id' => $ticket->getNumber(),
             'number' => $ticket->getNumber(),
+            'user_id' => (int) $ticket->user_id,
             'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
             'status_name' => Support::getStatusList()[$ticket->status] ?? null,
             'user' => $ticket->user ? [
                 'id' => $ticket->user->id,
                 'username' => $ticket->user->username,
                 'avatar' => $ticket->user->getAvatar(),
+                'blocked_support' => (bool) $ticket->user->blocked_support,
+                'blocked_support_at' => $ticket->user->blocked_support_at,
+                'status' => (int) $ticket->user->status,
             ] : null,
             'created_at' => $ticket->created_at,
             'updated_at' => $ticket->updated_at,
