@@ -12,6 +12,7 @@ use common\models\support\SupportMessage;
 use common\models\support\SupportFile;
 use common\models\support\SupportSticker;
 use common\models\support\SupportRead;
+use common\models\user\User;
 use common\components\helpers\Role;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
@@ -78,7 +79,8 @@ class SupportController extends BaseApiController
     {
         $user = $this->getCurrentUser();
 
-        // Проверяем, не заблокирован ли пользователь
+        // Только постоянная блокировка чата скрывает список; мут (blocked_support_at) не мешает читать тикеты.
+        $user = User::findOne((int) $user->id) ?? $user;
         if ($user->blocked_support) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
@@ -294,7 +296,8 @@ class SupportController extends BaseApiController
     public function actionView($id)
     {
         $user = $this->getCurrentUser();
-
+        $user = User::findOne((int) $user->id) ?? $user;
+        // Просмотр при муте разрешён; полная блокировка чата — нет.
         if ($user->blocked_support) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
@@ -372,8 +375,8 @@ class SupportController extends BaseApiController
     public function actionCreate()
     {
         $user = $this->getCurrentUser();
-
-        if ($user->blocked_support) {
+        $user = User::findOne((int) $user->id) ?? $user;
+        if ($user->isSupportWritingBlocked()) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
 
@@ -566,8 +569,8 @@ class SupportController extends BaseApiController
     public function actionSend($id)
     {
         $user = $this->getCurrentUser();
-
-        if ($user->blocked_support) {
+        $user = User::findOne((int) $user->id) ?? $user;
+        if ($user->isSupportWritingBlocked()) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
 
@@ -1125,6 +1128,9 @@ class SupportController extends BaseApiController
                 'id' => $ticket->user->id,
                 'username' => $ticket->user->username,
                 'avatar' => $ticket->user->getAvatar(),
+                'blocked_support' => (bool) $ticket->user->blocked_support,
+                'blocked_support_at' => $ticket->user->blocked_support_at,
+                'status' => (int) $ticket->user->status,
             ] : null,
             'server_tag' => $ticket->server_tag,
             'created_at' => $ticket->created_at,

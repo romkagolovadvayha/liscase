@@ -7,6 +7,7 @@ use common\models\servers\Servers;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
+use common\models\user\User;
 use Yii;
 use yii\web\UnauthorizedHttpException;
 use yii\web\NotFoundHttpException;
@@ -134,7 +135,7 @@ class SupportGameStoresController extends BaseApiController
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
 
-        // Проверяем, не заблокирован ли пользователь
+        $user = User::findOne((int) $user->id) ?? $user;
         if ($user->blocked_support) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
@@ -219,6 +220,7 @@ class SupportGameStoresController extends BaseApiController
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
 
+        $user = User::findOne((int) $user->id) ?? $user;
         if ($user->blocked_support) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
@@ -294,7 +296,8 @@ class SupportGameStoresController extends BaseApiController
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
 
-        if ($user->blocked_support) {
+        $user = User::findOne((int) $user->id) ?? $user;
+        if ($user->isSupportWritingBlocked()) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
 
@@ -472,7 +475,8 @@ class SupportGameStoresController extends BaseApiController
             return $this->errorResponse('UNAUTHORIZED', $e->getMessage(), [], 401);
         }
 
-        if ($user->blocked_support) {
+        $user = User::findOne((int) $user->id) ?? $user;
+        if ($user->isSupportWritingBlocked()) {
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
 
@@ -587,6 +591,9 @@ class SupportGameStoresController extends BaseApiController
                 'id' => $ticket->user->id,
                 'username' => $ticket->user->username,
                 'avatar' => $ticket->user->getAvatar(),
+                'blocked_support' => (bool) $ticket->user->blocked_support,
+                'blocked_support_at' => $ticket->user->blocked_support_at,
+                'status' => (int) $ticket->user->status,
             ] : null,
             'server_tag' => $ticket->server_tag,
             'created_at' => $ticket->created_at,

@@ -187,6 +187,27 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Нельзя писать в поддержку: постоянная блокировка чата, активный мут (blocked_support_at), блокировка аккаунта.
+     */
+    public function isSupportWritingBlocked(): bool
+    {
+        if ($this->blocked_support) {
+            return true;
+        }
+        if (!empty($this->blocked_support_at)) {
+            $ts = strtotime($this->blocked_support_at);
+            if ($ts !== false && $ts > time()) {
+                return true;
+            }
+        }
+        if ((int) $this->status === self::STATUS_BLOCKED) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @inheritdoc
      */
     public static function tableName(): string

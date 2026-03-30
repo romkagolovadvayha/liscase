@@ -572,6 +572,7 @@ class FrontendPushGatewayServer extends WebSocketServer
             $this->getClientsByUserId($userId),
             self::EVENT_SUPPORT_USER_BLOCKED,
             [
+                'userId' => $userId,
                 'blockType' => $blockType,
                 'blocked' => (bool) $blocked,
                 'blockedAt' => $blockedAt,
