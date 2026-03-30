@@ -29,6 +29,12 @@ class Support extends \yii\db\ActiveRecord
     public const STATUS_CLOSED = 2;
 
     /**
+     * Публичный номер тикета в URL/API: {@see getNumber()} = id + NUMBER_OFFSET.
+     * Единственный источник смещения для findByNumber / маршрутов.
+     */
+    public const NUMBER_OFFSET = 43242;
+
+    /**
      * @return array
      */
     public static function getStatusList()
@@ -56,17 +62,35 @@ class Support extends \yii\db\ActiveRecord
         return 'support';
     }
 
-    public function getNumber() {
-        return $this->id + 43242;
+    public function getNumber(): int
+    {
+        return (int) $this->id + self::NUMBER_OFFSET;
     }
 
     /**
-     * @param $number
+     * Первичный ключ по публичному номеру (значение getNumber() / поля number в API).
+     */
+    public static function primaryKeyFromPublicNumber(int $publicNumber): ?int
+    {
+        if ($publicNumber <= self::NUMBER_OFFSET) {
+            return null;
+        }
+        return $publicNumber - self::NUMBER_OFFSET;
+    }
+
+    /**
+     * Поиск по публичному номеру тикета (не по PK в БД).
      *
+     * @param int|string $number значение из getNumber()
      * @return Support|null
      */
-    public static function findByNumber($number) {
-        return self::findOne($number - 43242);
+    public static function findByNumber($number)
+    {
+        $pk = self::primaryKeyFromPublicNumber((int) $number);
+        if ($pk === null || $pk < 1) {
+            return null;
+        }
+        return self::findOne($pk);
     }
 
     /**

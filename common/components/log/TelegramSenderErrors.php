@@ -115,6 +115,12 @@ class TelegramSenderErrors extends Target
         if (strpos($message->getText(), '2 - cancelled') !== false) {
             return '';
         }
+        if (
+            strpos($message->getText(), 'RustTm items(): prices item list is empty') !== false
+            || strpos($message->getText(), 'RustTm prices invalid JSON') !== false
+        ) {
+            return '';
+        }
         return preg_replace_callback(
             '/{([^}]+)}([\n]*|$)/', function (array $matches) use ($message) {
             if (isset($this->substitutions[$matches[1]])) {

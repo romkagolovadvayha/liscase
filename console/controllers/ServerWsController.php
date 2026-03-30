@@ -7,6 +7,7 @@ use yii\base\BaseObject;
 use yii\console\Controller;
 use WebSocket\Client;
 use console\controllers\NotificationServer;
+use console\controllers\FrontendPushGatewayServer;
 
 class ServerWsController extends Controller
 {
@@ -31,6 +32,24 @@ class ServerWsController extends Controller
         $server = new NotificationServer();
         if ($port) {
             $server->port = $port;
+        }
+        $server->start();
+    }
+
+    /**
+     * server-ws/start-frontend-push
+     * Push-шлюз для Next.js: единый формат событий (см. FrontendPushGatewayServer).
+     * По умолчанию порт 8092 (проксируется nginx location /fp/).
+     * Важно: Yii::$app->db (common/config/db-local.php) должен указывать на ту же БД, что и API,
+     * иначе subscribeTicket для владельца не найдёт строку в support.
+     */
+    public function actionStartFrontendPush($port = null)
+    {
+        $server = new FrontendPushGatewayServer();
+        if ($port) {
+            $server->port = (int) $port;
+        } else {
+            $server->port = (int) (Yii::$app->params['frontendPushWsPort'] ?? 8092);
         }
         $server->start();
     }

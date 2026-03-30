@@ -265,5 +265,17 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/websocket.log',
         ],
+        /** Push WebSocket для нового фронта (Next.js), nginx: location /fp/ → 8092 */
+        'prostoj.websocket.frontend-push' => [
+            'directory'       => '@project',
+            'command'         => "bash -c 'ulimit -n 65535 && /usr/bin/php ./yii \"server-ws/start-frontend-push\" 8092'",
+            'autostart'       => true,
+            'autorestart'     => true,
+            'startretries'    => 10,
+            'stopsignal'      => 'KILL',
+            'numprocs'        => 1,
+            'redirect_stderr' => true,
+            'stdout_logfile'  => '@app/runtime/supervisor/websocket.frontend-push.log',
+        ],
     ],
 ];

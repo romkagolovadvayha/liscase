@@ -987,7 +987,14 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueSupportMessage(
+                (int) $ticketId,
+                (int) $messageId,
+                (int) $userId,
+                $ownerUserId !== null ? (int) $ownerUserId : null
+            );
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastNewSupportMessage failed: " . $ex->getMessage());
@@ -1078,7 +1085,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueTicketStatus((int) $ticketId, (string) $status);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastTicketStatus failed: " . $ex->getMessage());
@@ -1139,7 +1148,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueNewTicket((int) $ticketId, (int) $userId);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastNewTicket failed: " . $ex->getMessage());
@@ -1174,7 +1185,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queuePurchase((int) $userId, $newBalance);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastPurchaseNotification failed: " . $ex->getMessage());
@@ -1212,7 +1225,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueUserBlocked((int) $userId, (string) $blockType, $blocked, $blockedAt);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastUserBlocked failed: " . $ex->getMessage());
@@ -1388,7 +1403,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueMessageUpdate((int) $ticketId, (int) $messageId);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastMessageUpdate failed: " . $ex->getMessage());
@@ -1424,7 +1441,9 @@ class NotificationServer extends WebSocketServer
                 $queue = array_slice($queue, 0, 1000, true);
             }
             Yii::$app->cache->set($queueKey, $queue, 10);
-            
+
+            FrontendPushGatewayServer::queueMessageDelete((int) $ticketId, (int) $messageId);
+
             return true;
         } catch (\Exception $ex) {
             error_log("NotificationServer::broadcastMessageDelete failed: " . $ex->getMessage());
