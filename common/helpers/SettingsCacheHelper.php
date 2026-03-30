@@ -53,6 +53,11 @@ class SettingsCacheHelper
                     continue;
                 }
 
+                // Секретные поля (тип password) никогда не попадают в публичный API
+                if ($setting->type === 'password') {
+                    continue;
+                }
+
                 if (self::isSecretKey($fullKey)) {
                     continue;
                 }
@@ -113,6 +118,7 @@ class SettingsCacheHelper
                 return $value;
             case 'text':
             case 'longtext':
+            case 'password':
             default:
                 return (string) $value;
         }

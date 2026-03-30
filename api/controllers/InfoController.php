@@ -198,6 +198,9 @@ class InfoController extends Controller
 
         $items = [];
         foreach ($list as $item) {
+            if ($item->type === 'password') {
+                continue;
+            }
             $items[] = [
               'name' => $item->name,
               'code' => $item->code,

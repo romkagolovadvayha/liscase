@@ -29,7 +29,7 @@ class SiteSetting extends ActiveRecord
         return [
             [['name', 'category', 'type'], 'required'],
             [['name', 'category'], 'string', 'max' => 255],
-            [['type'], 'in', 'range' => ['text', 'color', 'image', 'video', 'number', 'checkbox', 'longtext']],
+            [['type'], 'in', 'range' => ['text', 'color', 'image', 'video', 'number', 'checkbox', 'longtext', 'password']],
             [['value'], 'string'],
             [['is_translate'], 'integer'],
             [['code'], 'string', 'max' => 255],

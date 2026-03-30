@@ -156,6 +156,9 @@ class SettingsController extends BackendController
                     if (!empty($settings[$id])) {
                         /** @var SiteSetting $setting */
                         $setting = $settings[$id];
+                        if ($setting->type === 'password' && (string) $value === '') {
+                            continue;
+                        }
                         $setting->value = $value;
                         $setting->save();
                     }
@@ -315,13 +318,19 @@ class SettingsController extends BackendController
     public function actionUpdate($id)
     {
         $model = SiteSetting::findOne($id);
+        $previousValue = $model->value;
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            // Сбрасываем кэш API настроек
-            $this->clearApiSettingsCache();
-            
-            Yii::$app->session->setFlash('success', 'Настройка сохранена');
-            return $this->redirect(['index?category=' . $model->category]);
+        if ($model->load(Yii::$app->request->post())) {
+            if ($model->type === 'password' && (string) $model->value === '') {
+                $model->value = $previousValue;
+            }
+            if ($model->save()) {
+                // Сбрасываем кэш API настроек
+                $this->clearApiSettingsCache();
+
+                Yii::$app->session->setFlash('success', 'Настройка сохранена');
+                return $this->redirect(['index?category=' . $model->category]);
+            }
         }
 
         return $this->render('create', [

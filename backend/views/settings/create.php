@@ -1,5 +1,6 @@
 <?php
 use yii\helpers\Html;
+use yii\web\View;
 use yii\widgets\ActiveForm;
 
 $this->title = 'Добавить настройку';
@@ -20,8 +21,13 @@ $this->title = 'Добавить настройку';
                                                        'video' => 'Видео',
                                                        'number' => 'Числовое поле',
                                                        'checkbox' => 'Чекбокс',
+                                                       'password' => 'Секретное поле (password)',
                                                    ]) ?>
-    <?= $form->field($model, 'value')->textInput() ?>
+    <?php if ($model->type === 'password'): ?>
+        <?= $form->field($model, 'value')->passwordInput(['class' => 'form-control']) ?>
+    <?php else: ?>
+        <?= $form->field($model, 'value')->textInput(['class' => 'form-control']) ?>
+    <?php endif; ?>
     <?= $form->field($model, 'code')->textInput() ?>
     <?= $form->field($model, 'is_translate')->checkbox() ?>
 
@@ -31,3 +37,19 @@ $this->title = 'Добавить настройку';
 
     <?php ActiveForm::end(); ?>
 </div>
+<?php
+$idType = Html::getInputId($model, 'type');
+$idValue = Html::getInputId($model, 'value');
+$this->registerJs(<<<JS
+(function () {
+  var sel = document.getElementById('{$idType}');
+  var val = document.getElementById('{$idValue}');
+  if (!sel || !val) return;
+  function sync() {
+    val.type = sel.value === 'password' ? 'password' : 'text';
+  }
+  sel.addEventListener('change', sync);
+  sync();
+})();
+JS
+    , View::POS_READY);
