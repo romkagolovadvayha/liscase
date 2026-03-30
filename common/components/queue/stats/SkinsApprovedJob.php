@@ -51,7 +51,9 @@ class SkinsApprovedJob extends BaseObject implements JobInterface
                 sleep(3);
             }
 
-            Yii::$app->telegramSupport->sendMessage("Всего отклонено скинов: {$count}");
+            if ($count > 0) {
+                Yii::$app->telegramSupport->sendMessage("Всего отклонено скинов: {$count}");
+            }
 
         } catch (\Throwable $e) {
             Yii::error("SkinsApprovedJob: " . $e->getMessage(), 'error');
