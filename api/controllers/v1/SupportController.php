@@ -341,7 +341,7 @@ class SupportController extends BaseApiController
         }
 
         return $this->successResponse([
-            'ticket' => $this->formatTicketDetail($ticket),
+            'ticket' => $this->formatTicketDetail($ticket, $user),
             'messages' => $formattedMessages,
             'reports' => $this->formatTicketOwnerReports($ticket),
         ]);
@@ -564,7 +564,7 @@ class SupportController extends BaseApiController
 
             Yii::$app->response->statusCode = 201;
             return $this->successResponse([
-                'ticket' => $this->formatTicketDetail($ticket),
+                'ticket' => $this->formatTicketDetail($ticket, $user),
             ]);
 
         } catch (\Exception $e) {
@@ -823,7 +823,7 @@ class SupportController extends BaseApiController
             }
 
             return $this->successResponse([
-                'ticket' => $this->formatTicketDetail($ticket),
+                'ticket' => $this->formatTicketDetail($ticket, $user),
             ]);
 
         } catch (\Exception $e) {
@@ -1130,7 +1130,7 @@ class SupportController extends BaseApiController
             }
 
             return $this->successResponse([
-                'ticket' => $this->formatTicketDetail($ticket),
+                'ticket' => $this->formatTicketDetail($ticket, $user),
             ]);
 
         } catch (\Exception $e) {
@@ -1166,8 +1166,11 @@ class SupportController extends BaseApiController
 
     /**
      * Форматирование тикета для детального просмотра
+     *
+     * @param Support $ticket
+     * @param \common\models\user\User|null $viewerUser текущий пользователь JWT — для viewer_can_write
      */
-    protected function formatTicketDetail($ticket)
+    protected function formatTicketDetail($ticket, $viewerUser = null)
     {
         $userPayload = null;
         if ($ticket->user) {
@@ -1193,7 +1196,7 @@ class SupportController extends BaseApiController
             ];
         }
 
-        return [
+        $out = [
             'id' => $ticket->getNumber(),
             'number' => $ticket->getNumber(),
             'user_id' => $ticket->user_id,
@@ -1207,6 +1210,12 @@ class SupportController extends BaseApiController
             'updated_at' => $ticket->updated_at,
             'unread_count' => 0, // Для нового тикета всегда 0
         ];
+
+        if ($viewerUser !== null) {
+            $out['viewer_can_write'] = !$viewerUser->isSupportWritingBlocked();
+        }
+
+        return $out;
     }
 
     /**
