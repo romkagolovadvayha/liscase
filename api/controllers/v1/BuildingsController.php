@@ -333,6 +333,7 @@ class BuildingsController extends BaseApiController
                             'id' => $user->id,
                             'username' => $user->username,
                             'steamId' => $user->steam_id,
+                            'steam_id' => $user->steam_id,
                             'avatar' => $user->getAvatar(),
                         ];
                     }
@@ -346,6 +347,7 @@ class BuildingsController extends BaseApiController
                             'id' => $user->id,
                             'username' => $user->username,
                             'steamId' => $user->steam_id,
+                            'steam_id' => $user->steam_id,
                             'avatar' => $user->getAvatar(),
                         ];
                     }
@@ -1016,6 +1018,7 @@ class BuildingsController extends BaseApiController
                         'id' => $resident->user->id,
                         'username' => $resident->user->username,
                         'steamId' => $resident->user->steam_id,
+                        'steam_id' => $resident->user->steam_id,
                         'avatar' => $resident->user->getAvatar(),
                     ];
                 }
