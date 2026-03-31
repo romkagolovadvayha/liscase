@@ -8,10 +8,26 @@
  * @var array|null $recentWipe   ['date', 'time', 'name', 'link']
  */
 
+use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\Pjax;
 
 $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпов Rust');
+
+/** Классы бейджей как на prostoj.store /wipe-calendar (additional.scss). */
+$wipeCalBadgeClass = static function (?string $apiClass): string {
+    $c = (string)$apiClass;
+    if ($c === 'badge-global') {
+        return 'wipe-calendar-badge wipe-calendar-badge--badge-global';
+    }
+    if ($c === 'badge-map-wipe') {
+        return 'wipe-calendar-badge wipe-calendar-badge--badge-map-wipe';
+    }
+    if ($c === 'badge-weekly-monday') {
+        return 'wipe-calendar-badge wipe-calendar-badge--badge-weekly-monday';
+    }
+    return 'wipe-calendar-badge';
+};
 ?>
 
 <div class="page-wipe-calendar">
@@ -21,7 +37,7 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
             <?= Yii::t('common', 'Календарь вайпов Rust') ?>
         </h1>
         <p class="page-subtitle">
-            <?= Yii::t('common', 'Здесь собраны предстоящие и прошедшие вайпы по всем серверам проекта. Официальный вайп — в первый четверг каждого месяца.') ?>
+            <?= Yii::t('common', 'Здесь собраны предстоящие и прошедшие события: обновление игры — первый четверг месяца в 21:00; глобальные и вайпы карт — по расписанию 7- и 14-дневных серверов (обычно 16:00, день недели задаётся у сервера).') ?>
         </p>
     </header>
 
@@ -43,7 +59,12 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
                         <span class="nearest-wipe__time"><?= htmlspecialchars($nearestWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                     <?php if (!empty($nearestWipe['link'])): ?>
-                        <a href="<?= htmlspecialchars($nearestWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                        <?php
+                        $nwLink = $nearestWipe['link'];
+                        $nwResolved = strpos((string)$nwLink, '/') === 0 ? Url::to($nwLink) : (string)$nwLink;
+                        $nwExternal = strpos((string)$nwLink, 'http') === 0;
+                        ?>
+                        <a href="<?= Html::encode($nwResolved) ?>" class="nearest-wipe__link"<?= $nwExternal ? ' target="_blank" rel="noopener"' : '' ?>><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
                     <?php else: ?>
                         <span class="nearest-wipe__name"><?= htmlspecialchars($nearestWipe['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
@@ -73,7 +94,12 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
                         <span class="nearest-wipe__time"><?= htmlspecialchars($recentWipe['time'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                     <?php if (!empty($recentWipe['link'])): ?>
-                        <a href="<?= htmlspecialchars($recentWipe['link'], ENT_QUOTES, 'UTF-8') ?>" class="nearest-wipe__link" target="_blank" rel="noopener"><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
+                        <?php
+                        $rwLink = $recentWipe['link'];
+                        $rwResolved = strpos((string)$rwLink, '/') === 0 ? Url::to($rwLink) : (string)$rwLink;
+                        $rwExternal = strpos((string)$rwLink, 'http') === 0;
+                        ?>
+                        <a href="<?= Html::encode($rwResolved) ?>" class="nearest-wipe__link"<?= $rwExternal ? ' target="_blank" rel="noopener"' : '' ?>><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></a>
                     <?php else: ?>
                         <span class="nearest-wipe__name"><?= htmlspecialchars($recentWipe['name'], ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
@@ -127,19 +153,43 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
                             if (!empty($cell['isToday']))      $classes[] = 'today';
                             if (!empty($cell['isOtherMonth'])) $classes[] = 'other-month';
                             ?>
+                            <?php
+                            $cellHasOfficial = false;
+                            if (!empty($cell['events'])) {
+                                foreach ($cell['events'] as $ev0) {
+                                    if (!empty($ev0['is_official'])) {
+                                        $cellHasOfficial = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if ($cellHasOfficial) {
+                                $classes[] = 'has-official-update';
+                            }
+                            ?>
                             <div class="<?= implode(' ', $classes) ?>">
                                 <div class="calendar-daynum"><?= (int)$cell['day'] ?></div>
 
                                 <?php if (!empty($cell['events'])): ?>
                                     <?php foreach ($cell['events'] as $ev): ?>
-                                        <article class="event">
+                                        <article class="event<?= !empty($ev['is_official']) ? ' event--official-update' : '' ?>">
                                             <div class="event-head">
                                                 <?php if (!empty($ev['time']) && $ev['time'] !== '00:00'): ?>
                                                     <span class="time"><?= htmlspecialchars($ev['time'], ENT_QUOTES, 'UTF-8') ?></span>
                                                 <?php endif; ?>
 
-                                                <?php if (!empty($ev['link'])): ?>
-                                                    <a href="<?= htmlspecialchars($ev['link'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
+                                                <?php
+                                                $evLink = $ev['link'] ?? null;
+                                                if ($evLink === null || $evLink === '') {
+                                                    $evResolved = '';
+                                                } elseif (strpos((string)$evLink, '/') === 0) {
+                                                    $evResolved = Url::to($evLink);
+                                                } else {
+                                                    $evResolved = (string)$evLink;
+                                                }
+                                                ?>
+                                                <?php if ($evResolved !== ''): ?>
+                                                    <a href="<?= Html::encode($evResolved) ?>"<?= strpos((string)$evLink, 'http') === 0 ? ' target="_blank" rel="noopener"' : '' ?>>
                                                         <?= htmlspecialchars($ev['name'], ENT_QUOTES, 'UTF-8') ?>
                                                     </a>
                                                 <?php else: ?>
@@ -149,20 +199,31 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
 
                                             <div class="event-meta">
                                                 <?php if (!empty($ev['is_official'])): ?>
-                                                    <span class="badge badge-official"><?= Yii::t('common', 'официальный') ?></span>
-                                                <?php endif; ?>
-                                                <?php if (!empty($ev['is_global'])): ?>
-                                                    <span class="badge badge-global"><?= Yii::t('common', 'глобальный') ?></span>
+                                                    <span class="wipe-calendar-badge wipe-calendar-badge--badge-patch"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'патч / обновление') ?></span></span>
                                                 <?php endif; ?>
 
                                                 <?php if (!empty($ev['badges'])): ?>
                                                     <?php foreach ($ev['badges'] as $b): ?>
-                                                        <span class="badge <?= htmlspecialchars($b['class'], ENT_QUOTES, 'UTF-8') ?>">
-                <?= htmlspecialchars($b['text'], ENT_QUOTES, 'UTF-8') ?>
-            </span>
+                                                        <?php
+                                                        $bLink = $b['link'] ?? null;
+                                                        if ($bLink === null || $bLink === '') {
+                                                            $bResolved = '';
+                                                        } elseif (strpos((string)$bLink, '/') === 0) {
+                                                            $bResolved = Url::to($bLink);
+                                                        } else {
+                                                            $bResolved = (string)$bLink;
+                                                        }
+                                                        $bUiClass = $wipeCalBadgeClass($b['class'] ?? '');
+                                                        $bText = htmlspecialchars($b['text'], ENT_QUOTES, 'UTF-8');
+                                                        ?>
+                                                        <?php if ($bResolved !== ''): ?>
+                                                            <a class="<?= Html::encode($bUiClass) ?> wipe-calendar-badge--link" href="<?= Html::encode($bResolved) ?>"<?= strpos((string)$bLink, 'http') === 0 ? ' target="_blank" rel="noopener"' : '' ?>><span class="wipe-calendar-badge__inner"><?= $bText ?></span></a>
+                                                        <?php else: ?>
+                                                            <span class="<?= Html::encode($bUiClass) ?>"><span class="wipe-calendar-badge__inner"><?= $bText ?></span></span>
+                                                        <?php endif; ?>
                                                     <?php endforeach; ?>
                                                 <?php elseif (!empty($ev['status'])): ?>
-                                                    <span class="badge badge-status"><?= htmlspecialchars($ev['status'], ENT_QUOTES, 'UTF-8') ?></span>
+                                                    <span class="wipe-calendar-badge wipe-calendar-badge--badge-neutral"><span class="wipe-calendar-badge__inner"><?= htmlspecialchars($ev['status'], ENT_QUOTES, 'UTF-8') ?></span></span>
                                                 <?php endif; ?>
                                             </div>
 
@@ -183,14 +244,32 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
 
     <?php Pjax::end(); ?>
 
+    <section class="wipe-calendar-legend-yii" aria-label="<?= Html::encode(Yii::t('common', 'Цвета бейджей календаря')) ?>">
+        <h2 class="wipe-calendar-legend-yii__title"><?= Yii::t('common', 'Цвета и обозначения') ?></h2>
+        <div class="wipe-calendar-legend-colors">
+            <div class="wipe-calendar-legend-color-item">
+                <span class="wipe-calendar-badge wipe-calendar-badge--badge-global"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'Глобальный вайп') ?></span></span>
+                <span class="wipe-calendar-legend-color-item__text"><?= Yii::t('common', 'Серверы в глобальном слоте (7/14-дневные циклы) — фиолетовый бейдж.') ?></span>
+            </div>
+            <div class="wipe-calendar-legend-color-item">
+                <span class="wipe-calendar-badge wipe-calendar-badge--badge-map-wipe"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'Вайп карты') ?></span></span>
+                <span class="wipe-calendar-legend-color-item__text"><?= Yii::t('common', 'Вайп только карты в свой день недели — зелёный бейдж; по клику — страница сервера.') ?></span>
+            </div>
+            <div class="wipe-calendar-legend-color-item">
+                <span class="wipe-calendar-badge wipe-calendar-badge--badge-weekly-monday"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'Пн 16:00') ?></span></span>
+                <span class="wipe-calendar-legend-color-item__text"><?= Yii::t('common', 'Недельный вайп по понедельникам (серверы с меткой monday) — сиреневый бейдж.') ?></span>
+            </div>
+        </div>
+    </section>
+
     <section class="seo-block">
         <h2><?= Yii::t('common', 'Как читать календарь вайпов') ?></h2>
         <ul class="mt-12">
-            <li><?= Yii::t('common', 'Бейдж «официальный» отмечает, что выходит официальный глобальный патч (обычно первый четверг месяца).') ?></li>
-            <li class="mt-6"><?= Yii::t('common', 'Бейдж «глобальный» означает вайп на всех серверах проекта. В таком случае дополнительно показывается бейдж «все сервера».') ?></li>
-            <li class="mt-6"><?= Yii::t('common', 'Если одновременно вайп у 7-дневных и 14-дневных серверов, событие объединяется как «Вайп на всех серверах», а списки серверов выводятся отдельными бейджами.') ?></li>
-            <li class="mt-6"><?= Yii::t('common', 'Когда вайп только на 7-дневных серверах, событие показывается как «Вайп карты на недельных серверах» с бейджем-списком этих серверов.') ?></li>
-            <li class="mt-6"><?= Yii::t('common', 'Серверы с вайпом по понедельникам отображаются отдельно с бейджем по понедельникам.') ?></li>
+            <li><?= Yii::t('common', 'Событие «Обновление игры» (четверг 21:00) — выход патча Facepunch, это не вайп карты на наших серверах.') ?></li>
+            <li class="mt-6"><?= Yii::t('common', '30-дневные (месячные) серверы в календаре не показываются — так же, как в API /v1/wipe-calendar и на prostoj.store.') ?></li>
+            <li class="mt-6"><?= Yii::t('common', '«Глобальный вайп» — для 7-дневных серверов: по полосам дней месяца (1–7, 8–14, 15–21, 22–28…) нечётная «неделя» — глобальный слот, чётная — вайп карты; в следующем месяце счёт с начала. Для 14-дневных — первый день вайпа в месяце и далее через 14 дней.') ?></li>
+            <li class="mt-6"><?= Yii::t('common', '«Вайп карты» — вайп только карты в 16:00 в свой день недели; по клику на бейдж сервера можно перейти на его страницу. Серверы с тегом monday вайпятся каждый понедельник в 16:00 (отдельный цвет бейджа).') ?></li>
+            <li class="mt-6"><?= Yii::t('common', 'Как на prostoj.store: события «Глобальный вайп» и «Вайп карты» в одно и то же время показываются одной карточкой «Вайп» с общим списком бейджей (дубликаты ссылок убираются).') ?></li>
         </ul>
 
         <h3 class="mt-40"><?= Yii::t('common', 'Зачем это нужно') ?></h3>
@@ -309,6 +388,10 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
         border: 1px solid var(--background-teritiary);
     }
 
+    .calendar-cell .event + .event {
+        margin-top: 6px;
+    }
+
     .event-head {
         display: flex;
         flex-wrap: wrap;
@@ -323,8 +406,8 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
     .event-meta {
         display: flex;
         flex-wrap: wrap;
-        align-items: flex-start;
-        gap: 6px;
+        align-items: center;
+        gap: 2px;
     }
 
     .event-desc {
@@ -333,23 +416,109 @@ $this->params['breadcrumbs'][] = Yii::t('common', 'Календарь вайпо
         line-height: 1.35;
     }
 
-    /* ====== БЕЙДЖИ ====== */
+    /* ====== БЕЙДЖИ (как prostoj-frontend additional.scss → .wipe-calendar-badge) ====== */
 
-    .badge {
-        display: inline-block;
-        font-size: 10px;
-        padding: 2px 8px;
-        border-radius: 999px;
+    .wipe-calendar-badge {
+        display: inline-table;
+        font-size: 9px;
+        padding: 2px 5px;
+        background: var(--background-teritiary, #e5e7eb);
+        color: var(--text-secondary, #6b7280);
+        border-radius: 4px;
+        font-weight: 500;
+        border: 1px solid transparent;
+        white-space: nowrap;
+        vertical-align: middle;
     }
 
-    .badge-official { background: rgba(138, 253, 158, 0.43); }
-    .badge-global   { background: rgba(219, 234, 254, 0.43); }
-    .badge-status   { background: rgba(229, 231, 235, 0.43); }
+    .wipe-calendar-badge__inner {
+        display: table-cell;
+        vertical-align: middle;
+        line-height: 1;
+    }
 
-    /* новые для групп */
-    .badge-weekly7       { background: rgba(255, 233, 160, 0.45); }   /* тёплый для 7-дневных (пятница) */
-    .badge-biweekly14    { background: rgba(180, 220, 255, 0.45); }   /* холодный для 14-дневных */
-    .badge-weekly-monday { background: rgba(216, 180, 254, 0.45); } /* фиолетовый для недельных по понедельникам */
+    .wipe-calendar-badge--badge-global {
+        background: rgba(99, 102, 241, 0.15);
+        color: #6366f1;
+        border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .wipe-calendar-badge--badge-map-wipe {
+        background: rgba(34, 197, 94, 0.15);
+        color: #16a34a;
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .wipe-calendar-badge--badge-weekly-monday {
+        background: rgba(216, 180, 254, 0.45);
+        color: #6b21a8;
+        border-color: rgba(147, 51, 234, 0.35);
+    }
+
+    .wipe-calendar-badge--badge-patch {
+        background: rgba(22, 163, 74, 0.12);
+        color: #15803d;
+        border-color: rgba(34, 197, 94, 0.28);
+    }
+
+    .wipe-calendar-badge--badge-neutral {
+        background: rgba(229, 231, 235, 0.6);
+        color: var(--text-secondary, #6b7280);
+        border-color: rgba(156, 163, 175, 0.35);
+    }
+
+    .wipe-calendar-badge--link {
+        text-decoration: none;
+        cursor: pointer;
+        transition: opacity 0.15s;
+    }
+
+    .wipe-calendar-badge--link:hover {
+        opacity: 0.85;
+        text-decoration: none;
+    }
+
+    /* Легенда под календарём */
+    .wipe-calendar-legend-yii {
+        padding: 14px 16px;
+        border-radius: var(--block-radius);
+        background-color: var(--background-secondary);
+        border: 1px solid var(--background-teritiary);
+    }
+
+    .wipe-calendar-legend-yii__title {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .wipe-calendar-legend-colors {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .wipe-calendar-legend-color-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--text-main);
+        opacity: 0.92;
+    }
+
+    .wipe-calendar-legend-color-item__text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .calendar-cell.has-official-update {
+        box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+    }
+    .event--official-update {
+        border-color: rgba(34, 197, 94, 0.35);
+    }
     /* ====== АДАПТИВ ====== */
 
     @media (max-width: 900px) {
