@@ -23,9 +23,6 @@ $wipeCalBadgeClass = static function (?string $apiClass): string {
     if ($c === 'badge-map-wipe') {
         return 'wipe-calendar-badge wipe-calendar-badge--badge-map-wipe';
     }
-    if ($c === 'badge-weekly-monday') {
-        return 'wipe-calendar-badge wipe-calendar-badge--badge-weekly-monday';
-    }
     return 'wipe-calendar-badge';
 };
 ?>
@@ -255,10 +252,6 @@ $wipeCalBadgeClass = static function (?string $apiClass): string {
                 <span class="wipe-calendar-badge wipe-calendar-badge--badge-map-wipe"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'Вайп карты') ?></span></span>
                 <span class="wipe-calendar-legend-color-item__text"><?= Yii::t('common', 'Вайп только карты в свой день недели — зелёный бейдж; по клику — страница сервера.') ?></span>
             </div>
-            <div class="wipe-calendar-legend-color-item">
-                <span class="wipe-calendar-badge wipe-calendar-badge--badge-weekly-monday"><span class="wipe-calendar-badge__inner"><?= Yii::t('common', 'Пн 16:00') ?></span></span>
-                <span class="wipe-calendar-legend-color-item__text"><?= Yii::t('common', 'Недельный вайп по понедельникам (серверы с меткой monday) — сиреневый бейдж.') ?></span>
-            </div>
         </div>
     </section>
 
@@ -268,7 +261,7 @@ $wipeCalBadgeClass = static function (?string $apiClass): string {
             <li><?= Yii::t('common', 'Событие «Обновление игры» (четверг 21:00) — выход патча Facepunch, это не вайп карты на наших серверах.') ?></li>
             <li class="mt-6"><?= Yii::t('common', '30-дневные (месячные) серверы в календаре не показываются — так же, как в API /v1/wipe-calendar и на prostoj.store.') ?></li>
             <li class="mt-6"><?= Yii::t('common', '«Глобальный вайп» — для 7-дневных серверов: по полосам дней месяца (1–7, 8–14, 15–21, 22–28…) нечётная «неделя» — глобальный слот, чётная — вайп карты; в следующем месяце счёт с начала. Для 14-дневных — первый день вайпа в месяце и далее через 14 дней.') ?></li>
-            <li class="mt-6"><?= Yii::t('common', '«Вайп карты» — вайп только карты в 16:00 в свой день недели; по клику на бейдж сервера можно перейти на его страницу. Серверы с тегом monday вайпятся каждый понедельник в 16:00 (отдельный цвет бейджа).') ?></li>
+            <li class="mt-6"><?= Yii::t('common', '«Вайп карты» — вайп только карты в 16:00 в свой день недели; по клику на бейдж сервера можно перейти на его страницу.') ?></li>
             <li class="mt-6"><?= Yii::t('common', 'Как на prostoj.store: события «Глобальный вайп» и «Вайп карты» в одно и то же время показываются одной карточкой «Вайп» с общим списком бейджей (дубликаты ссылок убираются).') ?></li>
         </ul>
 
@@ -447,12 +440,6 @@ $wipeCalBadgeClass = static function (?string $apiClass): string {
         background: rgba(34, 197, 94, 0.15);
         color: #16a34a;
         border-color: rgba(34, 197, 94, 0.3);
-    }
-
-    .wipe-calendar-badge--badge-weekly-monday {
-        background: rgba(216, 180, 254, 0.45);
-        color: #6b21a8;
-        border-color: rgba(147, 51, 234, 0.35);
     }
 
     .wipe-calendar-badge--badge-patch {

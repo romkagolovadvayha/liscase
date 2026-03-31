@@ -220,20 +220,20 @@ class WipeCalendarController extends Controller
                 }
             }
 
-            // Схлопнутые (агрегация): «Вайп» — бейджи серверов как глобальный слот (фиолетовый); «Вайп карты» — зелёный.
+            // Схлопнутые (агрегация): имена серверов — вайп карты (зелёный); только «все сервера» — глобальный бейдж.
+            // Фиолетовые бейджи бывают только у отдельного события «Глобальный вайп» (bucket.global), не здесь.
             if (isset($bucket['title']) && empty($bucket['servers'])) {
-                $collapsedNameClass = ($bucket['title'] === Yii::t('common', 'Вайп')) ? 'badge-global' : 'badge-map-wipe';
                 if (!empty($bucket['names7']) || !empty($bucket['names14'])) {
                     if (!empty($bucket['names7'])) {
                         foreach (array_unique($bucket['names7']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                     if (!empty($bucket['names14'])) {
                         foreach (array_unique($bucket['names14']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                 } elseif (!empty($bucket['names'])) {
@@ -243,7 +243,7 @@ class WipeCalendarController extends Controller
                     } else {
                         foreach (array_unique($bucket['names']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                 }
@@ -263,10 +263,8 @@ class WipeCalendarController extends Controller
             // По серверам отдельно
             if (!empty($bucket['servers'])) {
                 foreach ($bucket['servers'] as $srv) {
-                    $wt = isset($srv['wt']) ? (int)$srv['wt'] : 7;
-                    $badgeClass = ($wt === 71) ? 'badge-weekly-monday' : 'badge-map-wipe';
                     $badges = [
-                        ['class' => $badgeClass,
+                        ['class' => 'badge-map-wipe',
                          'text'  => $srv['monitoring_name'] ?: $srv['name'],
                          'link'  => $srv['link']],
                     ];
@@ -526,7 +524,7 @@ class WipeCalendarController extends Controller
                             'monitoring_name' => $s->monitoring_name,
                             'link' => $s->getLink('stats'),
                             'text_ip' => $s->text_ip,
-                            'wt' => 71,
+                            'wt' => 7,
                         ];
                         $byDateTime[$key]['weekly7_count']++;
                         $byDateTime[$key]['names7'][] = $s->monitoring_name ?: $s->name;
