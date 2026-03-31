@@ -305,10 +305,7 @@ class WipeCalendarController extends Controller
             $title = null;
             $link = null;
             $serverId = null;
-            if (!empty($bucket['official'])) {
-                $title = $bucket['title'];
-                $link = $bucket['link'];
-            } elseif (!empty($bucket['global'])) {
+            if (!empty($bucket['global'])) {
                 $title = $bucket['title'];
                 $link = $bucket['link'];
             } elseif (!empty($bucket['title'])) {
@@ -344,6 +341,9 @@ class WipeCalendarController extends Controller
             if ($dt->getTimestamp() < $nowTs) {
                 continue;
             }
+            if (!empty($bucket['official'])) {
+                continue;
+            }
             $nearestWipe = $formatWipeRow($dt, $bucket);
             if ($nearestWipe !== null) {
                 $nearestWipe['is_today'] = ($dt->format('Y-m-d') === $now->format('Y-m-d'));
@@ -358,6 +358,9 @@ class WipeCalendarController extends Controller
             if ($dt->getTimestamp() >= $nowTs) {
                 continue;
             }
+            if (!empty($bucket['official'])) {
+                continue;
+            }
             $recentWipe = $formatWipeRow($dt, $bucket);
             if ($recentWipe !== null) {
                 $recentWipe['is_today'] = ($dt->format('Y-m-d') === $now->format('Y-m-d'));
@@ -366,13 +369,13 @@ class WipeCalendarController extends Controller
         }
 
         $serverForButtons = null;
-        if (!empty($nearestWipe['server_id'])) {
+        if ($nearestWipe !== null && !empty($nearestWipe['server_id'])) {
             $serverForButtons = Servers::find()
                 ->select(['id', 'ip', 'port', 'status'])
                 ->andWhere(['id' => $nearestWipe['server_id']])
                 ->one();
         }
-        if ($serverForButtons && $serverForButtons->ip && $serverForButtons->port) {
+        if ($nearestWipe !== null && $serverForButtons && $serverForButtons->ip && $serverForButtons->port) {
             $nearestWipe['ip'] = $serverForButtons->ip;
             $nearestWipe['port'] = (int)$serverForButtons->port;
             $nearestWipe['connect_href'] = 'steam://rungameid/252490//+connect ' . $serverForButtons->ip . ':' . $serverForButtons->port;
