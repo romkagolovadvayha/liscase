@@ -220,19 +220,20 @@ class WipeCalendarController extends Controller
                 }
             }
 
-            // Схлопнутые (агрегация) — как в API actionIndex
+            // Схлопнутые (агрегация): «Вайп» — бейджи серверов как глобальный слот (фиолетовый); «Вайп карты» — зелёный.
             if (isset($bucket['title']) && empty($bucket['servers'])) {
+                $collapsedNameClass = ($bucket['title'] === Yii::t('common', 'Вайп')) ? 'badge-global' : 'badge-map-wipe';
                 if (!empty($bucket['names7']) || !empty($bucket['names14'])) {
                     if (!empty($bucket['names7'])) {
                         foreach (array_unique($bucket['names7']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                     if (!empty($bucket['names14'])) {
                         foreach (array_unique($bucket['names14']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                 } elseif (!empty($bucket['names'])) {
@@ -242,7 +243,7 @@ class WipeCalendarController extends Controller
                     } else {
                         foreach (array_unique($bucket['names']) as $name) {
                             $key = trim((string)$name);
-                            $badges[] = ['class' => 'badge-map-wipe', 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
+                            $badges[] = ['class' => $collapsedNameClass, 'text' => $name, 'link' => ($key !== '' ? ($serverLinkByDisplayName[$key] ?? null) : null)];
                         }
                     }
                 }
