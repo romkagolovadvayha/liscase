@@ -43,6 +43,18 @@ class StatsController extends BaseApiController
     }
 
     /**
+     * Просматривает ли текущий запрос (JWT) профиль того же пользователя.
+     */
+    private function isViewerProfileOwner(string $profileSteamId): bool
+    {
+        $identity = Yii::$app->user->identity;
+        if ($identity === null) {
+            return false;
+        }
+        return (string) $identity->steam_id === (string) $profileSteamId;
+    }
+
+    /**
      * Настройка behaviors
      */
     public function behaviors()
@@ -56,10 +68,10 @@ class StatsController extends BaseApiController
             'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'options'],
         ];
 
-        // Опциональная авторизация для stats (инициализирует пользователя, если токен есть, но не требует его)
+        // Опциональная авторизация: токен разбирается при наличии (нужно, чтобы владелец профиля видел скрытую от других команду)
         $behaviors['optionalAuth'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['stats'],
+            'only' => ['stats', 'player-new', 'player-team'],
             'throwException' => false, // Не выбрасываем исключение, если токена нет
         ];
 
@@ -904,6 +916,17 @@ class StatsController extends BaseApiController
             }
         }
 
+        // Скрытая от других команда — для владельца профиля показываем счётчик и не помечаем как скрыто (кэш остаётся «публичным»)
+        if ($this->isViewerProfileOwner($steamId) && $userNow && $userNow->hasHideTeam()) {
+            try {
+                $teamMembersOwner = TeamsModel::getTeamList($server->id, $userNow->id, $wipe);
+            } catch (\Exception $e) {
+                $teamMembersOwner = [];
+            }
+            $cached['player']['team_members_count'] = count($teamMembersOwner);
+            $cached['player']['team_hidden'] = false;
+        }
+
         return $this->successResponse($cached);
     }
 
@@ -1032,13 +1055,15 @@ class StatsController extends BaseApiController
      * @param \common\models\servers\Servers $server
      * @param \common\models\user\User $user
      * @param string|null $wipe
+     * @param bool $viewerIsProfileOwner владелец профиля видит команду даже при VIP «скрыть тимейтов»
      * @return array{team_members: array, team_hidden: bool}
      */
-    private function buildPlayerTeamData($server, $user, $wipe)
+    private function buildPlayerTeamData($server, $user, $wipe, $viewerIsProfileOwner = false)
     {
-        $teamHidden = $user->hasHideTeam();
+        $hideFromOthers = $user->hasHideTeam();
+        $teamHidden = $hideFromOthers && !$viewerIsProfileOwner;
         $teamMembers = [];
-        if (!$teamHidden) {
+        if (!$hideFromOthers || $viewerIsProfileOwner) {
             try {
                 $teamMembers = TeamsModel::getTeamList($server->id, $user->id, $wipe);
             } catch (\Exception $e) {
@@ -1147,8 +1172,16 @@ class StatsController extends BaseApiController
             if (!$user) {
                 throw new NotFoundHttpException('Игрок не найден');
             }
-            $cached = $this->buildPlayerTeamData($server, $user, $wipe);
+            // В кэше только публичный ответ; иначе чужой запрос после владельца получил бы список тимейтов
+            $cached = $this->buildPlayerTeamData($server, $user, $wipe, false);
             Yii::$app->cache->set($cacheKey, $cached, 300);
+        }
+
+        if ($this->isViewerProfileOwner($steamId)) {
+            $user = User::findBySteamId($steamId, false, 'stats');
+            if ($user && $user->hasHideTeam()) {
+                $cached = $this->buildPlayerTeamData($server, $user, $wipe, true);
+            }
         }
 
         return $this->successResponse($cached);
