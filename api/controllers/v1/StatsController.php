@@ -927,6 +927,8 @@ class StatsController extends BaseApiController
             $cached['player']['team_hidden'] = false;
         }
 
+        $cached['player']['team_hidden_from_others'] = $this->isViewerProfileOwner($steamId) && $userNow && $userNow->hasHideTeam();
+
         return $this->successResponse($cached);
     }
 
@@ -1070,9 +1072,11 @@ class StatsController extends BaseApiController
                 $teamMembers = [];
             }
         }
+        // team_hidden_from_others: только для владельца (JWT) — команда скрыта от других, сам список видит
         return [
             'team_members' => $teamMembers,
             'team_hidden' => $teamHidden,
+            'team_hidden_from_others' => $viewerIsProfileOwner && $hideFromOthers,
         ];
     }
 
