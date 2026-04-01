@@ -125,6 +125,7 @@ class StatsController extends BaseApiController
                 'steam_id' => $sid,
                 'username' => $u ? $u->username : '',
                 'avatar' => $u ? $u->getAvatar() : '',
+                'avatar_frame_url' => $u ? $u->getAvatarFrameImageUrl() : null,
                 'playtime' => (int) ($row['playtime'] ?? 0),
                 'kills' => (int) ($row['kills'] ?? 0),
                 'deaths' => (int) ($row['deaths'] ?? 0),
@@ -168,6 +169,7 @@ class StatsController extends BaseApiController
                     'steam_id' => $r['steam_id'],
                     'username' => $r['username'],
                     'avatar' => $r['avatar'],
+                    'avatar_frame_url' => $r['avatar_frame_url'] ?? null,
                     'score' => $r[$metric],
                 ];
             }
