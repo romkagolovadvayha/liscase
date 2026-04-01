@@ -11,6 +11,12 @@ use common\models\user\UserTop;
  */
 class StatsCacheHelper
 {
+    /**
+     * Кэш консоли stats/active-players-cache и GET /v1/stats/global-records.
+     * @see \console\controllers\StatsController::actionActivePlayersCache
+     */
+    public const CACHE_KEY_ACTIVE_PLAYERS_GLOBAL = 'statistics_active_players_global_v1';
+
     /** Ключ кэша: api_stats_v2_{serverTag}_{wipe} (v2 — с avatar_frame_url в топах) */
     public static function cacheKey(string $serverTag, ?string $wipe): string
     {

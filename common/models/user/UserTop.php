@@ -249,6 +249,40 @@ class UserTop extends \yii\db\ActiveRecord
         ];
     }
 
+    /**
+     * Очки категорий «Лучший рейдер / фармер / фермер / охотник / рыбак» из суммарных ключей statistics
+     * (те же веса, что в {@see getRaiting()} и при начислении в user_top).
+     *
+     * @param array<string, int|float|string> $params агрегированные key => сумма value по всем серверам/вайпам
+     * @return array{reider: float, farmer: float, fermer: float, hunter: float, fishing: float}
+     */
+    public static function computeScoresFromAggregatedParams(array $params): array
+    {
+        $rating = self::getRaiting();
+        $map = [
+            self::TYPE_REIDER => 'reider',
+            self::TYPE_FARMER => 'farmer',
+            self::TYPE_FISHING => 'fishing',
+            self::TYPE_HUNTER => 'hunter',
+            self::TYPE_FERMER => 'fermer',
+        ];
+        $out = [];
+        foreach ($map as $type => $name) {
+            $sum = 0.0;
+            foreach ($rating[$type] as $statKey => $weight) {
+                $raw = (float) Statistics::getParam($params, $statKey);
+                // В statistics встречается и deer, и stag; в getRaiting только stag — суммируем для агрегата.
+                if ($type === self::TYPE_HUNTER && $statKey === 'stag') {
+                    $raw += (float) Statistics::getParam($params, 'deer');
+                }
+                $sum += $raw * (float) $weight;
+            }
+            $out[$name] = round($sum, 2);
+        }
+
+        return $out;
+    }
+
     public function keyName()
     {
         return ArrayHelper::getValue(UserTop::getRaitingLabel(), $this->key);
