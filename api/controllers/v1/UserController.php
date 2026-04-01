@@ -1711,6 +1711,17 @@ class UserController extends BaseApiController
         $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
         $baseUrl = str_replace('api.', '', $baseUrl);
 
+        $defaultStatsServer = Servers::find()
+            ->where(['in', 'status', [0, 1]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->one();
+        if (!$defaultStatsServer) {
+            $defaultStatsServer = Servers::find()->orderBy(['sort' => SORT_ASC])->one();
+        }
+        $defaultStatsTag = ($defaultStatsServer && $defaultStatsServer->tag !== '')
+            ? $defaultStatsServer->tag
+            : null;
+
         foreach ($users as $user) {
             try {
                 $avatar = $user->getAvatar();
@@ -1718,18 +1729,21 @@ class UserController extends BaseApiController
                 $avatar = '';
             }
 
-            // Формируем ссылку на статистику
+            // Ссылка на статистику на Next-фронте: /stats/[tag]/[steamId]
             $statsLink = null;
             if ($serverTag) {
-                $statsLink = $baseUrl . '/servers/' . $serverTag . '/' . $user->steam_id;
+                $statsLink = $baseUrl . '/stats/' . rawurlencode($serverTag) . '/' . rawurlencode((string) $user->steam_id);
             } elseif ($serverId) {
                 $server = Servers::findOne($serverId);
-                if ($server) {
-                    $statsLink = $baseUrl . '/servers/' . $server->tag . '/' . $user->steam_id;
+                if ($server && $server->tag !== '') {
+                    $statsLink = $baseUrl . '/stats/' . rawurlencode($server->tag) . '/' . rawurlencode((string) $user->steam_id);
                 }
-            } else {
-                // Если serverTag не передан, формируем ссылку на профиль пользователя
-                $statsLink = $baseUrl . '/profile/' . $user->steam_id;
+            }
+            if ($statsLink === null && $defaultStatsTag !== null) {
+                $statsLink = $baseUrl . '/stats/' . rawurlencode($defaultStatsTag) . '/' . rawurlencode((string) $user->steam_id);
+            }
+            if ($statsLink === null) {
+                $statsLink = $baseUrl . '/servers';
             }
 
             // Проверяем статус онлайн (если есть метод)
