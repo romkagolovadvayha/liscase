@@ -17,6 +17,7 @@ use common\models\invoice\Invoice;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\tasks_v2\TaskV2;
+use common\models\box\Drop;
 use common\models\box\DropFavorite;
 use frontend\forms\profile\ProfileForm;
 use frontend\forms\user\TransferForm;
@@ -83,11 +84,27 @@ class UserController extends BaseApiController
         }
 
         if (Yii::$app->request->isGet) {
+            $vipDropModel = Drop::find()
+                ->where(['drop_type' => Drop::TYPE_VIP])
+                ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
+                ->andWhere(['status' => Drop::STATUS_ACTIVE])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+            $vipDrop = null;
+            if ($vipDropModel !== null) {
+                $vipDrop = [
+                    'id' => (int)$vipDropModel->id,
+                    'name' => Yii::t('database', (string)($vipDropModel->name ?? '')),
+                ];
+            }
+
             return $this->successResponse([
                 'id' => $user->id,
                 'username' => $user->username,
                 'steam_id' => $user->steam_id,
                 'avatar' => $user->getAvatar(),
+                'hasVip' => $user->hasVip(),
+                'vipDrop' => $vipDrop,
                 'profile' => [
                     'name' => $user->userProfile->name ?? $user->username,
                     'trade_link' => $user->userProfile->trade_link ?? null,
