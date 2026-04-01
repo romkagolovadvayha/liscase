@@ -33,16 +33,20 @@ class StatsController extends Controller
      * Два этапа: (1) только steam_id с подходящим суммарным playtime; (2) по 50 id — отдельный GROUP BY
      * по всем ключам statistics, без одного гигантского JOIN (иначе queryAll съедает память, см. mysqli/буфер).
      *
-     * Пример: `php yii stats/active-players-cache` или `php yii stats/active-players-cache 7200` (TTL, сек).
+     * По умолчанию TTL = {@see StatsCacheHelper::ACTIVE_PLAYERS_GLOBAL_CACHE_TTL} (48 ч).
+     * Пример: `php yii stats/active-players-cache` или `php yii stats/active-players-cache 7200` (свой TTL, сек).
      * Индекс под шаг 1: покрывающий (key, steam_id, value) — m260402_100000_statistics_covering_index_playtime_agg
      * (двухколоночный m260401 часто хуже: без value идут lookups в таблицу).
      *
-     * @param int $ttl время жизни кэша в секундах
+     * @param int|null $ttl время жизни кэша в секундах; null/пусто — 48 ч
      */
-    public function actionActivePlayersCache($ttl = 3600): void
+    public function actionActivePlayersCache($ttl = null): void
     {
         ini_set('memory_limit', '512M');
         $minMinutes = self::ACTIVE_PLAYERS_MIN_PLAYTIME;
+        if ($ttl === null || $ttl === '') {
+            $ttl = StatsCacheHelper::ACTIVE_PLAYERS_GLOBAL_CACHE_TTL;
+        }
         $ttl = (int) $ttl;
         $batch = self::ACTIVE_PLAYERS_STEAM_BATCH;
         $t0 = microtime(true);

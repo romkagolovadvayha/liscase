@@ -17,6 +17,9 @@ class StatsCacheHelper
      */
     public const CACHE_KEY_ACTIVE_PLAYERS_GLOBAL = 'statistics_active_players_global_v1';
 
+    /** TTL записи в кэше {@see CACHE_KEY_ACTIVE_PLAYERS_GLOBAL}, секунды (48 часов). */
+    public const ACTIVE_PLAYERS_GLOBAL_CACHE_TTL = 48 * 3600;
+
     /** Ключ кэша: api_stats_v2_{serverTag}_{wipe} (v2 — с avatar_frame_url в топах) */
     public static function cacheKey(string $serverTag, ?string $wipe): string
     {
