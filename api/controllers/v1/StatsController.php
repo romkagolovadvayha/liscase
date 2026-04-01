@@ -65,7 +65,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'options'],
+            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'global-records', 'options'],
         ];
 
         // Опциональная авторизация: токен разбирается при наличии (нужно, чтобы владелец профиля видел скрытую от других команду)
@@ -76,6 +76,116 @@ class StatsController extends BaseApiController
         ];
 
         return $behaviors;
+    }
+
+    /**
+     * Глобальные рекорды: данные из кэша console `stats/active-players-cache`
+     * ({@see StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL}). Публично, без JWT.
+     *
+     * GET /v1/stats/global-records
+     */
+    public function actionGlobalRecords()
+    {
+        $raw = Yii::$app->cache->get(StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL);
+        if (!is_array($raw)) {
+            return $this->successResponse([
+                'items' => [],
+                'tops' => [],
+            ], [
+                'count' => 0,
+                'cache_key' => StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL,
+                'hint' => 'yii stats/active-players-cache',
+            ]);
+        }
+
+        $steamIds = [];
+        foreach ($raw as $row) {
+            $sid = (string) ($row['steam_id'] ?? '');
+            if ($sid !== '') {
+                $steamIds[$sid] = true;
+            }
+        }
+        $steamIds = array_keys($steamIds);
+
+        $usersBySteam = [];
+        foreach (array_chunk($steamIds, 400) as $chunk) {
+            $models = User::find()
+                ->where(['steam_id' => $chunk])
+                ->all();
+            foreach ($models as $u) {
+                $usersBySteam[(string) $u->steam_id] = $u;
+            }
+        }
+
+        $items = [];
+        foreach ($raw as $row) {
+            $sid = (string) ($row['steam_id'] ?? '');
+            $u = $usersBySteam[$sid] ?? null;
+            $items[] = [
+                'steam_id' => $sid,
+                'username' => $u ? $u->username : '',
+                'avatar' => $u ? $u->getAvatar() : '',
+                'playtime' => (int) ($row['playtime'] ?? 0),
+                'kills' => (int) ($row['kills'] ?? 0),
+                'deaths' => (int) ($row['deaths'] ?? 0),
+                'scientists' => (int) ($row['scientists'] ?? 0),
+                'reider' => round((float) ($row['reider'] ?? 0), 2),
+                'farmer' => round((float) ($row['farmer'] ?? 0), 2),
+                'fermer' => round((float) ($row['fermer'] ?? 0), 2),
+                'hunter' => round((float) ($row['hunter'] ?? 0), 2),
+                'fishing' => round((float) ($row['fishing'] ?? 0), 2),
+            ];
+        }
+
+        usort($items, static function ($a, $b) {
+            return $b['farmer'] <=> $a['farmer'];
+        });
+
+        $labels = UserTop::getTopsLabel();
+        $sectionDefs = [
+            ['id' => 'farmer', 'metric' => 'farmer', 'label' => $labels[UserTop::TYPE_FARMER] ?? 'Farmer'],
+            ['id' => 'reider', 'metric' => 'reider', 'label' => $labels[UserTop::TYPE_REIDER] ?? 'Raider'],
+            ['id' => 'fermer', 'metric' => 'fermer', 'label' => $labels[UserTop::TYPE_FERMER] ?? 'Fermer'],
+            ['id' => 'hunter', 'metric' => 'hunter', 'label' => $labels[UserTop::TYPE_HUNTER] ?? 'Hunter'],
+            ['id' => 'fishing', 'metric' => 'fishing', 'label' => $labels[UserTop::TYPE_FISHING] ?? 'Fishing'],
+            ['id' => 'playtime', 'metric' => 'playtime', 'label' => $labels[UserTop::TYPE_PLAYTIME] ?? 'Playtime'],
+            ['id' => 'kills', 'metric' => 'kills', 'label' => $labels[UserTop::TYPE_KILLS] ?? 'Kills'],
+            ['id' => 'scientists', 'metric' => 'scientists', 'label' => $labels[UserTop::TYPE_SCIENTISTS] ?? 'Scientists'],
+        ];
+
+        $tops = [];
+        foreach ($sectionDefs as $def) {
+            $metric = $def['metric'];
+            $copy = $items;
+            usort($copy, static function ($a, $b) use ($metric) {
+                return ($b[$metric] ?? 0) <=> ($a[$metric] ?? 0);
+            });
+            $slice = array_slice($copy, 0, 3);
+            $entries = [];
+            foreach ($slice as $i => $r) {
+                $entries[] = [
+                    'rank' => $i + 1,
+                    'steam_id' => $r['steam_id'],
+                    'username' => $r['username'],
+                    'avatar' => $r['avatar'],
+                    'score' => $r[$metric],
+                ];
+            }
+            $tops[] = [
+                'id' => $def['id'],
+                'label' => $def['label'],
+                'metric' => $metric,
+                'entries' => $entries,
+            ];
+        }
+
+        return $this->successResponse([
+            'items' => $items,
+            'tops' => $tops,
+        ], [
+            'count' => count($items),
+            'cache_key' => StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL,
+        ]);
     }
 
     /**
