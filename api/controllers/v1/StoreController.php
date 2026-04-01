@@ -452,10 +452,12 @@ class StoreController extends BaseApiController
             return $this->errorResponse('DROP_NOT_FOUND', 'Предмет не найден', [], 404);
         }
 
+        $qty = max(1, (int) $userDrop->count);
+
         $profit = new Profit();
         $profit->status = 1;
         $profit->type = Profit::TYPE_SELL_DROP;
-        $profit->amount = $drop->getRealPrice(false);
+        $profit->amount = $drop->getRealPrice(false) * $qty;
         $profit->user_balance_id = $userBalance->id;
         $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
             'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
