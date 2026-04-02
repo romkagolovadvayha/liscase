@@ -12,13 +12,28 @@ use common\models\user\UserTop;
 class StatsCacheHelper
 {
     /**
-     * Кэш консоли stats/active-players-cache и GET /v1/stats/global-records.
+     * Кэш консоли stats/active-players-cache и GET /v1/stats/global-records (глобальный ответ, в строках — by_server).
      * @see \console\controllers\StatsController::actionActivePlayersCache
      */
     public const CACHE_KEY_ACTIVE_PLAYERS_GLOBAL = 'statistics_active_players_global_v1';
 
     /** TTL записи в кэше {@see CACHE_KEY_ACTIVE_PLAYERS_GLOBAL}, секунды (48 часов). */
     public const ACTIVE_PLAYERS_GLOBAL_CACHE_TTL = 48 * 3600;
+
+    /**
+     * Порог суммарного playtime (мин.) для попадания в кэш активных игроков (глобально и по серверу в by_server).
+     * @see \console\controllers\StatsController::actionActivePlayersCache
+     */
+    public const ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES = 20 * 24 * 60;
+
+    /**
+     * Ключ кэша активных игроков по одному серверу (тот же формат строк, что и глобальный).
+     * Заполняется той же консольной командой {@see \console\controllers\StatsController::actionActivePlayersCache}.
+     */
+    public static function cacheKeyActivePlayersServer(string $serverTag): string
+    {
+        return 'statistics_active_players_server_v1_' . $serverTag;
+    }
 
     /** Ключ кэша: api_stats_v2_{serverTag}_{wipe} (v2 — с avatar_frame_url в топах) */
     public static function cacheKey(string $serverTag, ?string $wipe): string

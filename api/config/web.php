@@ -254,6 +254,7 @@ $config = [
                 'v1/buildings/upload-image' => 'v1/buildings/upload-image',
                 'v1/buildings/<id:\d+>/like' => 'v1/buildings/like',
                 'v1/buildings/<id:\d+>/likes' => 'v1/buildings/likes',
+                ['pattern' => 'v1/buildings/<id:\d+>/leave-resident', 'route' => 'v1/buildings/leave-resident', 'verb' => ['POST']],
                 ['pattern' => 'v1/buildings/<id:\d+>', 'route' => 'v1/buildings/delete', 'verb' => ['DELETE']],
                 'v1/buildings/<id:\d+>' => 'v1/buildings/view',
 

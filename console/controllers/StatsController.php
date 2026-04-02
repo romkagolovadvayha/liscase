@@ -17,9 +17,6 @@ use Yii;
 
 class StatsController extends Controller
 {
-    /** Суммарный playtime (мин.) по всем серверам/вайпам не ниже этого порога — по умолчанию 20 суток. */
-    private const ACTIVE_PLAYERS_MIN_PLAYTIME = 20 * 24 * 60;
-
     /** @deprecated используйте {@see StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL} */
     public const CACHE_KEY_ACTIVE_PLAYERS_GLOBAL = StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL;
 
@@ -34,6 +31,8 @@ class StatsController extends Controller
      * по всем ключам statistics, без одного гигантского JOIN (иначе queryAll съедает память, см. mysqli/буфер).
      *
      * По умолчанию TTL = {@see StatsCacheHelper::ACTIVE_PLAYERS_GLOBAL_CACHE_TTL} (48 ч).
+     * Дополнительно пишет per-server ключи {@see StatsCacheHelper::cacheKeyActivePlayersServer} для серверов
+     * со статусом выключен / включён / скоро (0, 1, 2).
      * Пример: `php yii stats/active-players-cache` или `php yii stats/active-players-cache 7200` (свой TTL, сек).
      * Индекс под шаг 1: покрывающий (key, steam_id, value) — m260402_100000_statistics_covering_index_playtime_agg
      * (двухколоночный m260401 часто хуже: без value идут lookups в таблицу).
@@ -43,7 +42,7 @@ class StatsController extends Controller
     public function actionActivePlayersCache($ttl = null): void
     {
         ini_set('memory_limit', '512M');
-        $minMinutes = self::ACTIVE_PLAYERS_MIN_PLAYTIME;
+        $minMinutes = StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES;
         if ($ttl === null || $ttl === '') {
             $ttl = StatsCacheHelper::ACTIVE_PLAYERS_GLOBAL_CACHE_TTL;
         }
@@ -57,42 +56,87 @@ class StatsController extends Controller
         $this->stdout($log("старт, порог playtime >= {$minMinutes} мин, TTL кэша {$ttl} с, батч steam_id = {$batch}\n"));
         Yii::info("active-players-cache старт: min_playtime={$minMinutes}, ttl={$ttl}, batch={$batch}", __METHOD__);
 
-        $this->stdout($log("шаг 1: steam_id с SUM(playtime) >= {$minMinutes} (только колонка steam_id)…\n"));
-        $steamIds = (new Query())
+        $this->stdout($log("глобальный кэш: шаг 1 — steam_id с SUM(playtime) >= {$minMinutes}…\n"));
+        $chunkLogger = function (string $msg) use ($log): void {
+            $this->stdout($log($msg . "\n"));
+        };
+        $list = $this->buildActivePlayersList(null, $minMinutes, $batch, $chunkLogger);
+        $final = count($list);
+        $this->stdout($log("глобальный кэш: в выборке {$final} игроков\n"));
+        Yii::$app->cache->set(StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL, $list, $ttl);
+        $this->stdout($log("записан ключ «" . StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL . "»\n"));
+
+        $servers = Servers::find()
+            ->where(['in', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        foreach ($servers as $server) {
+            $tag = trim((string) $server->tag);
+            if ($tag === '') {
+                continue;
+            }
+            $this->stdout($log("сервер «{$tag}»: сбор активных игроков…\n"));
+            $listS = $this->buildActivePlayersList($tag, $minMinutes, $batch, null);
+            Yii::$app->cache->set(StatsCacheHelper::cacheKeyActivePlayersServer($tag), $listS, $ttl);
+            $this->stdout($log("сервер «{$tag}»: записано " . count($listS) . " игроков\n"));
+        }
+
+        $sec = round(microtime(true) - $t0, 2);
+        $this->stdout($log("готово за {$sec} с (глобально {$final} игроков)\n"));
+        Yii::info("active-players-cache завершено: global={$final}, {$sec} с", __METHOD__);
+    }
+
+    /**
+     * Список активных игрокей с агрегатами и очками (как для глобального кэша).
+     *
+     * @param string|null $serverTag null — по всем server_tag; иначе только эта строка server_tag
+     * @param callable(string):void|null $chunkLog сообщения по чанкам (только для глобального прогона)
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildActivePlayersList(?string $serverTag, int $minMinutes, int $batchSize, ?callable $chunkLog): array
+    {
+        $tn = Statistics::tableName();
+        $q1 = (new Query())
             ->select('steam_id')
-            ->from(Statistics::tableName())
-            ->where(['key' => 'playtime'])
+            ->from($tn)
+            ->where(['key' => 'playtime']);
+        if ($serverTag !== null && $serverTag !== '') {
+            $q1->andWhere(['server_tag' => $serverTag]);
+        }
+        $steamIds = $q1
             ->groupBy('steam_id')
             ->having('SUM(CAST([[value]] AS SIGNED)) >= :min', [':min' => $minMinutes])
             ->column();
 
-        $foundSteam = count($steamIds);
-        $this->stdout($log("найдено steam_id: {$foundSteam}\n"));
-        Yii::info("active-players-cache: steam_id с порогом playtime: {$foundSteam}", __METHOD__);
-
         if ($steamIds === []) {
-            $this->stdout($log("запись пустого массива в кэш…\n"));
-            Yii::$app->cache->set(StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL, [], $ttl);
-            $this->stdout($log('готово: в кэше 0 записей, ключ ' . StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL . "\n"));
+            return [];
+        }
 
-            return;
+        if ($chunkLog !== null) {
+            $chunkLog('найдено steam_id: ' . count($steamIds));
         }
 
         $list = [];
-        $chunks = array_chunk($steamIds, $batch);
+        $chunks = array_chunk($steamIds, $batchSize);
         $totalChunks = count($chunks);
-        $this->stdout($log("шаг 2: по чанкам — SQL агрегат + расчёт очков (без хранения всех игроков в одном массиве)…\n"));
-
+        $foundSteam = count($steamIds);
         $processedSteam = 0;
+
         foreach ($chunks as $i => $chunk) {
             $n = $i + 1;
-            $this->stdout($log("чанк {$n}/{$totalChunks}: SUM по всем ключам для " . count($chunk) . " steam_id…\n"));
-            $rows = (new Query())
+            if ($chunkLog !== null) {
+                $chunkLog("чанк {$n}/{$totalChunks}: SUM по всем ключам для " . count($chunk) . " steam_id…");
+            }
+
+            $q2 = (new Query())
                 ->select(['steam_id', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
-                ->from(Statistics::tableName())
-                ->where(['steam_id' => $chunk])
-                ->groupBy(['steam_id', 'key'])
-                ->all();
+                ->from($tn)
+                ->where(['steam_id' => $chunk]);
+            if ($serverTag !== null && $serverTag !== '') {
+                $q2->andWhere(['server_tag' => $serverTag]);
+            }
+            $rows = $q2->groupBy(['steam_id', 'key'])->all();
             $rowCount = count($rows);
 
             $batchParams = [];
@@ -102,6 +146,25 @@ class StatsController extends Controller
             }
             unset($rows);
 
+            $bySteamServer = [];
+            if ($serverTag === null || $serverTag === '') {
+                $q3 = (new Query())
+                    ->select(['steam_id', 'server_tag', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
+                    ->from($tn)
+                    ->where(['steam_id' => $chunk])
+                    ->groupBy(['steam_id', 'server_tag', 'key']);
+                $rowsByServer = $q3->all();
+                foreach ($rowsByServer as $row) {
+                    $sidKey = (string) $row['steam_id'];
+                    $stag = trim((string) ($row['server_tag'] ?? ''));
+                    if ($stag === '') {
+                        continue;
+                    }
+                    $bySteamServer[$sidKey][$stag][$row['key']] = (int) $row['sum'];
+                }
+                unset($rowsByServer);
+            }
+
             foreach ($chunk as $sid) {
                 $processedSteam++;
                 $params = $batchParams[$sid] ?? [];
@@ -110,35 +173,51 @@ class StatsController extends Controller
                     continue;
                 }
                 $scores = UserTop::computeScoresFromAggregatedParams($params);
-                $list[] = [
+                $rowOut = [
                     'steam_id' => (string) $sid,
                     'playtime' => $playtime,
                     'kills' => (int) ($params['kills'] ?? 0),
                     'deaths' => (int) ($params['deaths'] ?? 0),
                     'scientists' => (int) ($params['scientists'] ?? 0),
-                    'reider' => $scores['reider'],
-                    'farmer' => $scores['farmer'],
-                    'fermer' => $scores['fermer'],
-                    'hunter' => $scores['hunter'],
-                    'fishing' => $scores['fishing'],
+                    'reider' => round((float) $scores['reider'], 2),
+                    'farmer' => round((float) $scores['farmer'], 2),
+                    'fermer' => round((float) $scores['fermer'], 2),
+                    'hunter' => round((float) $scores['hunter'], 2),
+                    'fishing' => round((float) $scores['fishing'], 2),
                 ];
+                if ($serverTag === null || $serverTag === '') {
+                    $byServerOut = [];
+                    foreach ($bySteamServer[(string) $sid] ?? [] as $stag => $p) {
+                        $pt = (int) ($p['playtime'] ?? 0);
+                        if ($pt < $minMinutes) {
+                            continue;
+                        }
+                        $srvScores = UserTop::computeScoresFromAggregatedParams($p);
+                        $byServerOut[$stag] = [
+                            'playtime' => $pt,
+                            'kills' => (int) ($p['kills'] ?? 0),
+                            'deaths' => (int) ($p['deaths'] ?? 0),
+                            'scientists' => (int) ($p['scientists'] ?? 0),
+                            'reider' => round((float) $srvScores['reider'], 2),
+                            'farmer' => round((float) $srvScores['farmer'], 2),
+                            'fermer' => round((float) $srvScores['fermer'], 2),
+                            'hunter' => round((float) $srvScores['hunter'], 2),
+                            'fishing' => round((float) $srvScores['fishing'], 2),
+                        ];
+                    }
+                    $rowOut['by_server'] = $byServerOut;
+                }
+                $list[] = $rowOut;
             }
             unset($batchParams);
 
-            $this->stdout($log("чанк {$n}/{$totalChunks}: строк GROUP BY: {$rowCount}, обработано steam_id: {$processedSteam}/{$foundSteam}, в списке: " . count($list) . "\n"));
+            if ($chunkLog !== null) {
+                $chunkLog("чанк {$n}/{$totalChunks}: строк GROUP BY: {$rowCount}, обработано steam_id: {$processedSteam}/{$foundSteam}, в списке: " . count($list));
+            }
             Yii::info("active-players-cache чанк {$n}/{$totalChunks}: rows={$rowCount}, list=" . count($list), __METHOD__);
         }
 
-        $final = count($list);
-        if ($final === 0) {
-            $this->stdout($log("запись пустого массива в кэш…\n"));
-        } else {
-            $this->stdout($log("запись в кэш ключ «" . StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL . "», элементов: {$final}\n"));
-        }
-        Yii::$app->cache->set(StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL, $list, $ttl);
-        $sec = round(microtime(true) - $t0, 2);
-        $this->stdout($log("готово за {$sec} с: в кэше {$final} игроков\n"));
-        Yii::info("active-players-cache завершено: {$final} игроков, {$sec} с", __METHOD__);
+        return $list;
     }
 
     /**

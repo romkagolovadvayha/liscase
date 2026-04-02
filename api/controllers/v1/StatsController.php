@@ -83,17 +83,24 @@ class StatsController extends BaseApiController
      * ({@see StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL}). Публично, без JWT.
      *
      * GET /v1/stats/global-records
+     *
+     * Всегда отдаётся глобальный кэш. У каждой записи может быть поле `by_server` (тег → те же метрики
+     * по серверу при playtime на сервере ≥ порога) — фильтр по серверу делается на фронте.
+     * Query `serverTag` игнорируется (оставлен для обратной совместимости клиентов).
      */
     public function actionGlobalRecords()
     {
-        $raw = Yii::$app->cache->get(StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL);
+        $cacheKey = StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL;
+
+        $raw = Yii::$app->cache->get($cacheKey);
         if (!is_array($raw)) {
             return $this->successResponse([
                 'items' => [],
                 'tops' => [],
             ], [
                 'count' => 0,
-                'cache_key' => StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL,
+                'cache_key' => $cacheKey,
+                'min_active_playtime_minutes' => StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES,
                 'hint' => 'yii stats/active-players-cache',
             ]);
         }
@@ -121,7 +128,7 @@ class StatsController extends BaseApiController
         foreach ($raw as $row) {
             $sid = (string) ($row['steam_id'] ?? '');
             $u = $usersBySteam[$sid] ?? null;
-            $items[] = [
+            $item = [
                 'steam_id' => $sid,
                 'username' => $u ? $u->username : '',
                 'avatar' => $u ? $u->getAvatar() : '',
@@ -136,6 +143,10 @@ class StatsController extends BaseApiController
                 'hunter' => round((float) ($row['hunter'] ?? 0), 2),
                 'fishing' => round((float) ($row['fishing'] ?? 0), 2),
             ];
+            if (isset($row['by_server']) && is_array($row['by_server'])) {
+                $item['by_server'] = $row['by_server'];
+            }
+            $items[] = $item;
         }
 
         usort($items, static function ($a, $b) {
@@ -186,7 +197,8 @@ class StatsController extends BaseApiController
             'tops' => $tops,
         ], [
             'count' => count($items),
-            'cache_key' => StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL,
+            'cache_key' => $cacheKey,
+            'min_active_playtime_minutes' => StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES,
         ]);
     }
 

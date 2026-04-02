@@ -37,7 +37,7 @@ class BuildingsController extends BaseApiController
         // JWT авторизация требуется для постановки лайка, создания постройки, удаления и загрузки изображений
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['like', 'create', 'upload-image', 'delete'],
+            'only' => ['like', 'create', 'upload-image', 'delete', 'leave-resident'],
             'except' => ['index', 'view', 'likes', 'options'],
         ];
 
@@ -141,13 +141,24 @@ class BuildingsController extends BaseApiController
                 $query->andWhere(['b.server_tag' => $serverTag]);
             }
 
-            // Фильтр по автору или жильцу (steam_id): постройки, где игрок — автор или указан жильцом
+            // Фильтр по автору или жильцу (steam_id): постройки, где игрок — автор или указан в building_resident
+            // Через EXISTS, без JOIN+GROUP BY — стабильнее для пагинации и ONLY_FULL_GROUP_BY
+            $steamId = is_string($steamId) ? trim($steamId) : $steamId;
             if ($steamId !== null && $steamId !== '') {
-                $query->joinWith('user')
-                    ->leftJoin('building_resident br', 'br.building_id = b.id')
-                    ->leftJoin('user resident_user', 'resident_user.id = br.user_id')
-                    ->andWhere(['or', ['user.steam_id' => $steamId], ['resident_user.steam_id' => $steamId]])
-                    ->groupBy('b.id');
+                $authorSub = (new \yii\db\Query())
+                    ->from(['owner' => 'user'])
+                    ->where('[[owner]].[[id]] = [[b]].[[user_id]]')
+                    ->andWhere(['owner.steam_id' => $steamId]);
+                $residentSub = (new \yii\db\Query())
+                    ->from(['br' => 'building_resident'])
+                    ->innerJoin(['res_u' => 'user'], '[[res_u]].[[id]] = [[br]].[[user_id]]')
+                    ->where('[[br]].[[building_id]] = [[b]].[[id]]')
+                    ->andWhere(['res_u.steam_id' => $steamId]);
+                $query->andWhere([
+                    'or',
+                    ['exists', $authorSub],
+                    ['exists', $residentSub],
+                ]);
             }
 
             // Поиск по названию или описанию
@@ -193,8 +204,22 @@ class BuildingsController extends BaseApiController
                 $userLikedBuildingIds = array_column($userLikes, 'building_id');
             }
 
+            $models = $dataProvider->getModels();
+            $pageBuildingIds = array_map(static function ($b) {
+                return $b->id;
+            }, $models);
+            $viewerResidentBuildingSet = [];
+            if ($currentUser && $pageBuildingIds !== []) {
+                $residentIds = BuildingResident::find()
+                    ->select('building_id')
+                    ->where(['user_id' => $currentUser->id])
+                    ->andWhere(['building_id' => $pageBuildingIds])
+                    ->column();
+                $viewerResidentBuildingSet = array_fill_keys($residentIds, true);
+            }
+
             $buildings = [];
-            foreach ($dataProvider->getModels() as $building) {
+            foreach ($models as $building) {
                 // Получаем первое изображение с S3 URL
                 $imageUrl = null;
                 $buildingImages = $building->buildingImage;
@@ -218,6 +243,9 @@ class BuildingsController extends BaseApiController
                 // Проверяем, лайкнул ли текущий пользователь эту постройку
                 $isLiked = $currentUser && in_array($building->id, $userLikedBuildingIds);
 
+                $viewerIsAuthor = $currentUser && (int) $building->user_id === (int) $currentUser->id;
+                $viewerIsResident = $currentUser && !empty($viewerResidentBuildingSet[$building->id]);
+
                 $buildings[] = [
                     'id' => $building->id,
                     'name' => $building->name,
@@ -238,6 +266,8 @@ class BuildingsController extends BaseApiController
                         'avatar' => $building->user->getAvatar(),
                     ] : null,
                     'createdAt' => $building->created_at,
+                    'viewerIsAuthor' => $viewerIsAuthor,
+                    'viewerIsResident' => $viewerIsResident,
                 ];
             }
 
@@ -659,6 +689,42 @@ class BuildingsController extends BaseApiController
         $building->save(false);
 
         return $this->successResponse(['message' => 'Постройка удалена']);
+    }
+
+    /**
+     * Убрать себя из жильцов постройки (не автор). Автор не может выйти таким способом.
+     */
+    public function actionLeaveResident($id)
+    {
+        $user = $this->getCurrentUser();
+
+        $building = Building::find()
+            ->where(['id' => (int) $id, 'status' => Building::STATUS_ACTIVE])
+            ->one();
+
+        if (!$building) {
+            return $this->errorResponse('BUILDING_NOT_FOUND', 'Постройка не найдена', [], 404);
+        }
+
+        if ((int) $building->user_id === (int) $user->id) {
+            return $this->errorResponse(
+                'FORBIDDEN',
+                'Автор постройки не может убрать себя из жильцов таким способом',
+                [],
+                403
+            );
+        }
+
+        $deleted = BuildingResident::deleteAll([
+            'building_id' => $building->id,
+            'user_id' => $user->id,
+        ]);
+
+        if ($deleted < 1) {
+            return $this->errorResponse('NOT_RESIDENT', 'Вы не указаны как жилец этой постройки', [], 404);
+        }
+
+        return $this->successResponse(['message' => 'Вы убраны из списка жильцов']);
     }
 
     /**
