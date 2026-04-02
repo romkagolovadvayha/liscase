@@ -32,7 +32,7 @@ class SkinsController extends BaseApiController
         // JWT авторизация только для покупки (actionConfirm)
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['confirm'],
+            'only' => ['confirm', 'buy'],
             'except' => ['index', 'giveaway', 'skindrops', 'options'],
         ];
 
@@ -139,7 +139,84 @@ class SkinsController extends BaseApiController
                 'totalCount' => $pagination->totalCount,
                 'totalPages' => $pagination->getPageCount(),
             ],
+            'price_range' => SkinsSearch::getCatalogPriceRange($type),
         ]);
+    }
+
+    /**
+     * Покупка скина (алиас для фронта: POST /v1/skins/{id}/buy).
+     * Логика совпадает с успешной веткой actionConfirm при POST.
+     *
+     * @OA\Post(
+     *     path="/v1/skins/{id}/buy",
+     *     tags={"Skins"},
+     *     summary="Купить скин",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 type="object",
+     *                 @OA\Property(property="type", type="string", enum={"rust","cs2"}, example="rust")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Покупка обработана")
+     * )
+     */
+    public function actionBuy($id)
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        $user = $this->getCurrentUser();
+
+        $request = Yii::$app->request;
+        $body = array_merge($request->getBodyParams() ?: [], $request->post());
+        $type = $body['type'] ?? $request->get('type', 'rust');
+        if (!in_array($type, ['rust', 'cs2'], true)) {
+            return $this->errorResponse('INVALID_TYPE', 'Неверный тип игры. Допустимые значения: rust, cs2', [], 400);
+        }
+
+        if ($type === 'rust') {
+            $market = Yii::$app->rustTm;
+        } else {
+            $market = Yii::$app->csGoMarket;
+        }
+
+        $data = $market->items();
+        if (empty($data[$id])) {
+            throw new NotFoundHttpException('Скин не найден');
+        }
+
+        $item = $data[$id];
+        $balance = $user->getSkinsBalance();
+
+        if ($item['price'] > $balance->balance) {
+            return $this->errorResponse('INSUFFICIENT_BALANCE', 'Недостаточно средств', [
+                'balance' => (float)$balance->balance,
+                'required' => (float)$item['price'],
+            ], 400);
+        }
+
+        $formModel = new SkinsForm();
+        $formModel->market = $market;
+        $formModel->type = $type;
+        $formModel->id = (string)$id;
+        $formModel->amount = (string)$item['price'];
+
+        if ($formModel->saveRecord()) {
+            $balance->refresh();
+
+            return $this->successResponse([
+                'message' => 'Скин отправляется, ожидайте трейд-обмен',
+                'balance' => (float)$balance->balance,
+                'newBalance' => (float)$balance->balance,
+            ]);
+        }
+
+        return $this->validationErrorResponse($formModel);
     }
 
     /**

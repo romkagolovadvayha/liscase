@@ -11,6 +11,7 @@ use common\models\servers\Servers;
 use common\models\box\Category;
 use common\models\box\DropBlocked;
 use common\models\box\Drop;
+use common\models\invoice\Invoice;
 use common\models\rcon\RconTasks;
 use common\models\statistics\Statistics;
 use common\components\queue\process\ReturnDropJob;
@@ -70,6 +71,31 @@ class StoreController extends BaseApiController
             $storeVisible = true;
         }
         return $storeVisible;
+    }
+
+    /**
+     * Возврат в баланс: брать сумму из invoice маркета (как при покупке через v1/products/buy и др.),
+     * чтобы не умножать цену на user_drop.count (стек из drop.count за одну покупку).
+     *
+     * Берём последний подходящий invoice с тем же drop_id, созданный не позже этой строки корзины.
+     */
+    private function resolveRefundAmountFromPurchaseInvoice(User $user, UserDrop $userDrop): ?int
+    {
+        $invoice = Invoice::find()
+            ->where([
+                'user_id' => (int) $user->id,
+                'type' => Invoice::TYPE_PAYMENT_MARKET_DROP,
+                'drop_id' => (int) $userDrop->drop_id,
+            ])
+            ->andWhere(['<=', 'created_at', $userDrop->created_at])
+            ->orderBy(['id' => SORT_DESC])
+            ->one();
+
+        if ($invoice === null) {
+            return null;
+        }
+
+        return (int) ceil((float) $invoice->amount);
     }
 
     /**
@@ -452,12 +478,15 @@ class StoreController extends BaseApiController
             return $this->errorResponse('DROP_NOT_FOUND', 'Предмет не найден', [], 404);
         }
 
-        $qty = max(1, (int) $userDrop->count);
+        $refundAmount = $this->resolveRefundAmountFromPurchaseInvoice($user, $userDrop);
+        if ($refundAmount === null) {
+            $refundAmount = Drop::getRefundAmountForUserDropLine($userDrop, $drop);
+        }
 
         $profit = new Profit();
         $profit->status = 1;
         $profit->type = Profit::TYPE_SELL_DROP;
-        $profit->amount = $drop->getRealPrice(false) * $qty;
+        $profit->amount = $refundAmount;
         $profit->user_balance_id = $userBalance->id;
         $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
             'PARAMS_PREDNAME' => Yii::t('database', $drop->name)

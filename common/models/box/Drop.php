@@ -387,6 +387,34 @@ class Drop extends ActiveRecord
     }
 
     /**
+     * Сумма возврата на баланс за одну строку корзины (UserDrop), согласованная с маркет-покупкой.
+     *
+     * При покупке списывается getRealPrice(false) × quantity заказа, а user_drop.count = max(1, drop.count) × quantity
+     * (drop.count — размер одной «покупки» в игре, напр. 10 батончиков за одну транзакцию).
+     * Нельзя умножать цену на user_drop.count напрямую — получится завышение в drop.count раз.
+     */
+    public static function getRefundAmountForUserDropLine(UserDrop $userDrop, Drop $drop): int
+    {
+        $pricePerPurchaseUnit = (int) $drop->getRealPrice(false);
+        $stackPerPurchaseUnit = max(1, (int) ($drop->count ?? 1));
+        $userStackTotal = max(1, (int) $userDrop->count);
+
+        $purchaseUnits = intdiv($userStackTotal, $stackPerPurchaseUnit);
+        if ($userStackTotal % $stackPerPurchaseUnit !== 0) {
+            Yii::warning(
+                "Refund: UserDrop #{$userDrop->id} count={$userStackTotal} not multiple of drop #{$drop->id} count={$stackPerPurchaseUnit}",
+                __METHOD__
+            );
+            $purchaseUnits = max(1, $purchaseUnits);
+        }
+        if ($purchaseUnits < 1) {
+            $purchaseUnits = 1;
+        }
+
+        return $pricePerPurchaseUnit * $purchaseUnits;
+    }
+
+    /**
      * Gets query for [BoxDrop].
      *
      * @return \yii\db\ActiveQuery
