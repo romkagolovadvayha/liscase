@@ -21,10 +21,17 @@ class StatsCacheHelper
     public const ACTIVE_PLAYERS_GLOBAL_CACHE_TTL = 48 * 3600;
 
     /**
-     * Порог суммарного playtime (мин.) для попадания в кэш активных игроков (глобально и по серверу в by_server).
+     * Порог суммарного playtime (мин.) для глобального кэша: SUM(playtime) по всем серверам, условие >=.
      * @see \console\controllers\StatsController::actionActivePlayersCache
      */
     public const ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES = 20 * 24 * 60;
+
+    /**
+     * Playtime только на конкретном сервере (мин.): для per-server кэша и среза by_server в глобальном ответе —
+     * строго больше этого значения (т.е. попадание при playtime > 10 суток).
+     * @see \console\controllers\StatsController::actionActivePlayersCache
+     */
+    public const ACTIVE_PLAYERS_PER_SERVER_PLAYTIME_MINUTES = 10 * 24 * 60;
 
     /**
      * Ключ кэша активных игроков по одному серверу (тот же формат строк, что и глобальный).
@@ -32,7 +39,9 @@ class StatsCacheHelper
      */
     public static function cacheKeyActivePlayersServer(string $serverTag): string
     {
-        return 'statistics_active_players_server_v1_' . $serverTag;
+        $t = mb_strtolower(trim($serverTag), 'UTF-8');
+
+        return 'statistics_active_players_server_v1_' . $t;
     }
 
     /** Ключ кэша: api_stats_v2_{serverTag}_{wipe} (v2 — с avatar_frame_url в топах) */

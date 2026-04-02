@@ -2,6 +2,7 @@
 
 namespace backend\controllers;
 
+use backend\components\FtpHelper;
 use common\components\helpers\Role;
 use common\components\queue\process\MapGenerateJob;
 use common\components\queue\process\MapFixJob;
@@ -23,6 +24,7 @@ use common\models\user\UserTop;
 use WebSocket\Client;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
+use yii\filters\VerbFilter;
 use yii\web\Controller;
 use Yii;
 
@@ -39,6 +41,13 @@ class WipeController extends Controller
                         'allow' => true,
                         'roles' => [Role::ROLE_ADMIN],
                     ],
+                ],
+            ],
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'preview-update-version' => ['POST'],
+                    'execute-update-version' => ['POST'],
                 ],
             ],
         ];
@@ -79,8 +88,250 @@ class WipeController extends Controller
                 'url' => ['/wipe/top-rewards'],
                 'class' => 'ds-btn ds-btn--primary ds-btn--sm',
             ],
+            [
+                'label' => '<i class="bi bi-arrow-up-circle"></i> ' . Yii::t('common', 'Обновление'),
+                'url' => ['/wipe/update-version'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+            ],
         ];
         return $this->render('index');
+    }
+
+    /**
+     * Форма массового переименования файлов в каталоге ftp_root_path (смена номера версии в имени).
+     */
+    public function actionUpdateVersion()
+    {
+        $servers = Servers::find()
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        return $this->render('update-version', [
+            'servers' => $servers,
+        ]);
+    }
+
+    /**
+     * POST: собрать список переименований и показать предпросмотр (данные в сессии).
+     */
+    public function actionPreviewUpdateVersion()
+    {
+        $req = Yii::$app->request;
+        $oldVer = trim((string)$req->post('previous_version', ''));
+        $newVer = trim((string)$req->post('new_version', ''));
+        $serverIds = $req->post('server_ids', []);
+        if (!is_array($serverIds)) {
+            $serverIds = [];
+        }
+        $serverIds = array_values(array_unique(array_filter(array_map('intval', $serverIds))));
+
+        if ($oldVer === '' || $newVer === '' || $oldVer === $newVer) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Укажите разные предыдущую и новую версии.'));
+            return $this->redirect(['update-version']);
+        }
+        if (!preg_match('/^\d+$/', $oldVer) || !preg_match('/^\d+$/', $newVer)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Версии должны быть целыми числами (например 282 и 283).'));
+            return $this->redirect(['update-version']);
+        }
+        if ($serverIds === []) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Выберите хотя бы один сервер.'));
+            return $this->redirect(['update-version']);
+        }
+
+        $plan = $this->buildVersionRenamePlan($serverIds, $oldVer, $newVer);
+        Yii::$app->session->set('wipeUpdateVersionPreview', $plan);
+
+        return $this->render('update-version-preview', [
+            'preview' => $plan,
+        ]);
+    }
+
+    /**
+     * POST: выполнить переименования по плану из сессии (после предпросмотра).
+     */
+    public function actionExecuteUpdateVersion()
+    {
+        $preview = Yii::$app->session->get('wipeUpdateVersionPreview');
+        if (!is_array($preview) || empty($preview['blocks']) || !isset($preview['previous_version'], $preview['new_version'])) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Нет данных предпросмотра. Сначала нажмите «Просмотр».'));
+            return $this->redirect(['update-version']);
+        }
+
+        $oldVer = (string)$preview['previous_version'];
+        $results = [];
+        foreach ($preview['blocks'] as $block) {
+            $row = [
+                'name' => $block['name'] ?? '',
+                'tag' => $block['tag'] ?? '',
+                'ok' => true,
+                'message' => '',
+                'renamed' => [],
+                'skipped' => [],
+            ];
+            if (empty($block['ok']) && !empty($block['error'])) {
+                $row['ok'] = false;
+                $row['message'] = (string)$block['error'];
+                $results[] = $row;
+                continue;
+            }
+            $pairs = $block['pairs'] ?? [];
+            if ($pairs === []) {
+                $row['message'] = Yii::t('common', 'В каталоге FTP корневой (ftp_root_path) нет файлов с номером версии {v} в имени.', ['v' => $oldVer]);
+                $results[] = $row;
+                continue;
+            }
+            $server = Servers::find()
+                ->andWhere(['id' => (int)($block['server_id'] ?? 0)])
+                ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+                ->one();
+            if (!$server || !$server->hasFtpCredentials()) {
+                $row['ok'] = false;
+                $row['message'] = Yii::t('common', 'Сервер недоступен или нет FTP.');
+                $results[] = $row;
+                continue;
+            }
+            $helper = new FtpHelper($server);
+            if (!$helper->connect()) {
+                $row['ok'] = false;
+                $row['message'] = Yii::t('common', 'Не удалось подключиться к FTP.');
+                $results[] = $row;
+                continue;
+            }
+            try {
+                foreach ($pairs as $pair) {
+                    $fromPath = (string)($pair['fromPath'] ?? '');
+                    $toPath = (string)($pair['toPath'] ?? '');
+                    $fromName = (string)($pair['from'] ?? '');
+                    $toName = (string)($pair['to'] ?? '');
+                    if ($fromPath === '' || $toPath === '') {
+                        continue;
+                    }
+                    if (!$helper->rename($fromPath, $toPath)) {
+                        $row['ok'] = false;
+                        $row['skipped'][] = $fromName . ' → ' . $toName . ' (' . Yii::t('common', 'ошибка переименования') . ')';
+                        continue;
+                    }
+                    $row['renamed'][] = $fromName . ' → ' . $toName;
+                }
+                if ($row['renamed'] === [] && $row['skipped'] === []) {
+                    $row['message'] = Yii::t('common', 'Нечего переименовывать (список из предпросмотра пуст).');
+                } elseif ($row['ok'] && $row['skipped'] === []) {
+                    $row['message'] = Yii::t('common', 'Готово.');
+                } elseif (!$row['ok']) {
+                    $row['message'] = Yii::t('common', 'Есть ошибки — см. список ниже.');
+                }
+            } finally {
+                $helper->disconnect();
+            }
+            $results[] = $row;
+        }
+
+        Yii::$app->session->remove('wipeUpdateVersionPreview');
+        Yii::$app->session->setFlash('updateVersionResults', $results);
+        $anyRenamed = false;
+        $anyFtpError = false;
+        foreach ($results as $r) {
+            if (!empty($r['renamed'])) {
+                $anyRenamed = true;
+            }
+            if (empty($r['ok']) && ($r['message'] ?? '') !== '') {
+                $anyFtpError = true;
+            }
+        }
+        if ($anyRenamed) {
+            Yii::$app->session->setFlash('success', Yii::t('common', 'Операция завершена. Смотрите отчёт ниже.'));
+        } elseif ($anyFtpError) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Не удалось выполнить переименование на всех выбранных серверах. Смотрите отчёт ниже.'));
+        } else {
+            Yii::$app->session->setFlash('info', Yii::t('common', 'Подходящих файлов в каталоге ftp_root_path не найдено.'));
+        }
+        return $this->redirect(['update-version']);
+    }
+
+    /**
+     * @param int[] $serverIds
+     * @return array{previous_version: string, new_version: string, server_ids: int[], blocks: array}
+     */
+    private function buildVersionRenamePlan(array $serverIds, string $oldVer, string $newVer): array
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['id' => $serverIds])
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->all();
+        $byId = ArrayHelper::index($servers, 'id');
+
+        $blocks = [];
+        foreach ($serverIds as $sid) {
+            if (!isset($byId[$sid])) {
+                continue;
+            }
+            $server = $byId[$sid];
+            $block = [
+                'server_id' => (int)$server->id,
+                'name' => $server->name,
+                'tag' => $server->tag,
+                'ok' => true,
+                'error' => '',
+                'pairs' => [],
+            ];
+            if (!$server->hasFtpCredentials()) {
+                $block['ok'] = false;
+                $block['error'] = Yii::t('common', 'Нет настроек FTP (логин/пароль).');
+                $blocks[] = $block;
+                continue;
+            }
+            $helper = new FtpHelper($server);
+            if (!$helper->connect()) {
+                $block['ok'] = false;
+                $block['error'] = Yii::t('common', 'Не удалось подключиться к FTP.');
+                $blocks[] = $block;
+                continue;
+            }
+            try {
+                // В FtpHelper путь "/" — это каталог ftp_root_path сервера, не "/" на диске FTP.
+                $items = $helper->listDir('/');
+                foreach ($items as $item) {
+                    if (!empty($item['dir'])) {
+                        continue;
+                    }
+                    $oldName = $item['name'];
+                    $newName = $this->replaceStandaloneVersionInBasename($oldName, $oldVer, $newVer);
+                    if ($newName === null || $oldName === $newName) {
+                        continue;
+                    }
+                    $block['pairs'][] = [
+                        'from' => $oldName,
+                        'to' => $newName,
+                        'fromPath' => $item['path'],
+                        'toPath' => '/' . $newName,
+                    ];
+                }
+            } finally {
+                $helper->disconnect();
+            }
+            $blocks[] = $block;
+        }
+
+        return [
+            'previous_version' => $oldVer,
+            'new_version' => $newVer,
+            'server_ids' => $serverIds,
+            'blocks' => $blocks,
+        ];
+    }
+
+    /**
+     * Заменяет все вхождения целого числа oldVer (не часть другого числа) в базовом имени файла на newVer.
+     */
+    private function replaceStandaloneVersionInBasename(string $basename, string $oldVer, string $newVer): ?string
+    {
+        $pattern = '/(?<![0-9])' . preg_quote($oldVer, '/') . '(?![0-9])/';
+        if (!preg_match($pattern, $basename)) {
+            return null;
+        }
+        return preg_replace($pattern, $newVer, $basename);
     }
 
     /**

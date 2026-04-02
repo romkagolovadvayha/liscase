@@ -164,6 +164,21 @@ class FtpHelper
     }
 
     /**
+     * Переименовать файл или каталог (пути относительно корня FTP, как в listDir).
+     * @param string $fromUserPath например /relationship.282.db
+     * @param string $toUserPath например /relationship.283.db
+     */
+    public function rename(string $fromUserPath, string $toUserPath): bool
+    {
+        if (!$this->connection) {
+            return false;
+        }
+        $from = $this->resolvePath($fromUserPath);
+        $to = $this->resolvePath($toUserPath);
+        return @ftp_rename($this->connection, $from, $to);
+    }
+
+    /**
      * Удалить файл или пустую директорию.
      * @param string $remotePath
      * @return bool

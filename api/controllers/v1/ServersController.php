@@ -376,7 +376,7 @@ class ServersController extends BaseApiController
      */
     public function actionWipeBlockItems()
     {
-        $cacheKey = 'api_servers_wipe_block_items_' . Yii::$app->language;
+        $cacheKey = 'api_servers_wipe_block_items_v2_64_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
 
         if ($cached !== false) {
@@ -403,8 +403,12 @@ class ServersController extends BaseApiController
                 ];
             }
 
-            $imageUrl = $images[$drop->id]['150px'] ?? '';
-            if (empty($imageUrl) && $drop->imageOrig) {
+            $imgRow = $images[$drop->id] ?? [];
+            $imageUrl = (string)($imgRow['64px'] ?? '');
+            if ($imageUrl === '') {
+                $imageUrl = (string)($imgRow['150px'] ?? '');
+            }
+            if ($imageUrl === '' && $drop->imageOrig) {
                 $imageUrl = $drop->imageOrig->getImagePubUrl();
             }
 

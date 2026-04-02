@@ -79,18 +79,21 @@ class StatsController extends BaseApiController
     }
 
     /**
-     * Глобальные рекорды: данные из кэша console `stats/active-players-cache`
-     * ({@see StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL}). Публично, без JWT.
+     * Глобальные рекорды: данные из кэша console `stats/active-players-cache`. Публично, без JWT.
      *
      * GET /v1/stats/global-records
      *
-     * Всегда отдаётся глобальный кэш. У каждой записи может быть поле `by_server` (тег → те же метрики
-     * по серверу при playtime на сервере ≥ порога) — фильтр по серверу делается на фронте.
-     * Query `serverTag` игнорируется (оставлен для обратной совместимости клиентов).
+     * Без query: глобальный кэш; у строк может быть `by_server` (ключи тегов в нижнем регистре).
+     * С `serverTag`: кэш только этого сервера (если глобальный кэш ещё без `by_server` — запасной путь).
      */
     public function actionGlobalRecords()
     {
-        $cacheKey = StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL;
+        $serverTag = Yii::$app->request->get('serverTag');
+        $serverTag = is_string($serverTag) ? trim($serverTag) : '';
+        $serverTagNorm = $serverTag !== '' ? mb_strtolower($serverTag, 'UTF-8') : '';
+        $cacheKey = $serverTagNorm !== ''
+            ? StatsCacheHelper::cacheKeyActivePlayersServer($serverTagNorm)
+            : StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL;
 
         $raw = Yii::$app->cache->get($cacheKey);
         if (!is_array($raw)) {
@@ -100,6 +103,7 @@ class StatsController extends BaseApiController
             ], [
                 'count' => 0,
                 'cache_key' => $cacheKey,
+                'server_tag' => $serverTagNorm !== '' ? $serverTagNorm : null,
                 'min_active_playtime_minutes' => StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES,
                 'hint' => 'yii stats/active-players-cache',
             ]);
@@ -144,7 +148,16 @@ class StatsController extends BaseApiController
                 'fishing' => round((float) ($row['fishing'] ?? 0), 2),
             ];
             if (isset($row['by_server']) && is_array($row['by_server'])) {
-                $item['by_server'] = $row['by_server'];
+                $byNorm = [];
+                foreach ($row['by_server'] as $tkey => $slice) {
+                    if (!is_array($slice)) {
+                        continue;
+                    }
+                    $byNorm[mb_strtolower(trim((string) $tkey), 'UTF-8')] = $slice;
+                }
+                if ($byNorm !== []) {
+                    $item['by_server'] = $byNorm;
+                }
             }
             $items[] = $item;
         }
@@ -198,6 +211,7 @@ class StatsController extends BaseApiController
         ], [
             'count' => count($items),
             'cache_key' => $cacheKey,
+            'server_tag' => $serverTagNorm !== '' ? $serverTagNorm : null,
             'min_active_playtime_minutes' => StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES,
         ]);
     }

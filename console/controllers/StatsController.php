@@ -24,7 +24,9 @@ class StatsController extends Controller
     private const ACTIVE_PLAYERS_STEAM_BATCH = 50;
 
     /**
-     * Собирает пользователей с суммарным playtime ≥ 20 суток (по всем statistics) и кладёт в кэш один массив.
+     * Собирает пользователей в глобальный кэш: суммарный playtime ≥ {@see StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES}
+     * по всем statistics; per-server кэши и срез by_server — playtime только на этом сервере
+     * строго > {@see StatsCacheHelper::ACTIVE_PLAYERS_PER_SERVER_PLAYTIME_MINUTES} (10 суток в минутах).
      * Очки reider, farmer, fermer, hunter, fishing — по весам {@see UserTop::getRaiting()} (как «Лучший рейдер» и т.д.).
      *
      * Два этапа: (1) только steam_id с подходящим суммарным playtime; (2) по 50 id — отдельный GROUP BY
@@ -76,7 +78,8 @@ class StatsController extends Controller
             if ($tag === '') {
                 continue;
             }
-            $this->stdout($log("сервер «{$tag}»: сбор активных игроков…\n"));
+            $srvThr = StatsCacheHelper::ACTIVE_PLAYERS_PER_SERVER_PLAYTIME_MINUTES;
+            $this->stdout($log("сервер «{$tag}»: сбор (playtime на сервере > {$srvThr} мин)…\n"));
             $listS = $this->buildActivePlayersList($tag, $minMinutes, $batch, null);
             Yii::$app->cache->set(StatsCacheHelper::cacheKeyActivePlayersServer($tag), $listS, $ttl);
             $this->stdout($log("сервер «{$tag}»: записано " . count($listS) . " игроков\n"));
@@ -90,23 +93,32 @@ class StatsController extends Controller
     /**
      * Список активных игрокей с агрегатами и очками (как для глобального кэша).
      *
-     * @param string|null $serverTag null — по всем server_tag; иначе только эта строка server_tag
+     * @param string|null $serverTag null — глобально ($minMinutes — порог суммарного playtime, >=);
+     *                                иначе только этот server_tag (порог playtime на сервере — константа per-server, >)
      * @param callable(string):void|null $chunkLog сообщения по чанкам (только для глобального прогона)
      * @return array<int, array<string, mixed>>
      */
     private function buildActivePlayersList(?string $serverTag, int $minMinutes, int $batchSize, ?callable $chunkLog): array
     {
         $tn = Statistics::tableName();
+        $perServerMin = StatsCacheHelper::ACTIVE_PLAYERS_PER_SERVER_PLAYTIME_MINUTES;
+        $isPerServerBuild = $serverTag !== null && $serverTag !== '';
+
         $q1 = (new Query())
             ->select('steam_id')
             ->from($tn)
             ->where(['key' => 'playtime']);
-        if ($serverTag !== null && $serverTag !== '') {
+        if ($isPerServerBuild) {
             $q1->andWhere(['server_tag' => $serverTag]);
         }
         $steamIds = $q1
             ->groupBy('steam_id')
-            ->having('SUM(CAST([[value]] AS SIGNED)) >= :min', [':min' => $minMinutes])
+            ->having(
+                $isPerServerBuild
+                    ? 'SUM(CAST([[value]] AS SIGNED)) > :min'
+                    : 'SUM(CAST([[value]] AS SIGNED)) >= :min',
+                [':min' => $isPerServerBuild ? $perServerMin : $minMinutes]
+            )
             ->column();
 
         if ($steamIds === []) {
@@ -133,7 +145,7 @@ class StatsController extends Controller
                 ->select(['steam_id', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
                 ->from($tn)
                 ->where(['steam_id' => $chunk]);
-            if ($serverTag !== null && $serverTag !== '') {
+            if ($isPerServerBuild) {
                 $q2->andWhere(['server_tag' => $serverTag]);
             }
             $rows = $q2->groupBy(['steam_id', 'key'])->all();
@@ -147,7 +159,7 @@ class StatsController extends Controller
             unset($rows);
 
             $bySteamServer = [];
-            if ($serverTag === null || $serverTag === '') {
+            if (!$isPerServerBuild) {
                 $q3 = (new Query())
                     ->select(['steam_id', 'server_tag', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
                     ->from($tn)
@@ -160,7 +172,8 @@ class StatsController extends Controller
                     if ($stag === '') {
                         continue;
                     }
-                    $bySteamServer[$sidKey][$stag][$row['key']] = (int) $row['sum'];
+                    $stagNorm = mb_strtolower($stag, 'UTF-8');
+                    $bySteamServer[$sidKey][$stagNorm][$row['key']] = (int) $row['sum'];
                 }
                 unset($rowsByServer);
             }
@@ -169,7 +182,11 @@ class StatsController extends Controller
                 $processedSteam++;
                 $params = $batchParams[$sid] ?? [];
                 $playtime = (int) ($params['playtime'] ?? 0);
-                if ($playtime < $minMinutes) {
+                if ($isPerServerBuild) {
+                    if ($playtime <= $perServerMin) {
+                        continue;
+                    }
+                } elseif ($playtime < $minMinutes) {
                     continue;
                 }
                 $scores = UserTop::computeScoresFromAggregatedParams($params);
@@ -185,15 +202,15 @@ class StatsController extends Controller
                     'hunter' => round((float) $scores['hunter'], 2),
                     'fishing' => round((float) $scores['fishing'], 2),
                 ];
-                if ($serverTag === null || $serverTag === '') {
+                if (!$isPerServerBuild) {
                     $byServerOut = [];
-                    foreach ($bySteamServer[(string) $sid] ?? [] as $stag => $p) {
+                    foreach ($bySteamServer[(string) $sid] ?? [] as $stagNorm => $p) {
                         $pt = (int) ($p['playtime'] ?? 0);
-                        if ($pt < $minMinutes) {
+                        if ($pt <= $perServerMin) {
                             continue;
                         }
                         $srvScores = UserTop::computeScoresFromAggregatedParams($p);
-                        $byServerOut[$stag] = [
+                        $byServerOut[$stagNorm] = [
                             'playtime' => $pt,
                             'kills' => (int) ($p['kills'] ?? 0),
                             'deaths' => (int) ($p['deaths'] ?? 0),
