@@ -346,7 +346,10 @@ class Clan extends ActiveRecord
      * @param string $role
      * @return ClanMember|null
      */
-    public function addMember($userId, $role = ClanMember::ROLE_MEMBER)
+    /**
+     * @param array|null $joinEventMetadata опционально в JSON события member_joined (например invite_link_id)
+     */
+    public function addMember($userId, $role = ClanMember::ROLE_MEMBER, $joinEventMetadata = null)
     {
         // Проверка, не является ли пользователь уже активным участником
         $existingMember = ClanMember::find()
@@ -380,8 +383,13 @@ class Clan extends ActiveRecord
             }
             
             // Создание события
-            $this->addEvent('member_joined', Yii::t('common', 'Пользователь {username} вступил в клан', ['username' => $member->user->username]), $userId);
-            
+            $this->addEvent(
+                'member_joined',
+                Yii::t('common', 'Пользователь {username} вступил в клан', ['username' => $member->user->username]),
+                $userId,
+                $joinEventMetadata
+            );
+
             return $member;
         }
         

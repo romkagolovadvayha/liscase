@@ -1005,7 +1005,7 @@ class ClansController extends BaseApiController
             $loot[] = [
                 'key' => $key,
                 'name' => $name,
-                'image' => Statistics::getImageLarge($images, $key),
+                'image' => Statistics::getImage($images, $key),
                 'image_large' => Statistics::getImageLarge($images, $key),
                 'count' => $count,
             ];
@@ -1022,7 +1022,7 @@ class ClansController extends BaseApiController
             $access_cards[] = [
                 'key' => $item['key'],
                 'name' => $item['name'],
-                'image' => Statistics::getImageLarge($images, $item['imageKey']),
+                'image' => Statistics::getImage($images, $item['imageKey']),
                 'count' => $count,
             ];
         }
@@ -1038,7 +1038,7 @@ class ClansController extends BaseApiController
                 $blueprints[] = [
                     'key' => $key,
                     'name' => $name,
-                    'image' => Statistics::getImageLarge($images, $key),
+                    'image' => Statistics::getImage($images, $key),
                     'count' => $count,
                 ];
             }
@@ -1572,12 +1572,14 @@ class ClansController extends BaseApiController
             if (!$link->save(false)) {
                 throw new \RuntimeException('Could not update link');
             }
-            $member = $clan->addMember($user->id);
+            $member = $clan->addMember($user->id, ClanMember::ROLE_MEMBER, [
+                'invite_link_id' => (int)$link->id,
+                'via' => 'invite_link',
+            ]);
             if (!$member) {
                 $tx->rollBack();
                 return $this->errorResponse('JOIN_FAILED', 'Could not join clan', [], 400);
             }
-            $clan->addEvent('member_joined', Yii::t('common', 'Игрок вступил по ссылке-приглашению'), $user->id);
             $tx->commit();
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -1601,10 +1603,34 @@ class ClansController extends BaseApiController
             throw new ForbiddenHttpException('No permission');
         }
 
-        $links = ClanInviteLink::find()->where(['clan_id' => $clan->id])->orderBy(['id' => SORT_DESC])->limit(50)->all();
+        $links = ClanInviteLink::find()
+            ->where(['clan_id' => $clan->id])
+            ->with('inviterUser')
+            ->orderBy(['id' => SORT_DESC])
+            ->limit(50)
+            ->all();
+
+        $linkIds = array_map(static function (ClanInviteLink $l) {
+            return (int)$l->id;
+        }, $links);
+        $joinersByLink = $this->inviteLinkJoinerUserIdsByLinkId((int)$clan->id, $linkIds);
+        $allJoinerIds = [];
+        foreach ($joinersByLink as $uids) {
+            foreach ($uids as $uid) {
+                $allJoinerIds[(int)$uid] = true;
+            }
+        }
+        $joinerModels = [];
+        if ($allJoinerIds !== []) {
+            $joinerModels = User::find()
+                ->where(['id' => array_keys($allJoinerIds)])
+                ->indexBy('id')
+                ->all();
+        }
+
         $items = [];
         foreach ($links as $l) {
-            $items[] = $this->serializeInviteLink($l);
+            $items[] = $this->serializeInviteLink($l, $joinersByLink[(int)$l->id] ?? [], $joinerModels);
         }
 
         return $this->successResponse(['items' => $items]);
@@ -1642,6 +1668,9 @@ class ClansController extends BaseApiController
         if (!$link->save()) {
             return $this->validationErrorResponse($link);
         }
+
+        $link->refresh();
+        $link->populateRelation('inviterUser', $user);
 
         return $this->successResponse($this->serializeInviteLink($link), [], 201);
     }
@@ -2020,8 +2049,68 @@ class ClansController extends BaseApiController
         ]);
     }
 
-    protected function serializeInviteLink(ClanInviteLink $l): array
+    /**
+     * user_id из событий member_joined с metadata.invite_link_id, сгруппированные по id ссылки.
+     *
+     * @param int[] $linkIds
+     * @return array<int, int[]>
+     */
+    protected function inviteLinkJoinerUserIdsByLinkId(int $clanId, array $linkIds): array
     {
+        $linkIds = array_values(array_unique(array_map('intval', $linkIds)));
+        $out = [];
+        foreach ($linkIds as $id) {
+            $out[$id] = [];
+        }
+        if ($linkIds === []) {
+            return $out;
+        }
+        $set = array_flip($linkIds);
+
+        $rows = ClanEvent::find()
+            ->select(['user_id', 'metadata'])
+            ->where(['clan_id' => $clanId, 'event_type' => ClanEvent::EVENT_MEMBER_JOINED])
+            ->andWhere(['not', ['metadata' => null]])
+            ->andWhere(['<>', 'metadata', ''])
+            ->asArray()
+            ->all();
+
+        foreach ($rows as $row) {
+            $meta = json_decode((string)$row['metadata'], true);
+            if (!is_array($meta) || empty($meta['invite_link_id'])) {
+                continue;
+            }
+            $lid = (int)$meta['invite_link_id'];
+            if (!isset($set[$lid])) {
+                continue;
+            }
+            $uid = (int)$row['user_id'];
+            if ($uid > 0) {
+                $out[$lid][] = $uid;
+            }
+        }
+
+        foreach ($linkIds as $lid) {
+            $out[$lid] = array_values(array_unique($out[$lid]));
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<int, User> $usersById предзагруженные пользователи по id
+     * @param int[] $joinerUserIds
+     */
+    protected function serializeInviteLink(ClanInviteLink $l, array $joinerUserIds = [], array $usersById = []): array
+    {
+        $joined = [];
+        foreach ($joinerUserIds as $uid) {
+            $uid = (int)$uid;
+            if ($uid > 0 && !empty($usersById[$uid])) {
+                $joined[] = $this->serializeUser($usersById[$uid]);
+            }
+        }
+
         return [
             'id' => (int)$l->id,
             'token' => $l->token,
@@ -2029,6 +2118,8 @@ class ClansController extends BaseApiController
             'max_uses' => (int)$l->max_uses,
             'uses_count' => (int)$l->uses_count,
             'created_at' => (int)$l->created_at,
+            'created_by' => $l->inviterUser ? $this->serializeUser($l->inviterUser) : null,
+            'joined_users' => $joined,
         ];
     }
 
