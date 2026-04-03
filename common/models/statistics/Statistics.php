@@ -306,6 +306,86 @@ class Statistics extends ActiveRecord
         return $data;
     }
 
+    /**
+     * Агрегированные метрики по каждому steam_id за вайп на сервере (та же логика, что getStats all=true).
+     * Без кэша и без загрузки User.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public static function aggregatePlayerRowsForWipe(Servers $server, string $wipe): array
+    {
+        $statistics = Statistics::find()
+            ->andWhere(['server_tag' => $server->tag])
+            ->andWhere(['wipe' => $wipe])
+            ->asArray()
+            ->all();
+
+        $userList = [];
+        foreach ($statistics as $row) {
+            $userList[$row['steam_id']][$row['key']] = $row['value'];
+        }
+
+        $models = [];
+        foreach (array_keys($userList) as $_steamId) {
+            $params = $userList[$_steamId];
+            $item = $params;
+            $item['steam_id'] = $_steamId;
+            $item['playtime'] = Statistics::getParam($params, 'playtime');
+            $item['deaths'] = Statistics::getParam($params, 'deaths');
+            $item['scientists'] = Statistics::getParam($params, 'scientists');
+            $item['kills'] = Statistics::getParam($params, 'kills');
+            $item['reider'] = round(
+                Statistics::getParam($params, 'c4thrown')
+                + Statistics::getParam($params, 'satchelsthrown') * 0.2
+                + (Statistics::getParam($params, 'rocket_basic') + Statistics::getParam($params, 'rocket_basic_rpg')) * 0.5
+                + (Statistics::getParam($params, 'rocket_hv') + Statistics::getParam($params, 'rocket_hv_rpg')) * 0.1
+                + (Statistics::getParam($params, 'rocket_fire') + Statistics::getParam($params, 'rocket_fire_rpg')) * 0.1
+                + Statistics::getParam($params, 'ammo_explosive') * 0.01
+                + Statistics::getParam($params, 'grenade.f1.deployed') * 0.02
+                + Statistics::getParam($params, 'grenade.molotov.deployed') * 0.05
+                + Statistics::getParam($params, 'grenade.beancan.deployed') * 0.05
+            );
+            $item['farmer'] = round(
+                Statistics::getParam($params, 'wood') * 0.05
+                + Statistics::getParam($params, 'stones') * 0.3
+                + Statistics::getParam($params, 'metal.ore') * 0.5
+                + Statistics::getParam($params, 'sulfur.ore')
+            );
+            $item['fishing'] = round(
+                Statistics::getParam($params, 'f_fish.anchovy') * 10
+                + Statistics::getParam($params, 'f_fish.catfish') * 32
+                + Statistics::getParam($params, 'f_fish.herring') * 10
+                + Statistics::getParam($params, 'f_fish.orangeroughy') * 37
+                + Statistics::getParam($params, 'f_fish.salmon') * 22
+                + Statistics::getParam($params, 'f_fish.sardine') * 10
+                + Statistics::getParam($params, 'f_fish.smallshark') * 45
+                + Statistics::getParam($params, 'f_fish.troutsmall') * 15
+                + Statistics::getParam($params, 'f_fish.yellowperch') * 25
+            );
+            $item['hunter'] = Statistics::getParam($params, 'chicken')
+                + Statistics::getParam($params, 'bear')
+                + Statistics::getParam($params, 'boar')
+                + Statistics::getParam($params, 'polarbear')
+                + Statistics::getParam($params, 'deer')
+                + Statistics::getParam($params, 'horse')
+                + Statistics::getParam($params, 'wolf2')
+                + Statistics::getParam($params, 'wolf');
+            $item['fermer'] = Statistics::getParam($params, 'gathered_cloth') * 0.05
+                + Statistics::getParam($params, 'gathered_pumpkin') * 0.5
+                + Statistics::getParam($params, 'gathered_corn') * 0.3
+                + Statistics::getParam($params, 'gathered_green.berry') * 0.5
+                + Statistics::getParam($params, 'gathered_blue.berry') * 0.5
+                + Statistics::getParam($params, 'gathered_yellow.berry') * 0.5
+                + Statistics::getParam($params, 'gathered_red.berry') * 0.5
+                + Statistics::getParam($params, 'gathered_white.berry') * 0.5
+                + Statistics::getParam($params, 'gathered_black.berry') * 1
+                + Statistics::getParam($params, 'gathered_potato') * 0.4;
+            $models[] = $item;
+        }
+
+        return $models;
+    }
+
     public static function getTopWidgetItem($key, $stats, $index = 0) {
         if (empty($stats[$key])) {
             return [];

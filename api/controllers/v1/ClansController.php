@@ -112,7 +112,6 @@ class ClansController extends BaseApiController
         }
 
         $motto = isset($body['motto']) ? trim((string)$body['motto']) : null;
-        $privacy = isset($body['privacy']) ? (string)$body['privacy'] : Clan::PRIVACY_INVITE_ONLY;
 
         if ($name === '' || $tag === '' || !$serverId) {
             throw new BadRequestHttpException('name, tag and server_id (or server_tag) are required');
@@ -133,7 +132,7 @@ class ClansController extends BaseApiController
         $clan->leader_user_id = $user->id;
         $clan->server_id = $serverId;
         $clan->motto = $motto ?: null;
-        $clan->privacy = $privacy;
+        $clan->privacy = Clan::PRIVACY_INVITE_ONLY;
         $clan->description = isset($body['description']) ? (string)$body['description'] : null;
 
         if (!$clan->save()) {
@@ -1477,7 +1476,7 @@ class ClansController extends BaseApiController
             ]);
         }
 
-        if (!$actor->canManagePermissions()) {
+        if (!$actor->isLeader() && !$actor->canManagePermissions()) {
             throw new ForbiddenHttpException('No permission to manage permissions');
         }
 
@@ -1506,7 +1505,10 @@ class ClansController extends BaseApiController
             throw new NotFoundHttpException('Invalid invite link');
         }
 
-        $link = ClanInviteLink::find()->where(['token' => $token])->with(['clan.server', 'clan.leaderUser.userProfile'])->one();
+        $link = ClanInviteLink::find()
+            ->where(['token' => $token])
+            ->with(['clan.server', 'clan.leaderUser.userProfile', 'inviterUser.userProfile'])
+            ->one();
         if (!$link || !$link->clan) {
             throw new NotFoundHttpException('Invite link not found');
         }
@@ -1515,23 +1517,24 @@ class ClansController extends BaseApiController
         }
 
         $clan = $link->clan;
+        $extras = $this->inviteLinkPreviewExtras($link, $clan);
         if ($clan->privacy === Clan::PRIVACY_CLOSED) {
-            return $this->successResponse([
+            return $this->successResponse(array_merge([
                 'valid' => false,
                 'reason' => 'closed',
                 'message' => 'This clan is closed — submit an application instead.',
                 'clan' => $this->serializeClanListItem($clan),
                 'server_tag' => $clan->server ? $clan->server->tag : null,
-            ]);
+            ], $extras));
         }
 
-        return $this->successResponse([
+        return $this->successResponse(array_merge([
             'valid' => true,
             'token' => $link->token,
             'expires_at' => $link->expires_at,
             'clan' => $this->serializeClanListItem($clan),
             'server_tag' => $clan->server ? $clan->server->tag : null,
-        ]);
+        ], $extras));
     }
 
     /**
@@ -2200,6 +2203,52 @@ class ClansController extends BaseApiController
         ];
 
         return $data;
+    }
+
+    /**
+     * Аватары участников для публичного превью ссылки-приглашения (лидер и офицеры первыми).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function serializeInviteLinkMemberPreview(Clan $clan, int $limit = 12): array
+    {
+        $limit = max(1, min(20, $limit));
+        $members = ClanMember::find()
+            ->where(['clan_id' => $clan->id])
+            ->andWhere(['IS', 'leave_date', null])
+            ->with(['user.userProfile'])
+            ->limit($limit + 8)
+            ->all();
+
+        usort($members, static function (ClanMember $a, ClanMember $b): int {
+            $order = [ClanMember::ROLE_LEADER => 0, ClanMember::ROLE_OFFICER => 1, ClanMember::ROLE_MEMBER => 2];
+            $ra = $order[$a->role] ?? 3;
+            $rb = $order[$b->role] ?? 3;
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+
+            return $a->id <=> $b->id;
+        });
+
+        $members = array_slice($members, 0, $limit);
+        $out = [];
+        foreach ($members as $m) {
+            if ($m->user) {
+                $out[] = $this->serializeUser($m->user);
+            }
+        }
+
+        return $out;
+    }
+
+    /** @return array<string, mixed> */
+    protected function inviteLinkPreviewExtras(ClanInviteLink $link, Clan $clan): array
+    {
+        return [
+            'inviter' => $link->inviterUser ? $this->serializeUser($link->inviterUser) : null,
+            'member_preview' => $this->serializeInviteLinkMemberPreview($clan),
+        ];
     }
 
     /**

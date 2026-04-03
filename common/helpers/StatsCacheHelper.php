@@ -3,6 +3,8 @@
 namespace common\helpers;
 
 use common\models\servers\Servers;
+use common\models\statistics\Statistics;
+use common\models\user\User;
 use common\models\user\UserTop;
 
 /**
@@ -52,6 +54,74 @@ class StatsCacheHelper
 
     /** TTL кэша в секундах (5 минут, как в API). */
     public const CACHE_TTL = 300;
+
+    /** TTL таблицы «все игроки сервера» (GET /v1/stats/server-players-table), секунды. */
+    public const SERVER_PLAYERS_TABLE_TTL = 900;
+
+    /**
+     * Кэш плоского списка игроков с метриками за вайп (сортировка на клиенте).
+     */
+    public static function cacheKeyServerPlayersTable(string $serverTag, string $wipe): string
+    {
+        $tag = preg_replace('/[^a-zA-Z0-9_-]/', '_', $serverTag);
+        $h = md5($wipe);
+
+        return 'api_stats_server_players_table_v1_' . $tag . '_' . $h;
+    }
+
+    /**
+     * @return array{items: array<int, array<string, mixed>>, generated_at: int}
+     */
+    public static function buildServerPlayersTablePayload(Servers $server, string $wipe): array
+    {
+        $rows = Statistics::aggregatePlayerRowsForWipe($server, $wipe);
+        if ($rows === []) {
+            return ['items' => [], 'generated_at' => time()];
+        }
+
+        $steamIds = array_values(array_unique(array_map(static function ($r) {
+            return (string) ($r['steam_id'] ?? '');
+        }, $rows)));
+        $steamIds = array_values(array_filter($steamIds, static function ($id) {
+            return $id !== '';
+        }));
+
+        $users = $steamIds === [] ? [] : User::find()
+            ->where(['steam_id' => $steamIds, 'is_stats' => 1])
+            ->indexBy('steam_id')
+            ->all();
+
+        $items = [];
+        foreach ($rows as $row) {
+            $sid = (string) ($row['steam_id'] ?? '');
+            if ($sid === '' || !isset($users[$sid])) {
+                continue;
+            }
+            /** @var User $u */
+            $u = $users[$sid];
+            $kills = (int) Statistics::getParam($row, 'kills');
+            $deaths = (int) Statistics::getParam($row, 'deaths');
+            $kd = $deaths > 0 ? round($kills / $deaths, 3) : ($kills > 0 ? (float) $kills : 0.0);
+
+            $items[] = [
+                'steam_id' => $sid,
+                'username' => (string) $u->username,
+                'avatar' => (string) $u->getAvatar(),
+                'kills' => $kills,
+                'deaths' => $deaths,
+                'kd' => $kd,
+                'playtime' => (int) Statistics::getParam($row, 'playtime'),
+                'scientists' => (int) Statistics::getParam($row, 'scientists'),
+                'reider' => (float) ($row['reider'] ?? 0),
+                'farmer' => (float) ($row['farmer'] ?? 0),
+                'fishing' => (float) ($row['fishing'] ?? 0),
+                'hunter' => (float) ($row['hunter'] ?? 0),
+                'fermer' => (float) ($row['fermer'] ?? 0),
+            ];
+        }
+
+        return ['items' => $items, 'generated_at' => time()];
+    }
 
     /**
      * Собрать payload для кэша: server + tops (без wipes, servers, userTops — они дополняются в API).

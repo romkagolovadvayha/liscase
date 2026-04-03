@@ -539,4 +539,38 @@ class StatsController extends Controller
         }
 
     }
+
+    /**
+     * Прогрев кэша GET /v1/stats/server-players-table (таблица всех игроков за текущий вайп).
+     * Пример: php yii stats/server-players-table-cache
+     * Один сервер: php yii stats/server-players-table-cache classic14x2
+     *
+     * @param string|null $serverTag пусто — все серверы (активные / ожидание / выкл.)
+     * @return int
+     */
+    public function actionServerPlayersTableCache($serverTag = null): int
+    {
+        ini_set('memory_limit', '512M');
+        $q = Servers::find()
+            ->where(['in', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE, Servers::STATUS_WAIT]])
+            ->orderBy(['sort' => SORT_ASC]);
+        if ($serverTag !== null && $serverTag !== '') {
+            $q->andWhere(['tag' => $serverTag]);
+        }
+        $servers = $q->all();
+        $ttl = StatsCacheHelper::SERVER_PLAYERS_TABLE_TTL;
+        $n = 0;
+        foreach ($servers as $server) {
+            $wipe = $server->currentWipe();
+            $payload = StatsCacheHelper::buildServerPlayersTablePayload($server, $wipe);
+            $key = StatsCacheHelper::cacheKeyServerPlayersTable($server->tag, $wipe);
+            Yii::$app->cache->set($key, $payload, $ttl);
+            $cnt = count($payload['items'] ?? []);
+            $this->stdout("[{$server->tag}] wipe={$wipe} players={$cnt} key={$key}\n");
+            $n++;
+        }
+        $this->stdout("server-players-table-cache: серверов {$n}, TTL {$ttl} с\n");
+
+        return self::EXIT_CODE_NORMAL;
+    }
 }

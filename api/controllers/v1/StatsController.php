@@ -65,7 +65,7 @@ class StatsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['personal', 'report'],
-            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'global-records', 'options'],
+            'except' => ['stats', 'player-new', 'player-resources', 'player-kills', 'player-team', 'player-loot-crafts', 'duels', 'search', 'tops', 'global-records', 'server-players-table', 'options'],
         ];
 
         // Опциональная авторизация: токен разбирается при наличии (нужно, чтобы владелец профиля видел скрытую от других команду)
@@ -356,6 +356,61 @@ class StatsController extends BaseApiController
         }
         
         return $this->successResponse($response);
+    }
+
+    /**
+     * Плоский список игроков сервера за вайп (для таблицы со сортировкой на клиенте).
+     * Ответ из кэша {@see StatsCacheHelper::cacheKeyServerPlayersTable}; прогрев: yii stats/server-players-table-cache.
+     *
+     * @OA\Get(
+     *     path="/v1/stats/server-players-table",
+     *     tags={"Stats"},
+     *     summary="Таблица игроков сервера за вайп",
+     *     @OA\Parameter(name="serverTag", in="query", required=true, @OA\Schema(type="string")),
+     *     @OA\Parameter(name="wipe", in="query", required=false, @OA\Schema(type="string")),
+     * )
+     */
+    public function actionServerPlayersTable()
+    {
+        $serverTag = Yii::$app->request->get('serverTag');
+        $serverTag = is_string($serverTag) ? trim($serverTag) : '';
+        if ($serverTag === '') {
+            throw new NotFoundHttpException('serverTag required');
+        }
+
+        $servers = Servers::find()
+            ->cache(30)
+            ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
+            ->orderBy(['sort' => SORT_ASC])
+            ->all();
+
+        $server = null;
+        foreach ($servers as $s) {
+            if ($s->tag === $serverTag) {
+                $server = $s;
+                break;
+            }
+        }
+        if (!$server) {
+            throw new NotFoundHttpException('Сервер не найден');
+        }
+
+        $wipeParam = Yii::$app->request->get('wipe');
+        $wipe = is_string($wipeParam) && $wipeParam !== '' ? $wipeParam : $server->currentWipe();
+
+        $cacheKey = StatsCacheHelper::cacheKeyServerPlayersTable($server->tag, $wipe);
+        $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached === false || !is_array($cached)) {
+            $cached = StatsCacheHelper::buildServerPlayersTablePayload($server, $wipe);
+            Yii::$app->cache->set($cacheKey, $cached, StatsCacheHelper::SERVER_PLAYERS_TABLE_TTL);
+        }
+
+        return $this->successResponse([
+            'server_tag' => $server->tag,
+            'wipe' => $wipe,
+            'items' => $cached['items'] ?? [],
+            'generated_at' => (int) ($cached['generated_at'] ?? 0),
+        ]);
     }
 
     /**

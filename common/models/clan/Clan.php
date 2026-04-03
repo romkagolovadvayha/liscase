@@ -59,7 +59,7 @@ class Clan extends ActiveRecord
             [['leader_user_id', 'server_id', 'level', 'experience'], 'integer'],
             [['motto', 'description'], 'string'],
             [['name'], 'string', 'max' => 255],
-            [['tag'], 'string', 'max' => 50],
+            [['tag'], 'string', 'max' => 8],
             [['logo'], 'string', 'max' => 255],
             [['privacy'], 'in', 'range' => [self::PRIVACY_OPEN, self::PRIVACY_CLOSED, self::PRIVACY_INVITE_ONLY]],
             [['privacy'], 'default', 'value' => self::PRIVACY_INVITE_ONLY],

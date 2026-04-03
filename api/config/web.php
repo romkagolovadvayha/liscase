@@ -182,6 +182,7 @@ $config = [
                 'v1/stats/search' => 'v1/stats/search',
                 'v1/stats/tops' => 'v1/stats/tops',
                 'v1/stats/global-records' => 'v1/stats/global-records',
+                'v1/stats/server-players-table' => 'v1/stats/server-players-table',
                 'v1/stats/personal' => 'v1/stats/personal',
                 'v1/stats/report/<serverTag:[\w-]+>/<steamId:\d+>' => 'v1/stats/report',
 
