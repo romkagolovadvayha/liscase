@@ -82,6 +82,11 @@ final class ApplicantTrustHelper
         unset($rustcheatcheck['adjusted_score']);
         $score = max(0, min(100, $score));
 
+        $rccActiveBans = 0;
+        if (!empty($rustcheatcheck['available']) && isset($rustcheatcheck['active_ban_count'])) {
+            $rccActiveBans = max(0, (int)$rustcheatcheck['active_ban_count']);
+        }
+
         if ($score >= 72) {
             $level = 'good';
             $recommendation = 'accept';
@@ -97,7 +102,7 @@ final class ApplicantTrustHelper
             'trust_score' => $score,
             'level' => $level,
             'recommendation' => $recommendation,
-            'active_ban_count' => $n,
+            'active_ban_count' => $n + $rccActiveBans,
             'ban_on_clan_server' => $banOnClanServer,
             'bans' => $bans,
             'rustcheatcheck' => $rustcheatcheck,
