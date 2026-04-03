@@ -167,6 +167,34 @@ class Statistics extends ActiveRecord
         return $result;
     }
 
+    /**
+     * Сумма метрик игрока за все вайпы на одном сервере (по server_tag), для превью в заявках в клан и т.п.
+     *
+     * @param string $steamId
+     * @param string $serverTag
+     * @return array<string, array{key: string, value: int}>
+     */
+    public static function getPlayerStatsAllTimeForServerTag($steamId, $serverTag) {
+        $serverTag = trim((string) $serverTag);
+        if ($serverTag === '') {
+            return [];
+        }
+        $rows = Statistics::find()
+            ->cache(120)
+            ->select(['key', 'SUM(CAST(value AS SIGNED)) as value'])
+            ->andWhere(['steam_id' => $steamId])
+            ->andWhere(['server_tag' => $serverTag])
+            ->groupBy('key')
+            ->asArray()
+            ->all();
+        $result = [];
+        foreach ($rows as $row) {
+            $k = $row['key'] ?? '';
+            $result[$k] = ['key' => $k, 'value' => (int) ($row['value'] ?? 0)];
+        }
+        return $result;
+    }
+
     public static function getStats(Servers $server, $steamId = null, $all = true, $wipeDate = null, $cache = true) {
         ini_set('memory_limit', '512M');
         // Если запрашивается статистика одного пользователя, используем отдельный кэш-ключ

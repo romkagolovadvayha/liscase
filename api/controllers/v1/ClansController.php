@@ -2153,9 +2153,45 @@ class ClansController extends BaseApiController
 
         if ($includeReviewerTrust && $clan !== null && $a->user) {
             $data['trust'] = ApplicantTrustHelper::summarize($a->user, $clan);
+            $combat = $this->buildApplicationLifetimeCombat($a->user, $clan);
+            if ($combat !== null) {
+                $data['lifetime_combat'] = $combat;
+            }
         }
 
         return $data;
+    }
+
+    /**
+     * Боевая статистика заявителя на сервере клана за всё время (все вайпы), те же поля что metrics боя в профиле.
+     *
+     * @return array<string, int|float>|null
+     */
+    protected function buildApplicationLifetimeCombat(User $user, Clan $clan): ?array
+    {
+        $steamId = trim((string) $user->steam_id);
+        if ($steamId === '') {
+            return null;
+        }
+        $server = $clan->server;
+        if ($server === null || $server->tag === null || $server->tag === '') {
+            return null;
+        }
+
+        $agg = Statistics::getPlayerStatsAllTimeForServerTag($steamId, (string) $server->tag);
+        $kills = (int) Statistics::getParam($agg, 'kills');
+        $deaths = (int) Statistics::getParam($agg, 'deaths');
+        $kd = $deaths > 0 ? round($kills / $deaths, 2) : $kills;
+
+        return [
+            'kills' => $kills,
+            'deaths' => $deaths,
+            'kd' => $kd,
+            'nude_kills' => (int) Statistics::getParam($agg, 'nude_kills'),
+            'wounded' => (int) Statistics::getParam($agg, 'wounded'),
+            'scientists' => (int) Statistics::getParam($agg, 'scientists'),
+            'tcs_destroyed' => (int) Statistics::getParam($agg, 'tcsdestroyed'),
+        ];
     }
 
     protected function serializePost(ClanPost $p): array
