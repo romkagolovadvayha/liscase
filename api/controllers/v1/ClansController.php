@@ -644,49 +644,15 @@ class ClansController extends BaseApiController
             : ($server ? $server->currentWipe() : null);
         $stats = $resolvedWipe ? $clan->getClanStatistics($resolvedWipe) : $clan->getClanStatistics(null);
 
-        $lootWidget = null;
-        $raidWidget = null;
-        if ($stats) {
-            $images = Statistics::productsImages();
-            $crateCombined = (int)($stats->getStatValue('total_codelockedhackablecrate') + $stats->getStatValue('total_codelockedhackablecrate_oilrig'));
-            $lootWidget = [
-                'items' => [
-                    [
-                        'key' => 'crate_combined',
-                        'name' => Yii::t('common', 'Крейт'),
-                        'image' => Statistics::getImageLarge($images, 'codelockedhackablecrate'),
-                        'count' => $crateCombined,
-                    ],
-                    [
-                        'key' => 'crate_elite',
-                        'name' => Yii::t('common', 'Элитный ящик'),
-                        'image' => Statistics::getImageLarge($images, 'crate_elite'),
-                        'count' => (int)$stats->getStatValue('total_crate_elite'),
-                    ],
-                    [
-                        'key' => 'crate_normal',
-                        'name' => Yii::t('common', 'Армейский ящик'),
-                        'image' => Statistics::getImageLarge($images, 'crate_normal'),
-                        'count' => (int)$stats->getStatValue('total_crate_normal'),
-                    ],
-                    [
-                        'key' => 'supply_drop',
-                        'name' => Yii::t('common', 'Аирдроп'),
-                        'image' => Statistics::getImageLarge($images, 'supply_drop'),
-                        'count' => (int)$stats->getStatValue('total_supply_drop'),
-                    ],
-                ],
-            ];
-        }
-
         $raidWidget = $this->buildClanRaidsWidget($clan, $resolvedWipe);
 
+        // loot_widget и loot_crafts всегда с каталогом и image; без строки clan_statistics — нули
         return $this->successResponse([
             'wipe' => $resolvedWipe,
             'statistics' => $stats ? $stats->getStatisticsForApi() : null,
-            'loot_widget' => $lootWidget,
+            'loot_widget' => $this->buildClanLootWidget($stats),
             'raid_widget' => $raidWidget,
-            'loot_crafts' => $stats ? $this->buildClanLootCraftsData($stats) : null,
+            'loot_crafts' => $this->buildClanLootCraftsData($stats),
         ]);
     }
 
@@ -977,13 +943,62 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * Виджет лута на карточке клана: 4 позиции, image_large как в сводках.
+     * Без строки clan_statistics — count = 0, картинки те же.
+     *
+     * @return array{items: array<int, array<string, mixed>>}
+     */
+    private function buildClanLootWidget(?ClanStatistics $stats): array
+    {
+        $images = Statistics::productsImages();
+        $v = static function (?ClanStatistics $s, string $key): int {
+            return $s ? (int) $s->getStatValue($key) : 0;
+        };
+        $crateCombined = $v($stats, 'total_codelockedhackablecrate')
+            + $v($stats, 'total_codelockedhackablecrate_oilrig');
+
+        return [
+            'items' => [
+                [
+                    'key' => 'crate_combined',
+                    'name' => Yii::t('common', 'Крейт'),
+                    'image' => Statistics::getImageLarge($images, 'codelockedhackablecrate'),
+                    'count' => $crateCombined,
+                ],
+                [
+                    'key' => 'crate_elite',
+                    'name' => Yii::t('common', 'Элитный ящик'),
+                    'image' => Statistics::getImageLarge($images, 'crate_elite'),
+                    'count' => $v($stats, 'total_crate_elite'),
+                ],
+                [
+                    'key' => 'crate_normal',
+                    'name' => Yii::t('common', 'Армейский ящик'),
+                    'image' => Statistics::getImageLarge($images, 'crate_normal'),
+                    'count' => $v($stats, 'total_crate_normal'),
+                ],
+                [
+                    'key' => 'supply_drop',
+                    'name' => Yii::t('common', 'Аирдроп'),
+                    'image' => Statistics::getImageLarge($images, 'supply_drop'),
+                    'count' => $v($stats, 'total_supply_drop'),
+                ],
+            ],
+        ];
+    }
+
+    /**
      * Тот же формат, что GET /v1/stats/player-loot-crafts: лут, карты, чертежи — из сумм total_* по клану.
+     * Если записи clan_statistics за вайп ещё нет — отдаём тот же каталог с count = 0 и теми же image (как у игрока без данных).
      *
      * @return array{loot: array<int, array<string, mixed>>, access_cards: array<int, array<string, mixed>>, blueprints: array<int, array<string, mixed>>}
      */
-    private function buildClanLootCraftsData(ClanStatistics $clanStats): array
+    private function buildClanLootCraftsData(?ClanStatistics $clanStats): array
     {
         $images = Statistics::productsImages();
+        $total = static function (string $suffix) use ($clanStats): int {
+            return $clanStats ? (int) $clanStats->getStatValue('total_' . $suffix) : 0;
+        };
 
         $lootKeys = [
             'codelockedhackablecrate_oilrig' => Yii::t('common', 'Крейт на нефтевышке'),
@@ -1001,7 +1016,7 @@ class ClansController extends BaseApiController
 
         $loot = [];
         foreach ($lootKeys as $key => $name) {
-            $count = (int) $clanStats->getStatValue('total_' . $key);
+            $count = $total($key);
             $loot[] = [
                 'key' => $key,
                 'name' => $name,
@@ -1018,7 +1033,7 @@ class ClansController extends BaseApiController
         ];
         $access_cards = [];
         foreach ($accessCardKeys as $item) {
-            $count = (int) $clanStats->getStatValue('total_' . $item['key']);
+            $count = $total($item['key']);
             $access_cards[] = [
                 'key' => $item['key'],
                 'name' => $item['name'],
@@ -1033,7 +1048,7 @@ class ClansController extends BaseApiController
         ];
         $blueprints = [];
         foreach ($blueprintKeys as $key => $name) {
-            $count = (int) $clanStats->getStatValue('total_' . $key);
+            $count = $total($key);
             if ($count > 0) {
                 $blueprints[] = [
                     'key' => $key,
