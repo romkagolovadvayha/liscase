@@ -1484,7 +1484,12 @@ class ClansController extends BaseApiController
         $keys = isset($body['permission_keys']) && is_array($body['permission_keys']) ? $body['permission_keys'] : [];
 
         if (!$targetMember->syncPermissions($keys)) {
-            return $this->errorResponse('PERMISSIONS_SYNC_FAILED', 'Could not update permissions (leader permissions are fixed)', [], 400);
+            return $this->errorResponse(
+                'PERMISSIONS_SYNC_FAILED',
+                'Could not update permissions (leader row, invalid keys, or DB error — check clan_permissions / migrations)',
+                [],
+                400
+            );
         }
 
         $clan->addEvent('permissions_updated', Yii::t('common', 'Разрешения участника обновлены'), $user->id);

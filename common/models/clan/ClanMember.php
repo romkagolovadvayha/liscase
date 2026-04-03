@@ -297,15 +297,23 @@ class ClanMember extends ActiveRecord
             // Удаляем все текущие разрешения
             ClanMemberPermission::deleteAll(['clan_member_id' => $this->id]);
 
-            // Добавляем новые разрешения
+            // Добавляем новые разрешения (результат обязателен: иначе «успех» при отсутствии строки в clan_permissions)
             foreach ($permissionKeys as $key) {
-                $this->addPermission($key);
+                if (!$this->addPermission($key)) {
+                    $transaction->rollBack();
+                    Yii::warning(
+                        'syncPermissions: не удалось выдать право ' . json_encode($key, JSON_UNESCAPED_UNICODE),
+                        __METHOD__
+                    );
+                    return false;
+                }
             }
 
             $transaction->commit();
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $transaction->rollBack();
+            Yii::error($e->getMessage(), __METHOD__);
             return false;
         }
     }
