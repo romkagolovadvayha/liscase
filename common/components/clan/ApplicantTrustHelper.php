@@ -2,6 +2,7 @@
 
 namespace common\components\clan;
 
+use common\components\rustcheck\RustCheck;
 use common\models\bans\Bans;
 use common\models\clan\Clan;
 use common\models\user\User;
@@ -26,7 +27,10 @@ final class ApplicantTrustHelper
      */
     public static function summarize(User $user, Clan $clan): array
     {
-        $steamId = trim((string)$user->steam_id);
+        $steamId = RustCheck::normalizePlayerSteamId($user->steam_id);
+        if ($steamId === null || $steamId === '') {
+            $steamId = trim((string) $user->steam_id);
+        }
         $clanServerId = (int)$clan->server_id;
 
         $banRows = Bans::find()
@@ -103,7 +107,7 @@ final class ApplicantTrustHelper
     /**
      * Данные API rustcheatcheck.ru (getInfo) + корректировка trust_score.
      *
-     * @return array{available: bool, adjusted_score: int, status?: string, checks_count?: int, active_ban_count?: int, total_ban_count?: int, last_nick?: ?string, checks?: list<array{checked_at: ?int, server_name: string}>, bans?: list<array{server_name: string, reason: string, ban_at: ?int, unban_at: ?int, active: bool}>}
+     * @return array{available: bool, adjusted_score: int, status?: string, checks_count?: int, active_ban_count?: int, total_ban_count?: int, last_nick?: ?string, bans?: list<array{server_name: string, reason: string, ban_at: ?int, unban_at: ?int, active: bool}>}
      */
     private static function buildRustCheatCheckBlock(string $steamId, int $scoreSoFar): array
     {
@@ -132,38 +136,35 @@ final class ApplicantTrustHelper
             return $base;
         }
 
-        $status = isset($raw['status']) ? (string)$raw['status'] : '';
-        if ($status !== 'success') {
+        $payload = self::flattenRustCheckPayload($raw);
+        $statusRaw = isset($payload['status']) ? (string) $payload['status'] : '';
+
+        if (!self::rustCheckPayloadIsUsable($payload)) {
+            $apiMessage = $payload['message'] ?? $payload['error'] ?? $payload['msg'] ?? null;
+            if (!is_string($apiMessage) || $apiMessage === '') {
+                $apiMessage = null;
+            }
+
             return [
                 'available' => true,
-                'status' => $status !== '' ? $status : 'unknown',
+                'status' => $statusRaw !== '' ? $statusRaw : 'error',
+                'api_message' => $apiMessage,
                 'adjusted_score' => $scoreSoFar,
             ];
         }
 
-        $checksCount = isset($raw['rcc_checks']) ? (int)$raw['rcc_checks'] : 0;
-        $lastNick = isset($raw['last_nick']) ? (string)$raw['last_nick'] : null;
+        $checksCount = isset($payload['rcc_checks']) ? (int) $payload['rcc_checks'] : 0;
+        if ($checksCount <= 0 && !empty($payload['last_check']) && is_array($payload['last_check'])) {
+            $checksCount = count($payload['last_check']);
+        }
+        $lastNick = isset($payload['last_nick']) ? (string) $payload['last_nick'] : null;
         if ($lastNick === '') {
             $lastNick = null;
         }
 
-        $checksOut = [];
-        if (!empty($raw['last_check']) && is_array($raw['last_check'])) {
-            $slice = array_slice($raw['last_check'], 0, 12);
-            foreach ($slice as $row) {
-                if (!is_array($row)) {
-                    continue;
-                }
-                $checksOut[] = [
-                    'checked_at' => isset($row['time']) ? (int)$row['time'] : null,
-                    'server_name' => isset($row['serverName']) ? (string)$row['serverName'] : '',
-                ];
-            }
-        }
-
         $bansOut = [];
         $activeRcc = 0;
-        $rccBans = !empty($raw['bans']) && is_array($raw['bans']) ? $raw['bans'] : [];
+        $rccBans = !empty($payload['bans']) && is_array($payload['bans']) ? $payload['bans'] : [];
         foreach ($rccBans as $ban) {
             if (!is_array($ban)) {
                 continue;
@@ -204,9 +205,50 @@ final class ApplicantTrustHelper
             'active_ban_count' => $activeRcc,
             'total_ban_count' => $totalRccBans,
             'last_nick' => $lastNick,
-            'checks' => $checksOut,
             'bans' => $bansOut,
             'adjusted_score' => $adj,
         ];
+    }
+
+    /**
+     * Некоторые ответы RCC кладут поля внутрь data/response/result.
+     */
+    private static function flattenRustCheckPayload(array $raw): array
+    {
+        foreach (['data', 'response', 'result'] as $wrap) {
+            if (empty($raw[$wrap]) || !is_array($raw[$wrap])) {
+                continue;
+            }
+            $inner = $raw[$wrap];
+            if (
+                isset($inner['last_check'])
+                || isset($inner['bans'])
+                || isset($inner['rcc_checks'])
+                || isset($inner['last_nick'])
+            ) {
+                return array_merge($raw, $inner);
+            }
+        }
+
+        return $raw;
+    }
+
+    /**
+     * Учитываем ответы без поля status (как в игровом плагине) и явные ошибки.
+     */
+    private static function rustCheckPayloadIsUsable(array $payload): bool
+    {
+        $status = strtolower((string) ($payload['status'] ?? ''));
+        if (in_array($status, ['error', 'fail', 'failed'], true)) {
+            return false;
+        }
+        if ($status === 'success') {
+            return true;
+        }
+
+        return array_key_exists('rcc_checks', $payload)
+            || array_key_exists('last_check', $payload)
+            || array_key_exists('bans', $payload)
+            || array_key_exists('last_nick', $payload);
     }
 }
