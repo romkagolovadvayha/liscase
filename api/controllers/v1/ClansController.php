@@ -1516,6 +1516,53 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * GET /v1/clans/{serverTag}/{id}/members/{memberId}/trust-review — траст и проверки участника (как в заявках).
+     */
+    public function actionMemberTrustReview($serverTag, $id, $memberId)
+    {
+        $this->getCurrentUser();
+        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $actor = $this->requireClanMember($clan);
+
+        if (!$actor->canKick()) {
+            throw new ForbiddenHttpException('No permission to view member trust review');
+        }
+
+        $targetMember = ClanMember::find()
+            ->where(['id' => (int)$memberId])
+            ->with(['user.userProfile'])
+            ->one();
+
+        if (!$targetMember || (int)$targetMember->clan_id !== (int)$clan->id) {
+            throw new NotFoundHttpException('Member not found');
+        }
+        if (!$targetMember->isActive()) {
+            throw new BadRequestHttpException('Member is not active');
+        }
+        if ($targetMember->isLeader()) {
+            throw new BadRequestHttpException('Trust review is not available for the clan leader');
+        }
+
+        $targetUser = $targetMember->user;
+        if (!$targetUser) {
+            throw new NotFoundHttpException('User not found');
+        }
+
+        $trust = ApplicantTrustHelper::summarize($targetUser, $clan);
+        $combat = $this->buildApplicationLifetimeCombat($targetUser, $clan);
+
+        $payload = [
+            'user' => $this->serializeUser($targetUser),
+            'trust' => $trust,
+        ];
+        if ($combat !== null) {
+            $payload['lifetime_combat'] = $combat;
+        }
+
+        return $this->successResponse($payload);
+    }
+
+    /**
      * GET /v1/clans/invite-link/{token} — превью клана по ссылке (без JWT).
      */
     public function actionInviteLinkPreview($token)

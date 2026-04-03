@@ -119,6 +119,7 @@ $config = [
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics/member/<memberId:\d+>' => 'v1/clans/member-statistics',
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/player-kills' => 'v1/clans/player-kills',
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/statistics' => 'v1/clans/statistics',
+                ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members/<memberId:\d+>/trust-review', 'route' => 'v1/clans/member-trust-review', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members/<memberId:\d+>/permissions', 'route' => 'v1/clans/member-permissions', 'verb' => ['GET', 'POST', 'PUT', 'PATCH', 'OPTIONS']],
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/members' => 'v1/clans/members',
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>/history' => 'v1/clans/history',
