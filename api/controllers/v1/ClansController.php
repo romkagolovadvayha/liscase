@@ -132,7 +132,7 @@ class ClansController extends BaseApiController
         $clan->leader_user_id = $user->id;
         $clan->server_id = $serverId;
         $clan->motto = $motto ?: null;
-        $clan->privacy = Clan::PRIVACY_INVITE_ONLY;
+        $clan->privacy = Clan::PRIVACY_OPEN;
         $clan->description = isset($body['description']) ? (string)$body['description'] : null;
 
         if (!$clan->save()) {

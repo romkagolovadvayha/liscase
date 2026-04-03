@@ -62,7 +62,7 @@ class Clan extends ActiveRecord
             [['tag'], 'string', 'max' => 8],
             [['logo'], 'string', 'max' => 255],
             [['privacy'], 'in', 'range' => [self::PRIVACY_OPEN, self::PRIVACY_CLOSED, self::PRIVACY_INVITE_ONLY]],
-            [['privacy'], 'default', 'value' => self::PRIVACY_INVITE_ONLY],
+            [['privacy'], 'default', 'value' => self::PRIVACY_OPEN],
             [['level'], 'default', 'value' => 1],
             [['experience'], 'default', 'value' => 0],
             [['name', 'tag'], 'unique', 'targetAttribute' => ['name', 'server_id'], 'message' => Yii::t('common', 'Клан с таким названием уже существует на этом сервере')],
