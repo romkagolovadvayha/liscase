@@ -19,7 +19,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.0.0")]
+    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.0")]
     public class ClanManager : RustPlugin
     {
         #region Var
