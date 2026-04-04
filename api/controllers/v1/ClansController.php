@@ -1628,6 +1628,9 @@ class ClansController extends BaseApiController
             );
         }
 
+        // Плагин Rust сравнивает clan.update_at — без bump не подхватит auth_* для игры
+        $clan->updateAttributes(['updated_at' => time()]);
+
         $clan->addEvent('permissions_updated', Yii::t('common', 'Разрешения участника обновлены'), $user->id);
 
         $targetMember->refresh();
