@@ -229,4 +229,37 @@ class SkinsSearch extends Model
 
         return $data;
     }
+
+    /**
+     * Минимальная и максимальная цена (поле price) по всему каталогу типа — для подсказок в UI.
+     *
+     * @param string $type rust|cs2
+     * @return array{min: int, max: int}
+     */
+    public static function getCatalogPriceRange(string $type): array
+    {
+        if ($type === 'rust') {
+            $data = \Yii::$app->rustTm->items();
+        } else {
+            $data = \Yii::$app->csGoMarket->items();
+        }
+        if (empty($data)) {
+            return ['min' => 0, 'max' => 0];
+        }
+        $prices = [];
+        foreach ($data as $row) {
+            if (!isset($row['price']) || !is_numeric($row['price'])) {
+                continue;
+            }
+            $prices[] = (float) $row['price'];
+        }
+        if ($prices === []) {
+            return ['min' => 0, 'max' => 0];
+        }
+
+        return [
+            'min' => (int) floor(min($prices)),
+            'max' => (int) ceil(max($prices)),
+        ];
+    }
 }
