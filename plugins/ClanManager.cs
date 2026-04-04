@@ -14,7 +14,6 @@ using System.Collections;
 using System.Diagnostics;
 using System.Net;
 using UnityEngine.Networking;
-using ConVar;
 
 
 
@@ -128,8 +127,8 @@ namespace Oxide.Plugins
 
         private void FetchClansWebRequest()
         {
-            string serverIp = Server.ip;
-            int serverPort = Server.port;
+            string serverIp = ConVar.Server.ip;
+            int serverPort = ConVar.Server.port;
             string url = $"{_config.ApiBaseUrl}/clans/list?ip={Uri.EscapeDataString(serverIp)}&port={serverPort}";
             webrequest.Enqueue(url, null, (code, response) =>
             {
