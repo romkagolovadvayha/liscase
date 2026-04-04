@@ -9,7 +9,6 @@ using Oxide.Core.Libraries;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
-using ProtoBuf;
 using System.Collections;
 using System.Diagnostics;
 using System.Net;
@@ -19,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.0")]
+    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.1")]
     public class ClanManager : RustPlugin
     {
         #region Var
@@ -310,22 +309,23 @@ namespace Oxide.Plugins
 
         private bool IsAuthed(BuildingPrivlidge cupboard, ulong userId)
         {
-            if(userId == null)
+            if (userId == 0UL)
                 return false;
 
             var clan = Clans.FirstOrDefault(c => c.users.Any(u => u.SteamId == userId));
             if (clan == null)
             {
-                foreach (var entry in cupboard.authorizedPlayers)
+                foreach (var authId in cupboard.authorizedPlayers)
                 {
-                    if (entry.userid == userId)
+                    if (authId == userId)
                         return true;
                 }
+                return false;
             }
             bool auth = false;
             foreach(var entry in clan.users)
             {
-                if(cupboard.authorizedPlayers.Any(u => u.userid == entry.SteamId))
+                if (cupboard.authorizedPlayers.Any(u => u == entry.SteamId))
                     auth = true;
             }
 
@@ -422,7 +422,7 @@ namespace Oxide.Plugins
             {
                 var authorizedPlayers = cupboard.authorizedPlayers;
 
-                var authorizedIds = new HashSet<ulong>(authorizedPlayers.Select(ap => ap.userid));
+                var authorizedIds = new HashSet<ulong>(authorizedPlayers);
                 var clanAuthorizedIds = new HashSet<ulong>(
                     clan.users
                         .Where(u => u.SteamId != ownerId && u.cupboard_auth)
@@ -430,27 +430,22 @@ namespace Oxide.Plugins
                 );
 
                 var toRemove = authorizedPlayers
-                    .Where(ap => ap.userid != ownerId &&
-                                 clanUsersById.TryGetValue(ap.userid, out var user) && !user.cupboard_auth)
+                    .Where(id => id != ownerId &&
+                                 clanUsersById.TryGetValue(id, out var user) && !user.cupboard_auth)
                     .ToList();
 
                 var toAdd = clanAuthorizedIds
                     .Where(id => !authorizedIds.Contains(id))
-                    .Select(id => new PlayerNameID
-                    {
-                        userid = id,
-                        username = RustCore.FindPlayerById(id)?.displayName ?? string.Empty
-                    })
                     .ToList();
 
                 if (toRemove.Count == 0 && toAdd.Count == 0)
                     continue;
 
-                foreach (var player in toRemove)
-                    authorizedPlayers.Remove(player);
+                foreach (var id in toRemove)
+                    authorizedPlayers.Remove(id);
 
-                foreach (var player in toAdd)
-                    authorizedPlayers.Add(player);
+                foreach (var id in toAdd)
+                    authorizedPlayers.Add(id);
 
                 cupboard.SendNetworkUpdate();
             }
@@ -554,8 +549,7 @@ namespace Oxide.Plugins
 
                 var authorizedPlayers = turret.authorizedPlayers;
 
-                var authorizedIds = new HashSet<ulong>(authorizedPlayers.Select(ap => ap.userid));
-
+                var authorizedIds = new HashSet<ulong>(authorizedPlayers);
 
                 var clanAuthorizedIds = new HashSet<ulong>(
                     clan.users
@@ -564,17 +558,12 @@ namespace Oxide.Plugins
                 );
 
                 var toRemove = authorizedPlayers
-                    .Where(ap => ap.userid != ownerId &&
-                                 clanUsersById.TryGetValue(ap.userid, out var user) && !user.turrets)
+                    .Where(id => id != ownerId &&
+                                 clanUsersById.TryGetValue(id, out var user) && !user.turrets)
                     .ToList();
 
                 var toAdd = clanAuthorizedIds
                     .Where(id => !authorizedIds.Contains(id))
-                    .Select(id => new PlayerNameID
-                    {
-                        userid = id,
-                        username = RustCore.FindPlayerById(id)?.displayName ?? string.Empty
-                    })
                     .ToList();
 
                 if (toRemove.Count == 0 && toAdd.Count == 0)
@@ -585,12 +574,11 @@ namespace Oxide.Plugins
                 if (isOnline)
                     turret.SetIsOnline(false);
 
-                foreach (var player in toRemove)
-                    authorizedPlayers.Remove(player);
+                foreach (var id in toRemove)
+                    authorizedPlayers.Remove(id);
 
-
-                foreach (var player in toAdd)
-                    authorizedPlayers.Add(player);
+                foreach (var id in toAdd)
+                    authorizedPlayers.Add(id);
 
                 if (isOnline)
                     turret.SetIsOnline(true);
@@ -604,13 +592,10 @@ namespace Oxide.Plugins
         {
             foreach (var cupboard in cupboards)
             {
-                var player = cupboard.authorizedPlayers.FirstOrDefault(p => p.userid == userId);
-                if (player != null)
-                {
-
-                    cupboard.authorizedPlayers.Remove(player);
-                    cupboard.SendNetworkUpdate();
-                }
+                if (!cupboard.authorizedPlayers.Contains(userId))
+                    continue;
+                cupboard.authorizedPlayers.Remove(userId);
+                cupboard.SendNetworkUpdate();
             }
         }
 
@@ -644,14 +629,11 @@ namespace Oxide.Plugins
         {
             foreach (var turret in turrets)
             {
-                var player = turret.authorizedPlayers.FirstOrDefault(p => p.userid == userId);
-                if (player != null)
-                {
-
-                    turret.authorizedPlayers.Remove(player);
-                    turret.UpdateMaxAuthCapacity();
-                    turret.SendNetworkUpdate();
-                }
+                if (!turret.authorizedPlayers.Contains(userId))
+                    continue;
+                turret.authorizedPlayers.Remove(userId);
+                turret.UpdateMaxAuthCapacity();
+                turret.SendNetworkUpdate();
             }
         }
 
