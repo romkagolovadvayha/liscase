@@ -343,8 +343,8 @@ class SkinsController extends BaseApiController
             throw new NotFoundHttpException('Страница не найдена');
         }
 
-        // Кэшируем данные на 10 минут (v2; ключ с языком — в ответе есть «Неизвестный» и др.)
-        $cacheKey = 'skin_giveaway_data_v2_' . Yii::$app->language;
+        // Кэшируем данные на 10 минут (v3: у пользователя total_coins за всё время по типу)
+        $cacheKey = 'skin_giveaway_data_v3_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
@@ -369,8 +369,14 @@ class SkinsController extends BaseApiController
                 ->limit(5)
                 ->all();
 
+            $rustUserIds = array_map(static function ($p) {
+                return (int)$p->user_id;
+            }, $lastPayoutsRust);
+            $rustTotalsByUser = $this->sumSuccessfulSkinPayoutCoinsByUserIds($rustUserIds, 'rust');
+
             foreach ($lastPayoutsRust as $payout) {
                 $user = $payout->user;
+                $uid = isset($user->id) ? (int)$user->id : null;
                 $data['rust']['recentDrops'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
@@ -380,6 +386,7 @@ class SkinsController extends BaseApiController
                         'id' => $user->id ?? null,
                         'username' => $user->username ?? 'Неизвестный',
                         'avatar' => $user->getAvatar() ?? null,
+                        'total_coins' => $uid !== null ? ($rustTotalsByUser[$uid] ?? 0.0) : 0.0,
                     ],
                     'created_at' => $payout->created_at,
                 ];
@@ -392,8 +399,14 @@ class SkinsController extends BaseApiController
                 ->limit(5)
                 ->all();
 
+            $cs2UserIds = array_map(static function ($p) {
+                return (int)$p->user_id;
+            }, $lastPayoutsCs2);
+            $cs2TotalsByUser = $this->sumSuccessfulSkinPayoutCoinsByUserIds($cs2UserIds, 'cs2');
+
             foreach ($lastPayoutsCs2 as $payout) {
                 $user = $payout->user;
+                $uid = isset($user->id) ? (int)$user->id : null;
                 $data['cs2']['recentDrops'][] = [
                     'id' => $payout->id,
                     'name' => $payout->name,
@@ -403,6 +416,7 @@ class SkinsController extends BaseApiController
                         'id' => $user->id ?? null,
                         'username' => $user->username ?? 'Неизвестный',
                         'avatar' => $user->getAvatar() ?? null,
+                        'total_coins' => $uid !== null ? ($cs2TotalsByUser[$uid] ?? 0.0) : 0.0,
                     ],
                     'created_at' => $payout->created_at,
                 ];
@@ -441,6 +455,41 @@ class SkinsController extends BaseApiController
         }
 
         return $this->successResponse($data);
+    }
+
+    /**
+     * Сумма монет по успешным выплатам скинов за всё время, по пользователям (один тип игры).
+     *
+     * @param int[] $userIds
+     * @return array<int, float>
+     */
+    private function sumSuccessfulSkinPayoutCoinsByUserIds(array $userIds, string $type): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+        if ($userIds === []) {
+            return [];
+        }
+
+        $rows = (new \yii\db\Query())
+            ->from(UserPayoutSkins::tableName())
+            ->select([
+                'user_id',
+                'total' => new \yii\db\Expression('SUM(COALESCE(NULLIF(amount, 0), price))'),
+            ])
+            ->where([
+                'status' => UserPayoutSkins::STATUS_SUCCESS,
+                'type' => $type,
+            ])
+            ->andWhere(['user_id' => $userIds])
+            ->groupBy(['user_id'])
+            ->all();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['user_id']] = (float)$row['total'];
+        }
+
+        return $map;
     }
 
     /**

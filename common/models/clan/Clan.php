@@ -25,6 +25,7 @@ use yii\web\UploadedFile;
  * @property int $experience
  * @property int $created_at
  * @property int $updated_at
+ * @property string $color_tag HEX для тега в чате игры (белый список пресетов)
  *
  * @property User $leaderUser
  * @property Servers $server
@@ -37,6 +38,17 @@ class Clan extends ActiveRecord
     const PRIVACY_OPEN = 'open';
     const PRIVACY_CLOSED = 'closed';
     const PRIVACY_INVITE_ONLY = 'invite_only';
+
+    /** Допустимые цвета тега (сайт + API + плагин) */
+    public const TAG_COLOR_PRESETS = [
+        '#5DCEA4',
+        '#6EB5FF',
+        '#E8C547',
+        '#F08C6B',
+        '#B794F4',
+    ];
+
+    public const DEFAULT_TAG_COLOR = '#5DCEA4';
 
     /** @var int|null значение из SELECT в ClanSearch; null — считать через [[getActiveMembers]] */
     private $_activeMembersCount = null;
@@ -60,6 +72,9 @@ class Clan extends ActiveRecord
             [['motto', 'description'], 'string'],
             [['name'], 'string', 'max' => 255],
             [['tag'], 'string', 'max' => 8],
+            [['color_tag'], 'string', 'max' => 20],
+            [['color_tag'], 'in', 'range' => self::TAG_COLOR_PRESETS, 'skipOnEmpty' => true],
+            [['color_tag'], 'default', 'value' => self::DEFAULT_TAG_COLOR],
             [['logo'], 'string', 'max' => 255],
             [['privacy'], 'in', 'range' => [self::PRIVACY_OPEN, self::PRIVACY_CLOSED, self::PRIVACY_INVITE_ONLY]],
             [['privacy'], 'default', 'value' => self::PRIVACY_OPEN],
@@ -81,6 +96,7 @@ class Clan extends ActiveRecord
             'id' => 'ID',
             'name' => Yii::t('common', 'Название'),
             'tag' => Yii::t('common', 'Тег'),
+            'color_tag' => Yii::t('common', 'Цвет тега'),
             'leader_user_id' => Yii::t('common', 'Лидер'),
             'server_id' => Yii::t('common', 'Сервер'),
             'motto' => Yii::t('common', 'Девиз'),

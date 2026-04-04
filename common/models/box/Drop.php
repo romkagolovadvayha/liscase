@@ -69,6 +69,9 @@ class Drop extends ActiveRecord
     const TYPE_SELECT  = 3;
     const TYPE_VIP     = 4;
 
+    /** RCON по всем активным серверам для VIP из магазина, если в товаре пусто поле command */
+    public const VIP_STORE_RCON_DEFAULT = 'addgroup %STEAMID% vip_status 30d';
+
     /**
      * @return array
      */

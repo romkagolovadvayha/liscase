@@ -14,7 +14,9 @@ use common\models\box\Drop;
 use common\models\invoice\Invoice;
 use common\models\rcon\RconTasks;
 use common\models\statistics\Statistics;
+use common\models\user\UserVip;
 use common\components\queue\process\ReturnDropJob;
+use common\components\queue\process\ActivatedDropJob;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
 
@@ -96,6 +98,63 @@ class StoreController extends BaseApiController
         }
 
         return (int) ceil((float) $invoice->amount);
+    }
+
+    /**
+     * VIP из корзины: без store.take — RCON на все активные серверы + продление user_vip + статус «выдан».
+     */
+    private function finishStoreVipDeliver(User $user, UserDrop $userDrop, Drop $drop, string $lockKey)
+    {
+        $rconUrl = Yii::$app->settings->get('site_rconUrl');
+        if (empty($rconUrl) || !Yii::$app->has('curl')) {
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'CONFIG_ERROR',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
+                [],
+                503
+            );
+        }
+
+        $template = trim((string) $drop->command) !== ''
+            ? (string) $drop->command
+            : Drop::VIP_STORE_RCON_DEFAULT;
+        $command = str_replace('%STEAMID%', (string) $user->steam_id, $template);
+
+        try {
+            RconTasks::execute($command);
+        } catch (\Throwable $e) {
+            Yii::error('VIP store deliver RCON: ' . $e->getMessage(), __METHOD__);
+            $userDrop->status = UserDrop::STATUS_ACTIVE;
+            $userDrop->save(false);
+            Yii::$app->cache->delete($lockKey);
+            return $this->errorResponse(
+                'RCON_ERROR',
+                Yii::t('common', 'Произошла ошибка, попробуйте позже!'),
+                [],
+                502
+            );
+        }
+
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+        UserVip::createOrExtend((int) $user->id, $expiresAt);
+
+        $userDrop->status = UserDrop::STATUS_SENDED;
+        $userDrop->sended_at = date('Y-m-d H:i:s');
+        $userDrop->save(false);
+
+        if (Yii::$app->has('queueProcess')) {
+            Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop' => $userDrop]));
+        }
+
+        Yii::$app->cache->delete($lockKey);
+
+        return $this->successResponse([
+            'message' => Yii::t('common', 'Товар успешно получен!'),
+            'itemId' => $userDrop->id,
+        ]);
     }
 
     /**
@@ -322,6 +381,10 @@ class StoreController extends BaseApiController
 
         $userDrop->status = UserDrop::STATUS_WAIT;
         $userDrop->save(false);
+
+        if ((int) $drop->drop_type === Drop::TYPE_VIP) {
+            return $this->finishStoreVipDeliver($user, $userDrop, $drop, $lockKey);
+        }
 
         $rconUrl = Yii::$app->settings->get('site_rconUrl');
         if (empty($rconUrl) || !Yii::$app->has('curl')) {

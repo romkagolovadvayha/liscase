@@ -5,6 +5,7 @@ namespace common\components\queue\process;
 use common\models\map\Map;
 use common\models\servers\Servers;
 use common\models\user\UserDrop;
+use console\controllers\FrontendPushGatewayServer;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
@@ -64,6 +65,11 @@ class BuyDropJob extends BaseObject implements JobInterface
             if (!in_array($userDrop->id, $dropsList)) {
                 $dropsList[] = $userDrop->id;
                 Yii::$app->cache->set($listKey, $dropsList, 60);
+            }
+
+            try {
+                FrontendPushGatewayServer::queueStoreInventoryRefresh((int) $userDrop->user_id, 'buy_drop');
+            } catch (\Throwable $e) {
             }
         } catch (\Exception $ex) {
             Yii::$app->telegramChats->sendMessage('BuyDropJob ERROR: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());

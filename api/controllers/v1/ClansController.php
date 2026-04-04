@@ -22,6 +22,7 @@ use common\models\statistics\Statistics;
 use common\models\user\UserRaid;
 use common\models\user\User;
 use Yii;
+use yii\db\Query;
 use yii\data\ActiveDataProvider;
 use yii\web\BadRequestHttpException;
 use yii\web\ForbiddenHttpException;
@@ -134,6 +135,9 @@ class ClansController extends BaseApiController
         $clan->motto = $motto ?: null;
         $clan->privacy = Clan::PRIVACY_OPEN;
         $clan->description = isset($body['description']) ? (string)$body['description'] : null;
+        if (isset($body['color_tag'])) {
+            $clan->color_tag = trim((string)$body['color_tag']);
+        }
 
         if (!$clan->save()) {
             return $this->validationErrorResponse($clan);
@@ -162,6 +166,120 @@ class ClansController extends BaseApiController
         }
 
         return $this->successResponse(['items' => $items]);
+    }
+
+    /**
+     * GET /v1/clans/list?ip=1.2.3.4&port=28015
+     * Ответ: JSON-массив в формате плагина Oxide ClanManager (массив объектов ClanData).
+     */
+    public function actionGamePluginList()
+    {
+        $ip = trim((string)Yii::$app->request->get('ip', ''));
+        $portRaw = Yii::$app->request->get('port');
+        $port = $portRaw !== null && $portRaw !== '' ? (int)$portRaw : null;
+
+        if ($ip === '' || $port === null || $port <= 0) {
+            Yii::$app->response->statusCode = 400;
+            return ['error' => 'ip and port are required'];
+        }
+
+        $server = Servers::find()
+            ->where(['port' => $port])
+            ->andWhere(['or', ['ip' => $ip], ['text_ip' => $ip]])
+            ->orderBy(['status' => SORT_DESC, 'id' => SORT_ASC])
+            ->one();
+
+        if (!$server) {
+            return [];
+        }
+
+        $clans = Clan::find()
+            ->where(['server_id' => $server->id])
+            ->with(['activeMembers.user'])
+            ->all();
+
+        $out = [];
+        foreach ($clans as $clan) {
+            $members = $clan->activeMembers;
+            $memberIds = array_map(static function (ClanMember $m) {
+                return (int)$m->id;
+            }, $members);
+
+            $permByMemberId = [];
+            if ($memberIds !== []) {
+                $rows = (new Query())
+                    ->from(['cmp' => 'clan_member_permissions'])
+                    ->innerJoin(['cp' => 'clan_permissions'], '[[cp]].[[id]] = [[cmp]].[[permission_id]]')
+                    ->where(['cmp.clan_member_id' => $memberIds])
+                    ->select(['cmp.clan_member_id', 'cp.key'])
+                    ->all();
+                foreach ($rows as $row) {
+                    $mid = (int)$row['clan_member_id'];
+                    if (!isset($permByMemberId[$mid])) {
+                        $permByMemberId[$mid] = [];
+                    }
+                    $permByMemberId[$mid][] = (string)$row['key'];
+                }
+            }
+
+            $users = [];
+            foreach ($members as $member) {
+                $user = $member->user;
+                if (!$user) {
+                    continue;
+                }
+                $steamId = (string)$user->steam_id;
+                if ($steamId === '' || $steamId === '0') {
+                    continue;
+                }
+
+                $flags = $this->gamePluginMemberAuthFlags($member, $permByMemberId[(int)$member->id] ?? []);
+                $users[] = array_merge([
+                    'steam_id' => $steamId,
+                ], $flags);
+            }
+
+            $colorTag = $clan->color_tag;
+            if (!in_array($colorTag, Clan::TAG_COLOR_PRESETS, true)) {
+                $colorTag = Clan::DEFAULT_TAG_COLOR;
+            }
+
+            $out[] = [
+                'tag' => $clan->tag,
+                'color_tag' => $colorTag,
+                'update_at' => gmdate('c', (int)$clan->updated_at),
+                'users' => $users,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Флаги авторизации в объектах для плагина (совпадают с правами auth_*).
+     *
+     * @param string[] $permissionKeys
+     * @return array{lock: bool, turrets: bool, defense: bool, cupboard_auth: bool}
+     */
+    private function gamePluginMemberAuthFlags(ClanMember $member, array $permissionKeys): array
+    {
+        if ($member->isLeader()) {
+            return [
+                'lock' => true,
+                'turrets' => true,
+                'defense' => true,
+                'cupboard_auth' => true,
+            ];
+        }
+
+        $set = array_fill_keys($permissionKeys, true);
+
+        return [
+            'lock' => !empty($set['auth_lock']),
+            'turrets' => !empty($set['auth_turret']),
+            'defense' => !empty($set['auth_sam']),
+            'cupboard_auth' => !empty($set['auth_cupboard']),
+        ];
     }
 
     /**
@@ -494,6 +612,9 @@ class ClansController extends BaseApiController
         }
         if (isset($body['experience'])) {
             $clan->experience = max(0, (int)$body['experience']);
+        }
+        if (isset($body['color_tag'])) {
+            $clan->color_tag = trim((string)$body['color_tag']);
         }
 
         if (!$clan->save()) {
@@ -2370,6 +2491,7 @@ class ClansController extends BaseApiController
             'id' => (int)$clan->id,
             'name' => $clan->name,
             'tag' => $clan->tag,
+            'color_tag' => $clan->color_tag ?? Clan::DEFAULT_TAG_COLOR,
             'slug' => $this->getClanUrlSlug($clan),
             'server_id' => (int)$clan->server_id,
             'server_tag' => $clan->server ? $clan->server->tag : null,

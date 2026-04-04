@@ -186,14 +186,14 @@ class ShopController extends Controller
                 // VIP всегда выдается на месяц (30 дней)
                 $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
                 \common\models\user\UserVip::createOrExtend($userDrop->user_id, $expiresAt);
-                
-                // Выполняем команду на сервере, если она указана
-                if (!empty($drop->command)) {
-                    $user = $userDrop->user;
-                    if ($user) {
-                        $command = str_replace('%STEAMID%', $user->steam_id, $drop->command);
-                        \common\models\rcon\RconTasks::execute($command);
-                    }
+
+                $user = $userDrop->user;
+                if ($user) {
+                    $template = trim((string) $drop->command) !== ''
+                        ? (string) $drop->command
+                        : Drop::VIP_STORE_RCON_DEFAULT;
+                    $command = str_replace('%STEAMID%', $user->steam_id, $template);
+                    \common\models\rcon\RconTasks::execute($command);
                 }
             }
             // Если сервер без доната (is_store = 0), ничего не делаем - VIP уже выдан в методе give()
