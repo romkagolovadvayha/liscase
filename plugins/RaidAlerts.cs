@@ -15,7 +15,7 @@ using ConVar;
 
 namespace Oxide.Plugins
 {
-    [Info("Raid Alerts", "Prostoj", "1.0.0")]
+    [Info("Raid Alerts", "Prostoj", "1.0.1")]
     [Description("Raid Alert.")]
     public class RaidAlerts : CovalencePlugin
     {
@@ -25,6 +25,10 @@ namespace Oxide.Plugins
         public class Configuration
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
+            [JsonProperty(PropertyName = "Базовый URL отправки рейдов (v1, без / на конце)")]
+            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+            [JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
+            public string RustPluginConfigApiBase = "https://api.prostoj.store/v1/rust-plugin-config";
 
             public static Configuration DefaultConfig()
             {
@@ -65,7 +69,10 @@ namespace Oxide.Plugins
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "RaidAlerts"
                 
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
+                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    : config.RustPluginConfigApiBase.TrimEnd('/');
+                String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
@@ -169,7 +176,10 @@ namespace Oxide.Plugins
 
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
-            webrequest.Enqueue($"https://prostoj.store/api-stats/raid?serverTag={config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
+            string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
+                ? "https://api.prostoj.store/v1/plugin-ingest"
+                : config.PluginStatsIngestBaseUrl.TrimEnd('/');
+            webrequest.Enqueue($"{ingest}/raid/{config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             raids.Clear();
             _explosiveUsedUsers.Clear();
         }

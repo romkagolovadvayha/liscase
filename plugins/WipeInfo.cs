@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -14,7 +14,7 @@ using Color = UnityEngine.Color;
 
 namespace Oxide.Plugins
 {
-    [Info("Wipe Info", "Prostoj", "1.0.0")]
+    [Info("Wipe Info", "Prostoj", "1.0.1")]
     [Description("Adds the ablity to see wipe cycles")]
     public class WipeInfo : RustPlugin
     {
@@ -25,6 +25,10 @@ namespace Oxide.Plugins
 			public string serverTag { get; set; } = "pve";
 			[JsonProperty(PropertyName = "CustomIconSteamId")]
 			public ulong customIconSteamId { get; set; } = 76561198028953589;
+			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
+			public string PluginChatBaseUrl { get; set; } = "https://api.prostoj.store/v1/rust-plugin-chat";
+			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
+			public string RustPluginConfigApiBase { get; set; } = "https://api.prostoj.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -61,7 +65,10 @@ namespace Oxide.Plugins
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "WipeInfo"
                 
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
+                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    : config.RustPluginConfigApiBase.TrimEnd('/');
+                String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
@@ -127,7 +134,6 @@ namespace Oxide.Plugins
 
         string messageWipeEn = null;
         string messageWipeRu = null;
-        string api = "https://prostoj.store/api";
         
         private const Boolean LanguageEn = false;
         
@@ -136,7 +142,10 @@ namespace Oxide.Plugins
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
             
-            webrequest.Enqueue(api + $"/wipe-info?serverTag=" + config.serverTag, null, (code, response) =>
+            string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
+                ? "https://api.prostoj.store/v1/rust-plugin-chat"
+                : config.PluginChatBaseUrl.TrimEnd('/');
+            webrequest.Enqueue($"{chatBase}/wipe/{config.serverTag}", null, (code, response) =>
             {
                 if (code != 200) return;
 				ServerInfo response_deserializeds = JsonConvert.DeserializeObject<ServerInfo>(response);

@@ -76,5 +76,26 @@ class RadioController extends BaseApiController
 
         return $this->successResponse($list);
     }
+
+    /**
+     * Список URL для BoomBox (как frontend ApiController::actionRadioList): { "radioList": "name,url,name,url,..." }.
+     */
+    public function actionBoomboxList()
+    {
+        Yii::$app->response->format = Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'application/json; charset=UTF-8');
+
+        $stations = ServersRadioStation::find()
+            ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
+            ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+            ->all();
+
+        $str = '';
+        foreach ($stations as $station) {
+            $str .= ',' . $station->name . ',' . $station->url;
+        }
+
+        return json_encode(['radioList' => $str === '' ? '' : substr($str, 1)], JSON_UNESCAPED_UNICODE);
+    }
 }
 

@@ -14,7 +14,7 @@ using WebSocketSharp;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.4.2")]
+    [Info("ProstojRUST", "prostoj.store", "0.4.3")]
     public class ProstojRUST : RustPlugin
     {
         #region References
@@ -83,6 +83,10 @@ namespace Oxide.Plugins
                 public string ServerID = "UNDEFINED";
                 [JsonProperty("Секретный ключ (не распространяйте его)")]
                 public string SecretKey = "UNDEFINED";
+                [JsonProperty("Базовый URL legacy-магазина (v1, без / на конце), не prostoj.store/api")]
+                public string LegacyShopApiRoot = "https://api.prostoj.store/v1/rust-legacy-store";
+                [JsonProperty("Резервный URL legacy-магазина (опционально, без / на конце)")]
+                public string LegacyShopApiReserveRoot = "";
             }
 
             public class Interface
@@ -350,8 +354,24 @@ namespace Oxide.Plugins
         private const string StoreLayer = "ProstojRUST.Store";
         private const string HelpLayer = "ProstojRUST.Help";
         private const string IconLayer = "ProstojRUST.Icon";
-        private string MainApiLink = "https://prostoj.store/api/";
-        private string ReserveApiLink = "https://prostoj.store/api/";
+        private string MainApiLink => NormalizeLegacyShopRoot(Settings?.APISettings?.LegacyShopApiRoot);
+        private string ReserveApiLink
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(Settings?.APISettings?.LegacyShopApiReserveRoot))
+                    return MainApiLink;
+                return NormalizeLegacyShopRoot(Settings.APISettings.LegacyShopApiReserveRoot);
+            }
+        }
+
+        private static string NormalizeLegacyShopRoot(string root)
+        {
+            if (string.IsNullOrWhiteSpace(root))
+                return "https://api.prostoj.store/v1/rust-legacy-store/";
+            return root.Trim().TrimEnd('/') + "/";
+        }
+
         //private string BaseRequest => $"https://gamestores.app/api/?shop_id={Settings.APISettings.ShopID}&secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
         private string BaseRequestParams => $"?secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
         private string BaseRequest = "";

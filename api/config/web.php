@@ -247,6 +247,24 @@ $config = [
 
                 // Radio
                 'v1/radio/list' => 'v1/radio/list',
+                /** GET /v1/radio/boombox-list — строка для BoomBox.ServerUrlList (UsersOnline) */
+                'v1/radio/boombox-list' => 'v1/radio/boombox-list',
+
+                // Ingest статистики с игровых серверов (POST raw JSON, без JWT; как frontend ApiStatsController)
+                ['pattern' => 'v1/plugin-ingest/update-users/<serverTag:[\w-]+>', 'route' => 'stats/update-users', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/plugin-ingest/raid/<serverTag:[\w-]+>', 'route' => 'stats/raid', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/plugin-ingest/signs', 'route' => 'stats/signs', 'verb' => ['POST', 'OPTIONS']],
+
+                // Конфиг плагинов из панели (явный v1-префикс)
+                'v1/rust-plugin-config/get' => 'rust-plugin-config/get',
+
+                // Тексты wipe / welcome / help для плагинов (плоский JSON)
+                'v1/rust-plugin-chat/wipe/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/wipe',
+                'v1/rust-plugin-chat/welcome/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/welcome',
+                'v1/rust-plugin-chat/help/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/help',
+
+                // Legacy API магазина ProstojRUST (?secret=&method=…)
+                'v1/rust-legacy-store' => 'v1/rust-legacy-store/index',
 
                 // Raid Table
                 'v1/raid-table' => 'v1/raid-table/index',

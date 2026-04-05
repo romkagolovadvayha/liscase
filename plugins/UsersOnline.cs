@@ -15,7 +15,7 @@ using ConVar;
 
 namespace Oxide.Plugins
 {
-    [Info("Users Online", "prostoj.store", "1.0.0")]
+    [Info("Users Online", "prostoj.store", "1.0.1")]
     [Description("Плагин, синхронизирует игроков с сайтом.")]
     public class UsersOnline : RustPlugin
     {
@@ -28,6 +28,12 @@ namespace Oxide.Plugins
         public class Configuration
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
+            [JsonProperty(PropertyName = "Базовый URL отправки онлайна (v1, без / на конце)")]
+            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+            [JsonProperty(PropertyName = "URL списка радио для BoomBox (GET, v1)")]
+            public string RadioBoomboxListUrl = "https://api.prostoj.store/v1/radio/boombox-list";
+            [JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
+            public string RustPluginConfigApiBase = "https://api.prostoj.store/v1/rust-plugin-config";
 
             public static Configuration DefaultConfig()
             {
@@ -66,7 +72,10 @@ namespace Oxide.Plugins
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "UsersOnline"
                 
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
+                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    : config.RustPluginConfigApiBase.TrimEnd('/');
+                String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
@@ -160,10 +169,12 @@ namespace Oxide.Plugins
             SaveAll();
         }
 		
-        string api = "https://api.prostoj.store";
         void UpdateBoomBox()
         {
-            webrequest.Enqueue(api + $"/radio/list", null, (code, response) =>
+            string radioUrl = string.IsNullOrWhiteSpace(config.RadioBoomboxListUrl)
+                ? "https://api.prostoj.store/v1/radio/boombox-list"
+                : config.RadioBoomboxListUrl.TrimEnd('/');
+            webrequest.Enqueue(radioUrl, null, (code, response) =>
             {
                 if (code != 200) return;
 				ServerInfo rd = JsonConvert.DeserializeObject<ServerInfo>(response);
@@ -192,7 +203,10 @@ namespace Oxide.Plugins
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
 
-            webrequest.Enqueue($"https://prostoj.store/api-stats/update-users?serverTag={config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
+            string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
+                ? "https://api.prostoj.store/v1/plugin-ingest"
+                : config.PluginStatsIngestBaseUrl.TrimEnd('/');
+            webrequest.Enqueue($"{ingest}/update-users/{config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             usersData.Users.Clear();
         }
 

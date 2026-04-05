@@ -1,4 +1,4 @@
-﻿using Oxide.Core.Libraries.Covalence;
+using Oxide.Core.Libraries.Covalence;
 using System.Collections.Generic;
 using Oxide.Core;
 using Oxide.Core.Libraries;
@@ -10,7 +10,7 @@ using System;
 
 namespace Oxide.Plugins
 {
-    [Info("WelcomeMessages", "Ankawi", "1.0.4", ResourceId = 2219)]
+    [Info("WelcomeMessages", "Ankawi", "1.0.5", ResourceId = 2219)]
     [Description("Отправляет приветственные сообщения игроку")]
 
     class WelcomeMessages : CovalencePlugin
@@ -31,6 +31,10 @@ namespace Oxide.Plugins
 			public float waitIntervalInSeconds { get; set; } = 25f;
 			[JsonProperty(PropertyName = "Sender Steam ID")]
 			public ulong senderSteamId { get; set; } = 76561198394504608;
+			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
+			public string PluginChatBaseUrl { get; set; } = "https://api.prostoj.store/v1/rust-plugin-chat";
+			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
+			public string RustPluginConfigApiBase { get; set; } = "https://api.prostoj.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -69,7 +73,10 @@ namespace Oxide.Plugins
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "WelcomeMessages"
                 
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
+                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    : config.RustPluginConfigApiBase.TrimEnd('/');
+                String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
                 
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
@@ -138,7 +145,6 @@ namespace Oxide.Plugins
 
         string messageEn = null;
         string messageRu = null;
-        string api = "https://prostoj.store/api";
         
         private void LoadWelcomeMessages()
         {
@@ -159,7 +165,10 @@ namespace Oxide.Plugins
                 return;
             }
             
-            string url = api + $"/welcome-message?serverTag=" + config.serverTag;
+            string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
+                ? "https://api.prostoj.store/v1/rust-plugin-chat"
+                : config.PluginChatBaseUrl.TrimEnd('/');
+            string url = $"{chatBase}/welcome/{config.serverTag}";
             
             PrintWarning(LanguageEn
                 ? $"Loading welcome messages from: {url}"

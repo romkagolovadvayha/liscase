@@ -13,11 +13,41 @@ using Server = ConVar.Server;
 
 namespace Oxide.Plugins
 {
-    [Info("Sign Statistics", "Prostoj", "1.0.0")]
+    [Info("Sign Statistics", "Prostoj", "1.0.1")]
     [Description("Sign Statistics.")]
     public class SignStatistics : CovalencePlugin
     {
        #region Config
+        private class Configuration
+        {
+            [JsonProperty(PropertyName = "Базовый URL отправки табличек (v1, без / на конце)")]
+            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+        }
+
+        private Configuration config = new Configuration();
+
+        protected override void LoadDefaultConfig()
+        {
+            config = new Configuration();
+        }
+
+        protected override void LoadConfig()
+        {
+            base.LoadConfig();
+            try
+            {
+                config = Config.ReadObject<Configuration>();
+                if (config == null) LoadDefaultConfig();
+            }
+            catch
+            {
+                LoadDefaultConfig();
+            }
+            SaveConfig();
+        }
+
+        protected override void SaveConfig() => Config.WriteObject(config);
+
        private class SignInfo
         {
             public string signId { get; set; } // SignID
@@ -60,7 +90,10 @@ namespace Oxide.Plugins
 
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
-            webrequest.Enqueue($"https://prostoj.store/api-stats/signs", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
+            string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
+                ? "https://api.prostoj.store/v1/plugin-ingest"
+                : config.PluginStatsIngestBaseUrl.TrimEnd('/');
+            webrequest.Enqueue($"{ingest}/signs", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             signEvents.Clear();
         }
 
