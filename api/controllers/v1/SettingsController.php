@@ -16,7 +16,8 @@ use OpenApi\Annotations as OA;
 class SettingsController extends BaseApiController
 {
     /**
-     * Список разрешенных категорий для фронтенда
+     * Список разрешенных категорий для фронтенда.
+     * metrics — счётчики (Яндекс.Метрика, gtag и т.д.), поле code — произвольный HTML/скрипты для вставки на Next.
      */
     const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi'];
 

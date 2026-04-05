@@ -15,6 +15,7 @@ use common\models\support\SupportRead;
 use common\models\user\User;
 use common\models\statistics\Reports;
 use common\components\helpers\Role;
+use common\components\queue\support\BeforeMessageJob;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
 
@@ -434,7 +435,7 @@ class SupportController extends BaseApiController
             return $this->errorResponse('BLOCKED', 'Ваш чат поддержки заблокирован', [], 403);
         }
 
-        $message = Yii::$app->request->post('message', '');
+        $message = (string) ($this->getSupportRequestParam('message') ?? '');
         // Получаем файлы - пробуем оба варианта имени (files[] и files)
         $files = UploadedFile::getInstancesByName('files[]');
         if (empty($files)) {
@@ -452,8 +453,10 @@ class SupportController extends BaseApiController
             return $this->errorResponse('INVALID_REQUEST', 'Message, files, or sticker is required', [], 400);
         }
 
-        $suspectUserId = Yii::$app->request->post('suspect_user_id');
-        $serverTag = Yii::$app->request->post('server_tag');
+        $suspectRaw = $this->getSupportRequestParam('suspect_user_id');
+        $suspectUserId = ($suspectRaw !== null && $suspectRaw !== '') ? (int) $suspectRaw : null;
+        $serverTagRaw = $this->getSupportRequestParam('server_tag');
+        $serverTag = ($serverTagRaw !== null && $serverTagRaw !== '') ? (string) $serverTagRaw : null;
 
         $transaction = Yii::$app->db->beginTransaction();
         try {
@@ -561,10 +564,22 @@ class SupportController extends BaseApiController
 
             $transaction->commit();
 
-            // Отправляем уведомления через WebSocket
+            $ticketNumber = $ticket->getNumber();
+
+            // Telegram канал поддержки (как ChatServer / SupportGameStoresController)
+            $this->notifySupportTelegramNewMessage($ticket, $userMessage, $user, !empty($files));
+
+            // WebSocket + Next.js push: новый тикет и первые сообщения в чате
             try {
-                $ticketNumber = $ticket->getNumber();
                 \console\controllers\NotificationServer::broadcastNewTicket($ticketNumber, $user->id);
+                foreach ([$systemMessage, $alertMessage, $userMessage] as $msg) {
+                    \console\controllers\NotificationServer::broadcastNewSupportMessage(
+                        $ticketNumber,
+                        $msg->id,
+                        $msg->user_id !== null ? (int) $msg->user_id : null,
+                        (int) $ticket->user_id
+                    );
+                }
             } catch (\Exception $ex) {
                 Yii::warning('WebSocket broadcast failed: ' . $ex->getMessage());
             }
@@ -644,7 +659,7 @@ class SupportController extends BaseApiController
             return $this->errorResponse('TICKET_CLOSED', 'Тикет закрыт. Нельзя отправлять сообщения в закрытые тикеты', [], 400);
         }
 
-        $message = Yii::$app->request->post('message', '');
+        $message = (string) ($this->getSupportRequestParam('message') ?? '');
         // Получаем файлы - пробуем оба варианта имени (files[] и files)
         $files = UploadedFile::getInstancesByName('files[]');
         if (empty($files)) {
@@ -740,12 +755,13 @@ class SupportController extends BaseApiController
                 $ticketNumber = $ticket->getNumber();
                 Yii::info("Calling broadcastNewSupportMessage: ticketNumber={$ticketNumber}, messageId={$supportMessage->id}, userId={$user->id}, ownerUserId={$ticket->user_id}");
                 \console\controllers\NotificationServer::broadcastNewSupportMessage($ticketNumber, $supportMessage->id, $user->id, $ticket->user_id);
-                // Не отправляем уведомление о статусе, так как статус не изменился
                 Yii::info("broadcastNewSupportMessage called successfully");
             } catch (\Exception $ex) {
                 Yii::warning('WebSocket broadcast failed: ' . $ex->getMessage());
                 Yii::error('WebSocket broadcast exception: ' . $ex->getTraceAsString());
             }
+
+            $this->notifySupportTelegramNewMessage($ticket, $supportMessage, $user, !empty($files));
 
             Yii::$app->response->statusCode = 201;
             return $this->successResponse([
@@ -1558,6 +1574,43 @@ class SupportController extends BaseApiController
         } catch (\Exception $e) {
             Yii::error('Failed to block/unblock account: ' . $e->getMessage());
             return $this->errorResponse('BLOCK_ACCOUNT_FAILED', 'Failed to block/unblock account', [], 500);
+        }
+    }
+
+    /**
+     * Поле из JSON-тела (application/json) или из POST — фронт Next.js шлёт JSON.
+     */
+    protected function getSupportRequestParam(string $name)
+    {
+        $v = Yii::$app->request->getBodyParam($name);
+        if ($v === null) {
+            $v = Yii::$app->request->post($name);
+        }
+        return $v;
+    }
+
+    /**
+     * Публикация в Telegram-канал поддержки через очередь (как legacy ChatServer).
+     */
+    protected function notifySupportTelegramNewMessage(Support $ticket, SupportMessage $supportMessage, User $sender, bool $hadFiles = false): void
+    {
+        if (!Yii::$app->has('queueProcess')) {
+            return;
+        }
+        $text = (string) ($supportMessage->message ?? '');
+        if ($text === '' || trim(strip_tags(str_replace(['&nbsp;', "\xc2\xa0"], ' ', $text))) === '') {
+            $text = $hadFiles ? '[вложения]' : '[сообщение]';
+        }
+        try {
+            Yii::$app->queueProcess->push(new BeforeMessageJob([
+                'chatId' => $supportMessage->support_id,
+                'userId' => $supportMessage->user_id,
+                'message' => $text,
+                'username' => $sender->username,
+                'chatNumber' => $ticket->getNumber(),
+            ]));
+        } catch (\Exception $ex) {
+            Yii::warning('BeforeMessageJob: ' . $ex->getMessage());
         }
     }
 

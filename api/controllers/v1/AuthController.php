@@ -36,6 +36,8 @@ class AuthController extends BaseApiController
             'class' => JwtAuthFilter::class,
             'except' => ['oauth', 'callback', 'login', 'refresh', 'options'],
             'throwException' => false, // Не выбрасывать исключение, просто не авторизовывать
+            // Привязка Twitch/Discord/Kick: переход по ссылке с фронта без заголовка Bearer
+            'queryTokenParams' => ['access_token'],
         ];
 
         return $behaviors;
@@ -276,6 +278,7 @@ class AuthController extends BaseApiController
             'state' => $state,
         ];
         $authUrl = 'https://discord.com/api/oauth2/authorize?' . http_build_query($params);
+        Yii::$app->response->headers->set('Referrer-Policy', 'no-referrer');
         return $this->redirect($authUrl);
     }
 
@@ -302,6 +305,7 @@ class AuthController extends BaseApiController
             'state' => $state,
         ];
         $authUrl = 'https://id.twitch.tv/oauth2/authorize?' . http_build_query($params);
+        Yii::$app->response->headers->set('Referrer-Policy', 'no-referrer');
         return $this->redirect($authUrl);
     }
 
@@ -337,6 +341,7 @@ class AuthController extends BaseApiController
             'code_challenge_method' => 'S256',
         ];
         $authUrl = 'https://id.kick.com/oauth/authorize?' . http_build_query($params);
+        Yii::$app->response->headers->set('Referrer-Policy', 'no-referrer');
         return $this->redirect($authUrl);
     }
 

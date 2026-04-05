@@ -28,6 +28,14 @@ class JwtAuthFilter extends ActionFilter
     public $throwException = true;
 
     /**
+     * Имена query-параметров с JWT (только для редких случаев: редирект из браузера без заголовка Authorization).
+     * Задаётся в behaviors контроллера; по умолчанию пусто — токен только из Authorization.
+     *
+     * @var string[]
+     */
+    public $queryTokenParams = [];
+
+    /**
      * @var JwtService Сервис для работы с JWT
      */
     protected $jwtService;
@@ -62,6 +70,16 @@ class JwtAuthFilter extends ActionFilter
         }
 
         $token = $this->jwtService->extractTokenFromRequest(Yii::$app->request);
+
+        if (empty($token) && !empty($this->queryTokenParams)) {
+            foreach ($this->queryTokenParams as $param) {
+                $fromQuery = Yii::$app->request->get($param);
+                if (is_string($fromQuery) && $fromQuery !== '') {
+                    $token = $fromQuery;
+                    break;
+                }
+            }
+        }
 
         if (empty($token)) {
             if ($this->throwException) {

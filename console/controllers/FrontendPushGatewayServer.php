@@ -127,62 +127,95 @@ class FrontendPushGatewayServer extends WebSocketServer
         return !empty($request['action']) ? $request['action'] : parent::getCommand($from, $msg);
     }
 
+    /**
+     * Ответ auth.error клиенту — только безопасные строки (никогда SQL/трейсы).
+     */
+    private function sendAuthErrorToClient(ConnectionInterface $client, string $safeMessage, string $closeReason = 'Authentication failed'): void
+    {
+        $result = [
+            'v' => self::PROTOCOL_VERSION,
+            'channel' => self::CHANNEL_SYSTEM,
+            'event' => 'auth.error',
+            'payload' => ['message' => $safeMessage],
+            'ts' => time(),
+        ];
+        try {
+            $client->send(json_encode($result));
+        } catch (\Throwable $e) {
+            Yii::error('FrontendPushGateway sendAuthErrorToClient send failed: ' . $e->getMessage(), __METHOD__);
+        }
+        try {
+            $client->close(1008, $closeReason);
+        } catch (\Throwable $e) {
+        }
+    }
+
     public function commandAuth(ConnectionInterface $client, $msg)
     {
         try {
             $request = json_decode($msg, true);
-            $result = ['v' => self::PROTOCOL_VERSION, 'channel' => self::CHANNEL_SYSTEM];
 
             if (empty($request['token'])) {
-                $result['event'] = 'auth.error';
-                $result['payload'] = ['message' => 'Token is required'];
-                $result['ts'] = time();
-                $client->send(json_encode($result));
-                $client->close(1008, 'No token provided');
+                $this->sendAuthErrorToClient($client, 'Token is required', 'No token provided');
                 return;
             }
 
             try {
                 $payload = $this->jwtService->validateToken($request['token']);
-                $user = User::findOne($payload['user_id']);
-                if (!$user) {
-                    $result['event'] = 'auth.error';
-                    $result['payload'] = ['message' => 'User not found'];
-                    $result['ts'] = time();
-                    $client->send(json_encode($result));
-                    $client->close(1008, 'Invalid user');
-                    return;
-                }
-                if ($user->steam_id !== $payload['steam_id']) {
-                    $result['event'] = 'auth.error';
-                    $result['payload'] = ['message' => 'Invalid token'];
-                    $result['ts'] = time();
-                    $client->send(json_encode($result));
-                    $client->close(1008, 'Invalid token');
-                    return;
-                }
+            } catch (\Throwable $e) {
+                Yii::error(
+                    'FrontendPushGateway auth JWT validate failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                    __METHOD__
+                );
+                $this->sendAuthErrorToClient($client, 'Invalid or expired token', 'Token validation failed');
 
-                $client->authenticated = true;
-                $client->user = $user;
-                $client->isAdmin = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
-                $this->indexClientByUserId($client);
-
-                $this->sendEnvelope($client, self::CHANNEL_SYSTEM, self::EVENT_AUTH_OK, [
-                    'userId' => $user->id,
-                    'isStaff' => (bool) $client->isAdmin,
-                ]);
-            } catch (\Exception $e) {
-                $result['event'] = 'auth.error';
-                $result['payload'] = ['message' => $e->getMessage()];
-                $result['ts'] = time();
-                $client->send(json_encode($result));
-                $client->close(1008, 'Token validation failed');
+                return;
             }
-        } catch (\Exception $e) {
-            $this->log('commandAuth: ' . $e->getMessage());
+
             try {
-                $client->close(1011, 'Server error');
+                $user = User::findOne($payload['user_id']);
+            } catch (\Throwable $e) {
+                Yii::error(
+                    'FrontendPushGateway auth User::findOne failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                    __METHOD__
+                );
+                $this->sendAuthErrorToClient($client, 'Authentication failed', 'Server error');
+
+                return;
+            }
+
+            if (!$user) {
+                $this->sendAuthErrorToClient($client, 'User not found', 'Invalid user');
+
+                return;
+            }
+            if ($user->steam_id !== $payload['steam_id']) {
+                $this->sendAuthErrorToClient($client, 'Invalid token', 'Invalid token');
+
+                return;
+            }
+
+            $client->authenticated = true;
+            $client->user = $user;
+            $client->isAdmin = $user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT]);
+            $this->indexClientByUserId($client);
+
+            $this->sendEnvelope($client, self::CHANNEL_SYSTEM, self::EVENT_AUTH_OK, [
+                'userId' => $user->id,
+                'isStaff' => (bool) $client->isAdmin,
+            ]);
+        } catch (\Throwable $e) {
+            Yii::error(
+                'FrontendPushGateway commandAuth: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                __METHOD__
+            );
+            try {
+                $this->sendAuthErrorToClient($client, 'Authentication failed', 'Server error');
             } catch (\Throwable $e2) {
+                try {
+                    $client->close(1011, 'Server error');
+                } catch (\Throwable $e3) {
+                }
             }
         }
     }
