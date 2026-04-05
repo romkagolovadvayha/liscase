@@ -76,6 +76,9 @@ class VkBotSystem extends BaseObject
             . "   • /pop — Онлайн на серверах" . PHP_EOL
             . "   • /wipe — Календарь вайпов" . PHP_EOL
             . "   • /ip — IP-адреса серверов" . PHP_EOL
+            . "   • /balance — Баланс аккаунта (нужна привязка ВК на сайте)" . PHP_EOL
+            . "   • /raid_alert — Вкл/выкл оповещения о рейдах" . PHP_EOL
+            . "   • /ban_alert — Вкл/выкл оповещения о банах" . PHP_EOL
             . "   • /help — Список всех команд" . PHP_EOL . PHP_EOL
             . "💡 Если хотите пожаловаться на игрока, нажмите F7 прямо в игре или напишите в поддержку.";
 
@@ -114,6 +117,32 @@ class VkBotSystem extends BaseObject
                         'payload' => json_encode(['action' => self::ACTION_PROMOCODE, 'node' => self::NODE_PROMOCODE])
                     ],
                     'color' => 'positive'
+                ]
+            ],
+            [
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '💰 Баланс',
+                        'payload' => json_encode(['command' => '/balance'])
+                    ],
+                    'color' => 'secondary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🚨 Рейды',
+                        'payload' => json_encode(['command' => '/raid_alert'])
+                    ],
+                    'color' => 'secondary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🔔 Баны',
+                        'payload' => json_encode(['command' => '/ban_alert'])
+                    ],
+                    'color' => 'secondary'
                 ]
             ],
             [
@@ -341,6 +370,21 @@ class VkBotSystem extends BaseObject
                         'message' => $this->getIp(),
                         'keyboard' => $this->getGreetingMessage(null)['keyboard']
                     ];
+                case '/balance':
+                    return [
+                        'message' => $this->buildBalanceMessage($userId),
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
+                    ];
+                case '/raid_alert':
+                    return [
+                        'message' => $this->buildRaidAlertMessage($userId),
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
+                    ];
+                case '/ban_alert':
+                    return [
+                        'message' => $this->buildBanAlertMessage($userId),
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
+                    ];
             }
         }
 
@@ -441,6 +485,28 @@ class VkBotSystem extends BaseObject
             ];
         }
 
+        if (mb_stripos($textWithoutEmojiLower, 'баланс') !== false || mb_stripos($text, '💰') !== false) {
+            return [
+                'message' => $this->buildBalanceMessage($userId),
+                'keyboard' => null
+            ];
+        }
+
+        if (mb_stripos($textWithoutEmojiLower, 'рейд') !== false && mb_stripos($textWithoutEmojiLower, 'оповещ') !== false) {
+            return [
+                'message' => $this->buildRaidAlertMessage($userId),
+                'keyboard' => null
+            ];
+        }
+
+        if ((mb_stripos($textWithoutEmojiLower, 'бан') !== false && mb_stripos($textWithoutEmojiLower, 'оповещ') !== false)
+            || mb_stripos($textWithoutEmojiLower, 'ban_alert') !== false) {
+            return [
+                'message' => $this->buildBanAlertMessage($userId),
+                'keyboard' => null
+            ];
+        }
+
         // Обработка команд
         switch ($text) {
             case '/help':
@@ -468,6 +534,27 @@ class VkBotSystem extends BaseObject
             case 'ip':
                 return [
                     'message' => $this->getIp(),
+                    'keyboard' => null
+                ];
+
+            case '/balance':
+            case 'balance':
+                return [
+                    'message' => $this->buildBalanceMessage($userId),
+                    'keyboard' => null
+                ];
+
+            case '/raid_alert':
+            case 'raid_alert':
+                return [
+                    'message' => $this->buildRaidAlertMessage($userId),
+                    'keyboard' => null
+                ];
+
+            case '/ban_alert':
+            case 'ban_alert':
+                return [
+                    'message' => $this->buildBanAlertMessage($userId),
                     'keyboard' => null
                 ];
         }
@@ -541,12 +628,136 @@ class VkBotSystem extends BaseObject
             . "👥 /pop — Онлайн на серверах" . PHP_EOL
             . "📅 /wipe — Календарь вайпов" . PHP_EOL
             . "🔗 /ip — IP-адреса серверов" . PHP_EOL
+            . "💰 /balance — Баланс аккаунта (после привязки ВК на сайте)" . PHP_EOL
+            . "🚨 /raid_alert — Оповещения о рейдах (вкл/выкл, как в Telegram)" . PHP_EOL
+            . "🔔 /ban_alert — Оповещения о банах (вкл/выкл)" . PHP_EOL
             . "🎁 Промокод — Ваши промокоды" . PHP_EOL
             . "🤖 Бонус в телеграм — Информация о Telegram-боте" . PHP_EOL
             . "🛟 Написать в поддержку — Связаться с поддержкой" . PHP_EOL . PHP_EOL
             . "💡 Используйте кнопки ниже для быстрого доступа к функциям.";
 
         return $message;
+    }
+
+    /**
+     * @param int|null $vkUserId from_id из Callback API
+     */
+    private function findUserByVkId($vkUserId): ?User
+    {
+        if (empty($vkUserId)) {
+            return null;
+        }
+
+        return User::find()->andWhere(['vk_id' => (int)$vkUserId])->one();
+    }
+
+    /**
+     * @param int|null $vkUserId
+     */
+    private function buildBalanceMessage($vkUserId): string
+    {
+        $cacheKey = 'VkBotSystem_getBalance_' . (int)$vkUserId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $user = $this->findUserByVkId($vkUserId);
+        if (empty($user)) {
+            $domain = Yii::$app->settings->get('site_domain');
+
+            return '🔒 Требуется привязка аккаунта' . PHP_EOL . PHP_EOL
+                . 'Чтобы смотреть баланс, привяжите ВКонтакте в личном кабинете на сайте и подтвердите код в этом чате.' . PHP_EOL
+                . 'Сайт: https://' . $domain;
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 Доступ запрещён' . PHP_EOL . PHP_EOL . 'Ваш аккаунт заблокирован.';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+
+            return $return;
+        }
+
+        $personalBalance = $user->getPersonalBalance();
+        $skinsBalance = $user->getSkinsBalance();
+        $domain = Yii::$app->settings->get('site_domain');
+        $text = '💰 Баланс аккаунта' . PHP_EOL
+            . 'Пользователь: ' . $user->username . PHP_EOL . PHP_EOL
+            . 'Лицевой счёт: ' . $personalBalance->getBalanceFormat() . ' РУБ' . PHP_EOL . PHP_EOL
+            . 'Скины: ' . $skinsBalance->getBalanceFormat() . ' РУБ' . PHP_EOL . PHP_EOL
+            . 'Магазин: https://' . $domain;
+
+        Yii::$app->cache->set($cacheKey, $text, 30);
+
+        return $text;
+    }
+
+    /**
+     * @param int|null $vkUserId
+     */
+    private function buildRaidAlertMessage($vkUserId): string
+    {
+        $cacheKey = 'VkBotSystem_getRaidAlert_' . (int)$vkUserId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $user = $this->findUserByVkId($vkUserId);
+        if (empty($user)) {
+            return '🔒 Сначала привяжите ВКонтакте к аккаунту на сайте и подтвердите код в этом чате.';
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 Доступ запрещён' . PHP_EOL . PHP_EOL . 'Ваш аккаунт заблокирован.';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+
+            return $return;
+        }
+
+        Yii::$app->cache->set($cacheKey, '⏳ Слишком часто, попробуйте позже.', 10);
+        if ($user->raid_notify) {
+            $user->raid_notify = 0;
+            $user->save(false);
+
+            return '🔕 Уведомления отключены' . PHP_EOL . PHP_EOL . 'Оповещения о рейдах выключены (как в Telegram).';
+        }
+        $user->raid_notify = 1;
+        $user->save(false);
+
+        return '🔔 Уведомления включены' . PHP_EOL . PHP_EOL
+            . 'Будем присылать оповещения о рейдах в этот чат, пока включено в боте и на сайте.';
+    }
+
+    /**
+     * @param int|null $vkUserId
+     */
+    private function buildBanAlertMessage($vkUserId): string
+    {
+        $cacheKey = 'VkBotSystem_getBanAlert_' . (int)$vkUserId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $user = $this->findUserByVkId($vkUserId);
+        if (empty($user)) {
+            return '🔒 Сначала привяжите ВКонтакте к аккаунту на сайте и подтвердите код в этом чате.';
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 Доступ запрещён' . PHP_EOL . PHP_EOL . 'Ваш аккаунт заблокирован.';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+
+            return $return;
+        }
+
+        Yii::$app->cache->set($cacheKey, '⏳ Слишком часто, попробуйте позже.', 10);
+        if ($user->ban_notify) {
+            $user->ban_notify = 0;
+            $user->save(false);
+
+            return '🔕 Уведомления отключены' . PHP_EOL . PHP_EOL . 'Оповещения о банах выключены.';
+        }
+        $user->ban_notify = 1;
+        $user->save(false);
+
+        return '🔔 Уведомления включены' . PHP_EOL . PHP_EOL
+            . 'Будем присылать оповещения о банах по вашим жалобам в этот чат.';
     }
 
     /**

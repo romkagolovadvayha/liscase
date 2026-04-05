@@ -1563,35 +1563,78 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
+     * Оповещения о банах доставляются, если флаг включён и есть Telegram (не заблокирован) или привязан ВК.
+     */
+    public function hasBanNotifyDeliveryConfigured(): bool
+    {
+        if (empty($this->ban_notify)) {
+            return false;
+        }
+        $telegramOk = !empty($this->telegram_chat_id) && !$this->is_telegram_blocked;
+        $vkOk = !empty($this->vk_id);
+
+        return $telegramOk || $vkOk;
+    }
+
+    /**
+     * Оповещения о рейдах доставляются, если флаг включён и есть Telegram (не заблокирован) или привязан ВК.
+     */
+    public function hasRaidNotifyDeliveryConfigured(): bool
+    {
+        if (empty($this->raid_notify)) {
+            return false;
+        }
+        $telegramOk = !empty($this->telegram_chat_id) && !$this->is_telegram_blocked;
+        $vkOk = !empty($this->vk_id);
+
+        return $telegramOk || $vkOk;
+    }
+
+    /**
+     * Личное сообщение пользователю в боте ВКонтакте (messages.send).
+     */
+    public function sendPersonalVkBotMessage(string $plainText): void
+    {
+        if (empty($this->vk_id) || $plainText === '') {
+            return;
+        }
+        try {
+            $vk = new \common\components\vk\VkApiHelper();
+            $vk->setAccessToken(Yii::$app->settings->get('vk_token'));
+            $vk->sendMessage((int)$this->vk_id, $plainText);
+        } catch (\Throwable $e) {
+            Yii::error('sendPersonalVkBotMessage: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
      * Отправляет сообщение в игровой чат пользователю о подключении Telegram бота и оповещений о банах
      * 
      * @param Servers $server Сервер на котором находится игрок
      * @return bool
      */
     public function sendBanNotifyPromoMessage($server) {
-        // Проверяем что бот не подключен или оповещения отключены
-        $needsPromo = false;
+        if ($this->hasBanNotifyDeliveryConfigured()) {
+            return false;
+        }
+
         $messageRu = '';
         $messageEn = '';
-        
-        if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
-            // Бот не подключен
-            $needsPromo = true;
-            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о банах!\n";
-            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
-            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get ban alerts!\n";
-            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
-        } elseif (!$this->ban_notify) {
-            // Оповещения о банах отключены
-            $needsPromo = true;
+
+        if (empty($this->ban_notify)) {
             $messageRu = "<color=#feeda1>Включите оповещения о банах игроков!</color>\n";
             $messageRu .= "Узнавайте о банах игроков, на которых вы пожаловались";
+            $messageRu .= "\nTelegram: <color=#aaf16e>/ban_alert</color> или в профиле на сайте";
+            $messageRu .= "\nВКонтакте: <color=#aaf16e>/ban_alert</color> в боте сообщества";
             $messageEn = "<color=#feeda1>Enable ban notifications!</color>\n";
             $messageEn .= "Get notified when reported players are banned";
-        }
-        
-        if (!$needsPromo) {
-            return false;
+            $messageEn .= "\nTelegram: <color=#aaf16e>/ban_alert</color> or in site profile";
+            $messageEn .= "\nVK: <color=#aaf16e>/ban_alert</color> in community bot";
+        } else {
+            $messageRu = "<color=#feeda1>Подключите Telegram-бота или бота ВКонтакте</color> для оповещений о банах!\n";
+            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
+            $messageEn = "<color=#feeda1>Connect Telegram or VK bot</color> for ban alerts!\n";
+            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
         }
         
         // Добавляем ссылку на Telegram бота
@@ -1610,6 +1653,13 @@ class User extends ActiveRecord implements IdentityInterface
             $channelLink = str_replace('http://', '', $channelLink);
             $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
             $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
+        }
+
+        $vkSocial = Yii::$app->settings->get('social_vk');
+        if (!empty($vkSocial)) {
+            $vkLink = str_replace(['https://', 'http://'], '', $vkSocial);
+            $messageRu .= "\nВК: <color=#aaf16e>{$vkLink}</color>";
+            $messageEn .= "\nVK: <color=#aaf16e>{$vkLink}</color>";
         }
         
         // Отправляем сообщение через RCON
@@ -1644,27 +1694,25 @@ class User extends ActiveRecord implements IdentityInterface
      * @return bool
      */
     public function sendRaidNotifyPromoMessage($server) {
-        // Проверяем что бот не подключен или оповещения отключены
-        $needsPromo = false;
+        if ($this->hasRaidNotifyDeliveryConfigured()) {
+            return false;
+        }
+
         $messageRu = '';
         $messageEn = '';
-        
-        if (empty($this->telegram_chat_id) || $this->is_telegram_blocked) {
-            // Бот не подключен
-            $needsPromo = true;
-            $messageRu = "<color=#feeda1>Подключите Telegram бота</color> для получения оповещений о рейдах!\n";
-            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
-            $messageEn = "<color=#feeda1>Connect Telegram bot</color> to get raid alerts!\n";
-            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
-        } elseif (!$this->raid_notify) {
-            // Оповещения о рейдах отключены
-            $needsPromo = true;
+
+        if (empty($this->raid_notify)) {
             $messageRu = "<color=#feeda1>Включите оповещения о рейдах!</color>\n";
+            $messageRu .= "Telegram: <color=#aaf16e>/raid_alert</color> или в профиле на сайте";
+            $messageRu .= "\nВКонтакте: <color=#aaf16e>/raid_alert</color> в боте сообщества";
             $messageEn = "<color=#feeda1>Enable raid notifications!</color>\n";
-        }
-        
-        if (!$needsPromo) {
-            return false;
+            $messageEn .= "Telegram: <color=#aaf16e>/raid_alert</color> or site profile";
+            $messageEn .= "\nVK: <color=#aaf16e>/raid_alert</color> in community bot";
+        } else {
+            $messageRu = "<color=#feeda1>Подключите Telegram-бота или бота ВКонтакте</color> для оповещений о рейдах!\n";
+            $messageRu .= "Инструкция: <color=#aaf16e>/help</color> в боте";
+            $messageEn = "<color=#feeda1>Connect Telegram or VK bot</color> for raid alerts!\n";
+            $messageEn .= "Instructions: <color=#aaf16e>/help</color> in bot";
         }
         
         // Добавляем ссылку на Telegram бота
@@ -1683,6 +1731,13 @@ class User extends ActiveRecord implements IdentityInterface
             $channelLink = str_replace('http://', '', $channelLink);
             $messageRu .= "\nНаш канал: <color=#aaf16e>{$channelLink}</color>";
             $messageEn .= "\nOur channel: <color=#aaf16e>{$channelLink}</color>";
+        }
+
+        $vkSocial = Yii::$app->settings->get('social_vk');
+        if (!empty($vkSocial)) {
+            $vkLink = str_replace(['https://', 'http://'], '', $vkSocial);
+            $messageRu .= "\nВК: <color=#aaf16e>{$vkLink}</color>";
+            $messageEn .= "\nVK: <color=#aaf16e>{$vkLink}</color>";
         }
         
         // Отправляем сообщение через RCON

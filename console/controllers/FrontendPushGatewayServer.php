@@ -83,13 +83,10 @@ class FrontendPushGatewayServer extends WebSocketServer
             if (!isset($client->subscribedTickets)) {
                 $client->subscribedTickets = [];
             }
-            $this->log('Client connected: ' . $client->remoteAddress);
         });
 
         $this->on(self::EVENT_CLIENT_DISCONNECTED, function (WSClientEvent $e) {
             $this->removeClientFromIndexes($e->client);
-            $uid = !empty($e->client->user) ? $e->client->user->id : 'anonymous';
-            $this->log("Client disconnected: {$uid}");
         });
 
         $this->on(self::EVENT_WEBSOCKET_OPEN, function () {
@@ -174,7 +171,6 @@ class FrontendPushGatewayServer extends WebSocketServer
                     'userId' => $user->id,
                     'isStaff' => (bool) $client->isAdmin,
                 ]);
-                $this->log("User {$user->id} authenticated (fp-gateway)");
             } catch (\Exception $e) {
                 $result['event'] = 'auth.error';
                 $result['payload'] = ['message' => $e->getMessage()];
@@ -249,8 +245,6 @@ class FrontendPushGatewayServer extends WebSocketServer
             if (!in_array($client, $this->clientsByTicketId[$ticketNumber], true)) {
                 $this->clientsByTicketId[$ticketNumber][] = $client;
             }
-            $uid = !empty($client->user) ? $client->user->id : 0;
-            $this->log("User {$uid} subscribed ticket {$ticketNumber} (fp-gateway)");
         } catch (\Exception $e) {
             $this->log('commandSubscribeTicket: ' . $e->getMessage());
         }

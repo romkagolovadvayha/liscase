@@ -125,7 +125,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $server = Servers::findOne(['tag' => $this->serverTag, 'status' => Servers::STATUS_ACTIVE]);
             
             // Отправляем уведомление пользователю о включении оповещений о банах
-            if ($user && (empty($user->telegram_chat_id) || $user->is_telegram_blocked || !$user->ban_notify)) {
+            if ($user && !$user->hasBanNotifyDeliveryConfigured()) {
                 if ($server) {
                     $user->sendBanNotifyPromoMessage($server);
                 }

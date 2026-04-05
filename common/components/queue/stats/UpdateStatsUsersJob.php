@@ -182,7 +182,7 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
 
             // Проверяем нужно ли отправлять уведомление
             // (если бот не подключен или оповещения отключены)
-            if (empty($user->telegram_chat_id) || $user->is_telegram_blocked || !$user->raid_notify) {
+            if (!$user->hasRaidNotifyDeliveryConfigured()) {
                 // Отправляем сообщение в игровой чат
                 $user->sendRaidNotifyPromoMessage($server);
             }

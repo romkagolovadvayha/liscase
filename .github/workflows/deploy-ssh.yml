@@ -1,0 +1,118 @@
+# Деплой на VPS по SSH (git pull + composer + миграции).
+# Отдельно от deploy.yml (Kubernetes): этот workflow только для «голого» хоста.
+#
+# GitHub → Settings → Environments → создать **backend** (имя как в `environment:` ниже).
+# Секреты/переменные (как у prostoj-frontend): secrets или vars.
+#   SSH_HOST, SSH_USER, DEPLOY_PATH
+#   SSH_PRIVATE_KEY или SSH_PRIVATE_KEY_B64
+#   SSH_KEY_PASSPHRASE — только если ключ с паролем
+#   DEPLOY_ENV — опционально: тело .env → заливается в DEPLOY_PATH/.env
+#
+# На сервере: git, php, composer в PATH; клон репозитория в DEPLOY_PATH;
+# пользователь SSH_USER должен уметь git pull (deploy key или HTTPS с credentials).
+
+name: Deploy (SSH — VPS)
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+      - master
+      - prostoj
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-liscase-ssh-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: backend
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST || vars.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER || vars.SSH_USER }}
+      DEPLOY_PATH_REMOTE: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH }}
+      SSH_KEY_MATERIAL: ${{ secrets.SSH_PRIVATE_KEY || secrets.DEPLOY_SSH_PRIVATE_KEY || secrets.SSH_KEY || vars.SSH_PRIVATE_KEY || vars.DEPLOY_SSH_PRIVATE_KEY || vars.SSH_KEY }}
+      SSH_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE || vars.SSH_KEY_PASSPHRASE }}
+
+    steps:
+      - name: Проверка переменных деплоя
+        run: |
+          missing=
+          [ -z "${SSH_HOST:-}" ] && missing="$missing SSH_HOST"
+          [ -z "${SSH_USER:-}" ] && missing="$missing SSH_USER"
+          [ -z "${DEPLOY_PATH_REMOTE:-}" ] && missing="$missing DEPLOY_PATH"
+          if [ -z "${SSH_KEY_MATERIAL:-}" ] && [ -z "${SSH_KEY_B64:-}" ]; then
+            missing="$missing SSH_PRIVATE_KEY (или SSH_PRIVATE_KEY_B64)"
+          fi
+          if [ -n "$missing" ]; then
+            echo "::error::Пусто:$missing"
+            exit 1
+          fi
+
+      - name: Записать SSH-ключ в файл
+        run: |
+          set -euo pipefail
+          mkdir -p .github-ssh
+          if [ -n "${SSH_KEY_B64:-}" ]; then
+            printf '%s' "$SSH_KEY_B64" | tr -d ' \n\r\t' | base64 -d > .github-ssh/id_deploy
+          else
+            printf '%s\n' "$SSH_KEY_MATERIAL" > .github-ssh/id_deploy
+          fi
+          chmod 644 .github-ssh/id_deploy
+          if ! head -1 .github-ssh/id_deploy | grep -q 'BEGIN'; then
+            echo "::error::В SSH_PRIVATE_KEY должен быть приватный ключ (-----BEGIN … KEY-----)."
+            exit 1
+          fi
+          if ssh-keygen -y -f .github-ssh/id_deploy -P "" >/dev/null 2>&1; then
+            echo "SSH_KEY_PASSPHRASE=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Собрать .env из DEPLOY_ENV
+        id: prepenv
+        env:
+          ENV_BODY: ${{ secrets.DEPLOY_ENV || vars.DEPLOY_ENV }}
+        run: |
+          if [ -n "$ENV_BODY" ]; then
+            printf '%s\n' "$ENV_BODY" > .env.deploy
+            echo "has_env=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_env=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Залить .env на сервер
+        if: steps.prepenv.outputs.has_env == '1'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key_path: .github-ssh/id_deploy
+          passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
+          port: 22
+          source: .env.deploy
+          target: ${{ env.DEPLOY_PATH_REMOTE }}/
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key_path: .github-ssh/id_deploy
+          passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ env.DEPLOY_PATH_REMOTE }}"
+            if [ -f .env.deploy ]; then
+              mv -f .env.deploy .env
+            fi
+            BRANCH="${{ github.ref_name }}"
+            git fetch origin "$BRANCH"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+            composer install --no-interaction --no-dev --optimize-autoloader
+            php yii migrate --interactive=0

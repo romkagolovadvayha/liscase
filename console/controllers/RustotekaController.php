@@ -152,8 +152,14 @@ class RustotekaController extends Controller
 
                         foreach ($reports as $report) {
                             $_user = User::findBySteamId($report->steam_id, false, 'rustoteka 2');
-                            if (!empty($_user) && $_user->ban_notify && !empty($_user->telegram_chat_id)) {
-                                \Yii::$app->personalBotTelegram->sendMessage($_user->telegram_chat_id, "⛔️Игрок {$model->username}, на которого вы жаловались забанен по причине {$model->reason}!");
+                            if (!empty($_user) && $_user->ban_notify) {
+                                $banMsg = "⛔️Игрок {$model->username}, на которого вы жаловались забанен по причине {$model->reason}!";
+                                if (!empty($_user->telegram_chat_id)) {
+                                    \Yii::$app->personalBotTelegram->sendMessage($_user->telegram_chat_id, $banMsg);
+                                }
+                                if (!empty($_user->vk_id)) {
+                                    $_user->sendPersonalVkBotMessage($banMsg);
+                                }
                             }
                         }
                     }

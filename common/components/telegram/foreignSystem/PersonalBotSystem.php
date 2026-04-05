@@ -17,6 +17,10 @@ use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
 use common\models\user\User;
 
+/**
+ * Личный бот Telegram. Паритет команд для ВКонтакте — в {@see \common\components\vk\VkBotSystem}
+ * (вебхук {@see \api\controllers\VkController}).
+ */
 class PersonalBotSystem extends AbstractSystem
 {
 
