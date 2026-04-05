@@ -139,7 +139,8 @@ jobs:
           CRON_BODY: ${{ secrets.DEPLOY_CRONTAB || vars.DEPLOY_CRONTAB }}
         run: |
           if [ -n "$CRON_BODY" ]; then
-            printf '%s\n' "$CRON_BODY" > deploy.crontab
+            # Секрет с Windows/панели часто с CRLF — \r в конце строк ломает yii (runAction('sync\r')).
+            printf '%s\n' "$CRON_BODY" | tr -d '\r' > deploy.crontab
             echo "has_cron=1" >> "$GITHUB_OUTPUT"
           else
             echo "has_cron=0" >> "$GITHUB_OUTPUT"
@@ -200,6 +201,7 @@ jobs:
             # crontab / HUP: не валим job при сбое sudo или systemctl
             set +e
             if [ -f deploy.crontab ]; then
+              tr -d '\r' < deploy.crontab > deploy.crontab.__lf__ && mv -f deploy.crontab.__lf__ deploy.crontab
               CRON_ROOT='${{ secrets.DEPLOY_CRONTAB_ROOT || vars.DEPLOY_CRONTAB_ROOT }}'
               CRON_ROOT_NORM=$(printf '%s' "$CRON_ROOT" | tr '[:upper:]' '[:lower:]')
               if [ "$CRON_ROOT_NORM" = "1" ] || [ "$CRON_ROOT_NORM" = "true" ] || [ "$CRON_ROOT_NORM" = "yes" ]; then
