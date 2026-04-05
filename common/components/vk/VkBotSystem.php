@@ -2,8 +2,12 @@
 
 namespace common\components\vk;
 
-use common\models\user\User;
+use common\models\box\Box;
+use common\models\profit\Profit;
 use common\models\servers\Servers;
+use common\models\user\User;
+use common\models\user\UserBox;
+use common\models\user\UserDrop;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -77,6 +81,7 @@ class VkBotSystem extends BaseObject
             . "   • /wipe — Календарь вайпов" . PHP_EOL
             . "   • /ip — IP-адреса серверов" . PHP_EOL
             . "   • /balance — Баланс аккаунта (нужна привязка ВК на сайте)" . PHP_EOL
+            . "   • /bonus — Ежедневный бонус (бесплатная рулетка)" . PHP_EOL
             . "   • /raid_alert — Вкл/выкл оповещения о рейдах" . PHP_EOL
             . "   • /ban_alert — Вкл/выкл оповещения о банах" . PHP_EOL
             . "   • /help — Список всех команд" . PHP_EOL . PHP_EOL
@@ -127,6 +132,14 @@ class VkBotSystem extends BaseObject
                         'payload' => json_encode(['command' => '/balance'])
                     ],
                     'color' => 'secondary'
+                ],
+                [
+                    'action' => [
+                        'type' => 'text',
+                        'label' => '🎁 Бонус',
+                        'payload' => json_encode(['command' => '/bonus'])
+                    ],
+                    'color' => 'positive'
                 ],
                 [
                     'action' => [
@@ -375,6 +388,11 @@ class VkBotSystem extends BaseObject
                         'message' => $this->buildBalanceMessage($userId),
                         'keyboard' => $this->getGreetingMessage(null)['keyboard']
                     ];
+                case '/bonus':
+                    return [
+                        'message' => $this->buildBonusMessage($userId),
+                        'keyboard' => $this->getGreetingMessage(null)['keyboard']
+                    ];
                 case '/raid_alert':
                     return [
                         'message' => $this->buildRaidAlertMessage($userId),
@@ -492,6 +510,15 @@ class VkBotSystem extends BaseObject
             ];
         }
 
+        if (mb_stripos($textWithoutEmojiLower, 'бонус') !== false
+            && mb_stripos($textWithoutEmojiLower, 'телеграм') === false
+            && mb_stripos($textWithoutEmojiLower, 'telegram') === false) {
+            return [
+                'message' => $this->buildBonusMessage($userId),
+                'keyboard' => null
+            ];
+        }
+
         if (mb_stripos($textWithoutEmojiLower, 'рейд') !== false && mb_stripos($textWithoutEmojiLower, 'оповещ') !== false) {
             return [
                 'message' => $this->buildRaidAlertMessage($userId),
@@ -541,6 +568,13 @@ class VkBotSystem extends BaseObject
             case 'balance':
                 return [
                     'message' => $this->buildBalanceMessage($userId),
+                    'keyboard' => null
+                ];
+
+            case '/bonus':
+            case 'bonus':
+                return [
+                    'message' => $this->buildBonusMessage($userId),
                     'keyboard' => null
                 ];
 
@@ -629,6 +663,7 @@ class VkBotSystem extends BaseObject
             . "📅 /wipe — Календарь вайпов" . PHP_EOL
             . "🔗 /ip — IP-адреса серверов" . PHP_EOL
             . "💰 /balance — Баланс аккаунта (после привязки ВК на сайте)" . PHP_EOL
+            . "🎁 /bonus — Ежедневный бонус (как в Telegram-боте)" . PHP_EOL
             . "🚨 /raid_alert — Оповещения о рейдах (вкл/выкл, как в Telegram)" . PHP_EOL
             . "🔔 /ban_alert — Оповещения о банах (вкл/выкл)" . PHP_EOL
             . "🎁 Промокод — Ваши промокоды" . PHP_EOL
@@ -688,6 +723,89 @@ class VkBotSystem extends BaseObject
         Yii::$app->cache->set($cacheKey, $text, 30);
 
         return $text;
+    }
+
+    /**
+     * Ежедневный бонус (бесплатная рулетка) — та же логика, что {@see PersonalBotSystem::getBonus}.
+     *
+     * @param int|null $vkUserId
+     */
+    private function buildBonusMessage($vkUserId): string
+    {
+        $cacheKey = 'VkBotSystem_getBonus_' . (int)$vkUserId;
+        if (Yii::$app->cache->get($cacheKey)) {
+            return Yii::$app->cache->get($cacheKey);
+        }
+
+        $user = $this->findUserByVkId($vkUserId);
+        if (empty($user)) {
+            $domain = Yii::$app->settings->get('site_domain');
+
+            return '🔒 Требуется привязка аккаунта' . PHP_EOL . PHP_EOL
+                . 'Чтобы получать ежедневный бонус, привяжите ВКонтакте на сайте и подтвердите код в этом чате.' . PHP_EOL
+                . 'Сайт: https://' . $domain;
+        }
+        if ($user->status === User::STATUS_BLOCKED) {
+            $return = '🚫 Доступ запрещён' . PHP_EOL . PHP_EOL . 'Ваш аккаунт заблокирован.';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+
+            return $return;
+        }
+
+        $box = Box::findOne(14);
+        if ($box === null) {
+            return '⚠️ Бонус временно недоступен. Попробуйте позже.';
+        }
+
+        $nextOpenFreeBoxDate = Box::getNextOpenFreeBoxDate($user->id);
+        if (!empty($nextOpenFreeBoxDate)) {
+            $date = new \DateTime($nextOpenFreeBoxDate);
+            $return = '⏰ Бонус уже получен' . PHP_EOL . PHP_EOL
+                . 'Вы уже получили награду сегодня.' . PHP_EOL
+                . 'Следующий бонус: ' . $date->format('d.m.Y в H:i') . ' МСК';
+            Yii::$app->cache->set($cacheKey, $return, 60);
+
+            return $return;
+        }
+
+        $userBoxId = UserBox::createRecord($user->id, $box->id);
+        $userBox = UserBox::findOne($userBoxId);
+        if ($userBox === null) {
+            return '⚠️ Не удалось выдать бонус. Попробуйте позже.';
+        }
+
+        [$boxDropCarousel, $number] = $userBox->box->_getDropFinal();
+        $userBox->status = UserBox::STATUS_OPENED;
+        $userBox->save(false);
+
+        $dropName = Yii::t('database', $boxDropCarousel[$number]['boxDrop']->drop->name);
+        $dropCount = $boxDropCarousel[$number]['count'];
+
+        if ($boxDropCarousel[$number]['boxDrop']->drop->id != 843) {
+            UserDrop::createRecord(
+                $user->id,
+                $boxDropCarousel[$number]['boxDrop']->drop->id,
+                $box->id,
+                null,
+                UserDrop::STATUS_ACTIVE,
+                false,
+                $boxDropCarousel[$number]['count']
+            );
+        } else {
+            $userBalance = $user->getPersonalBalance();
+            $profit = new Profit();
+            $profit->status = 1;
+            $profit->type = Profit::TYPE_SELL_DROP;
+            $profit->amount = $boxDropCarousel[$number]['count'];
+            $profit->user_balance_id = $userBalance->id;
+            $profit->comment = Yii::t('common', 'Выигрыш в бесплатной рулетке', [], 'ru-RU');
+            $profit->created_at = date('Y-m-d H:i:s');
+            $profit->save(false);
+        }
+
+        return '🎉 Поздравляем!' . PHP_EOL . PHP_EOL
+            . 'Вы получили награду:' . PHP_EOL
+            . '🎁 ' . $dropName . ' × ' . $dropCount;
     }
 
     /**
