@@ -1,7 +1,7 @@
 # Деплой на VPS по SSH (git pull + composer + миграции).
 # Отдельно от deploy.yml (Kubernetes): этот workflow только для «голого» хоста.
 #
-# GitHub → Settings → Environments → создать **backend** (имя как в `environment:` ниже).
+# GitHub → Settings → Environments → **prostoj** (имя как в `environment:` ниже).
 # Секреты/переменные (как у prostoj-frontend): secrets или vars.
 #   SSH_HOST, SSH_USER, DEPLOY_PATH
 #   SSH_PRIVATE_KEY или SSH_PRIVATE_KEY_B64
@@ -29,7 +29,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: backend
+    environment: prostoj
     env:
       SSH_HOST: ${{ secrets.SSH_HOST || vars.SSH_HOST }}
       SSH_USER: ${{ secrets.SSH_USER || vars.SSH_USER }}
