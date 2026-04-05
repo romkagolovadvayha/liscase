@@ -113,7 +113,8 @@ jobs:
             BRANCH="${{ github.ref_name }}"
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
-            git pull origin "$BRANCH"
+            # Без merge: локальные правки отслеживаемых файлов (например yii) ломали git pull (exit 128)
+            git reset --hard "origin/$BRANCH"
             export YII_ENV=prod
             export YII_DEBUG=0
             composer install --no-interaction --no-dev --optimize-autoloader

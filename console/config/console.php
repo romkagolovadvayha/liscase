@@ -258,11 +258,11 @@ $config = yii\helpers\ArrayHelper::merge(
     require(__DIR__ . '/../../common/config/queue.php'),
 );
 
-if (YII_ENV_DEV) {
-    // configuration adjustments for 'dev' environment
+if (YII_ENV_DEV && class_exists(\yii\gii\Module::class)) {
+    // gii в require-dev; при composer --no-dev класса нет — не подключаем
     $config['bootstrap'][] = 'gii';
     $config['modules']['gii'] = [
-        'class' => 'yii\gii\Module',
+        'class' => \yii\gii\Module::class,
     ];
 }
 
