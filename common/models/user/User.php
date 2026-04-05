@@ -1225,8 +1225,8 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getReferralBonus() {
-        $referralBonusPersonal = $this->userProfile->referral_bonus;
-        $referralBonus = Yii::$app->settings->get('referral_percent');
+        $referralBonusPersonal = $this->userProfile !== null ? (int)$this->userProfile->referral_bonus : 0;
+        $referralBonus = (int)Yii::$app->settings->get('referral_percent');
         if ($referralBonusPersonal > $referralBonus) {
             return $referralBonusPersonal;
         }
@@ -1257,7 +1257,10 @@ class User extends ActiveRecord implements IdentityInterface
         $payoutSum = \common\models\user\UserPayoutReferral::find()
                                                            ->andWhere(['user_id' => $this->id])
                                                            ->sum('amount') ?? 0;
-        return $total * ($this->userProfile->referral_bonus/100) - $payoutSum;
+        $bonusPercent = $this->userProfile !== null
+            ? (float)$this->userProfile->referral_bonus
+            : (float)Yii::$app->settings->get('referral_percent');
+        return $total * ($bonusPercent / 100) - $payoutSum;
     }
 
     /**
