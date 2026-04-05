@@ -37,6 +37,8 @@ class FrontendPushGatewayServer extends WebSocketServer
     public const EVENT_SUPPORT_MESSAGES_READ = 'support.messages.read';
     public const EVENT_SUPPORT_USER_BLOCKED = 'support.user.blocked';
     public const EVENT_BALANCE_UPDATED = 'balance.updated';
+    /** Корзина /store: нужно перезагрузить список (покупка, награда и т.п.) */
+    public const EVENT_STORE_INVENTORY_CHANGED = 'store.inventory.changed';
 
     public const EVENT_AUTH_OK = 'auth.ok';
     public const EVENT_PONG = 'pong';
@@ -566,6 +568,61 @@ class FrontendPushGatewayServer extends WebSocketServer
         );
     }
 
+    private function dispatchStoreInventoryChanged(int $userId, string $reason = 'purchase'): void
+    {
+        $this->sendToMany(
+            $this->getClientsByUserId($userId),
+            self::EVENT_STORE_INVENTORY_CHANGED,
+            ['userId' => $userId, 'reason' => $reason]
+        );
+    }
+
+    /**
+     * Доставка на фронт (Next.js) того же обновления баланса, что лаунчер получает через ChatServer.
+     * Ключ кеша пишет {@see \common\models\user\UserBalance::recalculateBalance()}.
+     */
+    private function pushBalanceUpdatesFromUserBalanceCache(): void
+    {
+        foreach (array_keys($this->clientsByUserId) as $userId) {
+            $userId = (int) $userId;
+            if ($userId <= 0) {
+                continue;
+            }
+            $balanceKey = 'ws_balance_update_' . $userId;
+            $balanceData = Yii::$app->cache->get($balanceKey);
+            if (!is_array($balanceData)) {
+                continue;
+            }
+            if (($balanceData['type'] ?? '') !== 'update.balance') {
+                continue;
+            }
+            $ts = isset($balanceData['timestamp']) ? (int) $balanceData['timestamp'] : 0;
+            if ($ts === 0 || (time() - $ts) >= 30) {
+                continue;
+            }
+            if (!empty($balanceData['sent'])) {
+                continue;
+            }
+            $clients = $this->getClientsByUserId($userId);
+            if ($clients === []) {
+                continue;
+            }
+            $rawBal = $balanceData['balance'] ?? null;
+            $payload = [
+                'newBalance' => $rawBal !== null ? (float) $rawBal : null,
+                'balanceStr' => isset($balanceData['balanceStr']) ? (string) $balanceData['balanceStr'] : null,
+            ];
+            foreach ($clients as $c) {
+                try {
+                    $this->sendEnvelope($c, self::CHANNEL_NOTIFICATION, self::EVENT_BALANCE_UPDATED, $payload);
+                } catch (\Throwable $e) {
+                }
+            }
+            $balanceData['sent'] = true;
+            Yii::$app->cache->set($balanceKey, $balanceData, 5);
+        }
+    }
+
     private function dispatchUserBlocked(int $userId, string $blockType, $blocked, $blockedAt): void
     {
         $this->sendToMany(
@@ -586,6 +643,9 @@ class FrontendPushGatewayServer extends WebSocketServer
     private function processCacheQueues(): void
     {
         $now = time();
+
+        // Баланс после пересчёта (UserBalance::recalculateBalance → кеш ws_balance_update_*), как в ChatServer
+        $this->pushBalanceUpdatesFromUserBalanceCache();
 
         $queueKey = 'fp_ws_support_messages_queue';
         $queue = Yii::$app->cache->get($queueKey);
@@ -794,6 +854,40 @@ class FrontendPushGatewayServer extends WebSocketServer
             }
         }
 
+        $storeInvQueueKey = 'fp_ws_store_inventory_queue';
+        $storeInvQueue = Yii::$app->cache->get($storeInvQueueKey);
+        if (!is_array($storeInvQueue)) {
+            $storeInvQueue = [];
+        }
+        $processedSi = [];
+        foreach ($storeInvQueue as $userId => $queueTimestamp) {
+            if (($now - $queueTimestamp) > 5) {
+                continue;
+            }
+            $storeCacheKey = 'fp_ws_store_inventory_' . $userId;
+            $storeData = Yii::$app->cache->get($storeCacheKey);
+            if ($storeData && isset($storeData['type']) && $storeData['type'] === 'store.inventory.changed') {
+                if (isset($storeData['timestamp']) && ($now - $storeData['timestamp']) < 5) {
+                    Yii::$app->cache->delete($storeCacheKey);
+                    $this->dispatchStoreInventoryChanged(
+                        (int) $storeData['userId'],
+                        isset($storeData['reason']) ? (string) $storeData['reason'] : 'purchase'
+                    );
+                    $processedSi[] = $userId;
+                }
+            }
+        }
+        if (!empty($processedSi)) {
+            foreach ($processedSi as $uid) {
+                unset($storeInvQueue[$uid]);
+            }
+            if (empty($storeInvQueue)) {
+                Yii::$app->cache->delete($storeInvQueueKey);
+            } else {
+                Yii::$app->cache->set($storeInvQueueKey, $storeInvQueue, 10);
+            }
+        }
+
         $userBlocksQueueKey = 'fp_ws_user_blocks_queue';
         $userBlocksQueue = Yii::$app->cache->get($userBlocksQueueKey);
         if (!is_array($userBlocksQueue)) {
@@ -963,6 +1057,40 @@ class FrontendPushGatewayServer extends WebSocketServer
             return true;
         } catch (\Exception $ex) {
             error_log('FrontendPushGatewayServer::queueNewTicket: ' . $ex->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Сигнал фронту перезагрузить GET /v1/store/items (страница /store).
+     */
+    public static function queueStoreInventoryRefresh(int $userId, string $reason = 'purchase'): bool
+    {
+        try {
+            $cacheKey = 'fp_ws_store_inventory_' . $userId;
+            $data = [
+                'type' => 'store.inventory.changed',
+                'userId' => $userId,
+                'reason' => $reason,
+                'timestamp' => time(),
+            ];
+            Yii::$app->cache->set($cacheKey, $data, 10);
+            $queueKey = 'fp_ws_store_inventory_queue';
+            $queue = Yii::$app->cache->get($queueKey);
+            if (!is_array($queue)) {
+                $queue = [];
+            }
+            $queue[$userId] = time();
+            if (count($queue) > 1000) {
+                arsort($queue);
+                $queue = array_slice($queue, 0, 1000, true);
+            }
+            Yii::$app->cache->set($queueKey, $queue, 10);
+
+            return true;
+        } catch (\Exception $ex) {
+            error_log('FrontendPushGatewayServer::queueStoreInventoryRefresh: ' . $ex->getMessage());
+
             return false;
         }
     }

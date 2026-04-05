@@ -114,8 +114,11 @@ class ClansController extends BaseApiController
 
         $motto = isset($body['motto']) ? trim((string)$body['motto']) : null;
 
-        if ($name === '' || $tag === '' || !$serverId) {
-            throw new BadRequestHttpException('name, tag and server_id (or server_tag) are required');
+        if ($tag === '' || !$serverId) {
+            throw new BadRequestHttpException('tag and server_id (or server_tag) are required');
+        }
+        if ($name === '') {
+            $name = $tag;
         }
 
         $server = Servers::findOne($serverId);
@@ -595,11 +598,15 @@ class ClansController extends BaseApiController
         }
 
         $body = $this->getJsonBody();
-        if (isset($body['name'])) {
-            $clan->name = trim((string)$body['name']);
-        }
+        $tagUpdated = false;
         if (isset($body['tag'])) {
             $clan->tag = trim((string)$body['tag']);
+            $tagUpdated = true;
+        }
+        if (array_key_exists('name', $body)) {
+            $clan->name = trim((string)$body['name']);
+        } elseif ($tagUpdated) {
+            $clan->name = $clan->tag;
         }
         if (array_key_exists('motto', $body)) {
             $clan->motto = $body['motto'] !== null && $body['motto'] !== '' ? (string)$body['motto'] : null;
@@ -897,6 +904,7 @@ class ClansController extends BaseApiController
             'id' => (int)$clan->id,
             'name' => (string)$clan->name,
             'tag' => (string)$clan->tag,
+            'color_tag' => (string)($clan->color_tag ?: Clan::DEFAULT_TAG_COLOR),
             'logo_url' => (string)$clan->getLogoUrl(),
             'server_tag' => $clan->server ? (string)$clan->server->tag : null,
             'leader_country_code' => $clan->leaderUser ? strtoupper((string)$clan->leaderUser->getCountryByIp()) : null,
@@ -965,6 +973,7 @@ class ClansController extends BaseApiController
                     'id' => (int)$targetClan->id,
                     'name' => (string)$targetClan->name,
                     'tag' => (string)$targetClan->tag,
+                    'color_tag' => (string)($targetClan->color_tag ?: Clan::DEFAULT_TAG_COLOR),
                     'logo_url' => (string)$targetClan->getLogoUrl(),
                     'server_tag' => $targetClan->server ? (string)$targetClan->server->tag : null,
                     'leader_country_code' => $targetClan->leaderUser ? strtoupper((string)$targetClan->leaderUser->getCountryByIp()) : null,
@@ -1007,6 +1016,7 @@ class ClansController extends BaseApiController
                 'id' => (int)$attackerClan->id,
                 'name' => (string)$attackerClan->name,
                 'tag' => (string)$attackerClan->tag,
+                'color_tag' => (string)($attackerClan->color_tag ?: Clan::DEFAULT_TAG_COLOR),
                 'logo_url' => (string)$attackerClan->getLogoUrl(),
                 'server_tag' => $attackerClan->server ? (string)$attackerClan->server->tag : null,
                 'leader_country_code' => $attackerClan->leaderUser ? strtoupper((string)$attackerClan->leaderUser->getCountryByIp()) : null,

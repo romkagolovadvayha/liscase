@@ -442,12 +442,19 @@ class StoreController extends BaseApiController
         $decoded = null;
         try {
             $outer = json_decode($response, true);
-            $decoded = isset($outer['result']) ? json_decode($outer['result'], true) : null;
+            if (is_array($outer) && array_key_exists('result', $outer)) {
+                $payload = $outer['result'];
+                if (is_string($payload)) {
+                    $decoded = json_decode($payload, true);
+                } elseif (is_array($payload)) {
+                    $decoded = $payload;
+                }
+            }
         } catch (\Throwable $e) {
             // ignore
         }
 
-        if (!is_array($decoded) || !isset($decoded['success'])) {
+        if (!is_array($decoded) || !array_key_exists('success', $decoded)) {
             $userDrop->status = UserDrop::STATUS_ACTIVE;
             $userDrop->save(false);
             Yii::$app->cache->delete($lockKey);
@@ -459,10 +466,10 @@ class StoreController extends BaseApiController
             );
         }
 
-        if (!empty($decoded['success'])) {
-            $userDrop->status = UserDrop::STATUS_SENDED;
-            $userDrop->sended_at = date('Y-m-d H:i:s');
-            $userDrop->save(false);
+        // Как commandGetDrop в ChatServer: после успешного ответа плагина по RCON статус в БД не трогаем.
+        // Предмет уже в STATUS_WAIT; сервер дергает API item → выдаёт в игре → gived ставит STATUS_SENDED.
+        // Ранний STATUS_SENDED здесь ломал methodItem (ждёт WAIT|ACTIVE) — предмет не выдавался в мире.
+        if ($decoded['success'] === true) {
             Yii::$app->cache->delete($lockKey);
             return $this->successResponse([
                 'message' => Yii::t('common', 'Товар успешно получен!'),

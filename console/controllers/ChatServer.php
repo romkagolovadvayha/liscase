@@ -5,7 +5,10 @@ use common\components\queue\process\ReturnDropJob;
 use common\components\queue\support\BeforeMessageJob;
 use common\components\queue\support\OpenAiJob;
 use common\models\box\DropBlocked;
+use common\models\box\Drop;
 use common\models\rcon\RconTasks;
+use common\models\user\UserVip;
+use common\components\queue\process\ActivatedDropJob;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
@@ -1384,6 +1387,59 @@ class ChatServer extends WebSocketServer
                   // Меняем статус на WAIT только после всех проверок и перед отправкой на сервер
                   $model->status = UserDrop::STATUS_WAIT;
                   $model->save(false);
+
+                  // VIP из магазина: без store.take — addgroup на все активные серверы + user_vip + «выдан»
+                  if ((int) $drop->drop_type === Drop::TYPE_VIP) {
+                      $rconUrl = Yii::$app->settings->get('site_rconUrl');
+                      if (empty($rconUrl) || !Yii::$app->has('curl')) {
+                          Yii::$app->cache->delete($lockKey);
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);
+                          $this->safeSend($client, [
+                              'type' => 'store.take',
+                              'code' => 500,
+                              'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
+                              'id' => $model->id,
+                          ]);
+                          return;
+                      }
+                      $template = trim((string) $drop->command) !== ''
+                          ? (string) $drop->command
+                          : Drop::VIP_STORE_RCON_DEFAULT;
+                      $vipCommand = str_replace('%STEAMID%', (string) $model->user->steam_id, $template);
+                      try {
+                          RconTasks::execute($vipCommand);
+                      } catch (\Exception $e) {
+                          Yii::$app->cache->delete($lockKey);
+                          $model->status = UserDrop::STATUS_ACTIVE;
+                          $model->save(false);
+                          Yii::$app->telegramChats->sendMessage('commandGetDrop VIP RCON: ' . $e->getMessage());
+                          $this->safeSend($client, [
+                              'type' => 'store.take',
+                              'code' => 500,
+                              'message' => Yii::t('common', "Произошла ошибка, попробуйте позже!", [], $client->user->current_language),
+                              'id' => $model->id,
+                          ]);
+                          return;
+                      }
+                      $expiresAt = date('Y-m-d H:i:s', strtotime('+30 days'));
+                      UserVip::createOrExtend((int) $model->user_id, $expiresAt);
+                      $model->status = UserDrop::STATUS_SENDED;
+                      $model->sended_at = date('Y-m-d H:i:s');
+                      $model->save(false);
+                      if (Yii::$app->has('queueProcess')) {
+                          Yii::$app->queueProcess->push(new ActivatedDropJob(['userDrop' => $model]));
+                      }
+                      Yii::$app->cache->delete($lockKey);
+                      $this->safeSend($client, [
+                          'type' => 'store.take',
+                          'code' => 200,
+                          'message' => Yii::t('common', "Товар успешно получен!", [], $client->user->current_language),
+                          'id' => $model->id,
+                      ]);
+                      return;
+                  }
+
                   $isBlockedBuilding = $drop->is_blocked_building ? 'true' : 'false';
                   $command = "store.take {$model->user->steam_id} {$model->id} {$isBlockedBuilding}";
                   $response = (Yii::$app->curl)

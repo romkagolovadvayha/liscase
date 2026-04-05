@@ -1187,6 +1187,7 @@ class NotificationServer extends WebSocketServer
             Yii::$app->cache->set($queueKey, $queue, 10);
 
             FrontendPushGatewayServer::queuePurchase((int) $userId, $newBalance);
+            FrontendPushGatewayServer::queueStoreInventoryRefresh((int) $userId, 'purchase');
 
             return true;
         } catch (\Exception $ex) {
