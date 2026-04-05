@@ -165,7 +165,8 @@ jobs:
           key_path: .github-ssh/id_deploy
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
-          script_stop: true
+          # true: drone-ssh вставляет exit после КАЖДОЙ строки — падает supervisorctl update (код 1) вопреки set +e
+          script_stop: false
           script: |
             set -euo pipefail
             cd "${{ env.DEPLOY_PATH_REMOTE }}"
@@ -219,4 +220,5 @@ jobs:
                 fi
               done
             fi
-            exit 0
+            set -e
+            true
