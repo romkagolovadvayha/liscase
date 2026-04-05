@@ -11,8 +11,15 @@
 #     (несколько [program:x] в одном файле). Заливается в /etc/supervisor/conf.d/
 #   DEPLOY_SUPERVISOR_CONF_FILENAME — имя файла в conf.d (по умолчанию liscase.conf)
 #
+#   DEPLOY_CRONTAB — опционально: полное содержимое crontab для пользователя SSH (или root).
+#     Полностью заменяет crontab этого пользователя — укажите все нужные строки (расписание + команда).
+#   DEPLOY_CRONTAB_ROOT — если 1 / true / yes: ставить через «sudo crontab» (crontab пользователя root).
+#     Иначе: crontab текущего SSH_USER. Для root-варианта в sudoers нужен NOPASSWD на /usr/bin/crontab.
+#   После установки crontab шлётся SIGHUP сервису cron/crond (systemctl kill), чтобы задания подхватились сразу.
+#     При необходимости добавьте в sudoers NOPASSWD для systemctl (см. пример ниже).
+#
 # Для записи в /etc/supervisor/conf.d/ и supervisorctl пользователю SSH нужен sudo без пароля, например:
-#   echo 'deploy ALL=(ALL) NOPASSWD:/usr/bin/mv,/bin/mv,/usr/bin/chmod,/bin/chmod,/usr/bin/supervisorctl' | sudo tee /etc/sudoers.d/deploy-supervisor
+#   echo 'deploy ALL=(ALL) NOPASSWD:/usr/bin/mv,/bin/mv,/usr/bin/chmod,/bin/chmod,/usr/bin/supervisorctl,/usr/bin/crontab,/bin/systemctl,/usr/bin/systemctl' | sudo tee /etc/sudoers.d/deploy-supervisor
 #   (подставьте имя пользователя вместо deploy; пути к бинарникам проверьте which mv chmod supervisorctl)
 #
 # На сервере: git, php, composer в PATH; клон репозитория в DEPLOY_PATH;
@@ -126,6 +133,30 @@ jobs:
           source: supervisor.deploy.conf
           target: ${{ env.DEPLOY_PATH_REMOTE }}/
 
+      - name: Собрать deploy.crontab из DEPLOY_CRONTAB
+        id: prepcron
+        env:
+          CRON_BODY: ${{ secrets.DEPLOY_CRONTAB || vars.DEPLOY_CRONTAB }}
+        run: |
+          if [ -n "$CRON_BODY" ]; then
+            printf '%s\n' "$CRON_BODY" > deploy.crontab
+            echo "has_cron=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_cron=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Залить deploy.crontab на сервер
+        if: steps.prepcron.outputs.has_cron == '1'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SSH_HOST }}
+          username: ${{ env.SSH_USER }}
+          key_path: .github-ssh/id_deploy
+          passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
+          port: 22
+          source: deploy.crontab
+          target: ${{ env.DEPLOY_PATH_REMOTE }}/
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -157,4 +188,20 @@ jobs:
               sudo chmod 644 "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
               sudo supervisorctl reread
               sudo supervisorctl update
+            fi
+            if [ -f deploy.crontab ]; then
+              CRON_ROOT='${{ secrets.DEPLOY_CRONTAB_ROOT || vars.DEPLOY_CRONTAB_ROOT }}'
+              CRON_ROOT_NORM=$(printf '%s' "$CRON_ROOT" | tr '[:upper:]' '[:lower:]')
+              if [ "$CRON_ROOT_NORM" = "1" ] || [ "$CRON_ROOT_NORM" = "true" ] || [ "$CRON_ROOT_NORM" = "yes" ]; then
+                sudo crontab deploy.crontab
+              else
+                crontab deploy.crontab
+              fi
+              rm -f deploy.crontab
+              # Сразу перечитать таблицы (иначе часть дистрибутивов подхватывает спул с задержкой до ~1 мин)
+              for _cron_svc in cron crond; do
+                if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet "$_cron_svc" 2>/dev/null; then
+                  sudo systemctl kill -s HUP "$_cron_svc" 2>/dev/null && break
+                fi
+              done || true
             fi
