@@ -186,8 +186,16 @@ jobs:
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
               sudo mv -f supervisor.deploy.conf "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
               sudo chmod 644 "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
+              # update иногда даёт exit 1 при «No config updates» или проблемах отдельного program — не роняем деплой
+              set +e
               sudo supervisorctl reread
+              R=$?
               sudo supervisorctl update
+              U=$?
+              set -e
+              if [ "$R" -ne 0 ] || [ "$U" -ne 0 ]; then
+                echo "::warning::supervisorctl reread=$R update=$U (проверьте sudoers и состояние supervisor)"
+              fi
             fi
             if [ -f deploy.crontab ]; then
               CRON_ROOT='${{ secrets.DEPLOY_CRONTAB_ROOT || vars.DEPLOY_CRONTAB_ROOT }}'
@@ -198,10 +206,14 @@ jobs:
                 crontab deploy.crontab
               fi
               rm -f deploy.crontab
-              # Сразу перечитать таблицы (иначе часть дистрибутивов подхватывает спул с задержкой до ~1 мин)
+              # set -e роняет скрипт на ненулевом kill внутри for — временно отключаем
+              set +e
               for _cron_svc in cron crond; do
                 if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet "$_cron_svc" 2>/dev/null; then
-                  sudo systemctl kill -s HUP "$_cron_svc" 2>/dev/null && break
+                  if sudo systemctl kill -s HUP "$_cron_svc" 2>/dev/null; then
+                    break
+                  fi
                 fi
-              done || true
+              done
+              set -e
             fi
