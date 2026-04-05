@@ -186,7 +186,6 @@ jobs:
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
               sudo mv -f supervisor.deploy.conf "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
               sudo chmod 644 "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
-              # update иногда даёт exit 1 при «No config updates» или проблемах отдельного program — не роняем деплой
               set +e
               sudo supervisorctl reread
               R=$?
@@ -194,9 +193,11 @@ jobs:
               U=$?
               set -e
               if [ "$R" -ne 0 ] || [ "$U" -ne 0 ]; then
-                echo "::warning::supervisorctl reread=$R update=$U (проверьте sudoers и состояние supervisor)"
+                echo "WARNING: supervisorctl reread=$R update=$U (деплой кода уже выполнен)"
               fi
             fi
+            # crontab / HUP: не валим job при сбое sudo или systemctl
+            set +e
             if [ -f deploy.crontab ]; then
               CRON_ROOT='${{ secrets.DEPLOY_CRONTAB_ROOT || vars.DEPLOY_CRONTAB_ROOT }}'
               CRON_ROOT_NORM=$(printf '%s' "$CRON_ROOT" | tr '[:upper:]' '[:lower:]')
@@ -205,9 +206,11 @@ jobs:
               else
                 crontab deploy.crontab
               fi
+              CE=$?
               rm -f deploy.crontab
-              # set -e роняет скрипт на ненулевом kill внутри for — временно отключаем
-              set +e
+              if [ "$CE" -ne 0 ]; then
+                echo "WARNING: crontab install failed, code=$CE"
+              fi
               for _cron_svc in cron crond; do
                 if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet "$_cron_svc" 2>/dev/null; then
                   if sudo systemctl kill -s HUP "$_cron_svc" 2>/dev/null; then
@@ -215,5 +218,5 @@ jobs:
                   fi
                 fi
               done
-              set -e
             fi
+            exit 0
