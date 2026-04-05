@@ -2,6 +2,7 @@
 
 namespace common\components\merchant;
 
+use common\components\payments\PaymentCallbackHandler;
 use Yii;
 
 /**
@@ -107,6 +108,10 @@ class TBankMerchantAPI
                 ],
             ],
         ];
+        $notificationUrl = PaymentCallbackHandler::callbackUrlFor('tinkoff');
+        if ($notificationUrl !== '') {
+            $params['NotificationURL'] = $notificationUrl;
+        }
         return $this->sendHttpRequest('POST', "Init", $params);
     }
 

@@ -2,12 +2,20 @@
 
 namespace backend\controllers;
 
-use backend\components\BackendController;
 use Yii;
 use yii\filters\AccessControl;
 
-class AuthController extends BackendController
+/**
+ * Вход в админку через Steam без зависимости от frontend: OpenID callback на backend (…/auth/oauth).
+ */
+class AuthController extends \common\controllers\AuthController
 {
+    public function init()
+    {
+        Yii::$app->params['homePage'] = rtrim(Yii::$app->params['backendUrl'] ?? '', '/');
+        parent::init();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -19,7 +27,7 @@ class AuthController extends BackendController
                 'rules'        => [
                     [
                         'allow'   => true,
-                        'actions' => ['login', 'index'],
+                        'actions' => ['login', 'index', 'oauth'],
                         'roles'   => ['?'],
                     ],
                     [
@@ -29,7 +37,7 @@ class AuthController extends BackendController
                     ],
                 ],
                 'denyCallback' => function ($rule, $action) {
-                    return $action->controller->redirect(['/']);
+                    return $action->controller->redirect(['/user/index']);
                 },
             ],
         ];
@@ -43,18 +51,13 @@ class AuthController extends BackendController
     public function actionIndex()
     {
         $this->layout = '@backend/views/layouts/blank';
+        $backendBase = rtrim(Yii::$app->params['backendUrl'] ?? '', '/');
+        $steamLoginUrl = $backendBase . '/auth/oauth';
         $siteUrl = rtrim(Yii::$app->params['baseUrl'] ?? '', '/') ?: '/';
-        $steamLoginUrl = $siteUrl . '/auth/oauth';
+
         return $this->render('index', [
             'steamLoginUrl' => $steamLoginUrl,
             'siteUrl'       => $siteUrl,
         ]);
-    }
-
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
     }
 }

@@ -3,6 +3,8 @@ return [
     'adminEmail'          => 'admin@example.com',
     'supportEmail'        => 'no-reply@liscase.local',
     'baseUrl'             => 'http://test.prostoj.store',
+    /** Публичный URL API (https://api.example.com) — для webhooks платежей и т.п.; без слэша в конце */
+    'apiPublicUrl'        => '',
     'backendUrl'          => 'http://backend.test.prostoj.store',
     'socketHost'          => '',
     'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',

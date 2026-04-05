@@ -8,6 +8,7 @@ use yii\web\ForbiddenHttpException;
 use yii\web\BadRequestHttpException;
 use common\models\invoice\Deposit;
 use common\models\invoice\PaymentBonuses;
+use common\components\payments\PaymentCallbackHandler;
 use common\components\payments\PaymentApi;
 use common\components\helpers\EmailHelper;
 use frontend\forms\market\PaymentForm;
@@ -347,49 +348,7 @@ class PaymentController extends BaseApiController
      */
     public function actionCallback($payment)
     {
-        Yii::$app->response->statusCode = 200;
-        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
-
-        // Логируем callback (кроме tinkoff, так как он может быть очень частым)
-        if ($payment != 'tinkoff') {
-            Yii::$app->telegramChats->sendMessage(Yii::$app->request->getRawBody());
-        }
-
-        try {
-            // Адаптируем ответ от платежной системы
-            $response = Deposit::responseAdapter(Yii::$app->request->getRawBody(), $payment);
-
-            if (empty($response) || empty($response['id'])) {
-                return ['code' => 200, 'message' => 'Invalid callback data'];
-            }
-
-            // Ищем депозит по payment_id в статусе ожидания
-            $deposit = Deposit::find()
-                ->where(['status' => Deposit::STATUS_WAIT_CONFIRM])
-                ->andWhere(['payment_id' => $response['id']])
-                ->one();
-
-            if (empty($deposit)) {
-                // Депозит не найден или уже обработан - возвращаем 200 для идемпотентности
-                return ['code' => 200, 'message' => 'Deposit not found or already processed'];
-            }
-
-            // Проверяем статус платежа
-            if ($deposit->payment_type == Deposit::TYPE_PAYMENT_CARD_TINKOFF) {
-                // Для Tinkoff используем встроенный метод check
-                $deposit->check();
-            } else {
-                // Для других платежных систем используем их API
-                $paymentApi = PaymentApi::getInstance($deposit->payment_type);
-                $paymentApi->check($deposit->id);
-            }
-
-            return ['code' => 200, 'message' => 'Callback processed'];
-
-        } catch (\Exception $e) {
-            Yii::error('Payment callback error: ' . $e->getMessage());
-            return ['code' => 500, 'message' => 'Callback processing failed'];
-        }
+        return PaymentCallbackHandler::handle($payment);
     }
 
 }
