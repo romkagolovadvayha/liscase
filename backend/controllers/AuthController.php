@@ -43,6 +43,11 @@ class AuthController extends \common\controllers\AuthController
         ];
     }
 
+    public function getViewPath()
+    {
+        return '@backend/views/auth';
+    }
+
     public function actionLogin()
     {
         return $this->actionIndex();
