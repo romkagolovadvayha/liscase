@@ -114,5 +114,7 @@ jobs:
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
             git pull origin "$BRANCH"
+            export YII_ENV=prod
+            export YII_DEBUG=0
             composer install --no-interaction --no-dev --optimize-autoloader
             php yii migrate --interactive=0

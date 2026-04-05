@@ -4,8 +4,14 @@
  * Yii console bootstrap file.
  */
 
-defined('YII_DEBUG') or define('YII_DEBUG', true);
-defined('YII_ENV') or define('YII_ENV', 'dev');
+// На проде задайте YII_ENV=prod (например в CI перед composer / yii), иначе по умолчанию dev.
+if (!defined('YII_ENV')) {
+    $yiiEnv = getenv('YII_ENV');
+    define('YII_ENV', ($yiiEnv !== false && $yiiEnv !== '') ? $yiiEnv : 'dev');
+}
+if (!defined('YII_DEBUG')) {
+    define('YII_DEBUG', YII_ENV === 'dev');
+}
 
 require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/vendor/yiisoft/yii2/Yii.php';

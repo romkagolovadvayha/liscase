@@ -12,8 +12,8 @@
 ## Деплой на VPS по SSH
 
 - Workflow: **`.github/workflows/deploy-ssh.yml`** — при push в `develop` / `main` / `master` / `prostoj` или вручную (**Actions → Deploy (SSH — VPS) → Run workflow**).
-- На сервере в **`DEPLOY_PATH`**: `git pull` → **`composer install --no-interaction --no-dev --optimize-autoloader`** → **`php yii migrate --interactive=0`**.
-- GitHub **Environment**: **`backend`** (см. `environment:` в `.github/workflows/deploy-ssh.yml`). Обязательно задайте **`DEPLOY_PATH`** — **абсолютный путь к корню репозитория liscase** на сервере (где `composer.json` и `yii`). Плюс `SSH_HOST`, `SSH_USER`, SSH-ключ; опционально `DEPLOY_ENV` (как у **prostoj-frontend**).
+- На сервере в **`DEPLOY_PATH`**: перед **`composer` / `yii`** задайте **`export YII_ENV=prod`** (и при желании **`YII_DEBUG=0`**), иначе корневой `yii` раньше считал окружение dev и тянул Gii, которого нет при **`--no-dev`**. Workflow это выставляет сам.
+- GitHub **Environment**: **`prostoj`** (то же имя, что у фронта; см. `environment:` в `.github/workflows/deploy-ssh.yml`). В этом environment задайте отдельный **`DEPLOY_PATH`** — **абсолютный путь к корню репозитория liscase** на сервере (где `composer.json` и `yii`). Плюс `SSH_HOST`, `SSH_USER`, SSH-ключ; опционально `DEPLOY_ENV`.
 - Kubernetes-деплой остаётся в **`.github/workflows/deploy.yml`**.
 
 ## Типичные точки входа
