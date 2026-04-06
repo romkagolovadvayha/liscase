@@ -11,6 +11,7 @@ use common\models\user\User;
 use common\models\user\UserPayoutReferral;
 use common\models\user\UserPayoutSkins;
 use common\models\user\UserPromocode;
+use common\components\skindrops\MarketSkinCatalogLookup;
 use Yii;
 use yii\base\BaseObject;
 
@@ -54,14 +55,13 @@ class SkinsForm extends \common\components\base\ActiveRecord
         Yii::$app->cache->set($cacheKey, time() + 5, 5);
 
         $data = $this->market->items();
-        if (empty($data[$this->id])) {
+        $item = MarketSkinCatalogLookup::findItem($data, $this->id);
+        if ($item === null) {
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;
         }
 
         $balance = $user->getSkinsBalance();
-
-        $item = $data[$this->id];
         if ($item['price'] > $this->amount) {
             $this->addError('id', Yii::t('common', 'Этот скин ксожалению уже купили, выберите другой!'));
             return false;

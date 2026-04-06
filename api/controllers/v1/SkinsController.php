@@ -11,6 +11,7 @@ use common\models\user\UserPayoutSkins;
 use common\models\skindrops\Skindrops;
 use frontend\modules\user\SkinsSearch;
 use frontend\forms\user\SkinsForm;
+use common\components\skindrops\MarketSkinCatalogLookup;
 use api\components\jwt\JwtAuthFilter;
 use api\components\jwt\JwtService;
 
@@ -37,30 +38,6 @@ class SkinsController extends BaseApiController
         ];
 
         return $behaviors;
-    }
-
-    /**
-     * Найти позицию каталога по id (ключ в кэше маркета может быть int или string).
-     *
-     * @param array<string|int, array> $data
-     */
-    private function findMarketItemById(array $data, $id): ?array
-    {
-        if (array_key_exists($id, $data)) {
-            return $data[$id];
-        }
-        if (is_numeric($id)) {
-            $intId = (int) $id;
-            if (array_key_exists($intId, $data)) {
-                return $data[$intId];
-            }
-            $strId = (string) $intId;
-            if (array_key_exists($strId, $data)) {
-                return $data[$strId];
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -125,7 +102,7 @@ class SkinsController extends BaseApiController
         }
 
         $data = $market->items();
-        $item = $this->findMarketItemById($data, $id);
+        $item = MarketSkinCatalogLookup::findItem($data, $id);
         if ($item === null) {
             throw new NotFoundHttpException('Скин не найден');
         }
@@ -254,7 +231,7 @@ class SkinsController extends BaseApiController
         }
 
         $data = $market->items();
-        $item = $this->findMarketItemById($data, $id);
+        $item = MarketSkinCatalogLookup::findItem($data, $id);
         if ($item === null) {
             throw new NotFoundHttpException('Скин не найден');
         }
@@ -343,7 +320,7 @@ class SkinsController extends BaseApiController
 
         // Получаем данные о скинах
         $data = $market->items();
-        $item = $this->findMarketItemById($data, $id);
+        $item = MarketSkinCatalogLookup::findItem($data, $id);
         if ($item === null) {
             throw new NotFoundHttpException('Скин не найден');
         }
