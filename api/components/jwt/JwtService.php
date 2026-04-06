@@ -28,14 +28,14 @@ class JwtService extends Component
     public $algorithm = 'HS256';
 
     /**
-     * @var int Время жизни access токена в секундах (по умолчанию 1 час)
+     * @var int Время жизни access токена в секундах (по умолчанию 7 дней)
      */
-    public $expiration = 3600;
+    public $expiration = 604800;
 
     /**
-     * @var int Время жизни refresh токена в секундах (по умолчанию 7 дней)
+     * @var int Время жизни refresh токена в секундах (по умолчанию 30 дней)
      */
-    public $refreshExpiration = 604800;
+    public $refreshExpiration = 2592000;
 
     /**
      * @var string Идентификатор приложения (issuer)

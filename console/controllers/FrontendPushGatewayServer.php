@@ -72,8 +72,8 @@ class FrontendPushGatewayServer extends WebSocketServer
         $this->jwtService = new JwtService([
             'secret' => Yii::$app->params['jwt']['secret'] ?? getenv('JWT_SECRET'),
             'algorithm' => Yii::$app->params['jwt']['algorithm'] ?? 'HS256',
-            'expiration' => Yii::$app->params['jwt']['expiration'] ?? 3600,
-            'refreshExpiration' => Yii::$app->params['jwt']['refreshExpiration'] ?? 604800,
+            'expiration' => Yii::$app->params['jwt']['expiration'] ?? 604800,
+            'refreshExpiration' => Yii::$app->params['jwt']['refreshExpiration'] ?? 2592000,
         ]);
         $this->jwtService->init();
 
@@ -266,10 +266,16 @@ class FrontendPushGatewayServer extends WebSocketServer
             try {
                 $payload = $this->jwtService->validateToken($request['token']);
             } catch (\Throwable $e) {
-                Yii::error(
-                    'FrontendPushGateway auth JWT validate failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
-                    __METHOD__
-                );
+                $msg = $e->getMessage();
+                // Истёкший access при реконнекте WS — ожидаемо, если фронт ещё не обновил токен; не засоряем error-лог стеком.
+                if ($msg === 'JWT token has expired') {
+                    Yii::warning('FrontendPushGateway auth: JWT expired', __METHOD__);
+                } else {
+                    Yii::error(
+                        'FrontendPushGateway auth JWT validate failed: ' . $msg . "\n" . $e->getTraceAsString(),
+                        __METHOD__
+                    );
+                }
                 $this->sendAuthErrorToClient($client, 'Invalid or expired token', 'Token validation failed');
 
                 return;

@@ -40,8 +40,8 @@ $config = [
             'class' => 'api\components\jwt\JwtService',
             'secret' => $params['jwt']['secret'] ?? getenv('JWT_SECRET'),
             'algorithm' => $params['jwt']['algorithm'] ?? 'HS256',
-            'expiration' => $params['jwt']['expiration'] ?? 3600,
-            'refreshExpiration' => $params['jwt']['refreshExpiration'] ?? 604800,
+            'expiration' => $params['jwt']['expiration'] ?? 604800,
+            'refreshExpiration' => $params['jwt']['refreshExpiration'] ?? 2592000,
         ],
         'urlManager'    => [
             'enablePrettyUrl' => true,

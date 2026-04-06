@@ -391,7 +391,7 @@ class AuthController extends BaseApiController
 
             return $this->successResponse([
                 'token' => $token,
-                'expires_in' => Yii::$app->params['jwt']['expiration'] ?? 3600,
+                'expires_in' => Yii::$app->params['jwt']['expiration'] ?? 604800,
                 'user' => $this->formatUser($user),
             ]);
         } catch (\Exception $e) {
@@ -475,7 +475,7 @@ class AuthController extends BaseApiController
             return $this->successResponse([
                 'token' => $newAccessToken,
                 'refresh_token' => $newRefreshToken,
-                'expires_in' => Yii::$app->params['jwt']['expiration'] ?? 3600,
+                'expires_in' => Yii::$app->params['jwt']['expiration'] ?? 604800,
                 'user' => $this->formatUser($user),
             ]);
         } catch (\Exception $e) {

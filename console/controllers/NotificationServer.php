@@ -104,8 +104,8 @@ class NotificationServer extends WebSocketServer
         $this->jwtService = new \api\components\jwt\JwtService([
             'secret' => Yii::$app->params['jwt']['secret'] ?? getenv('JWT_SECRET'),
             'algorithm' => Yii::$app->params['jwt']['algorithm'] ?? 'HS256',
-            'expiration' => Yii::$app->params['jwt']['expiration'] ?? 3600,
-            'refreshExpiration' => Yii::$app->params['jwt']['refreshExpiration'] ?? 604800,
+            'expiration' => Yii::$app->params['jwt']['expiration'] ?? 604800,
+            'refreshExpiration' => Yii::$app->params['jwt']['refreshExpiration'] ?? 2592000,
         ]);
         $this->jwtService->init();
 
