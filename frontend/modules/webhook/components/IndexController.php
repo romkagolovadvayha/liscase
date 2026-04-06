@@ -5,74 +5,27 @@ namespace frontend\modules\webhook\components;
 use common\components\telegram\foreignSystem\AbstractSystemBots;
 use Yii;
 use yii\web\Controller;
-use yii\helpers\Json;
-use yii\helpers\ArrayHelper;
-use common\components\telegram\TelegramApiHelper;
 use common\components\telegram\foreignSystem\AbstractSystem;
+use common\components\telegram\TelegramWebhookProcessor;
 
 abstract class IndexController extends Controller
 {
     public $enableCsrfValidation = false;
 
     /**
-     * @return AbstractSystem
+     * @return AbstractSystem|AbstractSystemBots
      */
     abstract protected function _getSystem();
 
     public function actionIndex($token)
     {
         $system = $this->_getSystem();
-        if (empty($system) || (!($system instanceof AbstractSystem) && !($system instanceof AbstractSystemBots))) {
+        if (!TelegramWebhookProcessor::tokenMatches($system, (string) $token)) {
             return false;
         }
 
-        /** @var TelegramApiHelper $bot */
-        $bot = $system->getTelegramBot();
-        if ($token != $system->getTelegramToken()) {
-            return false;
-        }
-
-        $data        = file_get_contents('php://input');
-        $inputParams = Json::decode($data);
-
-        $callBack = ArrayHelper::getValue($inputParams, 'callback_query', []);
-
-        if (!empty($callBack)) {
-            $buttonValue = ArrayHelper::getValue($callBack, 'data');
-            $message     = ArrayHelper::getValue($callBack, 'message');
-            $chat        = ArrayHelper::getValue($message, 'chat');
-            $textMessage = ArrayHelper::getValue($message, 'text');
-            $caption = ArrayHelper::getValue($message, 'caption');
-            if (empty($buttonValue) || empty($chat)) {
-                return false;
-            }
-
-            $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
-            if (!empty($answerMessage['editMessageReplyMarkup'])) {
-                $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
-            } elseif (!empty($answerMessage['message'])) {
-                $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-            } elseif (!empty($textMessage)) {
-                $textMessage .= "\n\n" . $answerMessage;
-                $bot->editMessageText($chat['id'], $message['message_id'], $textMessage);
-            } elseif (!empty($caption)) {
-                $caption .= "\n\n" . $answerMessage;
-                $bot->editMessageCaption($chat['id'], $message['message_id'], $caption);
-            }
-        } else {
-            $message = ArrayHelper::getValue($inputParams, 'message');
-            $chat    = ArrayHelper::getValue($message, 'chat');
-            if (empty($chat)) {
-                return false;
-            }
-
-            $answerMessage = $system->executeCommand($message);
-            if (!empty($answerMessage['message'])) {
-                $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
-            } elseif (!empty($answerMessage)) {
-                $bot->sendMessage($chat['id'], $answerMessage);
-            }
-        }
+        $data = file_get_contents('php://input');
+        TelegramWebhookProcessor::process($system, (string) $data);
 
         return true;
     }

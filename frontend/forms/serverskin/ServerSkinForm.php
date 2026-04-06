@@ -15,6 +15,7 @@ use common\models\building\BuildingImage;
 use Imagine\Image\Point;
 use React\Socket\Server;
 use Yii;
+use common\models\statistics\Chats;
 use yii\base\BaseObject;
 use yii\imagine\Image;
 use yii\helpers\ArrayHelper;
@@ -130,17 +131,11 @@ class ServerSkinForm extends ServerSkin
             [
                 [
                     'text' => '🟢 Принять',
-                    'callback_data' => json_encode([
-                                                       'action'   => 'success-skin',
-                                                       'skin_id'  => $skinId,
-                                                   ])
+                    'callback_data' => Chats::skinModerationCallbackAccept((string)$skinId),
                 ],
                 [
                     'text' => '🔴 Отклонить',
-                    'callback_data' => json_encode([
-                                                       'action'   => 'reject-skin',
-                                                       'skin_id'  => $skinId,
-                                                   ])
+                    'callback_data' => Chats::skinModerationCallbackReject((string)$skinId),
                 ]
             ],
             $this->getImagePubUrl() // вот сюда картинка

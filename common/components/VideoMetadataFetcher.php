@@ -55,7 +55,7 @@ class VideoMetadataFetcher
             return 'https://www.youtube.com/watch?v=' . $m[1];
         }
         // TikTok «Поделиться» тащит длинный query (utm, share_item_id, …) — в БД и логах достаточно канона
-        if (preg_match('#https?://(?:www\.|m\.)?tiktok\.com/@([^/?#]+)/video/([0-9]+)#i', $url, $m)) {
+        if (preg_match('#https?://(?:www\.|m\.)?tiktok\.com/@([^/?\#]+)/video/([0-9]+)#i', $url, $m)) {
             return 'https://www.tiktok.com/@' . $m[1] . '/video/' . $m[2];
         }
         return $url;
