@@ -17,13 +17,38 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Vanish", "Whispers88", "2.0.9")]
+    [Info("Vanish", "Whispers88", "2.1.2")]
     [Description("Allows players with permission to become invisible")]
     public class Vanish : CovalencePlugin
     {
         private static Vanish vanish;
 
-        private static HashSet<BasePlayer> _hiddenPlayers = new HashSet<BasePlayer>();
+        public static VanishedPlayers _hiddenPlayers;
+        public class VanishedPlayers
+        {
+            public HashSet<ulong> _vanishedIDs = new HashSet<ulong>();
+            public HashSet<BasePlayer> _vanishedPlayers = new HashSet<BasePlayer>();
+
+            public int Count => _vanishedIDs.Count;
+
+            public void Add(BasePlayer player)
+            {
+                if (player == null) return;
+                _vanishedIDs.Add(player.userID);
+                _vanishedPlayers.Add(player);
+            }
+            public void Remove(BasePlayer player)
+            {
+                if (player == null) return;
+                _vanishedIDs.Remove(player.userID);
+                _vanishedPlayers.Remove(player);
+            }
+
+            public bool IsHidden(ulong playerID)
+            {
+                return _vanishedIDs.Contains(playerID);
+            }
+        }
 
         private List<ulong> _hiddenOffline = new List<ulong>();
         private List<string> _registeredhooks = new List<string> { "CanUseLockedEntity", "OnEntityTakeDamage", "OnPlayerViolation", "OnMapMarkerAdd" };
@@ -219,6 +244,7 @@ namespace Oxide.Plugins
         private void Init()
         {
             vanish = this;
+            _hiddenPlayers = new VanishedPlayers();
             cachedVanishUI = CreateVanishUI();
 
             // Register universal chat/console commands
@@ -267,7 +293,7 @@ namespace Oxide.Plugins
 
         private void Unload()
         {
-            foreach (var hiddenPlayer in _hiddenPlayers.ToList())
+            foreach (var hiddenPlayer in _hiddenPlayers._vanishedPlayers.ToList())
             {
                 if (hiddenPlayer == null) continue;
 
@@ -419,7 +445,7 @@ namespace Oxide.Plugins
         {
             if (Interface.CallHook("OnVanishReappear", player) != null) return;
 
-            if (config.AntiHack) player.ResetAntiHack();
+            if (config.AntiHack) player.ResetAntiHack(player.StableIndex, AntiHack.PlayerSpeedhackStates, AntiHack.PlayerFlyhackStates);
 
             player.syncPosition = true;
 
@@ -433,6 +459,8 @@ namespace Oxide.Plugins
 
             player._limitedNetworking = false;
             player.isInvisible = false; // for occlusion falldmg & antihack
+            BasePlayer.invisPlayers.Clear(); //im sure this will break at some point but for now its the fix for double voices
+
             _hiddenPlayers.Remove(player);
 
             player.EnablePlayerCollider();
@@ -495,6 +523,7 @@ namespace Oxide.Plugins
             player.syncPosition = false;
             player.limitNetworking = true;
             player.isInvisible = true; // for occlusion falldmg & antihack
+            BasePlayer.invisPlayers.Clear(); //im sure this will break at some point but for now its the fix for double voices
             player.fallDamageEffect = _emptygameObject;
             player.drownEffect = _emptygameObject;
             player.GetHeldEntity()?.SetHeld(false);
@@ -511,8 +540,14 @@ namespace Oxide.Plugins
                 if (con.connected && con.isAuthenticated && con.player is BasePlayer && con.player != player)
                     connections.Add(con);
             }
+
             player.OnNetworkSubscribersLeave(connections);
             Pool.FreeUnmanaged(ref connections);
+
+            if ((!ServerOcclusion.OcclusionEnabled ? false : BasePlayer.UseOcclusionV2))
+            {
+                player.OcclusionMakeSubscribersForget();
+            }
 
             VanishPositionUpdate vanishPositionUpdate;
             if (player.TryGetComponent<VanishPositionUpdate>(out vanishPositionUpdate))
@@ -838,7 +873,7 @@ namespace Oxide.Plugins
                 if (player == null)
                     return;
 
-                player.net.UpdateGroups(player.transform.position);
+                player.net.UpdateGroups(player.transform.position, player.networkRange);
             }
 
             void OnTriggerEnter(Collider col)
@@ -1047,6 +1082,7 @@ namespace Oxide.Plugins
         #endregion
 
         #region Harmony
+
         //Used for voices/sounds
         [HarmonyPatch(typeof(BaseNetworkable), "GetConnectionsWithin", typeof(Vector3), typeof(float), typeof(bool), typeof(bool), typeof(bool)), AutoPatch]
         private static class BaseNetworkable_GetConnectionsWithin_Patch
@@ -1054,10 +1090,31 @@ namespace Oxide.Plugins
             [HarmonyPostfix]
             private static void Postfix(BaseNetworkable __instance, ref List<Connection> __result, Vector3 position, float distance, bool addSecondaryConnections, bool useRcEntityPosition, bool includeInvisPlayers)
             {
-                foreach (var vanishPlayer in _hiddenPlayers)
+                float distanceSqr = distance * distance;
+                foreach (var vanishPlayer in _hiddenPlayers._vanishedPlayers)
                 {
-                    if (vanishPlayer == null || __result.Contains(vanishPlayer.Connection) || (position - vanishPlayer.transform.position).magnitude > distance) continue;
-                    __result.Add(vanishPlayer.Connection);
+                    if (vanishPlayer == null)
+                        continue;
+
+                    Transform playerTransform = vanishPlayer.transform;
+                    if (playerTransform == null)
+                        continue;
+
+                    if ((position - playerTransform.position).sqrMagnitude > distanceSqr) continue;
+
+                    bool alreadyAdded = false;
+                    for (int i = __result.Count - 1; i >= 0; i--)
+                    {
+                        if (__result[i].userid == vanishPlayer.userID)
+                        {
+                            alreadyAdded = true;
+                            __result.RemoveAt(i);
+                            break;
+                        }
+                    }
+
+                    if (!alreadyAdded)
+                        __result.Add(vanishPlayer.Connection);
                 }
             }
         }
@@ -1071,33 +1128,25 @@ namespace Oxide.Plugins
                 if (sourceConnection == null)
                     return true;
 
-                foreach (var vanishPlayer in _hiddenPlayers)
-                {
-                    if (vanishPlayer.userID == sourceConnection.userid)
-                    {
-                        return false;
-                    }
-                }
+                if (_hiddenPlayers.IsHidden(sourceConnection.userid))
+                    return false;
+
                 return true;
             }
         }
 
-        [HarmonyPatch(typeof(EffectNetwork), "Send", typeof(Effect)), AutoPatch]
+        [HarmonyPatch(typeof(EffectNetwork), "Send", typeof(Effect), typeof(EntityNetworkRange)), AutoPatch]
         private static class EffectNetwork_Send_Patch
         {
             [HarmonyPrefix]
-            private static bool Prefix(Effect effect)
+            private static bool Prefix(Effect effect, EntityNetworkRange networkRange)
             {
                 if (effect == null || effect.source == 0)
                     return true;
 
-                foreach (var vanishPlayer in _hiddenPlayers)
-                {
-                    if (vanishPlayer.userID == effect.source)
-                    {
-                        return false;
-                    }
-                }
+                if (_hiddenPlayers.IsHidden(effect.source))
+                    return false;
+
                 return true;
             }
         }
