@@ -84,6 +84,11 @@ class TelegramController extends Controller
                 'token' => (new RustotekaBotSystem())->getTelegramToken(),
                 'path' => 'rustoteka',
             ],
+            [
+                'label' => 'support alert / модерация (tgbotSupportAlert_token)',
+                'token' => (string) Yii::$app->settings->get('tgbotSupportAlert_token'),
+                'path' => 'support',
+            ],
         ];
 
         foreach ($bots as $bot) {

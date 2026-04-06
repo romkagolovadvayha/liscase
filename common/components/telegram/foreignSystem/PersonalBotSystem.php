@@ -475,9 +475,18 @@ class PersonalBotSystem extends AbstractSystem
     public function executeCallBack($chatId, $buttonValue)
     {
         try {
-            if (!empty($buttonValue)) {
-                $buttonValueObj = json_decode($buttonValue, 1);
-                if (!empty($buttonValueObj)) {
+            if ($buttonValue !== null && $buttonValue !== '') {
+                $raw = (string)$buttonValue;
+                // Модерация скинов: компактный payload (лимит Telegram callback_data = 64 байта)
+                if (preg_match('/^ss:(\d{1,32})$/', $raw, $m)) {
+                    return Chats::actionSuccessSkin(['skin_id' => $m[1]]);
+                }
+                if (preg_match('/^rs:(\d{1,32})$/', $raw, $m)) {
+                    return Chats::actionRejectSkin(['skin_id' => $m[1]]);
+                }
+
+                $buttonValueObj = json_decode($buttonValue, true);
+                if (is_array($buttonValueObj) && $buttonValueObj !== []) {
                     $action = ArrayHelper::getValue($buttonValueObj, 'action');
                     if (!empty($action) && $action == 'mute') {
                       return Chats::actionMute($buttonValueObj);
@@ -514,8 +523,8 @@ class PersonalBotSystem extends AbstractSystem
                     }
                 }
             }
-        } catch (\Exception $e) {
-
+        } catch (\Throwable $e) {
+            Yii::error($e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
         }
         /*if (!empty($buttonValue) && strpos($buttonValue, 'messageId') !== false) {
             $data = json_decode($buttonValue, 1);

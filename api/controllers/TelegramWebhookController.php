@@ -4,6 +4,7 @@ namespace api\controllers;
 
 use common\components\telegram\foreignSystem\PersonalBotSystem;
 use common\components\telegram\foreignSystem\RustotekaBotSystem;
+use common\components\telegram\foreignSystem\SupportAlertBotSystem;
 use common\components\telegram\TelegramWebhookProcessor;
 use Yii;
 use yii\web\Controller;
@@ -25,6 +26,11 @@ class TelegramWebhookController extends Controller
     public function actionRustoteka(string $token): string
     {
         return $this->dispatch(new RustotekaBotSystem(), $token);
+    }
+
+    public function actionSupport(string $token): string
+    {
+        return $this->dispatch(new SupportAlertBotSystem(), $token);
     }
 
     private function dispatch(object $system, string $token): string

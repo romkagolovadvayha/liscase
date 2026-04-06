@@ -207,6 +207,20 @@ class Chats extends ActiveRecord
         return true;
     }
 
+    /**
+     * callback_data для Telegram inline-кнопок модерации скинов.
+     * Полный JSON часто > 64 байт (лимит Bot API) — кнопка обрезалась и срабатывало «Команда не найдена».
+     */
+    public static function skinModerationCallbackAccept(string $skinId): string
+    {
+        return 'ss:' . preg_replace('/\D/', '', (string)$skinId);
+    }
+
+    public static function skinModerationCallbackReject(string $skinId): string
+    {
+        return 'rs:' . preg_replace('/\D/', '', (string)$skinId);
+    }
+
     public static function actionMute($buttonValueObj) {
         $type = ArrayHelper::getValue($buttonValueObj, 'type');
         $steamId = ArrayHelper::getValue($buttonValueObj, 'steam_id');
@@ -229,12 +243,19 @@ class Chats extends ActiveRecord
     }
 
     public static function actionSuccessSkin($buttonValueObj) {
-        $skinId = ArrayHelper::getValue($buttonValueObj, 'skin_id');
+        $skinId = (string)ArrayHelper::getValue($buttonValueObj, 'skin_id', '');
+        if ($skinId === '') {
+            return '⛔ Некорректные данные кнопки';
+        }
 
-        /** @var ServerSkin $model */
+        /** @var ServerSkin|null $model */
         $model = ServerSkin::find()
                 ->andWhere(['skin_id' => $skinId])
                 ->one();
+
+        if ($model === null) {
+            return '⛔ Скин не найден';
+        }
 
         if ($model->status === ServerSkin::STATUS_ACTIVE) {
             return '⛔ Скин уже подтвержден!';
@@ -255,10 +276,7 @@ class Chats extends ActiveRecord
                 'buttons' =>        [
                     [
                         'text' => '🔴 Отклонить',
-                        'callback_data' => json_encode([
-                                                           'action'   => 'reject-skin',
-                                                           'skin_id'  => $skinId,
-                                                       ])
+                        'callback_data' => self::skinModerationCallbackReject($model->skin_id),
                     ]
                 ],
             ];
@@ -267,12 +285,18 @@ class Chats extends ActiveRecord
     }
 
     public static function actionRejectSkin($buttonValueObj) {
-        $skinId = ArrayHelper::getValue($buttonValueObj, 'skin_id');
+        $skinId = (string)ArrayHelper::getValue($buttonValueObj, 'skin_id', '');
+        if ($skinId === '') {
+            return '⛔ Некорректные данные кнопки';
+        }
 
-        /** @var ServerSkin $model */
+        /** @var ServerSkin|null $model */
         $model = ServerSkin::find()
                            ->andWhere(['skin_id' => $skinId])
                            ->one();
+        if ($model === null) {
+            return '⛔ Скин не найден';
+        }
         if ($model->status === ServerSkin::STATUS_REJECT) {
             return '⛔ Скин уже отклонен!';
         }
@@ -292,10 +316,7 @@ class Chats extends ActiveRecord
                 'buttons' =>        [
                     [
                         'text' => '🟢 Принять',
-                        'callback_data' => json_encode([
-                                                           'action'   => 'success-skin',
-                                                           'skin_id'  => $skinId,
-                                                       ])
+                        'callback_data' => self::skinModerationCallbackAccept($model->skin_id),
                     ],
                 ],
             ];

@@ -8,6 +8,7 @@ use common\models\serverskin\ServerSkinCategory;
 use common\models\serverskin\ServerSkinLike;
 use common\models\box\DropImage;
 use common\models\user\User;
+use common\models\statistics\Chats;
 use frontend\forms\serverskin\ServerSkinForm;
 use yii\data\ActiveDataProvider;
 use api\components\jwt\JwtAuthFilter;
@@ -424,17 +425,11 @@ class CustomSkinsController extends BaseApiController
                 [
                     [
                         'text' => '🟢 Принять',
-                        'callback_data' => json_encode([
-                            'action'   => 'success-skin',
-                            'skin_id'  => $skinId,
-                        ])
+                        'callback_data' => Chats::skinModerationCallbackAccept((string)$skinId),
                     ],
                     [
                         'text' => '🔴 Отклонить',
-                        'callback_data' => json_encode([
-                            'action'   => 'reject-skin',
-                            'skin_id'  => $skinId,
-                        ])
+                        'callback_data' => Chats::skinModerationCallbackReject((string)$skinId),
                     ]
                 ],
                 $model->getImagePubUrl()
