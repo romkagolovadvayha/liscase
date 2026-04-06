@@ -33,10 +33,104 @@ class SkinsController extends BaseApiController
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
             'only' => ['confirm', 'buy'],
-            'except' => ['index', 'giveaway', 'skindrops', 'options'],
+            'except' => ['index', 'view', 'giveaway', 'skindrops', 'options'],
         ];
 
         return $behaviors;
+    }
+
+    /**
+     * Найти позицию каталога по id (ключ в кэше маркета может быть int или string).
+     *
+     * @param array<string|int, array> $data
+     */
+    private function findMarketItemById(array $data, $id): ?array
+    {
+        if (array_key_exists($id, $data)) {
+            return $data[$id];
+        }
+        if (is_numeric($id)) {
+            $intId = (int) $id;
+            if (array_key_exists($intId, $data)) {
+                return $data[$intId];
+            }
+            $strId = (string) $intId;
+            if (array_key_exists($strId, $data)) {
+                return $data[$strId];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Один элемент каталога в формате API (как в actionIndex).
+     */
+    private function formatSkinCatalogRow(array $item, string $type): array
+    {
+        $statTrak = false;
+        if (isset($item['is_stat_trak'])) {
+            $statTrak = (bool) $item['is_stat_trak'];
+        } elseif (isset($item['statTrak'])) {
+            $statTrak = (bool) $item['statTrak'];
+        }
+
+        return [
+            'id' => $item['id'] ?? null,
+            'class_id' => $item['class_id'] ?? null,
+            'instance_id' => $item['instance_id'] ?? null,
+            'name' => $item['name'] ?? '',
+            'ru_name' => $item['ru_name'] ?? $item['name'] ?? '',
+            'market_hash_name' => $item['market_hash_name'] ?? null,
+            'category' => $item['category'] ?? null,
+            'ru_quality' => $item['ru_quality'] ?? null,
+            'text_color' => $item['text_color'] ?? null,
+            'bg_color' => $item['bg_color'] ?? null,
+            'price' => (float) ($item['price'] ?? 0),
+            'our_price' => isset($item['our_price']) ? (float) $item['our_price'] : (float) ($item['price'] ?? 0),
+            'avg_price' => isset($item['avg_price']) ? (float) $item['avg_price'] : null,
+            'popularity_7d' => isset($item['popularity_7d']) ? (int) $item['popularity_7d'] : null,
+            'image' => $item['image'] ?? $item['image_url'] ?? null,
+            'image300' => $item['image300'] ?? $item['image300_url'] ?? null,
+            'image_url' => $item['image'] ?? $item['image_url'] ?? null,
+            'image300_url' => $item['image300'] ?? $item['image300_url'] ?? null,
+            'game_type' => $type,
+            'type' => $type,
+            'is_stat_trak' => $statTrak,
+            'market_info' => [
+                'market_id' => $item['id'] ?? null,
+                'market_url' => $item['url'] ?? null,
+            ],
+        ];
+    }
+
+    /**
+     * Карточка одного скина по id (для фронта: GET /v1/skins/{id}?type=rust|cs2).
+     */
+    public function actionView($id)
+    {
+        if (!Yii::$app->settings->get('section_skindrops')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
+        $type = Yii::$app->request->get('type', 'rust');
+        if (!in_array($type, ['rust', 'cs2'], true)) {
+            $type = 'rust';
+        }
+
+        if ($type === 'rust') {
+            $market = Yii::$app->rustTm;
+        } else {
+            $market = Yii::$app->csGoMarket;
+        }
+
+        $data = $market->items();
+        $item = $this->findMarketItemById($data, $id);
+        if ($item === null) {
+            throw new NotFoundHttpException('Скин не найден');
+        }
+
+        return $this->successResponse($this->formatSkinCatalogRow($item, $type));
     }
 
     /**
@@ -94,33 +188,7 @@ class SkinsController extends BaseApiController
         // Форматируем данные для API
         $formattedItems = [];
         foreach ($items as $item) {
-            $formattedItems[] = [
-                'id' => $item['id'] ?? null,
-                'class_id' => $item['class_id'] ?? null,
-                'instance_id' => $item['instance_id'] ?? null,
-                'name' => $item['name'] ?? '',
-                'ru_name' => $item['ru_name'] ?? $item['name'] ?? '',
-                'market_hash_name' => $item['market_hash_name'] ?? null,
-                'category' => $item['category'] ?? null,
-                'ru_quality' => $item['ru_quality'] ?? null,
-                'text_color' => $item['text_color'] ?? null,
-                'bg_color' => $item['bg_color'] ?? null,
-                'price' => (float)($item['price'] ?? 0),
-                'our_price' => isset($item['our_price']) ? (float)$item['our_price'] : (float)($item['price'] ?? 0),
-                'avg_price' => isset($item['avg_price']) ? (float)$item['avg_price'] : null,
-                'popularity_7d' => isset($item['popularity_7d']) ? (int)$item['popularity_7d'] : null,
-                'image' => $item['image'] ?? $item['image_url'] ?? null,
-                'image300' => $item['image300'] ?? $item['image300_url'] ?? null,
-                'image_url' => $item['image'] ?? $item['image_url'] ?? null, // для обратной совместимости
-                'image300_url' => $item['image300'] ?? $item['image300_url'] ?? null, // для обратной совместимости
-                'game_type' => $type,
-                'type' => $type, // альтернативное поле
-                'is_stat_trak' => isset($item['is_stat_trak']) ? (bool)$item['is_stat_trak'] : false,
-                'market_info' => [
-                    'market_id' => $item['id'] ?? null,
-                    'market_url' => $item['url'] ?? null,
-                ],
-            ];
+            $formattedItems[] = $this->formatSkinCatalogRow($item, $type);
         }
 
         $pagination = $dataProvider->getPagination();
@@ -186,11 +254,11 @@ class SkinsController extends BaseApiController
         }
 
         $data = $market->items();
-        if (empty($data[$id])) {
+        $item = $this->findMarketItemById($data, $id);
+        if ($item === null) {
             throw new NotFoundHttpException('Скин не найден');
         }
 
-        $item = $data[$id];
         $balance = $user->getSkinsBalance();
 
         if ($item['price'] > $balance->balance) {
@@ -203,7 +271,7 @@ class SkinsController extends BaseApiController
         $formModel = new SkinsForm();
         $formModel->market = $market;
         $formModel->type = $type;
-        $formModel->id = (string)$id;
+        $formModel->id = (string)($item['id'] ?? $id);
         $formModel->amount = (string)$item['price'];
 
         if ($formModel->saveRecord()) {
@@ -275,11 +343,11 @@ class SkinsController extends BaseApiController
 
         // Получаем данные о скинах
         $data = $market->items();
-        if (empty($data[$id])) {
+        $item = $this->findMarketItemById($data, $id);
+        if ($item === null) {
             throw new NotFoundHttpException('Скин не найден');
         }
 
-        $item = $data[$id];
         $balance = $user->getSkinsBalance();
 
         // Проверка баланса
@@ -294,7 +362,7 @@ class SkinsController extends BaseApiController
         $formModel = new SkinsForm();
         $formModel->market = $market;
         $formModel->type = $type;
-        $formModel->id = $id;
+        $formModel->id = (string)($item['id'] ?? $id);
         $formModel->amount = $item['price'];
 
         if ($formModel->load(Yii::$app->request->post(), '')) {
@@ -315,7 +383,7 @@ class SkinsController extends BaseApiController
         // Если это GET запрос, возвращаем информацию о скине и балансе
         return $this->successResponse([
             'skin' => [
-                'id' => $id,
+                'id' => $item['id'] ?? $id,
                 'name' => $item['name'] ?? '',
                 'price' => (float)$item['price'],
                 'image' => $item['image'] ?? null,
