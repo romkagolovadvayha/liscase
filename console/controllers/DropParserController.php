@@ -202,7 +202,7 @@ class DropParserController extends Controller
             $drop->type_id = DropType::createRecord($catName, $catEn);
             $drop->save();
 
-            $dropId = \Yii::$app->db->getLastInsertID();
+            $dropId = (int) \Yii::$app->db->getLastInsertID();
             $this->_loadImage($imageOriginalLink, $dropId);
             echo $name . PHP_EOL;
         }
@@ -211,16 +211,93 @@ class DropParserController extends Controller
         exit;
     }
 
-    private function _loadImage($imageUrl, $dropId) {
-        $uploadDir = \Yii::getAlias('@frontend/web/uploads');
-        if (!file_exists($uploadDir)) {
-            mkdir($uploadDir);
-            chmod($uploadDir, 0777);
+    /**
+     * Загрузка картинки дропа в S3 и создание записей drop_image (как в backend/forms/box/DropForm::_loadImage).
+     *
+     * @param string $imageUrl абсолютный URL
+     * @param int $dropId
+     * @param int $type DropImage::TYPE_ORIG | TYPE_ORIG_2
+     * @return bool
+     */
+    private function _loadImage(string $imageUrl, int $dropId, int $type = DropImage::TYPE_ORIG): bool
+    {
+        if ($imageUrl === '') {
+            return false;
         }
-        $fileUrl = "/drop/" . $dropId . "_" . md5(time()) . ".png";
-        $filePath = $uploadDir . $fileUrl;
-        file_put_contents($filePath, file_get_contents($imageUrl));
-        DropImage::createRecord($fileUrl, DropImage::TYPE_ORIG, $dropId);
+        if (!\Yii::$app->has('s3Api')) {
+            $this->stderr("Компонент s3Api не настроен — изображение для drop_id={$dropId} не загружено.\n");
+            return false;
+        }
+
+        $curl = clone \Yii::$app->curl;
+        $fileContent = $curl->get($imageUrl);
+        if (!is_string($fileContent) || $fileContent === '') {
+            $this->stderr("Пустой ответ при скачивании изображения: {$imageUrl}\n");
+            return false;
+        }
+
+        $path = parse_url($imageUrl, PHP_URL_PATH) ?: '';
+        $exp = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (!in_array($exp, ['svg', 'png', 'jpg', 'jpeg', 'ico', 'webp'], true)) {
+            $exp = 'png';
+        }
+        if ($exp === 'jpeg') {
+            $exp = 'jpg';
+        }
+
+        $filename = $dropId . '_' . $type . '_' . md5((string) microtime(true)) . '.' . $exp;
+        $fileUrl = '/drop/' . $filename;
+
+        $contentType = 'image/' . ($exp === 'jpg' ? 'jpeg' : ($exp === 'svg' ? 'svg+xml' : $exp));
+
+        $s3Key = 'uploads' . $fileUrl;
+        $s3Result = \Yii::$app->s3Api->putFile($s3Key, $fileContent, $contentType);
+        if ($s3Result === false) {
+            $this->stderr("Ошибка S3 putFile для drop_id={$dropId}, key={$s3Key}\n");
+            return false;
+        }
+
+        $tempDir = sys_get_temp_dir();
+        $tempFilePath = $tempDir . '/' . uniqid('drop_', true) . '.' . $exp;
+        file_put_contents($tempFilePath, $fileContent);
+
+        if (file_exists($tempFilePath) && $exp !== 'svg') {
+            $newPath150 = '/drop150/' . $filename;
+            $s3Key150 = 'uploads' . $newPath150;
+            $tempPath150 = $tempDir . '/' . uniqid('drop150_', true) . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath150, 150);
+            if (file_exists($tempPath150)) {
+                \Yii::$app->s3Api->putFile($s3Key150, file_get_contents($tempPath150), 'image/png');
+                DropImage::createRecord($newPath150, DropImage::TYPE_150, $dropId);
+                @unlink($tempPath150);
+            }
+
+            $newPath64 = '/drop64/' . $filename;
+            $s3Key64 = 'uploads' . $newPath64;
+            $tempPath64 = $tempDir . '/' . uniqid('drop64_', true) . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath64, 64);
+            if (file_exists($tempPath64)) {
+                \Yii::$app->s3Api->putFile($s3Key64, file_get_contents($tempPath64), 'image/png');
+                DropImage::createRecord($newPath64, DropImage::TYPE_64, $dropId);
+                @unlink($tempPath64);
+            }
+
+            $newPath100 = '/drop100/' . $filename;
+            $s3Key100 = 'uploads' . $newPath100;
+            $tempPath100 = $tempDir . '/' . uniqid('drop100_', true) . '.png';
+            DropImage::resizeImage($tempFilePath, $tempPath100, 100);
+            if (file_exists($tempPath100)) {
+                \Yii::$app->s3Api->putFile($s3Key100, file_get_contents($tempPath100), 'image/png');
+                DropImage::createRecord($newPath100, DropImage::TYPE_100, $dropId);
+                @unlink($tempPath100);
+            }
+        }
+
+        @unlink($tempFilePath);
+
+        DropImage::createRecord($fileUrl, $type, $dropId);
+
+        return true;
     }
 
     /**
@@ -292,7 +369,10 @@ class DropParserController extends Controller
                 }
                 $model->blocked_hour = $item['blocked_hour'];
                 $model->save();
-                $this->_loadImage($item['image'], $model->id);
+                $imgUrl = isset($item['image']) ? (string) $item['image'] : '';
+                if ($imgUrl !== '' && !$this->_loadImage($imgUrl, (int) $model->id)) {
+                    $this->stderr("Предмет {$item['eng_name']} сохранён без изображения (см. ошибки выше).\n");
+                }
                 $isInsert = true;
             } else {
                 $drops[$item['eng_name']]->name = $item['name'];
