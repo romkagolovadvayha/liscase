@@ -26,6 +26,9 @@
 | Пользователь / профиль API | `api/controllers/v1/UserController.php` |
 | Модели клана | `common/models/clan/` |
 | Статистика | `common/models/statistics/Statistics.php`, `common/models/clan/ClanStatistics.php` |
+| Ingest с игровых серверов (плагины) | POST `v1/plugin-ingest/update-users/{tag}`, `.../raid/{tag}`, `.../signs` → `api/controllers/StatsController.php` |
+| Тексты wipe/welcome/help для плагинов | GET `v1/rust-plugin-chat/wipe|welcome|help/{serverTag}` → `RustPluginChatController` + `common/components/rust/RustPluginChatJsonBuilder.php` |
+| Legacy магазин ProstojRUST | GET `v1/rust-legacy-store?secret=&method=…` → `RustLegacyStoreController` (делегирует `frontend/controllers/ApiController`) |
 
 ## Связь с фронтом
 

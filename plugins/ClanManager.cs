@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.1")]
+    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.2")]
     public class ClanManager : RustPlugin
     {
         #region Var
@@ -234,11 +234,11 @@ namespace Oxide.Plugins
         {
             LoadConfig();
             Unsubscribe(nameof(OnEntitySpawned));
-            StartUpdateLoop();
         }
 
         private void OnServerInitialized()
         {
+            StartUpdateLoop();
             Subscribe(nameof(OnEntitySpawned));
             foreach (var entity in BaseNetworkable.serverEntities)
             {
@@ -661,13 +661,17 @@ namespace Oxide.Plugins
 
         private void StopUpdateLoop()
         {
-            ServerMgr.Instance.CancelInvoke(OnUpdateLoop);
+            var mgr = ServerMgr.Instance;
+            if (mgr == null) return;
+            mgr.CancelInvoke(OnUpdateLoop);
         }
 
         private void StartUpdateLoop()
         {
             StopUpdateLoop();
-            ServerMgr.Instance.InvokeRepeating(OnUpdateLoop, 0f, _config.UpdateIntervalSeconds);
+            var mgr = ServerMgr.Instance;
+            if (mgr == null) return;
+            mgr.InvokeRepeating(OnUpdateLoop, 0f, _config.UpdateIntervalSeconds);
         }
         #endregion
     }
