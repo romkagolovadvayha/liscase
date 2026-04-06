@@ -290,20 +290,44 @@ class DropParserController extends Controller
         }
 
         $isInsert = false;
+        $typeUpdated = false;
         foreach ($items as $item) {
-            if (empty($list[$item['system_code']])) {
+            $key = $item['system_code'];
+            if (empty($list[$key])) {
                 $model = new SiteSetting();
                 $model->name = $item['name'];
                 $model->code = $item['code'];
                 $model->category = $item['category'];
                 $model->type = $item['type'];
                 $model->is_translate = $item['is_translate'];
-                $model->save();
-                $isInsert = true;
+                if ($model->save()) {
+                    $isInsert = true;
+                    $this->stdout("Добавлено: {$key} — {$model->name} (type={$model->type})\n");
+                } else {
+                    $this->stderr("Ошибка сохранения новой настройки {$key}: " . json_encode($model->getFirstErrors(), JSON_UNESCAPED_UNICODE) . "\n");
+                }
+            } else {
+                $existing = $list[$key];
+                $newType = $item['type'] ?? '';
+                if ($newType !== '' && (string) $existing->type !== (string) $newType) {
+                    $oldType = $existing->type;
+                    $existing->type = $newType;
+                    if ($existing->save()) {
+                        $typeUpdated = true;
+                        $this->stdout("Тип обновлён: {$key} — {$oldType} → {$newType}\n");
+                    } else {
+                        $this->stderr("Ошибка смены типа {$key}: " . json_encode($existing->getFirstErrors(), JSON_UNESCAPED_UNICODE) . "\n");
+                    }
+                }
             }
         }
 
-        if ($isInsert) {
+        if (!$isInsert && !$typeUpdated) {
+            $this->stdout("Без изменений: новых настроек нет, типы совпадают с API.\n");
+        }
+
+        if ($isInsert || $typeUpdated) {
+            $this->stdout("Запуск translate/import-api…\n");
             \Yii::$app->runAction('translate/import-api');
         }
     }
