@@ -22,8 +22,13 @@
 #   echo 'deploy ALL=(ALL) NOPASSWD:/usr/bin/mv,/bin/mv,/usr/bin/chmod,/bin/chmod,/usr/bin/supervisorctl,/usr/bin/crontab,/bin/systemctl,/usr/bin/systemctl' | sudo tee /etc/sudoers.d/deploy-supervisor
 #   (подставьте имя пользователя вместо deploy; пути к бинарникам проверьте which mv chmod supervisorctl)
 #
-# На сервере: git, php, composer в PATH; клон репозитория в DEPLOY_PATH;
-# пользователь SSH_USER должен уметь git pull (deploy key или HTTPS с credentials).
+# На сервере: git, php, composer в PATH; в DEPLOY_PATH должен лежать уже сделанный git clone
+# (ветку деплоя выставляет workflow). Если каталог создали только через SCP и .git нет:
+#   либо один раз на сервере: git clone … в DEPLOY_PATH,
+#   либо задайте DEPLOY_GIT_CLONE_URL (secret/var) — URL репозитория (git@… или https://…);
+#     при отсутствии .git выполнится clone текущей ветки (github.ref_name) и слияние в DEPLOY_PATH
+#     (файлы с раннего SCP, например .env.deploy, сохранятся).
+# Пользователь SSH_USER должен иметь право git fetch (deploy key или credentials на сервере).
 
 name: Deploy (SSH — VPS)
 
@@ -173,11 +178,23 @@ jobs:
           script_stop: false
           script: |
             set -euo pipefail
-            cd "${{ env.DEPLOY_PATH_REMOTE }}"
+            DEPLOY_ROOT="${{ env.DEPLOY_PATH_REMOTE }}"
+            cd "$DEPLOY_ROOT" || { echo "::error::Не удалось выполнить cd в DEPLOY_PATH=$DEPLOY_ROOT"; exit 1; }
+            BRANCH="${{ github.ref_name }}"
+            DEPLOY_GIT_CLONE_URL='${{ secrets.DEPLOY_GIT_CLONE_URL || vars.DEPLOY_GIT_CLONE_URL }}'
+            if [ ! -d .git ]; then
+              if [ -z "${DEPLOY_GIT_CLONE_URL:-}" ]; then
+                echo "::error::В DEPLOY_PATH нет .git — это не корень клона репозитория. На сервере выполните «git clone» в этот путь (частая ошибка: путь внутри другого сайта, куда SCP только создал подпапку). Либо задайте в GitHub Environment секрет/variable DEPLOY_GIT_CLONE_URL с URL репозитория для авто-клона при первом деплое."
+                exit 1
+              fi
+              _d=$(mktemp -d)
+              git clone --branch "$BRANCH" --single-branch "$DEPLOY_GIT_CLONE_URL" "$_d/checkout"
+              cp -a "$_d/checkout"/. .
+              rm -rf "$_d"
+            fi
             if [ -f .env.deploy ]; then
               mv -f .env.deploy .env
             fi
-            BRANCH="${{ github.ref_name }}"
             git fetch origin "$BRANCH"
             git checkout "$BRANCH"
             # Без merge: локальные правки отслеживаемых файлов (например yii) ломали git pull (exit 128)
