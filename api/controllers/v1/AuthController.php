@@ -4,7 +4,6 @@ namespace api\controllers\v1;
 
 use Yii;
 use yii\web\Response;
-use yii\web\UnauthorizedHttpException;
 use yii\web\Cookie;
 use yii\authclient\OpenId;
 use common\models\user\User;
@@ -571,7 +570,9 @@ class AuthController extends BaseApiController
      */
     public function actionMe()
     {
-        $this->requireAuth();
+        if (Yii::$app->user->isGuest) {
+            return $this->errorResponse('UNAUTHORIZED', 'Authentication required', [], 401);
+        }
 
         $user = Yii::$app->user->identity;
 

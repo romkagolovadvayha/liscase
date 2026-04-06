@@ -90,6 +90,8 @@ $config = [
                 'v1/user/promocode/activate' => 'v1/user/activate-promocode',
 
                 // Clans (просмотр без JWT; управление — с Bearer JWT)
+                /** GET /clans/list?ip=&port= — то же, что v1 (legacy-путь без префикса) */
+                'clans/list' => 'clans/list',
                 /** GET /v1/clans/list?ip=&port= — плоский JSON-массив для плагина Rust (без обёртки success/data) */
                 'v1/clans/list' => 'v1/clans/game-plugin-list',
                 'v1/clans/permissions' => 'v1/clans/permissions',

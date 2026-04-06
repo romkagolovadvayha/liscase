@@ -167,31 +167,32 @@ class BanlistController extends BaseApiController
             
             // Если нет кэша или есть фильтры/сортировка, строим запрос
             if ($cachedData === false || $cachedData === null || $hasFilters || $sortField !== 'banned_at' || $sortOrder !== SORT_DESC) {
+                $bansTable = Bans::tableName();
                 $query = Bans::find()
                     ->with(['user', 'server'])
                     ->andWhere([
                         'OR',
-                        ['>=', 'unbanned_at', date('Y-m-d H:i:s')],
-                        ['IS', 'unbanned_at', null]
+                        ['>=', $bansTable . '.unbanned_at', date('Y-m-d H:i:s')],
+                        ['IS', $bansTable . '.unbanned_at', null]
                     ]);
 
                 // Фильтр по Steam ID или нику
                 if (!empty($steamId)) {
                     $query->andWhere([
                         'OR',
-                        ['LIKE', 'username', $steamId],
-                        ['LIKE', 'steam_id', $steamId]
+                        ['LIKE', $bansTable . '.username', $steamId],
+                        ['LIKE', $bansTable . '.steam_id', $steamId]
                     ]);
                 }
 
                 // Фильтр по причине
                 if (!empty($reason)) {
-                    $query->andWhere(['LIKE', 'reason', $reason]);
+                    $query->andWhere(['LIKE', $bansTable . '.reason', $reason]);
                 }
 
                 // Фильтр по серверу
                 if (!empty($serverId)) {
-                    $query->andWhere(['server_id' => (int)$serverId]);
+                    $query->andWhere([$bansTable . '.server_id' => (int)$serverId]);
                 }
 
                 // Фильтр «только баны игроков, на которых я отправлял жалобу»
@@ -204,7 +205,7 @@ class BanlistController extends BaseApiController
                     if (empty($reportedSteamIds)) {
                         $query->andWhere('1 = 0');
                     } else {
-                        $query->andWhere(['steam_id' => $reportedSteamIds]);
+                        $query->andWhere([$bansTable . '.steam_id' => $reportedSteamIds]);
                     }
                 }
 
