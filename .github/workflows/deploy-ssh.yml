@@ -201,9 +201,9 @@ jobs:
             git reset --hard "origin/$BRANCH"
             # yii в репозитории должен быть 100755; если в индексе был 100644 — chmod после деплоя
             chmod +x yii 2>/dev/null || true
-            # rmrevin yii2-minify: FPM должен писать в каталог (часто владелец — пользователь git, не www-data)
-            mkdir -p frontend/web/minify backend/web/minify
-            chmod 777 frontend/web/minify backend/web/minify 2>/dev/null || true
+            # rmrevin minify + API: логи в api/runtime/logs, опубликованные assets в api/web/assets
+            mkdir -p frontend/web/minify backend/web/minify api/runtime/logs api/web/assets
+            chmod 777 frontend/web/minify backend/web/minify api/runtime api/runtime/logs api/web/assets 2>/dev/null || true
             export YII_ENV=prod
             export YII_DEBUG=0
             composer install --no-interaction --no-dev --optimize-autoloader
