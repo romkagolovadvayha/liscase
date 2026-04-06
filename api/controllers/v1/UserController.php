@@ -7,6 +7,7 @@ use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use common\models\user\User;
 use common\models\user\UserProfile;
+use common\models\user\UserConfirmCode;
 use common\models\user\UserBalance;
 use common\models\user\UserTree;
 use common\models\profit\Profit;
@@ -319,6 +320,42 @@ class UserController extends BaseApiController
         } else {
             return $this->validationErrorResponse($model);
         }
+    }
+
+    /**
+     * Код активации персонального Telegram-бота (аналог страницы /bot/activate на Yii-фронте).
+     *
+     * @OA\Get(
+     *     path="/v1/user/telegram-bot-activate",
+     *     operationId="getTelegramBotActivateCode",
+     *     tags={"User"},
+     *     summary="Код активации Telegram-бота",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Код и ссылка на бота"),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=500, description="Не удалось выдать код")
+     * )
+     */
+    public function actionTelegramBotActivate()
+    {
+        $user = $this->getCurrentUser();
+        $model = UserConfirmCode::createTypeTelegramBot($user->id);
+        if ($model === false) {
+            return $this->errorResponse('BOT_CODE_ERROR', 'Не удалось получить код активации', [], 500);
+        }
+
+        $login = trim((string)(Yii::$app->settings->get('tgbot_login') ?? ''));
+        if ($login === '') {
+            $login = trim((string)(Yii::$app->settings->get('telegram_personal_bot_username') ?? ''));
+        }
+        $login = ltrim($login, '@');
+        $botUrl = $login !== '' ? 'https://t.me/' . $login : '';
+
+        return $this->successResponse([
+            'code' => (string)$model->code,
+            'botLogin' => $login,
+            'botUrl' => $botUrl,
+        ]);
     }
 
     /**

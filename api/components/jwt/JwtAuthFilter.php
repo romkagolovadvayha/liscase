@@ -4,6 +4,8 @@ namespace api\components\jwt;
 
 use Yii;
 use yii\base\ActionFilter;
+use yii\db\Exception as DbException;
+use yii\web\HttpException;
 use yii\web\UnauthorizedHttpException;
 use yii\web\IdentityInterface;
 use common\models\user\User;
@@ -88,31 +90,44 @@ class JwtAuthFilter extends ActionFilter
             return true; // Продолжаем выполнение без авторизации
         }
 
-        try {
-            // Валидация токена
-            $payload = $this->jwtService->validateToken($token);
+        $dbAttempts = 0;
+        while (true) {
+            try {
+                // Валидация токена
+                $payload = $this->jwtService->validateToken($token);
 
-            // Проверка blacklist (если реализован)
-            if ($this->isTokenBlacklisted($payload)) {
-                throw new UnauthorizedHttpException('Token has been revoked');
+                // Проверка blacklist (если реализован)
+                if ($this->isTokenBlacklisted($payload)) {
+                    throw new UnauthorizedHttpException('Token has been revoked');
+                }
+
+                // Поиск пользователя
+                $user = $this->findUser($payload);
+
+                if (!$user) {
+                    throw new UnauthorizedHttpException('User not found');
+                }
+
+                // Установка пользователя в Yii::$app->user
+                Yii::$app->user->login($user, 0); // 0 = не использовать cookie, только сессию для текущего запроса
+
+                return true;
+            } catch (UnauthorizedHttpException $e) {
+                throw $e;
+            } catch (DbException | \PDOException $e) {
+                // Не маскировать сбой БД под 401; после «gone away» один раз переподключаемся
+                Yii::$app->db->close();
+                $dbAttempts++;
+                if ($dbAttempts >= 2) {
+                    Yii::error('JWT auth: database error after reconnect: ' . $e->getMessage(), __METHOD__);
+                    throw new HttpException(503, 'Service temporarily unavailable', 0, $e);
+                }
+            } catch (\Exception $e) {
+                if ($this->throwException) {
+                    throw new UnauthorizedHttpException($e->getMessage());
+                }
+                return true; // Продолжаем выполнение без авторизации
             }
-
-            // Поиск пользователя
-            $user = $this->findUser($payload);
-
-            if (!$user) {
-                throw new UnauthorizedHttpException('User not found');
-            }
-
-            // Установка пользователя в Yii::$app->user
-            Yii::$app->user->login($user, 0); // 0 = не использовать cookie, только сессию для текущего запроса
-
-            return true;
-        } catch (\Exception $e) {
-            if ($this->throwException) {
-                throw new UnauthorizedHttpException($e->getMessage());
-            }
-            return true; // Продолжаем выполнение без авторизации
         }
     }
 

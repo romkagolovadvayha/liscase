@@ -70,6 +70,7 @@ $config = [
                 'v1/user/profile' => 'v1/user/profile',
                 'v1/user/current-server' => 'v1/user/current-server',
                 'v1/user/social-links' => 'v1/user/social-links',
+                'v1/user/telegram-bot-activate' => 'v1/user/telegram-bot-activate',
                 'v1/user/balance' => 'v1/user/balance',
                 'v1/user/history' => 'v1/user/history',
                 'v1/user/operations' => 'v1/user/operations',
