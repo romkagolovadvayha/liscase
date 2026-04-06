@@ -18,8 +18,8 @@ $config = [
     'bootstrap' => [
 //        'log',
 //        'languagepicker'
-          'dbTemplateBootstrap',
           'minifyPathBootstrap',
+          'dbTemplateBootstrap',
     ],
     'controllerNamespace' => 'frontend\controllers',
     'aliases' => [
