@@ -42,6 +42,30 @@ class DiscordRoles extends Component
     }
 
     /**
+     * ID роли по имени или создание, если роли с таким именем ещё нет.
+     * Перед POST делается запрос к API; после неудачного POST — ещё один GET (гонка воркеров, сеть).
+     *
+     * @param string $guildId ID гильдии
+     * @param string $roleName Имя роли
+     * @param string $botToken Токен бота
+     * @return string|null ID роли или null
+     */
+    public function getOrCreateRoleByName($guildId, $roleName, $botToken)
+    {
+        $existing = $this->getRoleIdByName($guildId, $roleName, $botToken);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $newId = $this->createRole($guildId, $roleName, $botToken);
+        if ($newId !== null) {
+            return $newId;
+        }
+
+        return $this->getRoleIdByName($guildId, $roleName, $botToken);
+    }
+
+    /**
      * Выдать роль пользователю
      * @param string $guildId ID гильдии
      * @param string $userId ID пользователя Discord

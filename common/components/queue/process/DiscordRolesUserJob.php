@@ -52,9 +52,12 @@ class DiscordRolesUserJob extends BaseObject implements JobInterface
 
             $discordRoles = new DiscordRoles();
 
-            // Создаем роли в Discord, если их нет (используем метод из DiscordRolesJob)
+            // Создаём роли в Discord, если их нет (используем метод из DiscordRolesJob)
             $mainJob = new DiscordRolesJob();
-            $mainJob->ensureRolesExist($guildId, $botToken, $discordRoles);
+            if (!$mainJob->ensureRolesExist($guildId, $botToken, $discordRoles)) {
+                Yii::error("DiscordRolesUserJob: ensureRolesExist failed for user {$this->userId}", __METHOD__);
+                return;
+            }
 
             // Обрабатываем роли для пользователя
             $mainJob->processUserRoles($user, $guildId, $botToken, $discordRoles);

@@ -1786,6 +1786,11 @@ class User extends ActiveRecord implements IdentityInterface
             $this->updateDiscordRolesOnServerChange($oldServerId);
             $this->syncLeaderClanServers((int)$oldServerId);
         }
+
+        // Синхронизация роли «Медиа» в Discord при смене признака блогера
+        if (!$insert && isset($changedAttributes['is_blogger'])) {
+            $this->queueDiscordRolesAfterBloggerFlagChange();
+        }
     }
 
     /**
@@ -1856,6 +1861,27 @@ class User extends ActiveRecord implements IdentityInterface
         } catch (\Exception $e) {
             // Логируем ошибку, но не прерываем процесс сохранения
             Yii::error("Failed to queue Discord roles update for user {$this->id} after server_id change: " . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    /**
+     * После смены is_blogger — обновить роли Discord (роль «Медиа»).
+     */
+    protected function queueDiscordRolesAfterBloggerFlagChange(): void
+    {
+        try {
+            if (empty($this->discord_id)) {
+                return;
+            }
+            if (Yii::$app->has('queueProcess')) {
+                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $this->id]));
+                Yii::info("Discord roles update job queued for user {$this->id} after is_blogger change", __METHOD__);
+            }
+        } catch (\Exception $e) {
+            Yii::error(
+                "Failed to queue Discord roles update for user {$this->id} after is_blogger change: " . $e->getMessage(),
+                __METHOD__
+            );
         }
     }
 

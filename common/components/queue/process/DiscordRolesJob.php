@@ -65,6 +65,9 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     // Специальные роли (не зависят от статистики)
     const ROLE_VIP = 'VIP';
 
+    /** Роль для пользователей с признаком is_blogger (медиа / блогеры) */
+    const ROLE_MEDIA = 'Медиа';
+
     /**
      * @param \yii\queue\Queue $queue
      * @return void
@@ -82,8 +85,11 @@ class DiscordRolesJob extends BaseObject implements JobInterface
 
             $discordRoles = new DiscordRoles();
 
-            // Создаем роли в Discord, если их нет
-            $this->ensureRolesExist($guildId, $botToken, $discordRoles);
+            // Создаём роли в Discord, если их нет (при ошибке загрузки списка — не создаём пачку дублей)
+            if (!$this->ensureRolesExist($guildId, $botToken, $discordRoles)) {
+                Yii::error('DiscordRolesJob: ensureRolesExist aborted (guild roles unavailable)', __METHOD__);
+                return;
+            }
 
             // Получаем всех пользователей с discord_id
             $users = User::find()
@@ -121,11 +127,14 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      * @param string $guildId
      * @param string $botToken
      * @param DiscordRoles $discordRoles
+     * @return bool false — список ролей гильдии недоступен, создавать роли нельзя (избегаем дублей)
      */
     public function ensureRolesExist($guildId, $botToken, $discordRoles)
     {
         // Загружаем существующие роли
-        $this->loadGuildRoles($guildId, $botToken);
+        if (!$this->loadGuildRoles($guildId, $botToken)) {
+            return false;
+        }
         
         $allRoles = [];
         
@@ -149,7 +158,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         
         // Специальные роли
         $allRoles[] = self::ROLE_VIP;
-        
+        $allRoles[] = self::ROLE_MEDIA;
+
         // Роли по серверам (создаем для всех активных серверов, чтобы они существовали в Discord)
         $servers = Servers::find()
             ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -172,17 +182,21 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         }
         
         foreach ($allRoles as $roleName) {
-            if (!in_array($roleName, $existingRoleNames)) {
-                $roleId = $discordRoles->createRole($guildId, $roleName, $botToken);
-                if ($roleId) {
-                    Yii::info("Created Discord role: {$roleName} (ID: {$roleId})", __METHOD__);
-                    // Обновляем кэш
-                    self::$guildRolesCache[$guildId][$roleId] = $roleName;
-                } else {
-                    Yii::warning("Failed to create Discord role: {$roleName}", __METHOD__);
-                }
+            if (in_array($roleName, $existingRoleNames, true)) {
+                continue;
+            }
+            // Повторная проверка через API: гонка воркеров / роль уже есть, но не попала в кэш
+            $roleId = $discordRoles->getOrCreateRoleByName($guildId, $roleName, $botToken);
+            if ($roleId) {
+                Yii::info("Ensured Discord role: {$roleName} (ID: {$roleId})", __METHOD__);
+                self::$guildRolesCache[$guildId][$roleId] = $roleName;
+                $existingRoleNames[] = $roleName;
+            } else {
+                Yii::warning("Failed to ensure Discord role: {$roleName}", __METHOD__);
             }
         }
+
+        return true;
     }
 
     /**
@@ -196,7 +210,10 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     {
         // Загружаем кэш ролей гильдии если еще не загружен
         if (!isset(self::$guildRolesCache[$guildId])) {
-            $this->loadGuildRoles($guildId, $botToken);
+            if (!$this->loadGuildRoles($guildId, $botToken)) {
+                Yii::warning("Skipping Discord role sync for user {$user->id}: cannot load guild roles", __METHOD__);
+                return;
+            }
         }
 
         // Получаем текущие роли пользователя
@@ -257,6 +274,11 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         // Роль VIP (если у пользователя есть активный VIP на сайте)
         if ($user->hasVip()) {
             $shouldHaveRoles[] = self::ROLE_VIP;
+        }
+
+        // Роль «Медиа» — признак блогера в профиле
+        if (!empty($user->is_blogger)) {
+            $shouldHaveRoles[] = self::ROLE_MEDIA;
         }
 
         // Роль текущего сервера (на котором сейчас играет пользователь)
@@ -479,7 +501,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         
         // Специальные роли
         $categoryRoleNames[] = self::ROLE_VIP;
-        
+        $categoryRoleNames[] = self::ROLE_MEDIA;
+
         // Роли по серверам (добавляем все возможные роли серверов)
         $servers = Servers::find()
             ->andWhere(['status' => Servers::STATUS_ACTIVE])
@@ -538,6 +561,9 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      * @param string $guildId
      * @param string $botToken
      */
+    /**
+     * @return bool true если список ролей успешно получен и разобран
+     */
     protected function loadGuildRoles($guildId, $botToken)
     {
         try {
@@ -547,17 +573,30 @@ class DiscordRolesJob extends BaseObject implements JobInterface
                 ->get("https://discord.com/api/v10/guilds/{$guildId}/roles");
 
             $roles = json_decode($response, true);
-            if (is_array($roles)) {
-                self::$guildRolesCache[$guildId] = [];
-                foreach ($roles as $role) {
-                    if (isset($role['id']) && isset($role['name'])) {
-                        self::$guildRolesCache[$guildId][$role['id']] = $role['name'];
-                    }
+            if (!is_array($roles) || $roles === []) {
+                Yii::error(
+                    'Discord API error loading guild roles: invalid or empty response',
+                    __METHOD__
+                );
+                return false;
+            }
+
+            self::$guildRolesCache[$guildId] = [];
+            foreach ($roles as $role) {
+                if (isset($role['id'], $role['name'])) {
+                    self::$guildRolesCache[$guildId][$role['id']] = $role['name'];
                 }
             }
+
+            if (count(self::$guildRolesCache[$guildId]) === 0) {
+                Yii::error('Discord loadGuildRoles: response contained no valid roles', __METHOD__);
+                return false;
+            }
+
+            return true;
         } catch (\Exception $e) {
             Yii::error("Discord API error loading guild roles: " . $e->getMessage(), __METHOD__);
-            self::$guildRolesCache[$guildId] = [];
+            return false;
         }
     }
 }
