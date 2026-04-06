@@ -10,6 +10,7 @@ use common\models\support\Support;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\Exception as DbException;
 use yii\queue\JobInterface;
 
 /**
@@ -69,6 +70,17 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     const ROLE_MEDIA = 'Медиа';
 
     /**
+     * Переподключение к MySQL каждые N пользователей: долгий джоб + Discord API → соединение может
+     * закрыться по wait_timeout («MySQL server has gone away»).
+     */
+    protected const DB_RECONNECT_EVERY_USERS = 50;
+
+    /** Сколько пользователей обрабатывает одна задача {@see DiscordRolesBatchJob} в очереди */
+    public const USERS_PER_BATCH = 100;
+
+    /**
+     * Ставит в очередь несколько батч-задач по {@see USERS_PER_BATCH} пользователей (короткие воркеры).
+     *
      * @param \yii\queue\Queue $queue
      * @return void
      */
@@ -83,31 +95,31 @@ class DiscordRolesJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $discordRoles = new DiscordRoles();
-
-            // Создаём роли в Discord, если их нет (при ошибке загрузки списка — не создаём пачку дублей)
-            if (!$this->ensureRolesExist($guildId, $botToken, $discordRoles)) {
-                Yii::error('DiscordRolesJob: ensureRolesExist aborted (guild roles unavailable)', __METHOD__);
+            if (!Yii::$app->has('queueVk')) {
+                Yii::error('DiscordRolesJob: queueVk is not configured', __METHOD__);
                 return;
             }
 
-            // Получаем всех пользователей с discord_id
-            $users = User::find()
+            $userIds = User::find()
+                ->select('id')
                 ->andWhere(['IS NOT', 'discord_id', null])
                 ->andWhere(['<>', 'discord_id', ''])
-                ->all();
+                ->column();
 
-            Yii::info("Processing " . count($users) . " users for Discord roles", __METHOD__);
-
-            foreach ($users as $user) {
-                try {
-                    $this->processUserRoles($user, $guildId, $botToken, $discordRoles);
-                } catch (\Exception $e) {
-                    Yii::error("Error processing user {$user->id}: " . $e->getMessage(), __METHOD__);
-                }
+            if ($userIds === []) {
+                Yii::info('DiscordRolesJob: no users with Discord linked', __METHOD__);
+                return;
             }
 
-            Yii::info("Discord roles check completed", __METHOD__);
+            $chunks = array_chunk($userIds, self::USERS_PER_BATCH);
+            foreach ($chunks as $chunk) {
+                Yii::$app->queueVk->push(new DiscordRolesBatchJob(['userIds' => $chunk]));
+            }
+
+            Yii::info(
+                'DiscordRolesJob: enqueued ' . count($chunks) . ' batch job(s) for ' . count($userIds) . ' user(s)',
+                __METHOD__
+            );
         } catch (\Exception $ex) {
             Yii::error("DiscordRolesJob error: " . $ex->getFile() . ":" . $ex->getLine() . " - " . $ex->getMessage(), __METHOD__);
             if (method_exists(Yii::$app, 'telegramChats')) {
@@ -560,8 +572,6 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      * Загрузить все роли гильдии в кэш
      * @param string $guildId
      * @param string $botToken
-     */
-    /**
      * @return bool true если список ролей успешно получен и разобран
      */
     protected function loadGuildRoles($guildId, $botToken)
@@ -598,6 +608,43 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             Yii::error("Discord API error loading guild roles: " . $e->getMessage(), __METHOD__);
             return false;
         }
+    }
+
+    /**
+     * Закрыть и заново открыть основное соединение БД (после долгого простоя или ошибки 2006).
+     */
+    protected function reconnectDb(): void
+    {
+        if (!Yii::$app->has('db')) {
+            return;
+        }
+        try {
+            Yii::$app->db->close();
+        } catch (\Throwable $e) {
+            // соединение уже мёртвое
+        }
+        try {
+            Yii::$app->db->open();
+        } catch (\Throwable $e) {
+            Yii::error('DiscordRolesJob: DB reconnect failed: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    protected function isMysqlConnectionLost(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+        if (stripos($msg, 'gone away') !== false || strpos($msg, '2006') !== false) {
+            return true;
+        }
+        if ($e instanceof DbException && isset($e->errorInfo[1]) && (int)$e->errorInfo[1] === 2006) {
+            return true;
+        }
+        $prev = $e->getPrevious();
+        if ($prev instanceof \Throwable) {
+            return $this->isMysqlConnectionLost($prev);
+        }
+
+        return false;
     }
 }
 

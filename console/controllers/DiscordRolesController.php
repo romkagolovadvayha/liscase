@@ -27,8 +27,8 @@ class DiscordRolesController extends Controller
         try {
             // Добавляем задачу в очередь
             Yii::$app->queueVk->push(new DiscordRolesJob());
-            
-            $this->stdout("Discord roles check job added to queue.\n");
+
+            $this->stdout("Discord roles scheduler job added to queue (batches of " . DiscordRolesJob::USERS_PER_BATCH . " users).\n");
             return ExitCode::OK;
         } catch (\Exception $e) {
             $this->stderr("Error: " . $e->getMessage() . "\n");
