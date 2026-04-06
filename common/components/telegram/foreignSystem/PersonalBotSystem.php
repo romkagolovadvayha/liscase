@@ -19,7 +19,7 @@ use common\models\user\User;
 
 /**
  * Личный бот Telegram. Паритет команд для ВКонтакте — в {@see \common\components\vk\VkBotSystem}
- * (вебхук {@see \api\controllers\VkController}).
+ * (вебхук ВК — {@see \api\controllers\VkController}; Telegram — {@see \api\controllers\TelegramWebhookController}).
  */
 class PersonalBotSystem extends AbstractSystem
 {

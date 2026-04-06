@@ -310,6 +310,10 @@ $config = [
 
                 // HighlightCaptureMod (Rust PvP киллы → Telegram)
                 'v1/rust/highlights' => 'v1/rust-highlights/index',
+
+                // Telegram Bot API webhooks (токен бота в пути; см. console telegram/set-webhooks)
+                ['pattern' => 'v1/webhook/telegram/personal/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/personal', 'verb' => ['POST']],
+                ['pattern' => 'v1/webhook/telegram/rustoteka/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/rustoteka', 'verb' => ['POST']],
             ],
         ],
         'request' => [

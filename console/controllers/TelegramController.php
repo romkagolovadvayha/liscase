@@ -2,17 +2,31 @@
 
 namespace console\controllers;
 
+use common\components\telegram\foreignSystem\RustotekaBotSystem;
 use common\components\telegram\TelegramCurlProxy;
 use common\models\user\User;
+use Yii;
 use yii\console\Controller;
+use yii\console\ExitCode;
 
 class TelegramController extends Controller
 {
+    /** @var bool только показать целевые URL, без вызова setWebhook */
+    public $dryRun = false;
 
-    private function call(string $method, array $params): array
+    public function options($actionID)
     {
-        $token = \Yii::$app->settings->get('tgbot_botToken');
-        $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
+        return array_merge(parent::options($actionID), ['dryRun']);
+    }
+
+    public function optionAliases()
+    {
+        return array_merge(parent::optionAliases(), ['d' => 'dryRun']);
+    }
+
+    private function telegramApiCall(string $botToken, string $method, array $params): array
+    {
+        $ch = curl_init("https://api.telegram.org/bot{$botToken}/{$method}");
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
             CURLOPT_RETURNTRANSFER => true,
@@ -25,13 +39,78 @@ class TelegramController extends Controller
         $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         $body = json_decode($raw, true) ?: [];
+
         return [
             'http' => $http,
-            'ok'   => $body['ok'] ?? false,
+            'ok' => $body['ok'] ?? false,
             'desc' => $body['description'] ?? null,
             'code' => $body['error_code'] ?? null,
             'params' => $body['parameters'] ?? [],
+            'result' => $body['result'] ?? null,
         ];
+    }
+
+    private function call(string $method, array $params): array
+    {
+        $token = (string) Yii::$app->settings->get('tgbot_botToken');
+
+        return $this->telegramApiCall($token, $method, $params);
+    }
+
+    /**
+     * Зарегистрировать вебхуки персонального бота и Rustoteka-бота на URL API (params.apiPublicUrl).
+     *
+     * Пример: php yii telegram/set-webhooks
+     * Проверка без запросов к Telegram: php yii telegram/set-webhooks --dryRun=1
+     */
+    public function actionSetWebhooks(): int
+    {
+        $base = (string) (Yii::$app->params['apiPublicUrl'] ?? '');
+        $base = rtrim($base, '/');
+        if ($base === '') {
+            $this->stderr("Параметр params[apiPublicUrl] пустой. Задайте публичный URL API без завершающего слэша (common/config/params-local.php).\n");
+
+            return ExitCode::CONFIG;
+        }
+
+        $bots = [
+            [
+                'label' => 'personal (tgbot_botToken)',
+                'token' => (string) Yii::$app->settings->get('tgbot_botToken'),
+                'path' => 'personal',
+            ],
+            [
+                'label' => 'rustoteka',
+                'token' => (new RustotekaBotSystem())->getTelegramToken(),
+                'path' => 'rustoteka',
+            ],
+        ];
+
+        foreach ($bots as $bot) {
+            if ($bot['token'] === '') {
+                $this->stderr("Пропуск {$bot['label']}: пустой токен.\n");
+                continue;
+            }
+            $hookUrl = $base . '/v1/webhook/telegram/' . $bot['path'] . '/' . rawurlencode($bot['token']);
+            if ($this->dryRun) {
+                $this->stdout("[dry-run] {$bot['label']}\n  URL: {$hookUrl}\n");
+                continue;
+            }
+
+            $info = $this->telegramApiCall($bot['token'], 'getWebhookInfo', []);
+            $prevUrl = is_array($info['result']) ? ($info['result']['url'] ?? '') : '';
+            $this->stdout("{$bot['label']} — было: " . ($prevUrl !== '' ? $prevUrl : '(нет)') . "\n");
+
+            $r = $this->telegramApiCall($bot['token'], 'setWebhook', ['url' => $hookUrl]);
+            if (!$r['ok']) {
+                $this->stderr("setWebhook ошибка ({$bot['label']}): " . ($r['desc'] ?? 'unknown') . "\n");
+
+                return ExitCode::UNSPECIFIED_ERROR;
+            }
+            $this->stdout("setWebhook OK ({$bot['label']})\n  → {$hookUrl}\n");
+        }
+
+        return ExitCode::OK;
     }
 
     /**
@@ -68,24 +147,19 @@ class TelegramController extends Controller
             echo PHP_EOL;
             sleep(10);
         }
-
-//        $r = $this->call('sendChatAction', ['chat_id' => $chatId, 'action' => 'typing']);
-//        if ($r['ok'] && $r['http'] === 200) return ['status' => 'ok'];
-//
-//        $code = $r['code'] ?? $r['http'];
-//        $desc = mb_strtolower($r['desc'] ?? '');
-//
-//        if ($code == 403 && str_contains($desc, 'bot was blocked by the user')) return ['status' => 'blocked'];
-//        if ($code == 403 && str_contains($desc, 'user is deactivated')) return ['status' => 'deactivated'];
-//        if ($code == 400 && str_contains($desc, 'chat not found')) return ['status' => 'not_found'];
-//        if ($code == 429) { sleep((int)($r['params']['retry_after'] ?? 1)); return $this->check($chatId); }
-//        return ['status' => 'error', 'code' => $code, 'desc' => $r['desc'] ?? ''];
     }
 
-    private function isBlocked($code, $desc) {
-        if ($code == 403 && str_contains($desc, 'bot was blocked by the user')) return true;
-        if ($code == 403 && str_contains($desc, 'user is deactivated')) return true;
-        if ($code == 400 && str_contains($desc, 'chat not found')) return true;
+    private function isBlocked($code, $desc)
+    {
+        if ($code == 403 && str_contains($desc, 'bot was blocked by the user')) {
+            return true;
+        }
+        if ($code == 403 && str_contains($desc, 'user is deactivated')) {
+            return true;
+        }
+        if ($code == 400 && str_contains($desc, 'chat not found')) {
+            return true;
+        }
 
         return false;
     }
