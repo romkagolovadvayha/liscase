@@ -183,9 +183,17 @@ class ProductsController extends BaseApiController
                 $query->andWhere(['show_main_block' => (int)$showMainBlock]);
             }
 
-            if ($search) {
-                $query->andFilterWhere(['like', 'name', $search])
-                      ->orFilterWhere(['like', 'eng_name', $search]);
+            if ($search !== null && $search !== '') {
+                $term = trim((string)$search);
+                if ($term !== '') {
+                    // Нельзя andFilterWhere + orFilterWhere: получится (… AND name LIKE) OR (eng_name LIKE)
+                    // без market_status/status — в выдачу попадали неактивные маркет-товары.
+                    $query->andWhere([
+                        'or',
+                        ['like', 'name', $term],
+                        ['like', 'eng_name', $term],
+                    ]);
+                }
             }
 
             // Сортировка: при наличии избранного — сначала избранные, затем базовая сортировка
