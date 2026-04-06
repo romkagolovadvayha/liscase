@@ -134,6 +134,43 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      */
     protected static $guildRolesCache = [];
 
+    /** @var string[]|null полный список имён «управляемых» ролей для updateUserRoles (без повтора Servers::find()->all на каждого юзера) */
+    protected static $runtimeCategoryRoleNamesFull = null;
+
+    /** @var array<int, Servers|null> серверы по id (подогрев батчем, иначе лениво) */
+    protected static $runtimeServerById = [];
+
+    /**
+     * Сброс кэшей на один батч / прогон (вызывать в начале {@see DiscordRolesBatchJob}).
+     */
+    public static function resetRuntimeCaches(): void
+    {
+        self::$runtimeCategoryRoleNamesFull = null;
+        self::$runtimeServerById = [];
+    }
+
+    /**
+     * Один запрос: подгрузить серверы для участников батча (вместо N× findOne).
+     *
+     * @param int[] $serverIds
+     */
+    public static function warmServersForBatch(array $serverIds): void
+    {
+        $serverIds = array_values(array_unique(array_filter(array_map('intval', $serverIds))));
+        if ($serverIds === []) {
+            return;
+        }
+        $models = Servers::find()->where(['id' => $serverIds])->all();
+        foreach ($models as $server) {
+            self::$runtimeServerById[(int)$server->id] = $server;
+        }
+        foreach ($serverIds as $id) {
+            if (!array_key_exists($id, self::$runtimeServerById)) {
+                self::$runtimeServerById[$id] = null;
+            }
+        }
+    }
+
     /**
      * Убедиться, что все необходимые роли существуют в Discord
      * @param string $guildId
@@ -157,7 +194,6 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         foreach (self::ROLES_KILLS as $role) {
             $allRoles[] = $role['name'];
         }
-        $allRoles[] = 'Чемпион (TOP-1 киллов)'; // TOP-1 киллов за вайп
         foreach (self::ROLES_WIPES as $role) {
             $allRoles[] = $role['name'];
         }
@@ -242,26 +278,20 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         // Определяем какие роли должны быть у пользователя
         $shouldHaveRoles = [];
 
-        // Роли по часам игры
-        $playtime = $this->getUserPlaytime($user->steam_id);
+        // Роли по часам игры и киллам (один запрос к statistics вместо двух)
+        $agg = $this->getPlaytimeAndKillsAggregates($user->steam_id);
+        $playtime = $agg['playtime_metric'];
         $playtimeRole = $this->getRoleForValue($playtime, self::ROLES_PLAYTIME);
         if ($playtimeRole) {
             $shouldHaveRoles[] = $playtimeRole['name'];
         }
 
-        // Роли по киллам
-        $kills = $this->getUserKills($user->steam_id);
+        $kills = $agg['kills'];
         $killsRole = $this->getRoleForValue($kills, self::ROLES_KILLS);
         if ($killsRole) {
             $shouldHaveRoles[] = $killsRole['name'];
         }
         
-        // Проверяем TOP-1 киллов за вайп (уникальная роль - Чемпион)
-        $topKillsRole = $this->getTopKillsRole($user->steam_id);
-        if ($topKillsRole) {
-            $shouldHaveRoles[] = $topKillsRole;
-        }
-
         // Роли по вайпам
         $wipes = $this->getUserWipes($user->steam_id);
         $wipesRole = $this->getRoleForValue($wipes, self::ROLES_WIPES);
@@ -320,18 +350,38 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
-     * Получить общее время игры пользователя
+     * Суммы playtime и kills одним запросом. Метрика playtime — как раньше: SUM(playtime) / 60 (целое).
+     *
      * @param string $steamId
-     * @return int Часы игры
+     * @return array{playtime_metric: int, kills: int}
      */
+    protected function getPlaytimeAndKillsAggregates($steamId)
+    {
+        $rows = Statistics::find()
+            ->select(['[[key]]', 'SUM([[value]]) AS total'])
+            ->andWhere(['steam_id' => $steamId])
+            ->andWhere(['key' => ['playtime', 'kills']])
+            ->groupBy(['[[key]]'])
+            ->asArray()
+            ->all();
+
+        $byKey = ['playtime' => 0, 'kills' => 0];
+        foreach ($rows as $row) {
+            $k = $row['key'] ?? '';
+            if ($k === 'playtime' || $k === 'kills') {
+                $byKey[$k] = (int)($row['total'] ?? 0);
+            }
+        }
+
+        return [
+            'playtime_metric' => (int)($byKey['playtime'] / 60),
+            'kills' => $byKey['kills'],
+        ];
+    }
+
     protected function getUserPlaytime($steamId)
     {
-        $totalSeconds = Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'playtime'])
-            ->sum('value') ?: 0;
-
-        return (int)($totalSeconds / 60); // Конвертируем секунды в часы
+        return $this->getPlaytimeAndKillsAggregates($steamId)['playtime_metric'];
     }
 
     /**
@@ -341,10 +391,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      */
     protected function getUserKills($steamId)
     {
-        return (int)Statistics::find()
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['key' => 'kills'])
-            ->sum('value') ?: 0;
+        return $this->getPlaytimeAndKillsAggregates($steamId)['kills'];
     }
 
     /**
@@ -359,45 +406,6 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             ->andWhere(['steam_id' => $steamId])
             ->distinct()
             ->count();
-    }
-
-    /**
-     * Получить роль TOP-1 киллов за вайп
-     * @param string $steamId
-     * @return string|null
-     */
-    protected function getTopKillsRole($steamId)
-    {
-        // Получаем текущий вайп (последний активный)
-        $currentWipe = Statistics::find()
-            ->select('wipe')
-            ->orderBy(['wipe' => SORT_DESC])
-            ->limit(1)
-            ->scalar();
-
-        if (empty($currentWipe)) {
-            return null;
-        }
-
-        // Получаем топ игроков по киллам за текущий вайп
-        $topKills = Statistics::find()
-            ->select([
-                'steam_id',
-                'SUM(value) as total_kills'
-            ])
-            ->andWhere(['wipe' => $currentWipe])
-            ->andWhere(['key' => 'kills'])
-            ->groupBy('steam_id')
-            ->orderBy(['total_kills' => SORT_DESC])
-            ->limit(1)
-            ->asArray()
-            ->one();
-
-        if (!empty($topKills) && $topKills['steam_id'] === $steamId) {
-            return 'Чемпион (TOP-1 киллов)';
-        }
-
-        return null;
     }
 
     /**
@@ -455,9 +463,14 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             return null;
         }
 
-        // Получаем сервер по ID
-        $server = Servers::findOne($user->server_id);
-        
+        $sid = (int)$user->server_id;
+        if (array_key_exists($sid, self::$runtimeServerById)) {
+            $server = self::$runtimeServerById[$sid];
+        } else {
+            $server = Servers::findOne($sid);
+            self::$runtimeServerById[$sid] = $server ?: null;
+        }
+
         if (empty($server) || $server->status !== Servers::STATUS_ACTIVE) {
             return null;
         }
@@ -472,6 +485,57 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     }
 
     /**
+     * Имена всех ролей, которыми управляет синхронизация (чтобы снимать «лишние»). Один раз за прогон.
+     *
+     * @return string[]
+     */
+    protected function getCategoryRoleNamesForDiscordUpdateCached(): array
+    {
+        if (self::$runtimeCategoryRoleNamesFull !== null) {
+            return self::$runtimeCategoryRoleNamesFull;
+        }
+
+        $categoryRoleNames = [];
+
+        foreach (self::ROLES_PLAYTIME as $role) {
+            $categoryRoleNames[] = $role['name'];
+        }
+        foreach (self::ROLES_KILLS as $role) {
+            $categoryRoleNames[] = $role['name'];
+        }
+        // Больше не выдаём; оставляем в списке, чтобы снять с участников при следующем проходе
+        $categoryRoleNames[] = 'Чемпион (TOP-1 киллов)';
+
+        foreach (self::ROLES_WIPES as $role) {
+            $categoryRoleNames[] = $role['name'];
+        }
+        foreach (self::ROLES_SUPPORT as $role) {
+            $categoryRoleNames[] = $role['name'];
+        }
+        foreach (self::ROLES_REPORTS as $role) {
+            $categoryRoleNames[] = $role['name'];
+        }
+
+        $categoryRoleNames[] = self::ROLE_VIP;
+        $categoryRoleNames[] = self::ROLE_MEDIA;
+
+        $servers = Servers::find()
+            ->andWhere(['status' => Servers::STATUS_ACTIVE])
+            ->andWhere(['IS NOT', 'monitoring_name', null])
+            ->andWhere(['<>', 'monitoring_name', ''])
+            ->all();
+
+        foreach ($servers as $server) {
+            $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
+            $categoryRoleNames[] = $server->monitoring_name . $wipeTypeSuffix;
+        }
+
+        self::$runtimeCategoryRoleNamesFull = $categoryRoleNames;
+
+        return self::$runtimeCategoryRoleNamesFull;
+    }
+
+    /**
      * Обновить роли пользователя
      * @param User $user
      * @param string $guildId
@@ -482,50 +546,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
      */
     protected function updateUserRoles($user, $guildId, $botToken, $discordRoles, $currentRoleNames, $shouldHaveRoles)
     {
-        // Список всех ролей категории (для определения, какие роли нужно удалить)
-        $categoryRoleNames = [];
-        
-        // Роли по часам игры
-        foreach (self::ROLES_PLAYTIME as $role) {
-            $categoryRoleNames[] = $role['name'];
-        }
-        
-        // Роли по киллам
-        foreach (self::ROLES_KILLS as $role) {
-            $categoryRoleNames[] = $role['name'];
-        }
-        $categoryRoleNames[] = 'Чемпион (TOP-1 киллов)'; // TOP-1 киллов за вайп
-        
-        // Роли по вайпам
-        foreach (self::ROLES_WIPES as $role) {
-            $categoryRoleNames[] = $role['name'];
-        }
-        
-        // Роли по поддержке
-        foreach (self::ROLES_SUPPORT as $role) {
-            $categoryRoleNames[] = $role['name'];
-        }
-        
-        // Роли по репортам
-        foreach (self::ROLES_REPORTS as $role) {
-            $categoryRoleNames[] = $role['name'];
-        }
-        
-        // Специальные роли
-        $categoryRoleNames[] = self::ROLE_VIP;
-        $categoryRoleNames[] = self::ROLE_MEDIA;
-
-        // Роли по серверам (добавляем все возможные роли серверов)
-        $servers = Servers::find()
-            ->andWhere(['status' => Servers::STATUS_ACTIVE])
-            ->andWhere(['IS NOT', 'monitoring_name', null])
-            ->andWhere(['<>', 'monitoring_name', ''])
-            ->all();
-        
-        foreach ($servers as $server) {
-            $wipeTypeSuffix = $this->getWipeTypeSuffix($server->wipe_type);
-            $categoryRoleNames[] = $server->monitoring_name . $wipeTypeSuffix;
-        }
+        $categoryRoleNames = $this->getCategoryRoleNamesForDiscordUpdateCached();
 
         // Создаем обратный индекс: roleName => roleId из кэша
         $roleNameToId = [];
@@ -578,7 +599,7 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     {
         try {
             $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_TIMEOUT, 10)
+                ->setOption(CURLOPT_TIMEOUT, 3)
                 ->setHeader('Authorization', "Bot {$botToken}")
                 ->get("https://discord.com/api/v10/guilds/{$guildId}/roles");
 

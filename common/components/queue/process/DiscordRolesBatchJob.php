@@ -41,9 +41,19 @@ class DiscordRolesBatchJob extends DiscordRolesJob
                 return;
             }
 
+            self::resetRuntimeCaches();
+
             $users = User::find()
                 ->andWhere(['id' => $this->userIds])
                 ->all();
+
+            $serverIds = [];
+            foreach ($users as $u) {
+                if (!empty($u->server_id)) {
+                    $serverIds[] = (int)$u->server_id;
+                }
+            }
+            self::warmServersForBatch($serverIds);
 
             Yii::info(
                 'DiscordRolesBatchJob: loaded ' . count($users) . ' user(s) for batch of ' . count($this->userIds) . ' id(s)',

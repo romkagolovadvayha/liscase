@@ -36,7 +36,7 @@ class Discord
         ];
 
         $response = (clone Yii::$app->curl)
-            ->setOption(CURLOPT_TIMEOUT, 10)
+            ->setOption(CURLOPT_TIMEOUT, 3)
             ->setOption(CURLOPT_POSTFIELDS, json_encode($params))
             ->setHeader('Content-Type', 'application/json')
             ->setHeader('Authorization', "Bot {$tokenBot}")

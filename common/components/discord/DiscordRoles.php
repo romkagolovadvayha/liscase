@@ -22,7 +22,7 @@ class DiscordRoles extends Component
     {
         try {
             $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_TIMEOUT, 10)
+                ->setOption(CURLOPT_TIMEOUT, 3)
                 ->setHeader('Authorization', "Bot {$botToken}")
                 ->get("https://discord.com/api/v10/guilds/{$guildId}/roles");
 
@@ -82,7 +82,7 @@ class DiscordRoles extends Component
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Authorization: Bot ' . $botToken,
                 'Content-Type: application/json',
@@ -116,7 +116,7 @@ class DiscordRoles extends Component
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Authorization: Bot ' . $botToken,
                 'Content-Type: application/json',
@@ -144,7 +144,7 @@ class DiscordRoles extends Component
     {
         try {
             $response = (clone Yii::$app->curl)
-                ->setOption(CURLOPT_TIMEOUT, 10)
+                ->setOption(CURLOPT_TIMEOUT, 3)
                 ->setHeader('Authorization', "Bot {$botToken}")
                 ->get("https://discord.com/api/v10/guilds/{$guildId}/members/{$userId}");
 
@@ -183,7 +183,7 @@ class DiscordRoles extends Component
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($roleData));
             curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Authorization: Bot ' . $botToken,
