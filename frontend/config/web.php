@@ -19,6 +19,7 @@ $config = [
 //        'log',
 //        'languagepicker'
           'dbTemplateBootstrap',
+          'minifyPathBootstrap',
     ],
     'controllerNamespace' => 'frontend\controllers',
     'aliases' => [
@@ -36,6 +37,9 @@ $config = [
         ],
         'dbTemplateBootstrap' => [
             'class' => \common\components\template\DbTemplateBootstrap::class,
+        ],
+        'minifyPathBootstrap' => [
+            'class' => \common\components\bootstrap\MinifyPathBootstrap::class,
         ],
         'urlManager'    => [
             'enablePrettyUrl' => true,
@@ -78,6 +82,30 @@ $config = [
                 'rss' => 'site/rss',
                 'radio' => 'radio/index',
                 'radio/<id:\d+>' => 'radio/station',
+                'clans' => 'clans/index',
+                'clans/create' => 'clans/create',
+                'clans/update/<id:\d+>' => 'clans/update',
+                'clans/invite/<id:\d+>' => 'clans/invite',
+                'clans/accept-invite/<id:\d+>' => 'clans/accept-invite',
+                'clans/decline-invite/<id:\d+>' => 'clans/decline-invite',
+                'clans/leave/<id:\d+>' => 'clans/leave',
+                'clans/kick/<id:\d+>/<userId:\d+>' => 'clans/kick',
+                'clans/promote/<id:\d+>/<userId:\d+>' => 'clans/promote',
+                'clans/demote/<id:\d+>/<userId:\d+>' => 'clans/demote',
+                'clans/transfer/<id:\d+>/<userId:\d+>' => 'clans/transfer',
+                'clans/permissions/<id:\d+>/<memberId:\d+>' => 'clans/permissions',
+                'clans/update-permissions/<id:\d+>/<memberId:\d+>' => 'clans/update-permissions',
+                'clans/statistics/<id:\d+>' => 'clans/statistics',
+                'clans/members/<id:\d+>' => 'clans/members',
+                'clans/member-statistics/<id:\d+>/<memberId:\d+>' => 'clans/member-statistics',
+                'clans/history/<id:\d+>' => 'clans/history',
+                'clans/achievements/<id:\d+>' => 'clans/achievements',
+                'clans/settings/<id:\d+>' => 'clans/settings',
+                'clans/rankings' => 'clans/rankings',
+                'clans/rankings/<serverTag:[a-z0-9_-]+>' => 'clans/rankings',
+                'clans/set-privacy/<id:\d+>' => 'clans/set-privacy',
+                'clans/<serverTag:[a-z0-9_-]+>' => 'clans/index',
+                'clans/<serverTag:[a-z0-9_-]+>/<id:\d+>' => 'clans/view',
                 'db-asset/<root>/<path:.+>' => 'db-asset/serve',
             ],
         ],
@@ -184,11 +212,10 @@ if (in_array($subDomain, array_keys($languages))) {
     $config['language'] = $languages[$subDomain];
     $config['params']['language'] = $languages[$subDomain];
 }
-if (YII_ENV_DEV) {
-    // configuration adjustments for 'dev' environment
+if (YII_ENV_DEV && class_exists(\yii\debug\Module::class)) {
     $config['bootstrap'][] = 'debug';
     $config['modules']['debug'] = [
-        'class' => 'yii\debug\Module',
+        'class' => \yii\debug\Module::class,
         // uncomment the following to add your IP if you are not connecting from localhost.
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];

@@ -7,7 +7,7 @@ $config = [
     'id' => 'basic',
     'name' => 'LisCase',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log','dbTemplateBootstrap',],
+    'bootstrap' => ['log', 'dbTemplateBootstrap', 'minifyPathBootstrap'],
     'controllerNamespace' => 'backend\controllers',
     'defaultRoute'        => 'user/index',
     'aliases' => [
@@ -20,6 +20,9 @@ $config = [
         ],
         'dbTemplateBootstrap' => [
             'class' => \common\components\template\DbTemplateBootstrap::class,
+        ],
+        'minifyPathBootstrap' => [
+            'class' => \common\components\bootstrap\MinifyPathBootstrap::class,
         ],
         'urlManager'    => [
             'enablePrettyUrl' => true,
