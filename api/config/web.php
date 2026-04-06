@@ -431,4 +431,7 @@ if (empty($config['params']['allowedRedirectHosts'])) {
     $config['params']['allowedRedirectHosts'] = array_values(array_unique($hosts));
 }
 
+// HtmlPurifier: при незаписываемом api/runtime — кеш в sys_get_temp_dir() (см. api/helpers/HtmlPurifier.php)
+Yii::$classMap['yii\helpers\HtmlPurifier'] = dirname(__DIR__) . '/helpers/HtmlPurifier.php';
+
 return $config;
