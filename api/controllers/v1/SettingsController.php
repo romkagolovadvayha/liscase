@@ -19,7 +19,7 @@ class SettingsController extends BaseApiController
      * Список разрешенных категорий для фронтенда.
      * metrics — счётчики (Яндекс.Метрика, gtag и т.д.), поле code — произвольный HTML/скрипты для вставки на Next.
      */
-    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi'];
+    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side'];
 
     /**
      * Список исключаемых ключей (секретные данные)
@@ -43,11 +43,11 @@ class SettingsController extends BaseApiController
      *     operationId="getSettings",
      *     tags={"Settings"},
      *     summary="Получить публичные настройки сайта",
-     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot, clans, openAi (avatar, username — бот поддержки; секреты openAi не отдаются)",
+     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot, clans, openAi, banner_side (боковой баннер: image/en_image/en_link/ru_link; секреты openAi не отдаются)",
      *     @OA\Parameter(
      *         name="categories",
      *         in="query",
-     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot,clans,openAi",
+     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot,clans,openAi,banner_side",
      *         required=false,
      *         @OA\Schema(type="string", example="design,social")
      *     ),
@@ -65,7 +65,8 @@ class SettingsController extends BaseApiController
      *                     @OA\Property(property="section", type="object"),
      *                     @OA\Property(property="metrics", type="object"),
      *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — изображения подиума"),
-     *                     @OA\Property(property="openAi", type="object", description="Публичные поля бота: avatar, username")
+     *                     @OA\Property(property="openAi", type="object", description="Публичные поля бота: avatar, username"),
+     *                     @OA\Property(property="banner_side", type="object", description="Баннер сайдбара: image, en_image, en_link, ru_link")
      *                 )
      *             )
      *         )
