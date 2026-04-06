@@ -12,5 +12,10 @@ $config = yii\helpers\ArrayHelper::merge(
     require __DIR__ . '/../config/web.php',
 );
 
+// REST не использует HTML-ассеты/minify из common; rmrevin View требует writable api/web/minify и ломает FPM при отказе mkdir
+$config['components']['view'] = [
+    'class' => \yii\web\View::class,
+];
+
 (new yii\web\Application($config))->run();
 
