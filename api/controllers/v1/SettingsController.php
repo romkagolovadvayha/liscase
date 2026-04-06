@@ -98,5 +98,39 @@ class SettingsController extends BaseApiController
 
         return $this->successResponse($settings);
     }
+
+    /**
+     * Список определений site_settings для синхронизации между инсталляциями (консоль drop-parser/new-settings).
+     * Формат как у бывшего GET https://prostoj.store/api/settings: массив в data с полями name, code, category, type, system_code, is_translate.
+     *
+     * @OA\Get(
+     *     path="/v1/settings/site-definitions",
+     *     operationId="getSettingsSiteDefinitions",
+     *     tags={"Settings"},
+     *     summary="Определения настроек сайта для репликации схемы (без значений)",
+     *     @OA\Response(response=200, description="success + data: массив объектов")
+     * )
+     */
+    public function actionSiteDefinitions()
+    {
+        /** @var SiteSetting[] $list */
+        $list = SiteSetting::find()
+            ->cache(60)
+            ->all();
+
+        $items = [];
+        foreach ($list as $item) {
+            $items[] = [
+                'name' => $item->name,
+                'code' => $item->code,
+                'category' => $item->category,
+                'type' => $item->type,
+                'system_code' => $item->category . '_' . $item->code,
+                'is_translate' => $item->is_translate,
+            ];
+        }
+
+        return $this->successResponse($items);
+    }
 }
 

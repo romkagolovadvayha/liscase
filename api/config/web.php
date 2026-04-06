@@ -141,7 +141,8 @@ $config = [
                 ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>', 'route' => 'v1/clans/update', 'verb' => ['PATCH', 'PUT', 'OPTIONS']],
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>' => 'v1/clans/view',
 
-                // Settings
+                // Settings (site-definitions — до index, иначе перехватит общий v1/settings)
+                'v1/settings/site-definitions' => 'v1/settings/site-definitions',
                 'v1/settings' => 'v1/settings/index',
                 ['pattern' => 'v1/avatar-frames/select', 'route' => 'v1/avatar-frame/select', 'verb' => ['POST', 'OPTIONS']],
                 'v1/avatar-frames' => 'v1/avatar-frame/index',
@@ -158,6 +159,9 @@ $config = [
                 ['pattern' => 'v1/skins/<id:[0-9]+(?:_[0-9]+)*>', 'route' => 'v1/skins/view', 'verb' => ['GET', 'HEAD', 'OPTIONS']],
                 ['pattern' => 'v1/skins/<id:[0-9]+(?:_[0-9]+)*>/buy', 'route' => 'v1/skins/buy', 'verb' => ['POST', 'OPTIONS']],
                 'v1/skins/confirm/<id:[0-9]+(?:_[0-9]+)*>' => 'v1/skins/confirm',
+
+                // Drops (синхронизация для console drop-parser/new-items; до v1/products)
+                'v1/drops/items' => 'v1/drops/items',
 
                 // Products
             'v1/products' => 'v1/products/index',

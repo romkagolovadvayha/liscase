@@ -18,6 +18,7 @@ use common\models\user\UserBox;
 use common\models\user\UserDrop;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\console\ExitCode;
 
 class DropParserController extends Controller
 {
@@ -223,12 +224,41 @@ class DropParserController extends Controller
     }
 
     /**
-     * drop-parser/new-items
+     * Разбор JSON: v1 { success, data: [...] } или голый массив (legacy).
+     *
+     * @return array<int, mixed>|null
+     */
+    private function decodeV1OrLegacyList(string $body): ?array
+    {
+        $decoded = json_decode($body, true);
+        if (!is_array($decoded)) {
+            return null;
+        }
+        if (array_key_exists('data', $decoded) && is_array($decoded['data'])) {
+            return $decoded['data'];
+        }
+        if ($decoded === [] || array_keys($decoded) === range(0, count($decoded) - 1)) {
+            return $decoded;
+        }
+
+        return null;
+    }
+
+    /**
+     * drop-parser/new-items ["https://api.prostoj.store/v1/drops/items"]
+     *
+     * @param string $url полный URL GET
+     * @return int
      * @throws \Exception
      */
-    public function actionNewItems() {
+    public function actionNewItems($url = 'https://api.prostoj.store/v1/drops/items') {
         $curl = clone \Yii::$app->curl;
-        $items = json_decode($curl->get('https://prostoj.store/api/items'), 1);
+        $body = $curl->get($url);
+        $items = $this->decodeV1OrLegacyList((string) $body);
+        if ($items === null) {
+            $this->stderr("Не удалось разобрать JSON или формат не v1/массив. URL: {$url}\nОтвет (начало): " . substr((string) $body, 0, 400) . "\n");
+            return ExitCode::DATAERR;
+        }
 
         $drops = \common\models\box\Drop::find()
             ->indexBy('eng_name')
@@ -237,6 +267,10 @@ class DropParserController extends Controller
         $isInsert = false;
         $google = new TranslateApi();
         foreach ($items as $item) {
+            if (!is_array($item) || empty($item['eng_name'])) {
+                $this->stderr("Пропуск элемента без eng_name или не-массив\n");
+                continue;
+            }
             if (empty($drops[$item['eng_name']])) {
                 $model = new Drop();
                 $model->name = $item['name'];
@@ -270,15 +304,27 @@ class DropParserController extends Controller
             Drop::updateCache();
             \Yii::$app->runAction('translate/import-api');
         }
+
+        return ExitCode::OK;
     }
 
     /**
-     * drop-parser/new-settings
+     * Синхронизация определений site_settings с эталонного API (по умолчанию api.prostoj.store).
+     *
+     * drop-parser/new-settings ["https://api.prostoj.store/v1/settings/site-definitions"]
+     *
+     * @param string $url полный URL GET (ответ v1: JSON с success и data — массив)
+     * @return int
      * @throws \Exception
      */
-    public function actionNewSettings() {
+    public function actionNewSettings($url = 'https://api.prostoj.store/v1/settings/site-definitions') {
         $curl = clone \Yii::$app->curl;
-        $items = json_decode($curl->get('https://prostoj.store/api/settings'), 1);
+        $body = $curl->get($url);
+        $items = $this->decodeV1OrLegacyList((string) $body);
+        if ($items === null) {
+            $this->stderr("Не удалось разобрать JSON или формат не v1/массив. URL: {$url}\nОтвет (начало): " . substr((string) $body, 0, 400) . "\n");
+            return ExitCode::DATAERR;
+        }
 
         /** @var SiteSetting[] $drops */
         $drops = SiteSetting::find()
@@ -292,6 +338,10 @@ class DropParserController extends Controller
         $isInsert = false;
         $typeUpdated = false;
         foreach ($items as $item) {
+            if (!is_array($item) || empty($item['system_code'])) {
+                $this->stderr('Пропуск элемента без system_code или не-массив' . "\n");
+                continue;
+            }
             $key = $item['system_code'];
             if (empty($list[$key])) {
                 $model = new SiteSetting();
@@ -330,6 +380,8 @@ class DropParserController extends Controller
             $this->stdout("Запуск translate/import-api…\n");
             \Yii::$app->runAction('translate/import-api');
         }
+
+        return ExitCode::OK;
     }
 
 
