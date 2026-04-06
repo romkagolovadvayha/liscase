@@ -10,6 +10,8 @@ use consik\yii2websocket\WebSocketServer;
 use Ratchet\ConnectionInterface;
 use Yii;
 use api\components\jwt\JwtService;
+use PDOException;
+use yii\db\Exception as DbException;
 
 /**
  * WebSocket-шлюз push-уведомлений для нового фронта (Next.js).
@@ -118,6 +120,107 @@ class FrontendPushGatewayServer extends WebSocketServer
         });
     }
 
+    /**
+     * Долгоживущий WS-процесс: MySQL закрывает idle-соединение (wait_timeout) → следующий запрос падает с 2006.
+     * Тот же подход, что в {@see ChatServer::safeDbQuery()}.
+     */
+    private function isGoneAwayError(\Exception $e): bool
+    {
+        $message = $e->getMessage();
+        $code = $e->getCode();
+
+        return $code == 2006
+            || strpos($message, '2006') !== false
+            || strpos($message, 'MySQL server has gone away') !== false
+            || strpos($message, 'server has gone away') !== false
+            || (strpos($message, 'HY000') !== false && strpos($message, '2006') !== false)
+            || strpos($message, 'No such file or directory') !== false
+            || strpos($message, '[2002]') !== false;
+    }
+
+    private function reconnectDatabase(): bool
+    {
+        try {
+            if (Yii::$app->db->isActive) {
+                Yii::$app->db->close();
+            }
+            usleep(50000);
+            Yii::$app->db->open();
+            if (Yii::$app->db->isActive) {
+                $this->log('Database reconnected successfully');
+
+                return true;
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            $this->log('Failed to reconnect: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * @template T
+     * @param callable():T $callback
+     * @return T
+     */
+    private function safeDbQuery(callable $callback, int $maxRetries = 3)
+    {
+        $attempt = 0;
+        $lastException = null;
+
+        while ($attempt < $maxRetries) {
+            try {
+                return $callback();
+            } catch (DbException $e) {
+                $lastException = $e;
+                $attempt++;
+                if ($this->isGoneAwayError($e)) {
+                    $this->log("Database connection lost (attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
+                    if ($this->reconnectDatabase()) {
+                        continue;
+                    }
+                    if ($attempt < $maxRetries) {
+                        usleep(200000);
+                        continue;
+                    }
+                }
+                throw $e;
+            } catch (PDOException $e) {
+                $lastException = $e;
+                $attempt++;
+                if ($this->isGoneAwayError($e)) {
+                    $this->log("Database connection lost (PDO, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
+                    if ($this->reconnectDatabase()) {
+                        continue;
+                    }
+                    if ($attempt < $maxRetries) {
+                        usleep(200000);
+                        continue;
+                    }
+                }
+                throw $e;
+            } catch (\Exception $e) {
+                if ($this->isGoneAwayError($e)) {
+                    $lastException = $e;
+                    $attempt++;
+                    $this->log("Database connection lost (generic, attempt {$attempt}/{$maxRetries}): " . $e->getMessage());
+                    if ($this->reconnectDatabase() && $attempt < $maxRetries) {
+                        continue;
+                    }
+                }
+                throw $e;
+            }
+        }
+
+        if ($lastException) {
+            throw $lastException;
+        }
+
+        throw new \RuntimeException("Failed to execute database query after {$maxRetries} attempts");
+    }
+
     protected function getCommand(ConnectionInterface $from, $msg)
     {
         $request = json_decode($msg, true);
@@ -173,7 +276,9 @@ class FrontendPushGatewayServer extends WebSocketServer
             }
 
             try {
-                $user = User::findOne($payload['user_id']);
+                $user = $this->safeDbQuery(function () use ($payload) {
+                    return User::findOne($payload['user_id']);
+                });
             } catch (\Throwable $e) {
                 Yii::error(
                     'FrontendPushGateway auth User::findOne failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
@@ -430,7 +535,15 @@ class FrontendPushGatewayServer extends WebSocketServer
      */
     private function resolveSupportTicketByAnyNumber(int $publicNumber): ?Support
     {
-        return Support::findByNumber($publicNumber);
+        try {
+            return $this->safeDbQuery(function () use ($publicNumber) {
+                return Support::findByNumber($publicNumber);
+            });
+        } catch (\Throwable $e) {
+            $this->log('resolveSupportTicketByAnyNumber: ' . $e->getMessage());
+
+            return null;
+        }
     }
 
     /**
@@ -439,10 +552,13 @@ class FrontendPushGatewayServer extends WebSocketServer
     private function getDbConnectionDebugInfo(): string
     {
         try {
-            $db = Yii::$app->db;
-            $name = $db->createCommand('SELECT DATABASE()')->queryScalar();
-            $dsn = (string) ($db->dsn ?? '');
-            return 'currentDatabase=' . ($name ?: 'null') . ' dsn=' . $dsn;
+            return $this->safeDbQuery(function () {
+                $db = Yii::$app->db;
+                $name = $db->createCommand('SELECT DATABASE()')->queryScalar();
+                $dsn = (string) ($db->dsn ?? '');
+
+                return 'currentDatabase=' . ($name ?: 'null') . ' dsn=' . $dsn;
+            });
         } catch (\Throwable $e) {
             return 'dbError=' . $e->getMessage();
         }
