@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.2")]
+    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.4")]
     public class ClanManager : RustPlugin
     {
         #region Var
@@ -209,16 +209,64 @@ namespace Oxide.Plugins
 
         }
 
+        /// <summary>
+        /// IQChat console command "set" uses BasePlayer.FindByID; offline players always fail with a misleading SteamID/syntax error.
+        /// </summary>
         private void SetCustomPrefix(ulong steamId, string tag, string color)
         {
-            var chatCmd = $"set {steamId} custom <color={color}>[{tag}]</color>";
+            if (steamId == 0UL)
+                return;
+            if (BasePlayer.FindByID(steamId) == null)
+                return;
+
+            tag = tag ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(color))
+                color = "#FFFFFF";
+            else if (!color.StartsWith("#", StringComparison.Ordinal))
+                color = "#" + color;
+
+            var custom = $"<color={color}>[{tag}]</color>";
+            var chatCmd = $"set {steamId} custom {QuoteConsoleArg(custom)}";
             rust.RunServerCommand(chatCmd);
         }
 
         private void RemoveCustomPrefix(ulong steamId)
         {
+            if (steamId == 0UL)
+                return;
+            if (BasePlayer.FindByID(steamId) == null)
+                return;
+
             var chatCmd = $"set {steamId} custom \"\"";
             rust.RunServerCommand(chatCmd);
+        }
+
+        private static string QuoteConsoleArg(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "\"\"";
+            var escaped = value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+            return $"\"{escaped}\"";
+        }
+
+        private void SyncIqChatClanPrefixForPlayer(ulong steamId)
+        {
+            if (steamId == 0UL)
+                return;
+            if (BasePlayer.FindByID(steamId) == null)
+                return;
+
+            var clan = Clans?.FirstOrDefault(c => c.users.Any(u => u.SteamId == steamId));
+            if (clan != null)
+            {
+                SetCustomPrefix(steamId, clan.tag, clan.color_tag);
+                return;
+            }
+
+            if (Clans == null || Clans.Count == 0)
+                return;
+
+            RemoveCustomPrefix(steamId);
         }
 
         private bool IsInAnyClan(ulong steamId)
@@ -263,6 +311,16 @@ namespace Oxide.Plugins
                     continue;
                 }
             }
+        }
+
+        private void OnPlayerConnected(BasePlayer player)
+        {
+            if (player == null)
+                return;
+            var id = player.userID;
+            if (id == 0UL)
+                return;
+            NextTick(() => SyncIqChatClanPrefixForPlayer(id));
         }
 
         private void OnEntitySpawned(BuildingPrivlidge cupboard) => RegisterCupboard(cupboard);
