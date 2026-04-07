@@ -111,7 +111,7 @@ class AuthController extends WebController
 
         if (empty($clientId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         // Сохраняем user_id в сессии для последующей привязки
@@ -159,7 +159,7 @@ class AuthController extends WebController
                 $errorDescription = Yii::$app->request->get('error_description', $error);
                 Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Discord: {error}', ['error' => $errorDescription]));
             }
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         // Проверяем state для защиты от CSRF (читаем из cookie)
@@ -168,13 +168,13 @@ class AuthController extends WebController
             Yii::error("Discord OAuth state mismatch. State: {$state}, Saved: " . ($savedState ?? 'empty'), __METHOD__);
             Cookie::remove('discord_oauth_state');
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Discord.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         Cookie::remove('discord_oauth_state');
 
         if (empty($code)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Discord не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $clientId = Yii::$app->settings->get('discord_client_id');
@@ -185,7 +185,7 @@ class AuthController extends WebController
         if (empty($clientId) || empty($clientSecret)) {
             Yii::error("Discord OAuth not configured", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Discord OAuth не настроен. Обратитесь к администратору.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         // Обмениваем код на токен
@@ -214,14 +214,14 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Discord.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $tokenData = json_decode($tokenResponse, true);
         if (empty($tokenData['access_token'])) {
             Yii::error("Discord OAuth: no access_token in response", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Discord не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         // Получаем информацию о пользователе Discord
@@ -239,14 +239,14 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Discord.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $discordUser = json_decode($userResponse, true);
         if (empty($discordUser['id'])) {
             Yii::error("Discord OAuth: no user id in response", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Discord не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         // Сохраняем discord_id
@@ -278,7 +278,7 @@ class AuthController extends WebController
             Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
         }
 
-        return $this->redirect(['/user/profile']);
+        return $this->redirect(['/profile']);
     }
 
     /**
@@ -298,7 +298,7 @@ class AuthController extends WebController
 
         if (empty($clientId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Twitch OAuth не настроен. Обратитесь к администратору.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         Yii::$app->session->set('twitch_oauth_user_id', $userId);
@@ -337,20 +337,20 @@ class AuthController extends WebController
             } else {
                 Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Twitch: {error}', ['error' => $error]));
             }
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $savedState = Cookie::getValue('twitch_oauth_state');
         if (empty($state) || $state !== $savedState) {
             Cookie::remove('twitch_oauth_state');
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Twitch.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         Cookie::remove('twitch_oauth_state');
 
         if (empty($code)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Twitch не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $clientId = Yii::$app->settings->get('twitch_client_id');
@@ -360,7 +360,7 @@ class AuthController extends WebController
 
         if (empty($clientId) || empty($clientSecret)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Twitch OAuth не настроен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $tokenUrl = 'https://id.twitch.tv/oauth2/token';
@@ -383,12 +383,12 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Twitch OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Twitch.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         $tokenData = json_decode($tokenResponse, true);
         if (empty($tokenData['access_token'])) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Twitch не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $userUrl = 'https://api.twitch.tv/helix/users';
@@ -404,7 +404,7 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Twitch API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Twitch.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         $data = json_decode($userResponse, true);
         $twitchUser = $data['data'][0] ?? null;
@@ -412,7 +412,7 @@ class AuthController extends WebController
         $twitchLogin = $twitchUser['login'] ?? null;
         if (empty($twitchId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Twitch не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $userId = Yii::$app->session->get('twitch_oauth_user_id') ?: Yii::$app->user->id;
@@ -432,7 +432,7 @@ class AuthController extends WebController
         } else {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
         }
-        return $this->redirect(['/user/profile']);
+        return $this->redirect(['/profile']);
     }
 
     /**
@@ -453,7 +453,7 @@ class AuthController extends WebController
 
         if (empty($clientId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Kick OAuth не настроен. Обратитесь к администратору.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $state = Yii::$app->security->generateRandomString(32);
@@ -498,7 +498,7 @@ class AuthController extends WebController
             } else {
                 Yii::$app->session->setFlash('warning', Yii::t('common', 'Ошибка при авторизации Kick: {error}', ['error' => $error]));
             }
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $savedState = Yii::$app->session->get('kick_oauth_state');
@@ -507,14 +507,14 @@ class AuthController extends WebController
             Yii::$app->session->remove('kick_oauth_state');
             Yii::$app->session->remove('kick_oauth_code_verifier');
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка безопасности при авторизации Kick.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         Yii::$app->session->remove('kick_oauth_state');
         Yii::$app->session->remove('kick_oauth_code_verifier');
 
         if (empty($code)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Код авторизации Kick не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $clientId = Yii::$app->settings->get('kick_client_id');
@@ -524,7 +524,7 @@ class AuthController extends WebController
 
         if (empty($clientId) || empty($clientSecret)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Kick OAuth не настроен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $tokenUrl = 'https://id.kick.com/oauth/token';
@@ -548,12 +548,12 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Kick OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении токена Kick.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         $tokenData = json_decode($tokenResponse, true);
         if (empty($tokenData['access_token'])) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Токен Kick не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $userUrl = 'https://api.kick.com/public/v1/users';
@@ -568,7 +568,7 @@ class AuthController extends WebController
         if ($httpCode !== 200) {
             Yii::error("Kick API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Kick.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
         $data = json_decode($userResponse, true);
         $kickUser = isset($data['data']) ? $data['data'] : $data;
@@ -583,7 +583,7 @@ class AuthController extends WebController
             ?? $data['slug'] ?? $data['name'] ?? $data['username'] ?? null;
         if (empty($kickId)) {
             Yii::$app->session->setFlash('error', Yii::t('common', 'ID пользователя Kick не получен.'));
-            return $this->redirect(['/user/profile']);
+            return $this->redirect(['/profile']);
         }
 
         $userId = Yii::$app->session->get('kick_oauth_user_id') ?: Yii::$app->user->id;
@@ -605,7 +605,7 @@ class AuthController extends WebController
         } else {
             Yii::$app->session->setFlash('error', Yii::t('common', 'Пользователь не найден.'));
         }
-        return $this->redirect(['/user/profile']);
+        return $this->redirect(['/profile']);
     }
 
     public function init()

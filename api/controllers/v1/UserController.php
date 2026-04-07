@@ -58,7 +58,7 @@ class UserController extends BaseApiController
      * Получение или обновление профиля пользователя
      * 
      * @OA\Get(
-     *     path="/v1/user/profile",
+     *     path="/v1/profile",
      *     operationId="getUserProfile",
      *     tags={"User"},
      *     summary="Получить профиль пользователя",
@@ -66,7 +66,7 @@ class UserController extends BaseApiController
      *     @OA\Response(response=200, description="Профиль пользователя")
      * )
      * @OA\Put(
-     *     path="/v1/user/profile",
+     *     path="/v1/profile",
      *     operationId="updateUserProfile",
      *     tags={"User"},
      *     summary="Обновить профиль пользователя",

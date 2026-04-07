@@ -67,6 +67,7 @@ $config = [
                 'v1/auth/kick-callback' => 'kick/callback',
 
                 // User
+                'v1/profile' => 'v1/user/profile',
                 'v1/user/profile' => 'v1/user/profile',
                 'v1/user/current-server' => 'v1/user/current-server',
                 'v1/user/social-links' => 'v1/user/social-links',
