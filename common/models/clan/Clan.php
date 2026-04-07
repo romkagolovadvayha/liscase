@@ -46,6 +46,11 @@ class Clan extends ActiveRecord
         '#E8C547',
         '#F08C6B',
         '#B794F4',
+        '#EF4444',
+        '#34D399',
+        '#22D3EE',
+        '#E879F9',
+        '#FB923C',
     ];
 
     public const DEFAULT_TAG_COLOR = '#5DCEA4';
