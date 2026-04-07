@@ -5,6 +5,7 @@ namespace common\components\tasks_v2;
 use common\models\tasks_v2\TaskV2;
 use common\models\user\User;
 use Yii;
+use yii\helpers\Url;
 
 /**
  * Проверка вступления в Discord сервер через Discord API
@@ -27,8 +28,16 @@ class DiscordJoinChecker implements TaskCheckerInterface
 
         // Проверяем, есть ли у пользователя Discord ID
         if (empty($user->discord_id)) {
-            // Редиректим на авторизацию Discord
-            $discordAuthUrl = \yii\helpers\Url::to(['/auth/discord'], true);
+            // OAuth Discord: маршрут API — v1/auth/discord (не /auth/discord).
+            // В новой вкладке нет Authorization; JwtAuthFilter принимает access_token в query.
+            $discordAuthUrl = Url::to(['v1/auth/discord'], true);
+            if (Yii::$app->has('jwt')) {
+                $jwtToken = Yii::$app->get('jwt')->extractTokenFromRequest(Yii::$app->request);
+                if (is_string($jwtToken) && $jwtToken !== '') {
+                    $discordAuthUrl .= (strpos($discordAuthUrl, '?') !== false ? '&' : '?')
+                        . 'access_token=' . rawurlencode($jwtToken);
+                }
+            }
             return CheckResult::failure(
                 Yii::t('common', 'Для выполнения задания необходимо привязать Discord аккаунт.'),
                 null,
