@@ -54,7 +54,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 'headerOptions' => ['class' => $headerCellClass],
                 'contentOptions' => ['class' => $bodyCellClass],
                 'value'     => function (AudienceSearch $model) {
-                    $url = Url::to(['/user/profile', 'userId' => $model->id]);
+                    $url = Url::to('/profile/' . $model->id);
                     return Html::a(Html::encode($model->username), $url, ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']);
                 },
             ],
@@ -64,7 +64,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 'headerOptions' => ['class' => $headerCellClass],
                 'contentOptions' => ['class' => $bodyCellClass],
                 'value'     => function (AudienceSearch $model) {
-                    $url = Url::to(['/user/profile', 'userId' => $model->id]);
+                    $url = Url::to('/profile/' . $model->id);
                     return Html::a(Html::encode($model->steam_id), $url, ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']);
                 },
             ],
@@ -75,7 +75,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 'headerOptions' => ['class' => $headerCellClass],
                 'contentOptions' => ['class' => $bodyCellClass],
                 'value'     => function (AudienceSearch $model) {
-                    $url = Url::to(['/user/profile', 'userId' => $model->id]);
+                    $url = Url::to('/profile/' . $model->id);
                     return Html::a(Html::encode($model->ref_code), $url, ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']);
                 },
             ],

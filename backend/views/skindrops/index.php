@@ -192,7 +192,7 @@ $totalAmount = array_sum(array_column($list, 'amount'));
                             
                             return Html::a(
                                 Html::encode($user->username),
-                                ['/user/profile', 'userId' => $user->id],
+                                '/profile/' . $user->id,
                                 ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                             );
                         },

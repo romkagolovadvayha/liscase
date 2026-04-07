@@ -165,7 +165,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                         <tr>
                             <td class="<?= $bodyCellClass ?>"><?= $index++ ?></td>
                             <td class="<?= $bodyCellClass ?>">
-                                <?= Html::a(Html::encode($user->username), ['/user/profile', 'userId' => $user->id], ['class' => 'text-blue-400 hover:underline']) ?>
+                                <?= Html::a(Html::encode($user->username), '/profile/' . $user->id, ['class' => 'text-blue-400 hover:underline']) ?>
                             </td>
                             <td class="<?= $bodyCellClass ?>"><strong><?= number_format($dataUser['amount'], 0, '.', ' ') ?> <?= Yii::t('common', 'руб.') ?></strong></td>
                             <td class="<?= $bodyCellClass ?>"><?= $depositCount ?></td>

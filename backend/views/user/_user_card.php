@@ -14,7 +14,7 @@ $isModerator = Yii::$app->user->can(Role::ROLE_MODERATOR);
 $canLink = $isAdmin || $isModerator;
 $statusLabel = ArrayHelper::getValue(User::getStatusList(), $model->status);
 $statusClass = $model->status == User::STATUS_ACTIVE ? 'ds-badge--success' : 'ds-badge--danger';
-$profileUrl = Url::to(['/user/profile', 'userId' => $model->id]);
+$profileUrl = Url::to('/profile/' . $model->id);
 $switchUrl = Url::toRoute(['/user/switch-identity', 'id' => $model->id]);
 $showSwitch = $model->status == UserSearch::STATUS_ACTIVE && $canLink && !$model->isSwitchIdentityForbidden();
 ?>

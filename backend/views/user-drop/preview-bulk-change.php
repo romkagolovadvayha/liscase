@@ -54,7 +54,7 @@ $this->title = Yii::t('common', 'Предпросмотр изменений');
                                 }
                                 return Html::a(
                                     Html::encode($model->user->username),
-                                    ['/user/profile', 'userId' => $model->user_id],
+                                    '/profile/' . $model->user_id,
                                     ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                                 );
                             },

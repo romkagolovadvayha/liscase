@@ -31,7 +31,7 @@ $valueClass = 'text-white flex-1 min-w-0';
                     <div class="<?= $valueClass ?>">
                         <?= Html::a(
                             Html::encode($model->user->username ?? 'N/A'),
-                            ['/user/profile', 'userId' => $model->user_id],
+                            '/profile/' . $model->user_id,
                             ['class' => 'text-blue-400 hover:underline']
                         ) ?>
                     </div>

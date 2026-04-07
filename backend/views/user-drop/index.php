@@ -57,7 +57,7 @@ $serversList = ArrayHelper::map(Servers::find()->orderBy(['name' => SORT_ASC])->
                             }
                             return Html::a(
                                 Html::encode($model->user->username),
-                                ['/user/profile', 'userId' => $model->user_id],
+                                '/profile/' . $model->user_id,
                                 ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']
                             );
                         },

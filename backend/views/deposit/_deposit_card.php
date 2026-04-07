@@ -13,7 +13,7 @@ $canLink = $isAdmin || $isModerator;
 
 $username = $model->user ? Html::encode($model->user->username) : '—';
 if ($model->user && $canLink) {
-    $username = Html::a($username, ['/user/profile', 'userId' => $model->user->id], ['class' => 'deposit-index-card__link']);
+    $username = Html::a($username, '/profile/' . $model->user->id, ['class' => 'deposit-index-card__link']);
 }
 
 $statusLabel = ArrayHelper::getValue(Deposit::getStatusList(), $model->status, '');

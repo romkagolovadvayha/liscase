@@ -26,7 +26,7 @@ $typeLabel = ArrayHelper::getValue($typeList, $model->type, $model->type);
         <div class="video-index-card__name" title="<?= Html::encode($model->name) ?>"><?= Html::encode($model->name) ?></div>
         <div class="video-index-card__meta">
             <?php if ($model->user): ?>
-                <?= Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user->id], ['class' => 'video-index-card__user']) ?>
+                <?= Html::a(Html::encode($model->user->username), '/profile/' . $model->user->id, ['class' => 'video-index-card__user']) ?>
             <?php else: ?><span>—</span><?php endif; ?>
             <span class="ds-badge <?= $statusBadgeClass ?>"><?= Html::encode($statusLabel) ?></span>
         </div>

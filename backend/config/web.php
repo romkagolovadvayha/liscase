@@ -29,6 +29,9 @@ $config = [
             'showScriptName'  => false,
             'hostInfo' => str_replace(['http://', 'https://', '/'], '', $params['backendUrl']),
             'baseUrl'  => $params['backendUrl'],
+            'rules' => [
+                'profile/<userId:\d+>' => 'user/profile',
+            ],
         ],
         'assetManager' => [
             'class' => 'yii\web\AssetManager',

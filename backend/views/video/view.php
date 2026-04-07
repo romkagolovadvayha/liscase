@@ -34,7 +34,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'user_id',
                 'format' => 'raw',
                 'value' => function (UserVideo $m) {
-                    return $m->user ? Html::a(Html::encode($m->user->username), ['/user/profile', 'userId' => $m->user->id]) : '—';
+                    return $m->user ? Html::a(Html::encode($m->user->username), '/profile/' . $m->user->id) : '—';
                 },
             ],
             'name',

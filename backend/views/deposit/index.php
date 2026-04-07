@@ -58,7 +58,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                         if (!$isAdmin && !$isModerator) {
                             return Html::encode($model->user->username);
                         }
-                        return Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user->id], ['class' => 'text-blue-400 hover:underline']);
+                        return Html::a(Html::encode($model->user->username), '/profile/' . $model->user->id, ['class' => 'text-blue-400 hover:underline']);
                     },
                 ],
                 [

@@ -101,7 +101,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                     <tr>
                         <td class="<?= $bodyCellClass ?>"><?= $index++ ?></td>
                         <td class="<?= $bodyCellClass ?>">
-                            <?= Html::a(Html::encode($userData['username']), ['/user/profile', 'userId' => $userData['user_id']], ['class' => 'text-blue-400 hover:underline']) ?>
+                            <?= Html::a(Html::encode($userData['username']), '/profile/' . $userData['user_id'], ['class' => 'text-blue-400 hover:underline']) ?>
                         </td>
                         <td class="<?= $bodyCellClass ?>">
                             <?= Html::a($userData['steam_id'], 'https://steamcommunity.com/profiles/' . $userData['steam_id'], ['target' => '_blank', 'class' => 'text-blue-400 hover:underline']) ?>
@@ -169,7 +169,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                         'headerOptions' => ['class' => $headerCellClass],
                         'contentOptions' => ['class' => $bodyCellClass],
                         'value' => function ($model) {
-                            return Html::a(Html::encode($model['username']), ['/user/profile', 'userId' => $model['user_id']], ['class' => 'text-blue-400 hover:underline']);
+                            return Html::a(Html::encode($model['username']), '/profile/' . $model['user_id'], ['class' => 'text-blue-400 hover:underline']);
                         },
                     ],
                     [

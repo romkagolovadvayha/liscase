@@ -75,7 +75,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                         if (!$isAdmin && !$isModerator) {
                             return Html::encode($model->username);
                         }
-                        $url = Url::to(['/user/profile', 'userId' => $model->id]);
+                        $url = Url::to('/profile/' . $model->id);
                         return Html::a(Html::encode($model->username), $url, [
                             'class' => 'text-white hover:underline',
                             'style' => 'text-decoration: none;',

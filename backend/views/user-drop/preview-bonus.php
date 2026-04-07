@@ -61,7 +61,7 @@ $this->title = Yii::t('common', 'Предпросмотр начисления �
                             'value' => function ($user) {
                                 return Html::a(
                                     Html::encode($user->username),
-                                    ['/user/profile', 'userId' => $user->id],
+                                    '/profile/' . $user->id,
                                     ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                                 );
                             },

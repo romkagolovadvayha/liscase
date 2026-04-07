@@ -545,7 +545,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                                                 <?php if (isset($userData['user'])): ?>
                                                     <?= Html::a(
                                                         Html::encode($userData['user']->username),
-                                                        ['/user/profile', 'userId' => $userData['user']->id],
+                                                        '/profile/' . $userData['user']->id,
                                                         ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                                                     ) ?>
                                                 <?php else: ?>
@@ -630,7 +630,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
                                                 <?php if (isset($userData['user'])): ?>
                                                     <?= Html::a(
                                                         Html::encode($userData['user']->username),
-                                                        ['/user/profile', 'userId' => $userData['user']->id],
+                                                        '/profile/' . $userData['user']->id,
                                                         ['class' => 'ds-text--primary', 'style' => 'text-decoration: none;']
                                                     ) ?>
                                                 <?php else: ?>

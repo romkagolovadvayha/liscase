@@ -31,7 +31,7 @@ use yii\helpers\Url;
                 </div>
                 <div class="deposit-form-user-card__body">
                     <div class="deposit-form-user-card__name">
-                        <?= Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user_id], ['class' => 'deposit-form-user-card__link']) ?>
+                        <?= Html::a(Html::encode($model->user->username), '/profile/' . $model->user_id, ['class' => 'deposit-form-user-card__link']) ?>
                     </div>
                     <a href="https://steamcommunity.com/profiles/<?= Html::encode($model->user->steam_id) ?>" target="_blank" rel="noopener" class="deposit-form-user-card__steam"><?= Html::encode($model->user->steam_id) ?></a>
                 </div>

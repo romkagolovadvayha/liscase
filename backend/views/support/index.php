@@ -46,7 +46,7 @@ $this->params['breadcrumbs'][] = $this->title;
                             'style' => 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px;',
                         ]);
                     }
-                    $url = Url::to(['/user/profile', 'userId' => $model->user->id]);
+                    $url = Url::to('/profile/' . $model->user->id);
                     return $avatarHtml . Html::a(Html::encode($model->user->username), $url, [
                         'class' => 'ds-text--primary',
                         'style' => 'text-decoration: none; vertical-align: middle;'

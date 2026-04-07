@@ -32,7 +32,7 @@ $statusBadgeClass = $model->status == ServerSkin::STATUS_ACTIVE ? 'ds-badge--suc
         <div class="server-skin-index-card__name" title="<?= Html::encode($model->name) ?>"><?= Html::encode($model->name) ?></div>
         <div class="server-skin-index-card__meta">
             <?php if ($model->user): ?>
-                <?= Html::a(Html::encode($model->user->username), ['/user/profile', 'userId' => $model->user->id], ['class' => 'server-skin-index-card__user']) ?>
+                <?= Html::a(Html::encode($model->user->username), '/profile/' . $model->user->id, ['class' => 'server-skin-index-card__user']) ?>
             <?php else: ?>
                 <span>—</span>
             <?php endif; ?>

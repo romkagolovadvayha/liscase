@@ -311,7 +311,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                                     'contentOptions' => ['class' => $bodyCellClass],
                                     'value' => function ($model) {
                                         $u = User::findBySteamId($model['steam_id'], false, 'profile2');
-                                        return $u ? Html::a(Html::encode($model['name']), ['/user/profile', 'userId' => $u->id], ['class' => 'text-blue-400 hover:underline']) : Html::encode($model['name']);
+                                        return $u ? Html::a(Html::encode($model['name']), '/profile/' . $u->id, ['class' => 'text-blue-400 hover:underline']) : Html::encode($model['name']);
                                     },
                                 ],
                             ],

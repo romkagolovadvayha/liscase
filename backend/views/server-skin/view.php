@@ -41,7 +41,7 @@ $this->params['breadcrumbs'][] = $this->title;
                 'attribute' => 'user_id',
                 'format'    => 'raw',
                 'value'          => function (ServerSkin $model) {
-                    return "<a href=\"/user/profile?userId={$model->user->id}\">{$model->user->username}</a>";
+                    return "<a href=\"/profile/{$model->user->id}\">{$model->user->username}</a>";
                 },
             ],
             'name',

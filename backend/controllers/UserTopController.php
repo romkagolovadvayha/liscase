@@ -119,7 +119,7 @@ class UserTopController extends Controller
         $model = $this->findModel($id);
 
         if ($model->reset()) {
-            return $this->redirect(['/user/profile', 'userId' => $model->user_id]);
+            return $this->redirect('/profile/' . $model->user_id);
         } else {
             echo 'Not found';
         }
