@@ -18,6 +18,11 @@ class SiteController extends BackendController
             'access' => [
                 'class' => \yii\filters\AccessControl::class,
                 'rules' => [
+                    // Иначе при 403 ErrorHandler не может отрендерить site/error — снова 403 («ошибка при обработке ошибки»).
+                    [
+                        'actions' => ['error', 'captcha'],
+                        'allow' => true,
+                    ],
                     [
                         'allow' => true,
                         'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT],
