@@ -2,7 +2,6 @@
 
 namespace api\controllers;
 
-use common\components\discord\DiscordRoles;
 use common\components\queue\process\DiscordRolesUserJob;
 use common\models\user\User;
 use Yii;
@@ -164,7 +163,6 @@ class DiscordController extends Controller
             if ($user) {
                 $user->discord_id = $discordUser['id'];
                 if ($user->save(false)) {
-                    (new DiscordRoles())->assignSiteConfirmRole($discordUser['id']);
                     if (Yii::$app->has('queueProcess')) {
                         Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $user->id]));
                     }

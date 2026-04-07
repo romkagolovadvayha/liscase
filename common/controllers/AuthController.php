@@ -2,7 +2,6 @@
 
 namespace common\controllers;
 
-use common\components\discord\DiscordRoles;
 use common\components\oauth\AuthAction;
 use common\components\oauth\Steam;
 use common\components\queue\process\DiscordRolesUserJob;
@@ -261,10 +260,6 @@ class AuthController extends WebController
         if ($user) {
             $user->discord_id = $discordUser['id'];
             if ($user->save(false)) {
-                // Выдаем роль в Discord
-                $this->assignDiscordRole($discordUser['id']);
-                
-                // Добавляем задачу в очередь для проверки ролей
                 $checkRolesJob = new DiscordRolesUserJob();
                 $checkRolesJob->userId = $user->id;
                 Yii::$app->queueProcess->push($checkRolesJob);
@@ -972,15 +967,5 @@ class AuthController extends WebController
             Yii::$app->telegramChats->sendMessage("Discord: Exception removing role: " . $e->getMessage());
             return false;
         }
-    }
-
-    /**
-     * Выдает роль пользователю в Discord сервере
-     * @param string $discordUserId Discord User ID
-     * @return bool
-     */
-    private function assignDiscordRole($discordUserId)
-    {
-        return (new DiscordRoles())->assignSiteConfirmRole($discordUserId);
     }
 }
