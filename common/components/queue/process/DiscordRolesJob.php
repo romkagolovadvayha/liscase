@@ -332,8 +332,20 @@ class DiscordRolesJob extends BaseObject implements JobInterface
         // Удаляем старые роли категории и выдаем новые
         $this->updateUserRoles($user, $guildId, $botToken, $discordRoles, $currentRoleNames, $shouldHaveRoles);
 
-        // Роль подтверждения привязки Discord (discord_role_confirm в настройках)
-        $discordRoles->assignSiteConfirmRole($user->discord_id);
+        // Роль подтверждения привязки Discord — только если ещё нет (меньше лишних запросов к API)
+        $confirmRoleId = Yii::$app->settings->get('discord_role_confirm');
+        if (!empty($confirmRoleId)) {
+            $hasConfirm = false;
+            foreach ($currentRoleIds as $rid) {
+                if ((string)$rid === (string)$confirmRoleId) {
+                    $hasConfirm = true;
+                    break;
+                }
+            }
+            if (!$hasConfirm) {
+                $discordRoles->assignSiteConfirmRole($user->discord_id);
+            }
+        }
     }
 
     /**
