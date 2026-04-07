@@ -24,6 +24,11 @@ class SiteController extends BackendController
                         'allow' => true,
                     ],
                     [
+                        'actions' => ['logout'],
+                        'allow' => true,
+                        'roles' => ['@'],
+                    ],
+                    [
                         'allow' => true,
                         'roles' => [Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT],
                     ],
