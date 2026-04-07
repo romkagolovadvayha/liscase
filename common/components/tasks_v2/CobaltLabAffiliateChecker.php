@@ -9,7 +9,7 @@ use Yii;
 /**
  * Проверка привязки пользователя к партнёрскому аккаунту CobaltLab (CHECK_AFFILIATES_V2 API).
  * Поддерживает два типа заданий:
- * - Регистрация на CobaltLab (isMyRef — регистрация по реферальной ссылке)
+ * - Регистрация на CobaltLab (affiliated — пользователь в партнёрской программе)
  * - Первый депозит на CobaltLab (isFD — первый депозит совершён)
  */
 class CobaltLabAffiliateChecker implements TaskCheckerInterface
@@ -57,10 +57,9 @@ class CobaltLabAffiliateChecker implements TaskCheckerInterface
         $affiliated = !empty($item['affiliated']);
 
         if ($task->check_type === TaskV2::CHECK_TYPE_COBALTLAB_REGISTRATION) {
-            $isMyRef = $affiliated && !empty($item['isMyRef']);
-            if ($isMyRef) {
+            if ($affiliated) {
                 return CheckResult::success(
-                    Yii::t('common', 'Регистрация на CobaltLab по вашей ссылке подтверждена!')
+                    Yii::t('common', 'Регистрация на CobaltLab подтверждена!')
                 );
             }
             return CheckResult::failure(
