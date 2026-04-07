@@ -91,7 +91,7 @@ class TasksController extends BaseApiController
             $allModels = $query->all();
             
             // Сохраняем в кэш только модели (без пользовательских данных)
-            $cache->set($cacheKey, $allModels, 300); // 5 минут
+            $cache->set($cacheKey, $allModels, 180); // 3 минуты (общий список заданий без прогресса)
         } else {
             $allModels = $cachedTasks;
         }

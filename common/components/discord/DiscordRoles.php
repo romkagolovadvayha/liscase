@@ -100,6 +100,68 @@ class DiscordRoles extends Component
     }
 
     /**
+     * Выдать роль подтверждения привязки Discord из настроек (discord_role_confirm).
+     * Логика совпадает с прежним assignDiscordRole в AuthController: 10007 — не участник сервера.
+     *
+     * @param string $discordUserId Discord User ID
+     * @return bool
+     */
+    public function assignSiteConfirmRole($discordUserId)
+    {
+        $guildId = Yii::$app->settings->get('discord_guild_id');
+        $botToken = Yii::$app->settings->get('discord_bot_token');
+        $roleId = Yii::$app->settings->get('discord_role_confirm');
+
+        if (empty($guildId) || empty($botToken) || empty($roleId)) {
+            Yii::warning('Discord role assignment: guild_id, bot_token or role_id not configured', __METHOD__);
+            return false;
+        }
+
+        try {
+            $url = "https://discord.com/api/v10/guilds/{$guildId}/members/{$discordUserId}/roles/{$roleId}";
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Authorization: Bot ' . $botToken,
+                'Content-Type: application/json',
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode === 204 || $httpCode === 200) {
+                return true;
+            }
+
+            $errorData = json_decode($response, true);
+            $errorCode = $errorData['code'] ?? null;
+
+            if ($errorCode === 10007) {
+                Yii::warning("Discord user {$discordUserId} is not a member of the server (code 10007). Role assignment skipped.", __METHOD__);
+                return false;
+            }
+
+            Yii::error("Discord API error assigning role: HTTP {$httpCode}, Response: {$response}, cURL Error: {$curlError}", __METHOD__);
+            if (method_exists(Yii::$app, 'telegramChats')) {
+                Yii::$app->telegramChats->sendMessage("Discord: Failed to assign role {$roleId} to user {$discordUserId}. HTTP {$httpCode}, Response: {$response}");
+            }
+            return false;
+        } catch (\Exception $e) {
+            Yii::error('Discord role assignment exception: ' . $e->getMessage(), __METHOD__);
+            if (method_exists(Yii::$app, 'telegramChats')) {
+                Yii::$app->telegramChats->sendMessage('Discord: Exception assigning role: ' . $e->getMessage());
+            }
+            return false;
+        }
+    }
+
+    /**
      * Удалить роль у пользователя
      * @param string $guildId ID гильдии
      * @param string $userId ID пользователя Discord
