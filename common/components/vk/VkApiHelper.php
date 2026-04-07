@@ -802,8 +802,19 @@ class VkApiHelper extends \yii\base\Component
 
             if (!empty($result['error'])) {
                 $errorMsg = $result['error']['error_msg'] ?? 'Unknown error';
-                $errorCode = $result['error']['error_code'] ?? 'N/A';
-                Yii::error("VK API error: [{$errorCode}] {$errorMsg}, Full response: " . json_encode($result), __METHOD__);
+                $errorCode = (int)($result['error']['error_code'] ?? 0);
+                // 901/902 — нельзя написать пользователю (не открывал бота, запрет ЛС от сообщества, приватность)
+                $isMessagePermissionDenial = $method === 'messages.send'
+                    && ($errorCode === 901 || $errorCode === 902);
+                if ($isMessagePermissionDenial) {
+                    $peer = isset($params['user_id']) ? (string)$params['user_id'] : '?';
+                    Yii::warning(
+                        "VK messages.send: [{$errorCode}] {$errorMsg} (peer user_id={$peer}) — ожидаемо, если пользователь не писал боту или запретил ЛС от сообщества.",
+                        __METHOD__
+                    );
+                } else {
+                    Yii::error("VK API error: [{$errorCode}] {$errorMsg}, Full response: " . json_encode($result), __METHOD__);
+                }
                 return $result; // Возвращаем результат с ошибкой, чтобы можно было увидеть описание
             }
 
