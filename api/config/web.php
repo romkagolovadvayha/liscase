@@ -100,6 +100,8 @@ $config = [
                 'v1/clans/podium' => 'v1/clans/podium',
                 'v1/clans/my-invites' => 'v1/clans/my-invites',
                 'v1/clans/my-memberships' => 'v1/clans/my-memberships',
+                /** GET — карточка клана для главной (ежедневная награда): членства, права auth_*, таб сервера */
+                'v1/clans/my-daily-reward-clan' => 'v1/clans/my-daily-reward-clan',
                 /** GET /v1/clans/lookup-global?slug= — карточка по ЧПУ без serverTag (суффикс -id глобально уникален) */
                 'v1/clans/lookup-global' => 'v1/clans/lookup-global',
                 /** Полный ЧПУ-сегмент (например my-clan-12): точное совпадение, без ошибочного разбора id */

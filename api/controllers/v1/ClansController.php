@@ -407,6 +407,54 @@ class ClansController extends BaseApiController
     }
 
     /**
+     * GET /v1/clans/my-daily-reward-clan — данные для блока «ежедневная награда»: профиль, членства с правами и полями сервера для таба (#N NAME).
+     */
+    public function actionMyDailyRewardClan()
+    {
+        $user = $this->getCurrentUser();
+        $members = ClanMember::find()
+            ->where(['user_id' => $user->id])
+            ->andWhere(['IS', 'leave_date', null])
+            ->with(['clan.server', 'permissions.permission'])
+            ->all();
+
+        $items = [];
+        foreach ($members as $m) {
+            if (!$m->clan) {
+                continue;
+            }
+            $server = $m->clan->server;
+            $items[] = [
+                'member_id' => (int)$m->id,
+                'role' => $m->role,
+                'permission_keys' => $m->getPermissionKeys(),
+                'clan' => $this->serializeClanListItem($m->clan),
+                'server_tab' => $server ? $this->serializeServerTabFields($server) : null,
+            ];
+        }
+
+        usort($items, static function (array $a, array $b): int {
+            $sa = isset($a['server_tab']['sort']) ? (int)$a['server_tab']['sort'] : 0;
+            $sb = isset($b['server_tab']['sort']) ? (int)$b['server_tab']['sort'] : 0;
+            if ($sa !== $sb) {
+                return $sa <=> $sb;
+            }
+            $ida = isset($a['clan']['server_id']) ? (int)$a['clan']['server_id'] : 0;
+            $idb = isset($b['clan']['server_id']) ? (int)$b['clan']['server_id'] : 0;
+            if ($ida !== $idb) {
+                return $ida <=> $idb;
+            }
+
+            return ($a['clan']['id'] ?? 0) <=> ($b['clan']['id'] ?? 0);
+        });
+
+        return $this->successResponse([
+            'user' => $this->serializeUser($user),
+            'items' => $items,
+        ]);
+    }
+
+    /**
      * GET /v1/clans/{serverTag}/{id}` — карточка клана
      */
     public function actionView($serverTag, $id)
@@ -2359,6 +2407,23 @@ class ClansController extends BaseApiController
             ->where(['m.user_id' => $userId, 'c.server_id' => $serverId])
             ->andWhere(['IS', 'm.leave_date', null])
             ->exists();
+    }
+
+    /**
+     * Поля сервера для подписи таба на фронте (#N NAME — см. serverTabLabel на Next).
+     *
+     * @return array<string, mixed>
+     */
+    protected function serializeServerTabFields(Servers $server): array
+    {
+        return [
+            'id' => (int)$server->id,
+            'sort' => (int)$server->sort,
+            'tag' => $server->tag,
+            'name' => $server->name,
+            'monitoring_name' => $server->monitoring_name,
+            'monitoring_description' => $server->monitoring_description,
+        ];
     }
 
     protected function serializeUser(User $user): array
