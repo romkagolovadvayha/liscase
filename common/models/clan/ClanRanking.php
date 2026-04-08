@@ -125,8 +125,15 @@ class ClanRanking extends ActiveRecord
             ->all();
 
         foreach ($clans as $clan) {
-            // getStatistics() — relation query (hasMany), не модель. Нужна строка clan_statistics за текущий вайп.
-            $statistics = $clan->getClanStatistics($wipe);
+            // Только статистика по серверу рейтинга ($serverId). getClanStatistics() смотрит на clans.server_id —
+            // при переносе клана на другой сервер в clan_rankings для старого сервера попадали чужие top_*.
+            $statistics = ClanStatistics::find()
+                ->where([
+                    'clan_id' => (int)$clan->id,
+                    'server_id' => (int)$serverId,
+                    'wipe' => (string)$wipe,
+                ])
+                ->one();
             if ($statistics === null) {
                 continue;
             }
