@@ -217,6 +217,8 @@ class ClansController extends BaseApiController
 
         $query = ClanRanking::find()->alias('r')->with(['clan']);
         $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[r]].[[server_id]]');
+        // Только существующий клан; server_id клана может отличаться от r.server_id — клан «играл» на этом сервере.
+        $query->innerJoin(['c' => Clan::tableName()], '[[c]].[[id]] = [[r]].[[clan_id]]');
         if (Servers::hasClansEnabledColumn()) {
             $query->andWhere(['srv.clans_enabled' => 1]);
         }
@@ -280,14 +282,9 @@ class ClansController extends BaseApiController
         $serverId = (int)$server->id;
 
         $wipe = $server->currentWipe();
-        // Только строки, где клан есть и привязан к тому же серверу, что и запись рейтинга.
-        // Иначе LIMIT 3 + отбрасывание в PHP давало «дыры» (например нет 1-го места при переносе клана).
         $rankRows = ClanRanking::find()
             ->alias('r')
-            ->innerJoin(
-                ['c' => Clan::tableName()],
-                '[[c]].[[id]] = [[r]].[[clan_id]] AND [[c]].[[server_id]] = [[r]].[[server_id]]'
-            )
+            ->innerJoin(['c' => Clan::tableName()], '[[c]].[[id]] = [[r]].[[clan_id]]')
             ->where([
                 'r.server_id' => $server->id,
                 'r.ranking_type' => ClanRanking::RANKING_OVERALL,
@@ -304,7 +301,7 @@ class ClansController extends BaseApiController
 
         $clanIds = [];
         foreach ($rankRows as $r) {
-            if ($r->clan && (int)$r->clan->server_id === $serverId) {
+            if ($r->clan) {
                 $clanIds[] = (int)$r->clan->id;
             }
         }
@@ -349,9 +346,6 @@ class ClansController extends BaseApiController
                 continue;
             }
             $clan = $r->clan;
-            if ((int)$clan->server_id !== $serverId) {
-                continue;
-            }
             $cid = (int)$clan->id;
             $enriched = [];
             foreach ($membersByClan[$cid] ?? [] as $m) {
