@@ -5,6 +5,7 @@ namespace api\controllers;
 use common\components\queue\process\DiscordRolesUserJob;
 use common\models\user\User;
 use Yii;
+use yii\db\IntegrityException;
 use yii\web\Controller;
 use yii\web\Response;
 
@@ -161,16 +162,53 @@ class DiscordController extends Controller
         if (!empty($userId)) {
             $user = User::findOne($userId);
             if ($user) {
-                $user->discord_id = $discordUser['id'];
-                if ($user->save(false)) {
+                $discordId = (string)$discordUser['id'];
+                $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
+                    ? $returnUrl
+                    : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
+
+                $currentDiscord = $user->discord_id !== null && $user->discord_id !== ''
+                    ? (string)$user->discord_id
+                    : '';
+                if ($currentDiscord === $discordId) {
+                    Yii::$app->response->format = Response::FORMAT_RAW;
+                    if (Yii::$app->has('queueProcess')) {
+                        Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $user->id]));
+                    }
+                    Yii::$app->session->remove('discord_oauth_user_id');
+                    return $this->redirect($redirectTo);
+                }
+
+                $otherOwner = User::find()
+                    ->where(['discord_id' => $discordId])
+                    ->andWhere(['!=', 'id', $user->id])
+                    ->exists();
+                if ($otherOwner) {
+                    Yii::warning("Discord link refused: discord_id={$discordId} already linked to another account, user_id={$user->id}", __METHOD__);
+                    Yii::$app->response->format = Response::FORMAT_RAW;
+                    Yii::$app->session->remove('discord_oauth_user_id');
+                    return $this->redirect(\api\components\LinkReturnUrlHelper::appendQueryParams($redirectTo, [
+                        'oauth_error' => 'discord_taken',
+                    ]));
+                }
+
+                $user->discord_id = $discordId;
+                try {
+                    $saved = $user->save(false);
+                } catch (IntegrityException $e) {
+                    Yii::warning('Discord link integrity: ' . $e->getMessage(), __METHOD__);
+                    Yii::$app->response->format = Response::FORMAT_RAW;
+                    Yii::$app->session->remove('discord_oauth_user_id');
+                    return $this->redirect(\api\components\LinkReturnUrlHelper::appendQueryParams($redirectTo, [
+                        'oauth_error' => 'discord_taken',
+                    ]));
+                }
+                if ($saved) {
                     if (Yii::$app->has('queueProcess')) {
                         Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $user->id]));
                     }
                     Yii::$app->session->remove('discord_oauth_user_id');
                     Yii::$app->response->format = Response::FORMAT_RAW;
-                    $redirectTo = (!empty($returnUrl) && \api\components\LinkReturnUrlHelper::isValidReturnUrl($returnUrl))
-                        ? $returnUrl
-                        : \api\components\LinkReturnUrlHelper::getDefaultProfileUrl();
                     return $this->redirect($redirectTo);
                 }
             }

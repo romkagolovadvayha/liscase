@@ -30,16 +30,15 @@ class UpdateClanStatisticsJob extends BaseObject implements JobInterface
         }
 
         $server = Servers::findOne($this->serverId);
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             return;
         }
 
         $wipe = $this->wipe ?: $server->currentWipe();
 
-        // Получаем кланы, у которых есть активные/бывшие участники (источник истины для межсерверной статистики)
-        $clanIds = ClanMember::find()
-            ->select('clan_id')
-            ->groupBy('clan_id')
+        $clanIds = Clan::find()
+            ->select('id')
+            ->where(['server_id' => (int)$this->serverId])
             ->column();
         if ($clanIds === []) {
             return;

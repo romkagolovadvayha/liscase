@@ -82,6 +82,7 @@ class ServersCacheHelper
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
             'wipe_type' => (int) ($server->wipe_type ?? 0),
             'wipe_weekday' => (int) ($server->wipe_weekday ?? 5),
+            'clans_enabled' => (bool) ($server->clans_enabled ?? 1),
             'current_wipe' => $server->wipe ?? null,
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,

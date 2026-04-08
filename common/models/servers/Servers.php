@@ -53,6 +53,7 @@ use yii\helpers\ArrayHelper;
  * @property bool   $skindrops
  * @property bool   $is_store
  * @property bool   $hidden_store
+ * @property int    $clans_enabled Система кланов (1 = включена)
  * @property bool   $secret_map
  * @property int    $wargm_id
  * @property string $commands
@@ -114,6 +115,9 @@ class Servers extends \common\components\base\ActiveRecord
         if ($this->isNewRecord && $this->wipe_weekday === null) {
             $this->wipe_weekday = 5; // Пятница по умолчанию
         }
+        if ($this->isNewRecord && ($this->clans_enabled === null || $this->clans_enabled === '')) {
+            $this->clans_enabled = 1;
+        }
     }
 
     /**
@@ -123,6 +127,15 @@ class Servers extends \common\components\base\ActiveRecord
     {
         return 'servers';
     }
+
+    /**
+     * Система кланов включена на сервере (настройка в админке).
+     */
+    public function isClansSystemEnabled(): bool
+    {
+        return (int)($this->clans_enabled ?? 1) === 1;
+    }
+
     /**
      * @inheritdoc
      */
@@ -156,6 +169,7 @@ class Servers extends \common\components\base\ActiveRecord
             'wargm_id'          => Yii::t('common', 'WarGM ID'),
             'is_store'          => Yii::t('common', 'Магазин на сервере'),
             'hidden_store'     => Yii::t('common', 'Скрытый магазин'),
+            'clans_enabled'    => Yii::t('common', 'Система кланов'),
             'updated_at'          => Yii::t('common', 'Обновлено'),
             'monitoring_name'          => Yii::t('common', 'Название сервера в мониторинге'),
             'monitoring_description'          => Yii::t('common', 'Описание сервера в мониторинге'),
@@ -183,7 +197,9 @@ class Servers extends \common\components\base\ActiveRecord
         return [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
             [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
-            [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
+            [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'clans_enabled', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
+            [['clans_enabled'], 'default', 'value' => 1],
+            [['clans_enabled'], 'in', 'range' => [0, 1]],
             [['wipe_weekday'], 'in', 'range' => [1, 2, 3, 4, 5, 6, 7]],
             [['wipe_weekday'], 'default', 'value' => 5],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],

@@ -58,14 +58,17 @@ class ClansController extends BaseApiController
         $pageSize = min(50, max(1, (int)$request->get('pageSize', 20)));
         $serverTag = $request->get('server_tag');
 
-        $query = Clan::find()->with(['leaderUser.userProfile', 'server']);
+        $query = Clan::find()->alias('c')->with(['leaderUser.userProfile', 'server']);
 
         if ($serverTag !== null && $serverTag !== '') {
             $server = Servers::findOne(['tag' => $serverTag]);
-            if (!$server) {
+            if (!$server || !$server->isClansSystemEnabled()) {
                 return $this->successResponse(['items' => [], 'pagination' => ['page' => $page, 'pageSize' => $pageSize, 'total' => 0]]);
             }
-            $query->andWhere(['server_id' => $server->id]);
+            $query->andWhere(['c.server_id' => $server->id]);
+        } else {
+            $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[c]].[[server_id]]')
+                ->andWhere(['srv.clans_enabled' => 1]);
         }
 
         $provider = new ActiveDataProvider([
@@ -75,7 +78,7 @@ class ClansController extends BaseApiController
                 'pageSize' => $pageSize,
             ],
             'sort' => [
-                'defaultOrder' => ['created_at' => SORT_DESC],
+                'defaultOrder' => ['c.created_at' => SORT_DESC],
             ],
         ]);
 
@@ -124,6 +127,9 @@ class ClansController extends BaseApiController
         $server = Servers::findOne($serverId);
         if (!$server) {
             throw new BadRequestHttpException('Server not found');
+        }
+        if (!$server->isClansSystemEnabled()) {
+            throw new ForbiddenHttpException('Clan system is disabled on this server');
         }
 
         if ($this->hasActiveClanOnServer($user->id, $serverId)) {
@@ -201,19 +207,21 @@ class ClansController extends BaseApiController
         $page = max(1, (int)$request->get('page', 1));
         $pageSize = min(50, max(1, (int)$request->get('pageSize', 20)));
 
-        $query = ClanRanking::find()->with(['clan']);
+        $query = ClanRanking::find()->alias('r')->with(['clan']);
+        $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[r]].[[server_id]]')
+            ->andWhere(['srv.clans_enabled' => 1]);
 
         if ($serverTag !== null && $serverTag !== '') {
             $server = Servers::findOne(['tag' => $serverTag]);
-            if ($server) {
-                $query->andWhere(['server_id' => $server->id]);
+            if ($server && $server->isClansSystemEnabled()) {
+                $query->andWhere(['r.server_id' => $server->id]);
             } else {
                 return $this->successResponse(['items' => [], 'pagination' => ['page' => $page, 'pageSize' => $pageSize, 'total' => 0]]);
             }
         }
 
-        $query->andWhere(['ranking_type' => $type, 'period' => $period])
-            ->orderBy(['position' => SORT_ASC]);
+        $query->andWhere(['r.ranking_type' => $type, 'r.period' => $period])
+            ->orderBy(['r.position' => SORT_ASC]);
 
         $provider = new ActiveDataProvider([
             'query' => $query,
@@ -255,7 +263,7 @@ class ClansController extends BaseApiController
         }
 
         $server = Servers::findOne(['tag' => $serverTag]);
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             return $this->successResponse(['items' => [], 'current_wipe' => null]);
         }
 
@@ -378,6 +386,9 @@ class ClansController extends BaseApiController
 
         $items = [];
         foreach ($invites as $inv) {
+            if (!$inv->clan || !$inv->clan->server || !$inv->clan->server->isClansSystemEnabled()) {
+                continue;
+            }
             $items[] = $this->serializeInvite($inv);
         }
 
@@ -398,7 +409,7 @@ class ClansController extends BaseApiController
 
         $items = [];
         foreach ($members as $m) {
-            if (!$m->clan) {
+            if (!$m->clan || !$m->clan->server || !$m->clan->server->isClansSystemEnabled()) {
                 continue;
             }
             $items[] = [
@@ -429,12 +440,15 @@ class ClansController extends BaseApiController
                 continue;
             }
             $server = $m->clan->server;
+            if (!$server || !$server->isClansSystemEnabled()) {
+                continue;
+            }
             $items[] = [
                 'member_id' => (int)$m->id,
                 'role' => $m->role,
                 'permission_keys' => $m->getPermissionKeys(),
                 'clan' => $this->serializeClanListItem($m->clan),
-                'server_tab' => $server ? $this->serializeServerTabFields($server) : null,
+                'server_tab' => $this->serializeServerTabFields($server),
             ];
         }
 
@@ -483,7 +497,7 @@ class ClansController extends BaseApiController
         $server = Servers::find()
             ->where('LOWER(tag) = :tag', [':tag' => mb_strtolower(trim($serverTag), 'UTF-8')])
             ->one();
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             throw new NotFoundHttpException('Server not found');
         }
 
@@ -518,7 +532,7 @@ class ClansController extends BaseApiController
                 ->where(['id' => (int)$slug])
                 ->with(['leaderUser.userProfile', 'server'])
                 ->one();
-            if ($clan) {
+            if ($clan && $clan->server && $clan->server->isClansSystemEnabled()) {
                 $currentMember = $this->getActiveMember($clan);
 
                 return $this->successResponse($this->serializeClanDetail($clan, $currentMember));
@@ -532,7 +546,7 @@ class ClansController extends BaseApiController
                 ->where(['id' => $id])
                 ->with(['leaderUser.userProfile', 'server'])
                 ->one();
-            if ($clan && $this->getClanUrlSlug($clan) === $slug) {
+            if ($clan && $clan->server && $clan->server->isClansSystemEnabled() && $this->getClanUrlSlug($clan) === $slug) {
                 $currentMember = $this->getActiveMember($clan);
 
                 return $this->successResponse($this->serializeClanDetail($clan, $currentMember));
@@ -1388,9 +1402,12 @@ class ClansController extends BaseApiController
         $user = $this->getCurrentUser();
         $invite = ClanInvite::find()
             ->where(['id' => (int)$inviteId])
-            ->with(['clan'])
+            ->with(['clan.server'])
             ->one();
         if (!$invite || (int)$invite->invited_user_id !== (int)$user->id) {
+            throw new NotFoundHttpException('Invite not found');
+        }
+        if (!$invite->clan || !$invite->clan->server || !$invite->clan->server->isClansSystemEnabled()) {
             throw new NotFoundHttpException('Invite not found');
         }
 
@@ -1670,6 +1687,9 @@ class ClansController extends BaseApiController
         if (!$link || !$link->clan) {
             throw new NotFoundHttpException('Invite link not found');
         }
+        if (!$link->clan->server || !$link->clan->server->isClansSystemEnabled()) {
+            throw new NotFoundHttpException('Invite link not found');
+        }
         if ($link->isExpired() || $link->isUseLimitReached()) {
             return $this->errorResponse('INVITE_EXPIRED', 'Invite link expired or limit reached', [], 410);
         }
@@ -1704,6 +1724,9 @@ class ClansController extends BaseApiController
         $token = preg_replace('/[^a-fA-F0-9]/', '', (string)$token);
         $link = ClanInviteLink::find()->where(['token' => $token])->with('clan.server')->one();
         if (!$link || !$link->clan) {
+            throw new NotFoundHttpException('Invite link not found');
+        }
+        if (!$link->clan->server || !$link->clan->server->isClansSystemEnabled()) {
             throw new NotFoundHttpException('Invite link not found');
         }
         if ($link->isExpired() || $link->isUseLimitReached()) {
@@ -2362,7 +2385,7 @@ class ClansController extends BaseApiController
         $server = Servers::find()
             ->where('LOWER(tag) = :tag', [':tag' => mb_strtolower(trim($serverTag), 'UTF-8')])
             ->one();
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             throw new NotFoundHttpException('Server not found');
         }
 

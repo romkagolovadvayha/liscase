@@ -62,4 +62,17 @@ class LinkReturnUrlHelper
         $mainHost = (strpos($currentHost, 'api.') === 0) ? substr($currentHost, 4) : $currentHost;
         return $hostLower === strtolower($mainHost);
     }
+
+    /**
+     * Добавляет query-параметры к URL (для редиректа после OAuth с кодом ошибки).
+     */
+    public static function appendQueryParams(string $url, array $params): string
+    {
+        if ($params === []) {
+            return $url;
+        }
+        $sep = strpos($url, '?') !== false ? '&' : '?';
+
+        return $url . $sep . http_build_query($params);
+    }
 }

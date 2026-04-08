@@ -3,6 +3,7 @@
 namespace common\components\queue\clan;
 
 use common\models\clan\ClanRanking;
+use common\models\servers\Servers;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -21,6 +22,11 @@ class CalculateClanRankingsJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         if (!$this->serverId) {
+            return;
+        }
+
+        $server = Servers::findOne((int)$this->serverId);
+        if (!$server || !$server->isClansSystemEnabled()) {
             return;
         }
 

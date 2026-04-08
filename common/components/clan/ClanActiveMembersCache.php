@@ -45,6 +45,13 @@ class ClanActiveMembersCache
      */
     public static function refreshServer(int $serverId): void
     {
+        $server = Servers::findOne($serverId);
+        if (!$server || !$server->isClansSystemEnabled()) {
+            Yii::$app->cache->set(self::cacheKey($serverId), [], self::CACHE_DURATION);
+
+            return;
+        }
+
         $since = date('Y-m-d H:i:s', time() - self::ONLINE_WITHIN_DAYS * 86400);
 
         $steamIds = ClanMember::find()
@@ -72,7 +79,7 @@ class ClanActiveMembersCache
      */
     public static function refreshAll(): void
     {
-        $ids = Servers::find()->select(['id'])->column();
+        $ids = Servers::find()->select(['id'])->where(['clans_enabled' => 1])->column();
         foreach ($ids as $id) {
             self::refreshServer((int)$id);
         }

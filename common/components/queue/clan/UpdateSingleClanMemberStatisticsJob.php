@@ -37,7 +37,7 @@ class UpdateSingleClanMemberStatisticsJob extends BaseObject implements JobInter
         }
 
         $server = Servers::findOne($this->serverId);
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             return;
         }
 

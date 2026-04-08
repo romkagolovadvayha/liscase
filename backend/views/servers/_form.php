@@ -205,6 +205,14 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                             <span class="ds-switch__slider"></span>
                         </label>
                     </div>
+                    <div class="flex items-center justify-between gap-3 py-1">
+                        <span class="text-sm text-zinc-300 flex-1 min-w-0"><?= $model->getAttributeLabel('clans_enabled') ?></span>
+                        <?= Html::activeHiddenInput($model, 'clans_enabled', ['value' => 0, 'id' => null]) ?>
+                        <label class="ds-switch flex-shrink-0" for="<?= Html::getInputId($model, 'clans_enabled') ?>">
+                            <?= Html::activeCheckbox($model, 'clans_enabled', ['value' => 1, 'label' => false, 'uncheck' => false]) ?>
+                            <span class="ds-switch__slider"></span>
+                        </label>
+                    </div>
                     <div>
                         <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('secret_key') ?></label>
                         <?= $form->field($model, 'secret_key', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm']) ?>

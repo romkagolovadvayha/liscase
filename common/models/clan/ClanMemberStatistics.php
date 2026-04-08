@@ -370,7 +370,7 @@ class ClanMemberStatistics extends ActiveRecord
     public static function finalizeAndFreeze(ClanMember $member, int $serverId, string $wipe): bool
     {
         $server = Servers::findOne($serverId);
-        if (!$server || !static::isMemberRelevantForWipe($member, $server, $wipe)) {
+        if (!$server || !$server->isClansSystemEnabled() || !static::isMemberRelevantForWipe($member, $server, $wipe)) {
             return true;
         }
 
@@ -416,7 +416,7 @@ class ClanMemberStatistics extends ActiveRecord
     public static function updateMemberStatistics($member, $serverId, $wipe): bool
     {
         $server = Servers::findOne($serverId);
-        if (!$server || $wipe === null || $wipe === '' || !static::isMemberRelevantForWipe($member, $server, $wipe)) {
+        if (!$server || !$server->isClansSystemEnabled() || $wipe === null || $wipe === '' || !static::isMemberRelevantForWipe($member, $server, $wipe)) {
             return true;
         }
 

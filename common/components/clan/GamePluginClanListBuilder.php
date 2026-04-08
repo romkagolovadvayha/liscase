@@ -50,7 +50,7 @@ final class GamePluginClanListBuilder
             ->orderBy(['status' => SORT_DESC, 'id' => SORT_ASC])
             ->one();
 
-        if (!$server) {
+        if (!$server || !$server->isClansSystemEnabled()) {
             return [];
         }
 
