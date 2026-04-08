@@ -79,7 +79,11 @@ class ClanActiveMembersCache
      */
     public static function refreshAll(): void
     {
-        $ids = Servers::find()->select(['id'])->where(['clans_enabled' => 1])->column();
+        $q = Servers::find()->select(['id']);
+        if (Servers::hasClansEnabledColumn()) {
+            $q->andWhere(['clans_enabled' => 1]);
+        }
+        $ids = $q->column();
         foreach ($ids as $id) {
             self::refreshServer((int)$id);
         }

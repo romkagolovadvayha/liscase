@@ -43,8 +43,10 @@ class ClanController extends Controller
     public function actionUpdateStatistics($serverId = null)
     {
         $query = Servers::find()
-            ->where(['status' => Servers::STATUS_ACTIVE])
-            ->andWhere(['clans_enabled' => 1]);
+            ->where(['status' => Servers::STATUS_ACTIVE]);
+        if (Servers::hasClansEnabledColumn()) {
+            $query->andWhere(['clans_enabled' => 1]);
+        }
         if ($serverId !== null && $serverId !== '') {
             $query->andWhere(['id' => (int)$serverId]);
         }

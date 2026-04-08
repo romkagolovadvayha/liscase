@@ -67,8 +67,10 @@ class ClansController extends BaseApiController
             }
             $query->andWhere(['c.server_id' => $server->id]);
         } else {
-            $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[c]].[[server_id]]')
-                ->andWhere(['srv.clans_enabled' => 1]);
+            $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[c]].[[server_id]]');
+            if (Servers::hasClansEnabledColumn()) {
+                $query->andWhere(['srv.clans_enabled' => 1]);
+            }
         }
 
         $provider = new ActiveDataProvider([
@@ -78,7 +80,13 @@ class ClansController extends BaseApiController
                 'pageSize' => $pageSize,
             ],
             'sort' => [
-                'defaultOrder' => ['c.created_at' => SORT_DESC],
+                'defaultOrder' => ['created_at' => SORT_DESC],
+                'attributes' => [
+                    'created_at' => [
+                        'asc' => ['c.created_at' => SORT_ASC],
+                        'desc' => ['c.created_at' => SORT_DESC],
+                    ],
+                ],
             ],
         ]);
 
@@ -208,8 +216,10 @@ class ClansController extends BaseApiController
         $pageSize = min(50, max(1, (int)$request->get('pageSize', 20)));
 
         $query = ClanRanking::find()->alias('r')->with(['clan']);
-        $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[r]].[[server_id]]')
-            ->andWhere(['srv.clans_enabled' => 1]);
+        $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[r]].[[server_id]]');
+        if (Servers::hasClansEnabledColumn()) {
+            $query->andWhere(['srv.clans_enabled' => 1]);
+        }
 
         if ($serverTag !== null && $serverTag !== '') {
             $server = Servers::findOne(['tag' => $serverTag]);
