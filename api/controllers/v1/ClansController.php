@@ -259,6 +259,8 @@ class ClansController extends BaseApiController
             return $this->successResponse(['items' => [], 'current_wipe' => null]);
         }
 
+        $serverId = (int)$server->id;
+
         $wipe = $server->currentWipe();
         $rankRows = ClanRanking::find()
             ->where([
@@ -277,7 +279,7 @@ class ClansController extends BaseApiController
 
         $clanIds = [];
         foreach ($rankRows as $r) {
-            if ($r->clan) {
+            if ($r->clan && (int)$r->clan->server_id === $serverId) {
                 $clanIds[] = (int)$r->clan->id;
             }
         }
@@ -322,6 +324,9 @@ class ClansController extends BaseApiController
                 continue;
             }
             $clan = $r->clan;
+            if ((int)$clan->server_id !== $serverId) {
+                continue;
+            }
             $cid = (int)$clan->id;
             $enriched = [];
             foreach ($membersByClan[$cid] ?? [] as $m) {
