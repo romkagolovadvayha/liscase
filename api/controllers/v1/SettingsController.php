@@ -64,7 +64,7 @@ class SettingsController extends BaseApiController
      *                     @OA\Property(property="social", type="object"),
      *                     @OA\Property(property="section", type="object"),
      *                     @OA\Property(property="metrics", type="object"),
-     *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — изображения подиума"),
+     *                     @OA\Property(property="clans", type="object", description="gold, silver, bronze — подиум; background — фон страниц кланов"),
      *                     @OA\Property(property="openAi", type="object", description="Публичные поля бота: avatar, username"),
      *                     @OA\Property(property="banner_side", type="object", description="Баннер сайдбара: image, en_image, en_link, ru_link")
      *                 )

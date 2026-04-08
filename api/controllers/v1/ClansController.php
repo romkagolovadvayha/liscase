@@ -595,12 +595,6 @@ class ClansController extends BaseApiController
         if (array_key_exists('description', $body)) {
             $clan->description = $body['description'] !== null ? (string)$body['description'] : null;
         }
-        if (isset($body['level'])) {
-            $clan->level = max(1, (int)$body['level']);
-        }
-        if (isset($body['experience'])) {
-            $clan->experience = max(0, (int)$body['experience']);
-        }
         if (isset($body['color_tag'])) {
             $clan->color_tag = trim((string)$body['color_tag']);
         }
@@ -2518,8 +2512,6 @@ class ClansController extends BaseApiController
             'leader' => $clan->leaderUser ? $this->serializeUser($clan->leaderUser) : null,
             'motto' => $clan->motto,
             'privacy' => $clan->privacy,
-            'level' => (int)$clan->level,
-            'experience' => (int)$clan->experience,
             'logo_url' => $clan->getLogoUrl(),
             'created_at' => (int)$clan->created_at,
             'member_count' => $memberCount,
@@ -2712,7 +2704,7 @@ class ClansController extends BaseApiController
     }
 
     /**
-     * Суммируем счётчики вклада за вайп по нескольким clan_member_id одного user_id; top_* и level/exp — по max.
+     * Суммируем счётчики вклада за вайп по нескольким clan_member_id одного user_id; top_* — по max.
      *
      * @param array<int, array<string, mixed>> $parts
      * @return array<string, mixed>|null
@@ -2730,8 +2722,8 @@ class ClansController extends BaseApiController
         $skip = [
             'id', 'clan_member_id', 'clan_id', 'user_id', 'server_id', 'wipe',
             'created_at', 'updated_at', 'member_status', 'frozen_at',
+            'level', 'experience',
         ];
-        $maxOnlyKeys = ['level', 'experience'];
 
         $merged = $parts[0];
         for ($i = 1, $n = count($parts); $i < $n; $i++) {
@@ -2749,8 +2741,6 @@ class ClansController extends BaseApiController
                 $prev = $merged[$k] ?? 0;
                 if (strpos((string)$k, 'top_') === 0) {
                     $merged[$k] = max((float)$prev, (float)$v);
-                } elseif (in_array($k, $maxOnlyKeys, true)) {
-                    $merged[$k] = max((int)$prev, (int)$v);
                 } else {
                     $merged[$k] = (int)$prev + (int)$v;
                 }
