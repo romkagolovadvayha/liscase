@@ -280,13 +280,20 @@ class ClansController extends BaseApiController
         $serverId = (int)$server->id;
 
         $wipe = $server->currentWipe();
+        // Только строки, где клан есть и привязан к тому же серверу, что и запись рейтинга.
+        // Иначе LIMIT 3 + отбрасывание в PHP давало «дыры» (например нет 1-го места при переносе клана).
         $rankRows = ClanRanking::find()
+            ->alias('r')
+            ->innerJoin(
+                ['c' => Clan::tableName()],
+                '[[c]].[[id]] = [[r]].[[clan_id]] AND [[c]].[[server_id]] = [[r]].[[server_id]]'
+            )
             ->where([
-                'server_id' => $server->id,
-                'ranking_type' => ClanRanking::RANKING_OVERALL,
-                'period' => ClanRanking::PERIOD_ALL_TIME,
+                'r.server_id' => $server->id,
+                'r.ranking_type' => ClanRanking::RANKING_OVERALL,
+                'r.period' => ClanRanking::PERIOD_ALL_TIME,
             ])
-            ->orderBy(['position' => SORT_ASC])
+            ->orderBy(['r.position' => SORT_ASC])
             ->limit(3)
             ->with(['clan.leaderUser.userProfile', 'clan.server'])
             ->all();
