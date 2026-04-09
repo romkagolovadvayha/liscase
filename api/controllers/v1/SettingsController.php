@@ -19,7 +19,7 @@ class SettingsController extends BaseApiController
      * Список разрешенных категорий для фронтенда.
      * metrics — счётчики (Яндекс.Метрика, gtag и т.д.), поле code — произвольный HTML/скрипты для вставки на Next.
      */
-    const ALLOWED_CATEGORIES = ['design', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side'];
+    const ALLOWED_CATEGORIES = ['design', 'colors', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side'];
 
     /**
      * Список исключаемых ключей (секретные данные)
@@ -43,11 +43,11 @@ class SettingsController extends BaseApiController
      *     operationId="getSettings",
      *     tags={"Settings"},
      *     summary="Получить публичные настройки сайта",
-     *     description="Возвращает публичные настройки по категориям: design, social, section, metrics, site, personal_info_ip, tgbot, clans, openAi, banner_side (боковой баннер: image/en_image/en_link/ru_link; секреты openAi не отдаются)",
+     *     description="Возвращает публичные настройки по категориям: design, colors, social, section, metrics, site, personal_info_ip, tgbot, clans, openAi, banner_side (боковой баннер: image/en_image/en_link/ru_link; секреты openAi не отдаются)",
      *     @OA\Parameter(
      *         name="categories",
      *         in="query",
-     *         description="Категории настроек (через запятую): design,social,section,metrics,site,personal_info_ip,tgbot,clans,openAi,banner_side",
+     *         description="Категории настроек (через запятую): design,colors,social,section,metrics,site,personal_info_ip,tgbot,clans,openAi,banner_side",
      *         required=false,
      *         @OA\Schema(type="string", example="design,social")
      *     ),
@@ -61,6 +61,7 @@ class SettingsController extends BaseApiController
      *                 @OA\Property(property="success", type="boolean", example=true),
      *                 @OA\Property(property="data", type="object",
      *                     @OA\Property(property="design", type="object"),
+     *                     @OA\Property(property="colors", type="object", description="Цвета и оформление: categories-is-image и др."),
      *                     @OA\Property(property="social", type="object"),
      *                     @OA\Property(property="section", type="object"),
      *                     @OA\Property(property="metrics", type="object"),
