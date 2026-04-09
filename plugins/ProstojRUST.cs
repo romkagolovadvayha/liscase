@@ -84,7 +84,7 @@ namespace Oxide.Plugins
                 [JsonProperty("Секретный ключ (не распространяйте его)")]
                 public string SecretKey = "UNDEFINED";
                 [JsonProperty("Базовый URL legacy-магазина (v1, без / на конце), не prostoj.store/api")]
-                public string LegacyShopApiRoot = "https://api.moscow77.store.store/v1/rust-legacy-store";
+                public string LegacyShopApiRoot = "https://api.moscow77.store/v1/rust-legacy-store";
                 [JsonProperty("Резервный URL legacy-магазина (опционально, без / на конце)")]
                 public string LegacyShopApiReserveRoot = "";
             }
@@ -368,7 +368,7 @@ namespace Oxide.Plugins
         private static string NormalizeLegacyShopRoot(string root)
         {
             if (string.IsNullOrWhiteSpace(root))
-                return "https://api.moscow77.store.store/v1/rust-legacy-store/";
+                return "https://api.moscow77.store/v1/rust-legacy-store/";
             return root.Trim().TrimEnd('/') + "/";
         }
 

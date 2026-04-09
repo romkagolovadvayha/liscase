@@ -32,11 +32,11 @@ namespace Oxide.Plugins
             public int SendIntervalSeconds = 300;
 
             [JsonProperty("pluginIngestBaseUrl")]
-            public string PluginIngestBaseUrl = "https://api.moscow77.store.store/v1/plugin-ingest";
+            public string PluginIngestBaseUrl = "https://api.moscow77.store/v1/plugin-ingest";
 
             /// <summary>База API для /clans/list, если нет ClanManager и не задан clanListUrlOverride.</summary>
             [JsonProperty("clanApiBaseUrl")]
-            public string ClanApiBaseUrl = "https://api.moscow77.store.store/v1";
+            public string ClanApiBaseUrl = "https://api.moscow77.store/v1";
 
             /// <summary>Полный URL списка кланов; если пусто — строится из clanApiBaseUrl + ip/port сервера.</summary>
             [JsonProperty("clanListUrlOverride")]
@@ -307,7 +307,7 @@ namespace Oxide.Plugins
             }
 
             var ingest = string.IsNullOrWhiteSpace(_config.PluginIngestBaseUrl)
-                ? "https://api.moscow77.store.store/v1/plugin-ingest"
+                ? "https://api.moscow77.store/v1/plugin-ingest"
                 : _config.PluginIngestBaseUrl.TrimEnd('/');
             var postUrl = $"{ingest}/clan-cupboards";
             var headers = new Dictionary<string, string> { ["Content-Type"] = "application/json" };

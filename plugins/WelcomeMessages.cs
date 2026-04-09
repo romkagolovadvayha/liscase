@@ -32,9 +32,9 @@ namespace Oxide.Plugins
 			[JsonProperty(PropertyName = "Sender Steam ID")]
 			public ulong senderSteamId { get; set; } = 76561198394504608;
 			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
-			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-chat";
+			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store/v1/rust-plugin-chat";
 			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-config";
+			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -74,7 +74,7 @@ namespace Oxide.Plugins
                 String pluginName = Name; // "WelcomeMessages"
 
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
 
@@ -166,7 +166,7 @@ namespace Oxide.Plugins
             }
 
             string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
-                ? "https://api.moscow77.store.store/v1/rust-plugin-chat"
+                ? "https://api.moscow77.store/v1/rust-plugin-chat"
                 : config.PluginChatBaseUrl.TrimEnd('/');
             string url = $"{chatBase}/welcome/{config.serverTag}";
 
@@ -227,12 +227,29 @@ namespace Oxide.Plugins
             {
                 // Находим BasePlayer для отправки сообщения от указанного Steam ID
                 BasePlayer basePlayer = BasePlayer.FindByID(ulong.Parse(player.Id));
-                if (basePlayer != null)
+                if (basePlayer == null)
+                    return;
+
+                if (string.IsNullOrEmpty(message))
+                    return;
+
+                string withName;
+                try
                 {
-                    string formattedMessage = covalence.FormatText(string.Format(message, player.Name.Sanitize()));
-                    // Отправляем сообщение от указанного Steam ID из конфига
-                    basePlayer.SendConsoleCommand("chat.add", 0, config.senderSteamId, formattedMessage);
+                    withName = message.IndexOf('{') >= 0
+                        ? string.Format(message, player.Name.Sanitize())
+                        : message;
                 }
+                catch (FormatException ex)
+                {
+                    PrintWarning(LanguageEn
+                        ? $"WelcomeMessages: invalid placeholder in message ({ex.Message}), sending raw text."
+                        : $"WelcomeMessages: неверный плейсхолдер в тексте ({ex.Message}), отправка без подстановки.");
+                    withName = message;
+                }
+
+                string formattedMessage = covalence.FormatText(withName);
+                basePlayer.SendConsoleCommand("chat.add", 0, config.senderSteamId, formattedMessage);
             });
         }
     }

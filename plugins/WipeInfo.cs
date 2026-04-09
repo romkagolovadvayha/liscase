@@ -26,9 +26,9 @@ namespace Oxide.Plugins
 			[JsonProperty(PropertyName = "CustomIconSteamId")]
 			public ulong customIconSteamId { get; set; } = 76561198028953589;
 			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
-			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-chat";
+			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store/v1/rust-plugin-chat";
 			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-config";
+			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -66,7 +66,7 @@ namespace Oxide.Plugins
                 String pluginName = Name; // "WipeInfo"
 
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
 
@@ -143,7 +143,7 @@ namespace Oxide.Plugins
             LoadConfigFromAPI();
 
             string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
-                ? "https://api.moscow77.store.store/v1/rust-plugin-chat"
+                ? "https://api.moscow77.store/v1/rust-plugin-chat"
                 : config.PluginChatBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{chatBase}/wipe/{config.serverTag}", null, (code, response) =>
             {
