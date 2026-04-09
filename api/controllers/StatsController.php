@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\components\queue\stats\SaveClanCupboardsJob;
 use common\components\queue\stats\SaveRaidJob;
 use common\components\queue\stats\SaveSignsJob;
 use common\components\queue\stats\SaveStatsJob;
@@ -71,6 +72,14 @@ class StatsController extends WebController
 
     public function actionSigns() {
         Yii::$app->queueProcess->push(new SaveSignsJob([
+            'data' => Yii::$app->request->getRawBody(),
+            'ip' => $_SERVER['REMOTE_ADDR'],
+        ]));
+    }
+
+    public function actionClanCupboards()
+    {
+        Yii::$app->queueProcess->push(new SaveClanCupboardsJob([
             'data' => Yii::$app->request->getRawBody(),
             'ip' => $_SERVER['REMOTE_ADDR'],
         ]));
