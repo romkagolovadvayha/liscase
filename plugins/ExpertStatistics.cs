@@ -24,7 +24,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.0.7")]
+    [Info("Expert Statistics", "prostoj.store", "1.0.9")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -198,6 +198,9 @@ namespace Oxide.Plugins
         private readonly object _uniqueLootLock = new object();
         // basicblueprintfragment: один раз за 5 мин на игрока
         private readonly HashSet<string> _countedBasicBlueprintFragment = new HashSet<string>();
+        /// <summary>PatrolHelicopter: netId → последний Steam-игрок, нанёсший урон (смерть часто приходит с пустым InitiatorPlayer).</summary>
+        private readonly Dictionary<ulong, ulong> _patrolHeliLastSteamDamager = new Dictionary<ulong, ulong>();
+        private readonly object _patrolHeliDamagerLock = new object();
 
         void OnServerInitialized(bool initial)
         {
@@ -222,6 +225,7 @@ namespace Oxide.Plugins
             killsData.Kills.Clear();
             disconnects.Clear();
             list.Clear();
+            lock (_patrolHeliDamagerLock) { _patrolHeliLastSteamDamager.Clear(); }
             SaveAllStats();
         }
         #endregion
@@ -329,6 +333,61 @@ namespace Oxide.Plugins
             if (!list[steamId].ContainsKey(parametr))
                 list[steamId][parametr] = 0;
             list[steamId][parametr] += count;
+        }
+
+        /// <summary>Игрок-источник урона из сущности (турель, SAM, снаряд с creatorEntity и т.д.).</summary>
+        private static BasePlayer TryPlayerFromDamageEntity(BaseEntity ent, int depth = 0)
+        {
+            if (ent == null || depth > 5) return null;
+            if (ent is BasePlayer bp && bp.userID.IsSteamId()) return bp;
+            if (ent is HeldEntity held)
+            {
+                BasePlayer op = held.GetOwnerPlayer();
+                if (op != null && op.userID.IsSteamId()) return op;
+            }
+            if (ent is NPCAutoTurret) return null;
+            if (ent is AutoTurret at && at.OwnerID.IsSteamId())
+                return BasePlayer.FindByID(at.OwnerID);
+            if (ent is SamSite ss && ss.OwnerID.IsSteamId())
+                return BasePlayer.FindByID(ss.OwnerID);
+            if (ent is FlameTurret ft && ft.OwnerID.IsSteamId())
+                return BasePlayer.FindByID(ft.OwnerID);
+            if (ent is GunTrap gt && gt.OwnerID.IsSteamId())
+                return BasePlayer.FindByID(gt.OwnerID);
+            BaseEntity cr = ent.creatorEntity;
+            if (cr != null && !ReferenceEquals(cr, ent))
+                return TryPlayerFromDamageEntity(cr, depth + 1);
+            return null;
+        }
+
+        private static BasePlayer TryResolveAttackerFromHitInfo(HitInfo info)
+        {
+            if (info == null) return null;
+            if (info.InitiatorPlayer != null && info.InitiatorPlayer.userID.IsSteamId())
+                return info.InitiatorPlayer;
+            BasePlayer fromChain =
+                TryPlayerFromDamageEntity(info.Initiator)
+                ?? TryPlayerFromDamageEntity(info.WeaponPrefab)
+                ?? TryPlayerFromDamageEntity(info.Weapon as BaseEntity);
+            if (fromChain != null) return fromChain;
+            return null;
+        }
+
+        /// <summary>
+        /// Bradley/Heli: InitiatorPlayer часто пуст (турели/SAM/цепочка снаряда); добираем игрока из Initiator/creatorEntity и lastAttacker.
+        /// </summary>
+        private static BasePlayer ResolvePlayerCreditForNpcVehicleKill(HitInfo info, BaseCombatEntity victim)
+        {
+            BasePlayer p = TryResolveAttackerFromHitInfo(info);
+            if (p != null) return p;
+            if (victim != null && victim.lastAttacker != null)
+            {
+                if (victim.lastAttacker is BasePlayer lp && lp.userID.IsSteamId())
+                    return lp;
+                p = TryPlayerFromDamageEntity(victim.lastAttacker);
+                if (p != null) return p;
+            }
+            return null;
         }
 
         /// <summary>При Debug: вывод в консоль; в чат — только если игрок админ. При Debug выключен — ничего не выводится.</summary>
@@ -669,23 +728,69 @@ namespace Oxide.Plugins
         //     }
         // }
 
+        /// <summary>Копим последнего Steam-наносителя урона по сетевому id — на смерти heli HitInfo часто «пустой».</summary>
+        void OnEntityTakeDamage(PatrolHelicopter heli, HitInfo info)
+        {
+            if (heli?.net == null || info == null) return;
+            BasePlayer attacker = TryResolveAttackerFromHitInfo(info);
+            if (attacker == null && heli is BaseCombatEntity bce && bce.lastAttacker != null)
+            {
+                if (bce.lastAttacker is BasePlayer lp && lp.userID.IsSteamId())
+                    attacker = lp;
+                else
+                    attacker = TryPlayerFromDamageEntity(bce.lastAttacker);
+            }
+            if (attacker != null && attacker.userID.IsSteamId())
+            {
+                lock (_patrolHeliDamagerLock)
+                    _patrolHeliLastSteamDamager[heli.net.ID.Value] = attacker.userID;
+            }
+        }
+
         void OnEntityDeath(BradleyAPC bradley, HitInfo info)
         {
-            if (bradley == null || info == null) return;
-            BasePlayer player = info.InitiatorPlayer;
+            if (bradley == null) return;
+            BasePlayer player = ResolvePlayerCreditForNpcVehicleKill(info, bradley);
             string who = player != null ? $"{player.displayName}({player.UserIDString})" : "null";
             LogHookEvent(player, "OnEntityDeath(BradleyAPC)", $"bradley | killer={who}");
-            if (player != null && player.userID.IsSteamId())
+            if (player != null)
                 addParametr(player.UserIDString, "bradleys", 1);
         }
 
         // Взрыв вертолёта
         void OnEntityDeath(PatrolHelicopter helicopter, HitInfo info)
         {
-            if (helicopter == null || info == null) return;
-            BasePlayer player = info.InitiatorPlayer;
-            LogHookEvent(player, "OnEntityDeath(PatrolHelicopter)", "heli");
-            if (player != null && player.userID.IsSteamId())
+            if (helicopter == null) return;
+            ulong netId = helicopter.net?.ID.Value ?? 0;
+
+            BasePlayer player = ResolvePlayerCreditForNpcVehicleKill(info, helicopter);
+            if (player == null && netId != 0)
+            {
+                ulong uid = 0;
+                lock (_patrolHeliDamagerLock)
+                    _patrolHeliLastSteamDamager.TryGetValue(netId, out uid);
+                if (uid != 0 && uid.IsSteamId())
+                {
+                    player = BasePlayer.FindByID(uid);
+                    if (player == null)
+                    {
+                        addParametr(uid.ToString(), "helicopters", 1);
+                        LogHookEvent(null, "OnEntityDeath(PatrolHelicopter)", $"heli | killerSteam={uid} (damage cache, offline)");
+                        lock (_patrolHeliDamagerLock) { _patrolHeliLastSteamDamager.Remove(netId); }
+                        return;
+                    }
+                }
+            }
+
+            if (netId != 0)
+            {
+                lock (_patrolHeliDamagerLock)
+                    _patrolHeliLastSteamDamager.Remove(netId);
+            }
+
+            string detail = player != null ? $"killer={player.displayName}({player.UserIDString})" : "killer=null";
+            LogHookEvent(player, "OnEntityDeath(PatrolHelicopter)", $"heli | {detail}");
+            if (player != null)
                 addParametr(player.UserIDString, "helicopters", 1);
         }
 
