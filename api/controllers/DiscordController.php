@@ -67,8 +67,6 @@ class DiscordController extends Controller
         // Должен совпадать с redirect_uri в v1/AuthController::actionDiscord() (Discord сверяет байт-в-байт)
         $baseUrl = rtrim(Yii::$app->request->hostInfo, '/');
         $redirectUri = $baseUrl . '/v1/auth/discord-callback';
-        
-        Yii::$app->telegramChats->sendMessage("Discord OAuth callback: code=" . (!empty($code) ? 'received' : 'empty') . ", state={$state}, userId={$userId}, redirectUri={$redirectUri}");
 
         if (empty($clientId) || empty($clientSecret)) {
             Yii::error("Discord OAuth not configured", __METHOD__);

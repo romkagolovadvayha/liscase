@@ -24,6 +24,7 @@ use Yii;
 use common\models\box\Box;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\db\Exception as DbException;
 
 class StorageController extends Controller
 {
@@ -55,6 +56,8 @@ class StorageController extends Controller
         ini_set('memory_limit', '512M');
         try {
             Statistics::projectStats(true);
+            // После длинной фазы projectStats соединение могло закрыться по wait_timeout.
+            $this->reconnectMysql();
 
             /** @var Servers[] $servers */
             $servers = Servers::find()
@@ -63,16 +66,101 @@ class StorageController extends Controller
                               ->all();
 
             foreach ($servers as $server) {
-                Teams::getTeams($server, true);
-                User::getUsers($server->id, true);
+                $this->warmServerTeamsAndUsers($server);
             }
 
             //UserTop::getUserTop($servers, true);
-            Kills::getLive($servers, true);
+            $this->warmKillsLiveWithReconnect($servers);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/update ' . $e->getMessage());
         }
         Yii::$app->cache->delete($cacheKey);
+    }
+
+    /**
+     * Прогрев кэша команд и пользователей по серверу с одним переподключением при 2006.
+     */
+    protected function warmServerTeamsAndUsers(Servers $server): void
+    {
+        $attempt = 0;
+        while ($attempt < 2) {
+            try {
+                Teams::getTeams($server, true);
+                User::getUsers($server->id, true);
+
+                return;
+            } catch (\Throwable $e) {
+                if ($attempt === 0 && $this->isMysqlConnectionLost($e)) {
+                    Yii::warning(
+                        'storage/update: MySQL connection lost, reconnect (server ' . $server->tag . '): ' . $e->getMessage(),
+                        __METHOD__
+                    );
+                    $this->reconnectMysql();
+                    $attempt++;
+
+                    continue;
+                }
+                throw $e;
+            }
+        }
+    }
+
+    /**
+     * @param Servers[] $servers
+     */
+    protected function warmKillsLiveWithReconnect(array $servers): void
+    {
+        $attempt = 0;
+        while ($attempt < 2) {
+            try {
+                Kills::getLive($servers, true);
+
+                return;
+            } catch (\Throwable $e) {
+                if ($attempt === 0 && $this->isMysqlConnectionLost($e)) {
+                    Yii::warning('storage/update: MySQL connection lost before getLive, reconnect: ' . $e->getMessage(), __METHOD__);
+                    $this->reconnectMysql();
+                    $attempt++;
+
+                    continue;
+                }
+                throw $e;
+            }
+        }
+    }
+
+    protected function reconnectMysql(): void
+    {
+        if (!Yii::$app->has('db')) {
+            return;
+        }
+        try {
+            Yii::$app->db->close();
+        } catch (\Throwable $e) {
+            // соединение уже недействительно
+        }
+        try {
+            Yii::$app->db->open();
+        } catch (\Throwable $e) {
+            Yii::error('storage/update: DB reconnect failed: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    protected function isMysqlConnectionLost(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+        if (stripos($msg, 'gone away') !== false || strpos($msg, '2006') !== false) {
+            return true;
+        }
+        if ($e instanceof DbException && isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 2006) {
+            return true;
+        }
+        $prev = $e->getPrevious();
+        if ($prev instanceof \Throwable) {
+            return $this->isMysqlConnectionLost($prev);
+        }
+
+        return false;
     }
 
     /**

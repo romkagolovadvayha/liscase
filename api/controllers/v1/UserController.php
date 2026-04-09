@@ -80,8 +80,16 @@ class UserController extends BaseApiController
 
         if (empty($user->userProfile)) {
             UserProfile::createModel($user, $user->username);
-            $user->userProfile->name = $user->username;
-            $user->userProfile->save(false);
+            // Нельзя писать $user->userProfile->attr = … (косвенная модификация через __get);
+            // после createModel кэш связи может оставаться null — перечитываем из БД.
+            $profile = UserProfile::findOne(['user_id' => $user->id]);
+            if ($profile !== null) {
+                if ($profile->name === null || $profile->name === '') {
+                    $profile->name = $user->username;
+                    $profile->save(false);
+                }
+                $user->populateRelation('userProfile', $profile);
+            }
         }
 
         if (Yii::$app->request->isGet) {
