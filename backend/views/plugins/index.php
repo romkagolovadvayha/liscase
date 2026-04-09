@@ -88,9 +88,17 @@ $csrfToken = Yii::$app->request->csrfToken;
                                     $ver = $row['byServer'][$s->tag] ?? null;
                                     $verNorm = $ver !== null ? trim((string)$ver) : '';
                                     $isOutdated = $projVerNorm !== '' && $verNorm !== '' && $verNorm !== $projVerNorm;
-                                    $isMissing = $projVerNorm !== '' && ($ver === null || $verNorm === '');
+                                    $isUpToDate = $projVerNorm !== '' && $verNorm !== '' && $verNorm === $projVerNorm;
                                     $isRed = $isOutdated;
-                                    $showUploadBtn = ($isOutdated || $isMissing) && $s->hasFtpCredentials() && $projectVer !== null;
+                                    $showUploadBtn = $s->hasFtpCredentials() && $projectVer !== null;
+                                    $uploadTitle = $ver === null || $verNorm === ''
+                                        ? 'Установить плагин по FTP'
+                                        : ($isOutdated
+                                            ? 'Обновить плагин по FTP'
+                                            : 'Повторно загрузить файл с проекта по FTP (версия совпадает)');
+                                    $uploadAria = $ver === null || $verNorm === ''
+                                        ? 'Установить'
+                                        : ($isOutdated ? 'Обновить' : 'Повторно загрузить');
                                     $cellClass = $isRed ? 'text-red-400' : 'text-gray-300';
                                     $cellStyle = $isRed ? ' color: #f87171;' : '';
                                     ?>
@@ -98,8 +106,8 @@ $csrfToken = Yii::$app->request->csrfToken;
                                         <span class="inline-flex items-center gap-1 flex-nowrap">
                                             <?= $ver !== null ? Html::encode($ver) : '—' ?>
                                             <?php if ($showUploadBtn): ?>
-                                                <button type="button" class="plugins-upload-btn ds-btn ds-btn--icon ds-btn--ghost p-0.5 rounded hover:bg-[hsl(0_0%_25%_/_1)]" title="<?= $ver === null ? 'Установить плагин по FTP' : 'Обновить плагин по FTP' ?>" data-server-tag="<?= Html::encode($s->tag) ?>" data-plugin-name="<?= Html::encode($row['name']) ?>" aria-label="<?= $ver === null ? 'Установить' : 'Обновить' ?>">
-                                                    <i class="fas fa-cloud-upload-alt text-green-400" style="color: #4ade80;"></i>
+                                                <button type="button" class="plugins-upload-btn ds-btn ds-btn--icon ds-btn--ghost p-0.5 rounded hover:bg-[hsl(0_0%_25%_/_1)]" title="<?= Html::encode($uploadTitle) ?>" data-server-tag="<?= Html::encode($s->tag) ?>" data-plugin-name="<?= Html::encode($row['name']) ?>" aria-label="<?= Html::encode($uploadAria) ?>">
+                                                    <i class="fas <?= $isUpToDate ? 'fa-sync-alt' : 'fa-cloud-upload-alt' ?> <?= $isUpToDate ? 'text-gray-400' : 'text-green-400' ?>" style="<?= $isUpToDate ? 'color: #9ca3af;' : 'color: #4ade80;' ?>"></i>
                                                 </button>
                                             <?php endif; ?>
                                         </span>
