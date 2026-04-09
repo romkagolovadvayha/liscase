@@ -32,9 +32,9 @@ namespace Oxide.Plugins
 			[JsonProperty(PropertyName = "Sender Steam ID")]
 			public ulong senderSteamId { get; set; } = 76561198394504608;
 			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
-			public string PluginChatBaseUrl { get; set; } = "https://api.prostoj.store/v1/rust-plugin-chat";
+			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-chat";
 			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-			public string RustPluginConfigApiBase { get; set; } = "https://api.prostoj.store/v1/rust-plugin-config";
+			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -46,7 +46,7 @@ namespace Oxide.Plugins
                 if (config == null)
                 {
                     LoadDefaultConfig();
-                } 
+                }
             }
             catch
             {
@@ -72,16 +72,16 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "WelcomeMessages"
-                
+
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -91,22 +91,22 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API! ServerTag: {config.serverTag}"
                                         : $"Конфигурация успешно загружена из API! ServerTag: {config.serverTag}");
-                                    
+
                                     NextTick(SaveConfig);
-                                    
+
                                     // Загружаем welcome messages после успешной загрузки конфига
                                     // Используем NextTick чтобы убедиться, что config обновлен
                                     NextTick(() => LoadWelcomeMessages());
@@ -126,7 +126,7 @@ namespace Oxide.Plugins
                         PrintWarning(LanguageEn
                             ? $"Failed to load config from API (Code: {code}). Using default config."
                             : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
-                        
+
                         // Загружаем welcome messages даже если конфиг из API не загрузился
                         LoadWelcomeMessages();
                     }
@@ -137,7 +137,7 @@ namespace Oxide.Plugins
                 PrintError(LanguageEn
                     ? $"Error loading config from API: {ex.Message}. Using default config."
                     : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
-                
+
                 // Загружаем welcome messages даже если произошла ошибка
                 LoadWelcomeMessages();
             }
@@ -145,7 +145,7 @@ namespace Oxide.Plugins
 
         string messageEn = null;
         string messageRu = null;
-        
+
         private void LoadWelcomeMessages()
         {
             // Проверяем, что config загружен и serverTag установлен
@@ -156,7 +156,7 @@ namespace Oxide.Plugins
                     : "Конфиг не загружен, невозможно загрузить приветственные сообщения");
                 return;
             }
-            
+
             if (string.IsNullOrEmpty(config.serverTag))
             {
                 PrintError(LanguageEn
@@ -164,16 +164,16 @@ namespace Oxide.Plugins
                     : "ServerTag пуст, невозможно загрузить приветственные сообщения");
                 return;
             }
-            
+
             string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
-                ? "https://api.prostoj.store/v1/rust-plugin-chat"
+                ? "https://api.moscow77.store.store/v1/rust-plugin-chat"
                 : config.PluginChatBaseUrl.TrimEnd('/');
             string url = $"{chatBase}/welcome/{config.serverTag}";
-            
+
             PrintWarning(LanguageEn
                 ? $"Loading welcome messages from: {url}"
                 : $"Загрузка приветственных сообщений из: {url}");
-            
+
             webrequest.Enqueue(url, null, (code, response) =>
             {
                 if (code != 200)
@@ -183,7 +183,7 @@ namespace Oxide.Plugins
                         : $"Не удалось загрузить приветственные сообщения (Код: {code})");
                     return;
                 }
-                
+
                 try
                 {
                     ServerInfo response_deserializeds = JsonConvert.DeserializeObject<ServerInfo>(response);
@@ -191,7 +191,7 @@ namespace Oxide.Plugins
                     {
                         messageRu = response_deserializeds.ru;
                         messageEn = response_deserializeds.en;
-                        
+
                         PrintWarning(LanguageEn
                             ? "Welcome messages loaded successfully!"
                             : "Приветственные сообщения успешно загружены!");
@@ -205,7 +205,7 @@ namespace Oxide.Plugins
                 }
             }, this, Core.Libraries.RequestMethod.GET, null);
         }
-        
+
         void OnServerInitialized()
         {
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
@@ -233,7 +233,7 @@ namespace Oxide.Plugins
                     // Отправляем сообщение от указанного Steam ID из конфига
                     basePlayer.SendConsoleCommand("chat.add", 0, config.senderSteamId, formattedMessage);
                 }
-            });        
+            });
         }
     }
 }

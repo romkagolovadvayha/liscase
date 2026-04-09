@@ -7,7 +7,7 @@ using Oxide.Core.Libraries.Covalence;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using WebSocketSharp; 
+using WebSocketSharp;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using UnityEngine;
@@ -29,11 +29,11 @@ namespace Oxide.Plugins
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
             [JsonProperty(PropertyName = "Базовый URL отправки онлайна (v1, без / на конце)")]
-            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+            public string PluginStatsIngestBaseUrl = "https://api.moscow77.store.store/v1/plugin-ingest";
             [JsonProperty(PropertyName = "URL списка радио для BoomBox (GET, v1)")]
-            public string RadioBoomboxListUrl = "https://api.prostoj.store/v1/radio/boombox-list";
+            public string RadioBoomboxListUrl = "https://api.moscow77.store.store/v1/radio/boombox-list";
             [JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-            public string RustPluginConfigApiBase = "https://api.prostoj.store/v1/rust-plugin-config";
+            public string RustPluginConfigApiBase = "https://api.moscow77.store.store/v1/rust-plugin-config";
 
             public static Configuration DefaultConfig()
             {
@@ -71,16 +71,16 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "UsersOnline"
-                
+
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -90,20 +90,20 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API!"
                                         : $"Конфигурация успешно загружена из API!");
-                                    
+
                                     NextTick(SaveConfig);
                                     return;
                                 }
@@ -152,27 +152,27 @@ namespace Oxide.Plugins
         void OnServerInitialized(bool initial)
         {
             Puts("Users Online: OnServerInitialized.");
-            
+
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
-            
+
 			UpdateBoomBox();
             timer.Every(5 * 60, () =>
             {
                 SaveAll();
             });
         }
-		
+
         void Unload()
         {
             usersData.Users.Clear();
             SaveAll();
         }
-		
+
         void UpdateBoomBox()
         {
             string radioUrl = string.IsNullOrWhiteSpace(config.RadioBoomboxListUrl)
-                ? "https://api.prostoj.store/v1/radio/boombox-list"
+                ? "https://api.moscow77.store.store/v1/radio/boombox-list"
                 : config.RadioBoomboxListUrl.TrimEnd('/');
             webrequest.Enqueue(radioUrl, null, (code, response) =>
             {
@@ -185,7 +185,7 @@ namespace Oxide.Plugins
 
         #region Save
         void SaveAll()
-        { 
+        {
             foreach (var player in BasePlayer.activePlayerList.ToList()) {
 				User user = new User();
                 user.steam_id = player.UserIDString;
@@ -194,17 +194,17 @@ namespace Oxide.Plugins
                 user.ping = Network.Net.sv.GetAveragePing(player.Connection);
                 usersData.Users.Add(user);
             }
-			
+
             string requestBody = JsonConvert.SerializeObject(
-                new { 
-                    users = usersData.Users, 
+                new {
+                    users = usersData.Users,
                 }).Replace("\n", "").Replace("  ", "");
 
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
 
             string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
-                ? "https://api.prostoj.store/v1/plugin-ingest"
+                ? "https://api.moscow77.store.store/v1/plugin-ingest"
                 : config.PluginStatsIngestBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{ingest}/update-users/{config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             usersData.Users.Clear();

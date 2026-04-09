@@ -16,19 +16,19 @@ namespace Oxide.Plugins
     {
         #region Config
         static Configuration config;
-        
+
         public class Configuration
         {
             [JsonProperty(PropertyName = "API URL")]
-            public string apiUrl = "https://api.prostoj.store/skins/approved";
-            
+            public string apiUrl = "https://api.moscow77.store.store/skins/approved";
+
             [JsonProperty(PropertyName = "Sync Interval (minutes)")]
             public int syncInterval = 60;
-            
+
             [JsonProperty(PropertyName = "Enable Auto Sync")]
             public bool enableAutoSync = true;
         }
-        
+
         protected override void LoadConfig()
         {
             base.LoadConfig();
@@ -44,10 +44,10 @@ namespace Oxide.Plugins
                 LoadDefaultConfig();
             }
         }
-        
+
         protected override void LoadDefaultConfig() => config = new Configuration
         {
-            apiUrl = "https://api.prostoj.store/skins/approved",
+            apiUrl = "https://api.moscow77.store.store/skins/approved",
             syncInterval = 60,
             enableAutoSync = true
         };
@@ -63,14 +63,14 @@ namespace Oxide.Plugins
         void OnServerInitialized()
         {
             Puts("Approved Skins Sync: Инициализация плагина...");
-            
+
             // Ждем немного, чтобы SteamInventory успел инициализироваться
             timer.Once(10f, () =>
             {
                 // Первая синхронизация при загрузке сервера
                 CollectAndSendApprovedSkins();
             });
-            
+
             // Настройка автоматической синхронизации
             if (config.enableAutoSync)
             {
@@ -86,7 +86,7 @@ namespace Oxide.Plugins
                 Puts("Approved Skins Sync: Автоматическая синхронизация отключена");
             }
         }
-        
+
         void Unload()
         {
             if (_syncTimer != null)
@@ -106,19 +106,19 @@ namespace Oxide.Plugins
             try
             {
                 Puts("Approved Skins Sync: Начало сбора одобренных скинов...");
-                
+
                 _approvedSkinIds.Clear();
-                
+
                 // Проверяем, что SteamInventory инициализирован
                 if (Steamworks.SteamInventory.Definitions == null)
                 {
                     PrintError("Approved Skins Sync: SteamInventory.Definitions недоступен. Попробуйте позже.");
                     return;
                 }
-                
+
                 // Создаем словарь для маппинга itemId -> skin из ItemSkinDirectory
                 Dictionary<int, ItemSkinDirectory.Skin> itemIdToSkin = new Dictionary<int, ItemSkinDirectory.Skin>();
-                
+
                 // Заполняем маппинг из ItemSkinDirectory (если доступен)
                 if (ItemSkinDirectory.Instance != null && ItemSkinDirectory.Instance.skins != null)
                 {
@@ -131,7 +131,7 @@ namespace Oxide.Plugins
                         }
                     }
                 }
-                
+
                 // Проходим по всем определениям предметов
                 foreach (ItemDefinition itemDefinition in ItemManager.itemList)
                 {
@@ -139,17 +139,17 @@ namespace Oxide.Plugins
                     foreach (Steamworks.InventoryDef item in Steamworks.SteamInventory.Definitions)
                     {
                         string shortname = item.GetProperty("itemshortname");
-                        
+
                         // Пропускаем невалидные записи
                         if (string.IsNullOrEmpty(shortname) || item.Id < 100)
                             continue;
-                        
+
                         // Проверяем соответствие shortname
                         if (!shortname.Equals(itemDefinition.shortname, StringComparison.OrdinalIgnoreCase))
                             continue;
-                        
+
                         ulong skinId = 0;
-                        
+
                         // Логика получения skinId как в SkinBox.cs
                         if (itemIdToSkin.ContainsKey(item.Id))
                         {
@@ -165,7 +165,7 @@ namespace Oxide.Plugins
                             // Пропускаем, если не можем определить ID
                             continue;
                         }
-                        
+
                         // Добавляем ID в список (HashSet автоматически уберет дубликаты)
                         if (skinId > 0)
                         {
@@ -173,15 +173,15 @@ namespace Oxide.Plugins
                         }
                     }
                 }
-                
+
                 Puts($"Approved Skins Sync: Найдено {_approvedSkinIds.Count} одобренных скинов");
-                
+
                 if (_approvedSkinIds.Count == 0)
                 {
                     PrintWarning("Approved Skins Sync: Не найдено ни одного одобренного скина. Возможно, SteamInventory еще не загружен.");
                     return;
                 }
-                
+
                 // Отправляем на API
                 SendToAPI(_approvedSkinIds.ToList());
             }
@@ -191,7 +191,7 @@ namespace Oxide.Plugins
                 PrintError($"Stack trace: {ex.StackTrace}");
             }
         }
-        
+
         /// <summary>
         /// Отправляет список скинов на API
         /// </summary>
@@ -202,7 +202,7 @@ namespace Oxide.Plugins
                 Puts("Approved Skins Sync: Список скинов пуст, отправка не требуется");
                 return;
             }
-            
+
             try
             {
                 // Формируем JSON запрос
@@ -210,15 +210,15 @@ namespace Oxide.Plugins
                 {
                     approved_ids = skinIds
                 };
-                
+
                 string jsonData = JsonConvert.SerializeObject(requestData);
-                
+
                 // Настраиваем заголовки
                 Dictionary<string, string> headers = new Dictionary<string, string>();
                 headers.Add("Content-Type", "application/json");
-                
+
                 Puts($"Approved Skins Sync: Отправка {skinIds.Count} скинов на API: {config.apiUrl}");
-                
+
                 // Отправляем запрос
                 webrequest.Enqueue(
                     config.apiUrl,
@@ -262,11 +262,11 @@ namespace Oxide.Plugins
                 player.Reply("У вас нет прав для выполнения этой команды");
                 return;
             }
-            
+
             player.Reply("Запуск синхронизации одобренных скинов...");
             CollectAndSendApprovedSkins();
         }
-        
+
         [Command("skins.sync.status")]
         private void StatusCommand(IPlayer player, string command, string[] args)
         {
@@ -275,7 +275,7 @@ namespace Oxide.Plugins
                 player.Reply("У вас нет прав для выполнения этой команды");
                 return;
             }
-            
+
             player.Reply($"=== Approved Skins Sync Status ===");
             player.Reply($"API URL: {config.apiUrl}");
             player.Reply($"Интервал синхронизации: {config.syncInterval} минут");

@@ -26,9 +26,9 @@ namespace Oxide.Plugins
 			[JsonProperty(PropertyName = "CustomIconSteamId")]
 			public ulong customIconSteamId { get; set; } = 76561198028953589;
 			[JsonProperty(PropertyName = "Базовый URL текстов плагина (v1, без / на конце)")]
-			public string PluginChatBaseUrl { get; set; } = "https://api.prostoj.store/v1/rust-plugin-chat";
+			public string PluginChatBaseUrl { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-chat";
 			[JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-			public string RustPluginConfigApiBase { get; set; } = "https://api.prostoj.store/v1/rust-plugin-config";
+			public string RustPluginConfigApiBase { get; set; } = "https://api.moscow77.store.store/v1/rust-plugin-config";
 		}
 
         protected override void LoadConfig()
@@ -40,7 +40,7 @@ namespace Oxide.Plugins
                 if (config == null)
                 {
                     LoadDefaultConfig();
-                } 
+                }
             }
             catch
             {
@@ -64,16 +64,16 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "WipeInfo"
-                
+
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -83,20 +83,20 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API!"
                                         : $"Конфигурация успешно загружена из API!");
-                                    
+
                                     NextTick(SaveConfig);
                                     return;
                                 }
@@ -134,16 +134,16 @@ namespace Oxide.Plugins
 
         string messageWipeEn = null;
         string messageWipeRu = null;
-        
+
         private const Boolean LanguageEn = false;
-        
+
         void OnServerInitialized()
         {
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
-            
+
             string chatBase = string.IsNullOrWhiteSpace(config.PluginChatBaseUrl)
-                ? "https://api.prostoj.store/v1/rust-plugin-chat"
+                ? "https://api.moscow77.store.store/v1/rust-plugin-chat"
                 : config.PluginChatBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{chatBase}/wipe/{config.serverTag}", null, (code, response) =>
             {
@@ -161,13 +161,13 @@ namespace Oxide.Plugins
 			if (lang.GetLanguage(player.UserIDString) == "ru") {
 				message = messageWipeRu;
 			}
-			
+
 			if (config.customIconSteamId != 0)
 			{
 				player.SendConsoleCommand("chat.add", 0, config.customIconSteamId, message);
 				return;
 			}
-			
+
 			SendReply(player, message);
         }
 

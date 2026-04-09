@@ -21,22 +21,22 @@ using Net = Network.Net;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
-namespace Oxide.Plugins 
+namespace Oxide.Plugins
 {
     [Info("Helper Prostoj", "moscow77.store", "1.0.0")]
     [Description("Плагин, для помощи работы сайта.")]
-    public class Helper : RustPlugin 
+    public class Helper : RustPlugin
     {
         private Configuration config;
-        
+
         public class Configuration
         {
             [JsonProperty(PropertyName = "Sender Steam ID")]
             public ulong SenderSteamId { get; set; } = 76561198394504608;
         }
-        
+
         private const Boolean LanguageEn = false;
-        
+
         protected override void LoadConfig()
         {
             base.LoadConfig();
@@ -70,13 +70,13 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "Helper"
-                
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
+                String apiUrl = $"https://api.moscow77.store.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -86,20 +86,20 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API!"
                                         : $"Конфигурация успешно загружена из API!");
-                                    
+
                                     NextTick(SaveConfig);
                                     return;
                                 }
@@ -127,13 +127,13 @@ namespace Oxide.Plugins
                     : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
             }
         }
-        
+
         void OnServerInitialized()
         {
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
         }
-       
+
         [ConsoleCommand("helper")]
         private void ConsoleCommandHelper(ConsoleSystem.Arg arg)
         {
@@ -160,7 +160,7 @@ namespace Oxide.Plugins
 				if (!arg.HasArgs(4)) return;
                 BasePlayer user = BasePlayer.FindAwakeOrSleeping(arg.Args[1]);
 				Item newItem = ItemManager.CreateByItemID(int.Parse(arg.Args[2]), int.Parse(arg.Args[3]), ulong.Parse(arg.Args[4]));
-				user.GiveItem(newItem); 
+				user.GiveItem(newItem);
 			}
 			// helper message "ру" "en" "sound" "76561198394504608"
 	        if (Actions.Contains("message"))
@@ -176,7 +176,7 @@ namespace Oxide.Plugins
                     SendEffect(recepient, sound_prefab);
 				}
                 ulong senderId = config != null ? config.SenderSteamId : 76561198394504608;
-                recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message); 
+                recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message);
 			}
 			// helper globalMessage "ру" "en" "sound"
 	        if (Actions.Contains("globalMessage"))
@@ -186,13 +186,13 @@ namespace Oxide.Plugins
 				string messageEn = arg.Args[2].Replace("\\n", "\r\n");
 				string sound_prefab = arg.Args[3];
                 foreach (var recepient in BasePlayer.activePlayerList)
-                { 
+                {
 					string message = lang.GetLanguage(recepient.UserIDString) == "ru" ? messageRu : messageEn;
 					if (!string.IsNullOrEmpty(sound_prefab)) {
                         SendEffect(recepient, sound_prefab);
 					}
                     ulong senderId = config != null ? config.SenderSteamId : 76561198394504608;
-                    recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message); 
+                    recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message);
                 }
 			}
 

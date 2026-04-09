@@ -26,15 +26,15 @@ namespace Oxide.Plugins
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
             [JsonProperty(PropertyName = "Базовый URL отправки рейдов (v1, без / на конце)")]
-            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+            public string PluginStatsIngestBaseUrl = "https://api.moscow77.store.store/v1/plugin-ingest";
             [JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-            public string RustPluginConfigApiBase = "https://api.prostoj.store/v1/rust-plugin-config";
+            public string RustPluginConfigApiBase = "https://api.moscow77.store.store/v1/rust-plugin-config";
 
             public static Configuration DefaultConfig()
             {
                 return new Configuration
                 {
-                    server_tag = "nolimit" 
+                    server_tag = "nolimit"
                 };
             }
         }
@@ -68,16 +68,16 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "RaidAlerts"
-                
+
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.prostoj.store/v1/rust-plugin-config"
+                    ? "https://api.moscow77.store.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -87,20 +87,20 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API!"
                                         : $"Конфигурация успешно загружена из API!");
-                                    
+
                                     NextTick(SaveConfig);
                                     return;
                                 }
@@ -146,7 +146,7 @@ namespace Oxide.Plugins
         void OnServerInitialized(bool initial)
         {
             Puts("Raid Alerts: OnServerInitialized.");
-            
+
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
 
@@ -170,14 +170,14 @@ namespace Oxide.Plugins
             }
 
             string requestBody = JsonConvert.SerializeObject(
-                new { 
+                new {
                     raids = raids,
                 }).Replace("\n", "").Replace("  ", "");
 
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
             string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
-                ? "https://api.prostoj.store/v1/plugin-ingest"
+                ? "https://api.moscow77.store.store/v1/plugin-ingest"
                 : config.PluginStatsIngestBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{ingest}/raid/{config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             raids.Clear();
@@ -201,7 +201,7 @@ namespace Oxide.Plugins
             if (attacker == null || !attacker.userID.IsSteamId()) return;
                 string entityLocation = GetGrid(entity.transform.position);
                 string attackerUserId = info.InitiatorPlayer.UserIDString;
-            
+
             Raid model = new Raid();
                 model.steam_id = attackerUserId;
                 model.entityLocation = entityLocation;
@@ -239,7 +239,7 @@ namespace Oxide.Plugins
             BasePlayer attacker = info?.InitiatorPlayer;
             if (attacker == null || !attacker.userID.IsSteamId()) return;
 
-            string type = null;    
+            string type = null;
             // Проверяем тип сущности
             switch (entity.ShortPrefabName)
             {
@@ -427,24 +427,24 @@ namespace Oxide.Plugins
         {
             // Размер одного блока на карте
             const float block = 146f;
-            
+
             // Размер карты
             float size = Server.worldsize;
-            
+
             // Смещение для перевода координат в систему с началом в углу карты
             float offset = size / 2f;
-            
+
             // Перевод координат в систему с началом в углу карты
             float xpos = pos.x + offset;
             float zpos = pos.z + offset;
-            
+
             // Максимальное количество блоков по одной оси
             int maxgrid = (int)(size / block);
-            
+
             // Расчет координат в сетке
             int xcoord = Mathf.Clamp((int)Mathf.Floor(xpos / block), 0, maxgrid - 1);
             int zcoord = Mathf.Clamp(maxgrid - (int)Mathf.Floor(zpos / block), 1, maxgrid);
-            
+
             // Преобразование x координаты в букву (A-Z, затем AA, AB и т.д.)
             string letter;
             if (xcoord < 26)
@@ -458,7 +458,7 @@ namespace Oxide.Plugins
                 int secondLetter = xcoord % 26;
                 letter = ((char)('A' + firstLetter)).ToString() + ((char)('A' + secondLetter)).ToString();
             }
-            
+
             return $"{letter}{zcoord}";
         }
 

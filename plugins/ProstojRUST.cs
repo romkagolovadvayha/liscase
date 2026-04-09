@@ -84,7 +84,7 @@ namespace Oxide.Plugins
                 [JsonProperty("Секретный ключ (не распространяйте его)")]
                 public string SecretKey = "UNDEFINED";
                 [JsonProperty("Базовый URL legacy-магазина (v1, без / на конце), не prostoj.store/api")]
-                public string LegacyShopApiRoot = "https://api.prostoj.store/v1/rust-legacy-store";
+                public string LegacyShopApiRoot = "https://api.moscow77.store.store/v1/rust-legacy-store";
                 [JsonProperty("Резервный URL legacy-магазина (опционально, без / на конце)")]
                 public string LegacyShopApiReserveRoot = "";
             }
@@ -368,7 +368,7 @@ namespace Oxide.Plugins
         private static string NormalizeLegacyShopRoot(string root)
         {
             if (string.IsNullOrWhiteSpace(root))
-                return "https://api.prostoj.store/v1/rust-legacy-store/";
+                return "https://api.moscow77.store.store/v1/rust-legacy-store/";
             return root.Trim().TrimEnd('/') + "/";
         }
 
@@ -858,7 +858,7 @@ namespace Oxide.Plugins
 
        [ConsoleCommand("store.take")]
         private void GoDraw(ConsoleSystem.Arg args) {
-            if (!args.IsAdmin || args.IsClientside) 
+            if (!args.IsAdmin || args.IsClientside)
             {
                 args.ReplyWith("{\"success\": false, \"error\": \"Не админ или клиентский вызов\"}");
                 return;
@@ -870,20 +870,20 @@ namespace Oxide.Plugins
 			if (args.Args[2] == "true") {
 				isBlockedBuilding = true;
 			}
-            if (!ulong.TryParse(args.Args[0], out steam_id) || !int.TryParse(args.Args[1], out id)) 
+            if (!ulong.TryParse(args.Args[0], out steam_id) || !int.TryParse(args.Args[1], out id))
             {
                 args.ReplyWith("{\"success\": false, \"error\": \"Ошибка выполнения запроса, обратитесь в тех. поддержку\"}");
                 return;
             }
 
             var player = BasePlayer.FindByID(steam_id);
-            if (player == null) 
+            if (player == null)
             {
                 args.ReplyWith("{\"success\": false, \"error\": \"Игрок не найден или не в сети. Пожалуйста подключитесь к серверу\"}");
                 return;
             }
 
-            if (player.IsDead()) 
+            if (player.IsDead())
             {
                 args.ReplyWith("{\"success\": false, \"error\": \"Игрок мертв, возродитесь чтобы вывести предмет\"}");
                 return;
@@ -905,7 +905,7 @@ namespace Oxide.Plugins
 
             // Логика с ListTimeOutCommand (если нужно, можно добавить в ответ)
             // ...
-			
+
             args.ReplyWith("{\"success\": true, \"message\": \"Предмет успешно выдан\"}");
             Request($"&method=item&item=true&steam_id={player.UserIDString}&id={id}", (i, s) =>
             {
@@ -927,7 +927,7 @@ namespace Oxide.Plugins
                             {
                                 return;
                             }
-                            
+
                             ProcessTake(player, response["data"] as Dictionary<string, object>);
                         }, player);
                         break;
@@ -1489,7 +1489,7 @@ namespace Oxide.Plugins
                 if (itemInfo.IsItem)
                 {
 					if (itemInfo.isFullOnly && itemInfo.SubDrop != null && itemInfo.SubDrop.Count > 0)
-					{   
+					{
 					  LogAction(player, $"Выдаём SubDrop вместо основного предмета {itemInfo.ShortName}");
 
 						Item mainWeapon = null;
@@ -2028,7 +2028,7 @@ namespace Oxide.Plugins
                 instance.timer.Once(1f, () =>
                 {
                     RequestPost(ask, callback, player, cancel);
-                }); 
+                });
                 return;
             };
             if (player != null) ServerMgr.Instance.StartCoroutine(Delays.MakeRequest(player));

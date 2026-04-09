@@ -21,7 +21,7 @@ namespace Oxide.Plugins
         private class Configuration
         {
             [JsonProperty(PropertyName = "Базовый URL отправки табличек (v1, без / на конце)")]
-            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
+            public string PluginStatsIngestBaseUrl = "https://api.moscow77.store.store/v1/plugin-ingest";
         }
 
         private Configuration config = new Configuration();
@@ -80,9 +80,9 @@ namespace Oxide.Plugins
             if (signEvents.Count == 0) {
                 return;
             }
-                
+
             string requestBody = JsonConvert.SerializeObject(
-                new { 
+                new {
                     signs = signEvents,
                     ip = Server.ip,
                     port = Server.port,
@@ -91,7 +91,7 @@ namespace Oxide.Plugins
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
             string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
-                ? "https://api.prostoj.store/v1/plugin-ingest"
+                ? "https://api.moscow77.store.store/v1/plugin-ingest"
                 : config.PluginStatsIngestBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{ingest}/signs", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             signEvents.Clear();
@@ -113,10 +113,10 @@ namespace Oxide.Plugins
 			{
 				return;
 			}
-			
+
             uint crc = sign.GetTextureCRCs()[textureIndex];
 			byte[] image = FileStorage.server.Get(crc, FileStorage.Type.png, sign.NetworkID, (uint)textureIndex);
-            
+
             //try
             //{
 				if (signEvents.ContainsKey(sign.net.ID.Value.ToString()))
@@ -133,7 +133,7 @@ namespace Oxide.Plugins
 				});
             //} catch {}
 		}
-        
+
         #endregion
 
         #region Utils

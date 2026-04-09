@@ -20,7 +20,7 @@ namespace Oxide.Plugins
     {
         private Configuration config;
         private DateTime lastBroadcast;
-        
+
         public class Configuration
         {
             [JsonProperty(PropertyName = "Command")]
@@ -42,9 +42,9 @@ namespace Oxide.Plugins
             [JsonProperty(PropertyName = "CustomIconSteamId")]
             public ulong CustomIconSteamId { get; set; } = 76561198028953589;
         }
-        
+
         private const Boolean LanguageEn = false;
-        
+
         private string command => config?.Command ?? "pop";
         private string broadcastCommand => config?.BroadcastCommand ?? "!pop";
         private string onlineColor => config?.OnlineColor ?? "#ff686b";
@@ -54,7 +54,7 @@ namespace Oxide.Plugins
         private bool enablePersonalCommand => config?.EnablePersonalCommand ?? true;
         private bool enableGlobalCommand => config?.EnableGlobalCommand ?? true;
         private ulong customIconSteamId => config?.CustomIconSteamId ?? 76561198028953589;
-		
+
         private void Init()
         {
             permission.RegisterPermission("pop.use", this);
@@ -62,7 +62,7 @@ namespace Oxide.Plugins
             // Регистрируем команды с начальными настройками (будут обновлены после загрузки из API)
             RegisterCommands();
         }
-        
+
         private void RegisterCommands()
         {
             if (enablePersonalCommand && !string.IsNullOrEmpty(command))
@@ -109,13 +109,13 @@ namespace Oxide.Plugins
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "Pop"
-                
-                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
-                
+
+                String apiUrl = $"https://api.moscow77.store.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"
                     : $"Загрузка конфигурации из API: {apiUrl}");
-                
+
                 webrequest.Enqueue(apiUrl, null, (code, response) =>
                 {
                     if (code == 200 && !String.IsNullOrEmpty(response))
@@ -125,20 +125,20 @@ namespace Oxide.Plugins
                             // Парсим ответ API
                             JObject apiResponse = JObject.Parse(response);
                             JToken contentToken = apiResponse["content"];
-                            
+
                             if (contentToken != null)
                             {
                                 // Десериализуем content в Configuration
                                 Configuration apiConfig = contentToken.ToObject<Configuration>();
-                                
+
                                 if (apiConfig != null)
                                 {
                                     config = apiConfig;
-                                    
+
                                     PrintWarning(LanguageEn
                                         ? $"Configuration loaded successfully from API!"
                                         : $"Конфигурация успешно загружена из API!");
-                                    
+
                                     NextTick(() => {
                                         SaveConfig();
                                         RegisterCommands();
@@ -160,7 +160,7 @@ namespace Oxide.Plugins
                             ? $"Failed to load config from API (Code: {code}). Using default config."
                             : $"Не удалось загрузить конфиг из API (Код: {code}). Используется конфиг по умолчанию.");
                     }
-                    
+
                     // Регистрируем команды даже если конфиг из API не загрузился
                     RegisterCommands();
                 }, this, RequestMethod.GET, null, 10f);
@@ -170,12 +170,12 @@ namespace Oxide.Plugins
                 PrintError(LanguageEn
                     ? $"Error loading config from API: {ex.Message}. Using default config."
                     : $"Ошибка загрузки конфига из API: {ex.Message}. Используется конфиг по умолчанию.");
-                
+
                 // Регистрируем команды даже если произошла ошибка
                 RegisterCommands();
             }
         }
-        
+
         void OnServerInitialized()
         {
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
@@ -197,7 +197,7 @@ namespace Oxide.Plugins
             string onlineText = string.Format("<color={0}>{1}</color>", onlineColor, connectedPlayers);
             string joiningText = string.Format("<color={0}>{1}</color>", joiningColor, joiningPlayers);
             string queuedText = string.Format("<color={0}>{1}</color>", queuedColor, playersInQueue);
-            
+
             string message;
             try
             {
@@ -218,7 +218,7 @@ namespace Oxide.Plugins
                     return;
                 }
             }
-            
+
             player.Reply(message);
         }
 
@@ -241,7 +241,7 @@ namespace Oxide.Plugins
             string onlineText = string.Format("<color={0}>{1}</color>", onlineColor, connectedPlayers);
             string joiningText = string.Format("<color={0}>{1}</color>", joiningColor, joiningPlayers);
             string queuedText = string.Format("<color={0}>{1}</color>", queuedColor, playersInQueue);
-            
+
             string message;
             try
             {
@@ -261,7 +261,7 @@ namespace Oxide.Plugins
                 }
                 return;
             }
-            
+
             server.Broadcast(message);
         }
 

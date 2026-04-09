@@ -39,7 +39,7 @@ namespace Oxide.Plugins
 
 
         #region Config
-        
+
         private Configuration _config;
 
         public class Configuration
@@ -48,7 +48,7 @@ namespace Oxide.Plugins
             public int UpdateIntervalSeconds = 30;
 
             [JsonProperty("apiBaseUrl")]
-            public string ApiBaseUrl = "https://api.prostoj.store/v1";
+            public string ApiBaseUrl = "https://api.moscow77.store.store/v1";
 
             [JsonProperty("codeAuthMode")]
             public string CodeAuthMode = "guestPlayers"; // or whitelistPlayers
@@ -306,21 +306,21 @@ namespace Oxide.Plugins
             foreach (var entity in BaseNetworkable.serverEntities)
             {
                 var cupboard = entity as BuildingPrivlidge;
-                if (cupboard != null) 
+                if (cupboard != null)
                 {
                     RegisterCupboard(cupboard);
                     continue;
                 }
 
                 var codeLock = entity as CodeLock;
-                if (codeLock != null) 
+                if (codeLock != null)
                 {
                     RegisterCodeLock(codeLock);
                     continue;
                 }
 
                 var turret = entity as AutoTurret;
-                if (turret != null) 
+                if (turret != null)
                 {
                     RegisterTurret(turret);
                     continue;
@@ -539,7 +539,7 @@ namespace Oxide.Plugins
                 if (_config.CodeAuthMode == "whitelistPlayers")
                 {
                     var authorizedPlayers = codeLock.whitelistPlayers;
-                    
+
                     var authorizedIds = new HashSet<ulong>(authorizedPlayers);
 
                     var clanAuthorizedIds = new HashSet<ulong>(
@@ -608,7 +608,7 @@ namespace Oxide.Plugins
         private void UpdateTurretAuthorization(IEnumerable<AutoTurret> AutoTurrets, ulong ownerId)
         {
             var clan = Clans.FirstOrDefault(c => c.users.Any(u => u.SteamId == ownerId));
-            if (clan == null) 
+            if (clan == null)
                 return;
 
             var clanUsersById = clan.users.ToDictionary(u => u.SteamId, u => u);

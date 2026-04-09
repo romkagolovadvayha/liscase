@@ -48,7 +48,7 @@ namespace Oxide.Plugins
 				{ "spliter", new ImageData { Url = "https://storage.prostoj.store/plugin-file/spliter.png" } },
 				{ "menu_punkt_bg", new ImageData { Url = "https://storage.prostoj.store/plugin-file/menu_punkt_bg.png" } }
 			};
-			
+
 			// Кеш для изображений предметов (динамические изображения из API)
 			private readonly Dictionary<string, ImageData> _itemImages = new();
 
@@ -91,14 +91,14 @@ namespace Oxide.Plugins
 							_instance.PrintError("GameStoresRUST: DataDirectory is null or empty!");
 						return;
 					}
-					
+
 					// Используем Path.Combine для правильного формирования пути
 					string directory = Path.Combine(dataDir, _path.TrimEnd('/', '\\'));
-					
+
 					if (!Directory.Exists(directory))
 					{
 						Directory.CreateDirectory(directory);
-						
+
 						// Проверяем, что каталог действительно создан
 						if (!Directory.Exists(directory))
 						{
@@ -128,7 +128,7 @@ namespace Oxide.Plugins
 			public void DownloadImages()
 			{
 				if (_isUnloaded) return; // Не загружаем изображения, если плагин выгружен
-				
+
 				foreach (var image in _images)
 				{
 					if (image.Value.Status == ImageStatus.NotLoaded)
@@ -138,7 +138,7 @@ namespace Oxide.Plugins
 					}
 				}
 			}
-			
+
 			public void StopAllDownloads()
 			{
 				_isUnloaded = true;
@@ -163,13 +163,13 @@ namespace Oxide.Plugins
 			private IEnumerator ProcessDownloadImage(string imageName, ImageData imageData)
 			{
 				if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
-				
+
 				// Сначала пытаемся загрузить из локальной папки
 				string dataDir = Interface.Oxide.DataDirectory;
 				string directory = Path.Combine(dataDir, _path.TrimEnd('/', '\\'));
 				string localPath = Path.Combine(directory, imageName + ".png");
 				string localUrl = "file://" + localPath;
-				
+
 				// Убеждаемся, что каталог существует
 				if (!Directory.Exists(directory))
 				{
@@ -182,11 +182,11 @@ namespace Oxide.Plugins
 						_instance?.PrintError($"GameStoresRUST: Failed to create directory {directory}: {ex.Message}");
 					}
 				}
-				
+
 				using (UnityWebRequest www = UnityWebRequestTexture.GetTexture(localUrl))
 				{
 					yield return www.SendWebRequest();
-					
+
 					if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
 
 					if (www.isNetworkError || www.isHttpError)
@@ -196,7 +196,7 @@ namespace Oxide.Plugins
 						using (UnityWebRequest wwwRemote = UnityWebRequestTexture.GetTexture(imageData.Url))
 						{
 							yield return wwwRemote.SendWebRequest();
-							
+
 							if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
 
 							if (wwwRemote.isNetworkError || wwwRemote.isHttpError)
@@ -211,7 +211,7 @@ namespace Oxide.Plugins
 								Texture2D tex = DownloadHandlerTexture.GetContent(wwwRemote);
 								imageData.Id = FileStorage.server.Store(tex.EncodeToPNG(), FileStorage.Type.png, CommunityEntity.ServerInstance.net.ID).ToString();
 								imageData.Status = ImageStatus.Loaded;
-								
+
 								// Сохраняем в локальную папку для следующего раза
 								SaveImageToLocal(tex, imageName);
 								UnityEngine.Object.DestroyImmediate(tex);
@@ -244,12 +244,12 @@ namespace Oxide.Plugins
 				{
 					string dataDir = Interface.Oxide.DataDirectory;
 					string directory = Path.Combine(dataDir, _path.TrimEnd('/', '\\'));
-					
+
 					if (!Directory.Exists(directory))
 					{
 						Directory.CreateDirectory(directory);
 					}
-					
+
 					string filePath = Path.Combine(directory, imageName + ".png");
 					File.WriteAllBytes(filePath, texture.EncodeToPNG());
 					// Изображение сохранено (не выводим сообщение для уменьшения шума в логах)
@@ -274,7 +274,7 @@ namespace Oxide.Plugins
 			{
 				return _images.TryGetValue(name, out ImageData imageData) && imageData.Status == ImageStatus.Loaded;
 			}
-			
+
 			private void EnsureItemsDirectoryExists()
 			{
 				try
@@ -286,9 +286,9 @@ namespace Oxide.Plugins
 							_instance.PrintError("GameStoresRUST: DataDirectory is null or empty!");
 						return;
 					}
-					
+
 					string directory = Path.Combine(dataDir, _itemsPath.TrimEnd('/', '\\'));
-					
+
 					if (!Directory.Exists(directory))
 					{
 						Directory.CreateDirectory(directory);
@@ -300,24 +300,24 @@ namespace Oxide.Plugins
 					_instance?.PrintError($"GameStoresRUST: Exception creating items directory: {ex.Message}");
 				}
 			}
-			
+
 			// Кеширование изображения предмета из API
 			public void CacheItemImage(string fileName, string url)
 			{
 				if (_isUnloaded) return; // Не загружаем изображения, если плагин выгружен
-				
+
 				if (string.IsNullOrEmpty(fileName) || string.IsNullOrEmpty(url))
 				{
 					_instance?.PrintWarning($"GameStoresRUST: CacheItemImage skipped - fileName or url is empty. fileName: {fileName}, url: {url}");
 					return;
 				}
-				
+
 				// Нормализуем URL: заменяем HTTP на HTTPS для безопасности
 				if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
 				{
 					url = url.Replace("http://", "https://", StringComparison.OrdinalIgnoreCase);
 				}
-				
+
 				// Проверяем, не загружается ли уже это изображение
 				if (_itemImages.TryGetValue(fileName, out ImageData existingData))
 				{
@@ -326,29 +326,29 @@ namespace Oxide.Plugins
 						return; // Уже загружается или загружено
 					}
 				}
-				
+
 				// Проверяем, что URL валидный (должен начинаться с http:// или https://)
 				// Если это не URL, а item ID или другой невалидный формат, не пытаемся загружать
-				if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+				if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
 				    !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 				{
 					return;
 				}
-				
+
 				// Убеждаемся, что директория существует перед началом загрузки
 				EnsureItemsDirectoryExists();
-				
+
 				// Добавляем в словарь и начинаем загрузку (не выводим сообщение для уменьшения шума в логах)
 				var imageData = new ImageData { Url = url, Status = ImageStatus.Loading };
 				_itemImages[fileName] = imageData;
-				
+
 				ServerMgr.Instance.StartCoroutine(ProcessDownloadItemImage(fileName, imageData));
 			}
-			
+
 			private IEnumerator ProcessDownloadItemImage(string fileName, ImageData imageData)
 			{
 				if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
-				
+
 				// Сначала пытаемся загрузить из локальной папки items/
 				string dataDir = Interface.Oxide.DataDirectory;
 				if (string.IsNullOrEmpty(dataDir))
@@ -357,17 +357,17 @@ namespace Oxide.Plugins
 					imageData.Status = ImageStatus.Failed;
 					yield break;
 				}
-				
+
 				string directory = Path.Combine(dataDir, _itemsPath.TrimEnd('/', '\\'));
-				
+
 				// Очищаем fileName от недопустимых символов для имени файла
 				string safeFileName = fileName.Replace(":", "_").Replace("/", "_").Replace("\\", "_").Replace("*", "_").Replace("?", "_").Replace("\"", "_").Replace("<", "_").Replace(">", "_").Replace("|", "_");
-				
+
 				string localPath = Path.Combine(directory, safeFileName + ".png");
 				string localUrl = "file://" + localPath;
-				
+
 				// Проверяем локальный файл (не выводим сообщение для уменьшения шума в логах)
-				
+
 				// Убеждаемся, что каталог существует
 					if (!Directory.Exists(directory))
 					{
@@ -380,11 +380,11 @@ namespace Oxide.Plugins
 							_instance?.PrintError($"GameStoresRUST: Failed to create items directory {directory}: {ex.Message}");
 						}
 					}
-				
+
 				using (UnityWebRequest www = UnityWebRequestTexture.GetTexture(localUrl))
 				{
 					yield return www.SendWebRequest();
-					
+
 					if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
 
 					if (www.isNetworkError || www.isHttpError)
@@ -393,7 +393,7 @@ namespace Oxide.Plugins
 						using (UnityWebRequest wwwRemote = UnityWebRequestTexture.GetTexture(imageData.Url))
 						{
 							yield return wwwRemote.SendWebRequest();
-							
+
 							if (_isUnloaded) yield break; // Останавливаем, если плагин выгружен
 
 							if (wwwRemote.isNetworkError || wwwRemote.isHttpError)
@@ -408,7 +408,7 @@ namespace Oxide.Plugins
 								{
 									imageData.Id = FileStorage.server.Store(tex.EncodeToPNG(), FileStorage.Type.png, CommunityEntity.ServerInstance.net.ID).ToString();
 									imageData.Status = ImageStatus.Loaded;
-									
+
 									// Сохраняем в локальную папку items/ для следующего раза
 									SaveItemImageToLocal(tex, fileName);
 									UnityEngine.Object.DestroyImmediate(tex);
@@ -437,7 +437,7 @@ namespace Oxide.Plugins
 					}
 				}
 			}
-			
+
 			private void SaveItemImageToLocal(Texture2D texture, string fileName)
 			{
 				try
@@ -448,26 +448,26 @@ namespace Oxide.Plugins
 						_instance?.PrintError($"GameStoresRUST: DataDirectory is null or empty when saving {fileName}");
 						return;
 					}
-					
+
 					string directory = Path.Combine(dataDir, _itemsPath.TrimEnd('/', '\\'));
-					
+
 					if (!Directory.Exists(directory))
 					{
 						Directory.CreateDirectory(directory);
 					}
-					
+
 					// Очищаем fileName от недопустимых символов для имени файла
 					string safeFileName = fileName.Replace(":", "_").Replace("/", "_").Replace("\\", "_").Replace("*", "_").Replace("?", "_").Replace("\"", "_").Replace("<", "_").Replace(">", "_").Replace("|", "_");
-					
+
 					string filePath = Path.Combine(directory, safeFileName + ".png");
-					
+
 					byte[] pngData = texture.EncodeToPNG();
 					if (pngData == null || pngData.Length == 0)
 					{
 						_instance?.PrintError($"GameStoresRUST: Failed to encode texture to PNG for {fileName}");
 						return;
 					}
-					
+
 					File.WriteAllBytes(filePath, pngData);
 					// Изображение успешно сохранено (не выводим сообщение для уменьшения шума в логах)
 				}
@@ -476,7 +476,7 @@ namespace Oxide.Plugins
 					_instance?.PrintError($"GameStoresRUST: Failed to save item image {fileName} to local: {ex.Message}\nStack trace: {ex.StackTrace}");
 				}
 			}
-			
+
 			// Получить ID кешированного изображения предмета
 			public string GetItemImageId(string fileName)
 			{
@@ -486,7 +486,7 @@ namespace Oxide.Plugins
 				}
 				return null;
 			}
-			
+
 			// Проверить, загружено ли изображение предмета
 			public bool IsItemImageLoaded(string fileName)
 			{
@@ -522,10 +522,10 @@ namespace Oxide.Plugins
 		private List<Dictionary<string, object>> _globalPopularItems = null; // Глобальный список популярных товаров (загружается один раз)
 		private Dictionary<ulong, double> _lastBasketRequestTime = new(); // Время последнего запроса корзины для каждого игрока
 		private Dictionary<ulong, bool> _basketRequestInProgress = new(); // Флаг, что запрос корзины выполняется
-		
+
 		// Кеш данных для раздела помощи (загружается один раз при инициализации)
 		private Dictionary<string, object> _helpInfoCache = null; // {wipeInfo: {...}, commands: [...]}
-		
+
 		// Данные поддержки для каждого игрока
 		private Dictionary<ulong, string> _playerSupportTickets = new(); // Текущий активный тикет для каждого игрока
 		private Dictionary<ulong, List<Dictionary<string, object>>> _playerSupportMessages = new(); // Сообщения поддержки для каждого игрока
@@ -549,11 +549,11 @@ namespace Oxide.Plugins
 		private const string ImageBgRight = "GameStoresRUSTBgRight";
 		private const string ImageSpliter = "GameStoresRUSTSpliter";
 		private const string ImageMenuPunktBg = "GameStoresRUSTMenuPunktBg";
-		
+
 		private Coroutine _loadingCoroutine;
 		private ImageCache _imageCache;
 		private bool _imagesCacheInitialized = false;
-		
+
 		private string GetCachedImageId(string imageName)
 		{
 			// Маппинг имен констант на имена в кеше
@@ -570,7 +570,7 @@ namespace Oxide.Plugins
 				ImageMenuPunktBg => "menu_punkt_bg",
 				_ => imageName.ToLower()
 			};
-			
+
 			if (_imageCache != null && _imageCache.IsImageLoaded(cacheName))
 			{
 				return _imageCache.GetImageId(cacheName);
@@ -594,10 +594,10 @@ namespace Oxide.Plugins
 		};
 
 		private const string
-			MainApiLink = "https://api.prostoj.store/v1/game-stores/",
-			CFApiLink = "https://api.prostoj.store/v1/game-stores/",
-			PayApiLink = "https://api.prostoj.store/v1/";
-		
+			MainApiLink = "https://api.moscow77.store.store/v1/game-stores/",
+			CFApiLink = "https://api.moscow77.store.store/v1/game-stores/",
+			PayApiLink = "https://api.moscow77.store.store/v1/";
+
 		private string BestApiLink = string.Empty;
 
 		private int errorsReq;
@@ -1254,7 +1254,7 @@ namespace Oxide.Plugins
 		{
 			// Инициализируем кеш изображений всегда, независимо от ImageLibrary
 			InitializeImages();
-			
+
 #if !CARBON
 			if (ImageLibrary == null)
 			{
@@ -1283,19 +1283,19 @@ namespace Oxide.Plugins
 
 			if (!InitializeServerSettings())
 				return;
-			
+
 			RegisterCommands();
 
 			timer.Once(2, FetchShopUrl);
 
 			InitializeTimeoutCommands();
-			
+
 			// Загружаем данные для раздела помощи один раз при инициализации
 			LoadHelpInfo();
-			
+
 			// Загружаем популярные товары один раз при инициализации (для всех игроков)
 			LoadPopularItems();
-			
+
 			// Выдаем права notify.see всем текущим игрокам для отображения уведомлений
 			if (Notify != null && Notify.IsLoaded)
 			{
@@ -1313,7 +1313,7 @@ namespace Oxide.Plugins
 				DestroyInstantTimer();
 
 				if (_loadingCoroutine != null) ServerMgr.Instance.StopCoroutine(_loadingCoroutine);
-				
+
 				// Останавливаем все загрузки изображений в ImageCache
 				if (_imageCache != null)
 				{
@@ -1324,18 +1324,18 @@ namespace Oxide.Plugins
 				{
 					// Удаляем все UI элементы плагина
 					CuiHelper.DestroyUi(player, IconLayer);
-					
+
 					// Удаляем модальное окно и все его дочерние элементы
 					CuiHelper.DestroyUi(player, StoreLayer + ".Window");
 					CuiHelper.DestroyUi(player, StoreLayer + ".Blur");
-					
+
 					// Удаляем все остальные элементы (на случай, если что-то осталось)
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel");
 					CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel");
 					CuiHelper.DestroyUi(player, StoreLayer + ".PopularItemsPanel");
 					CuiHelper.DestroyUi(player, StoreLayer + ".TopNav");
 					CuiHelper.DestroyUi(player, StoreLayer + ".Notify");
-					
+
 					// Удаляем основной слой (это удалит все дочерние элементы)
 					CuiHelper.DestroyUi(player, StoreLayer);
 				}
@@ -1373,7 +1373,7 @@ namespace Oxide.Plugins
 			if (player == null) return;
 
 			DequeueBasketRequest(player.userID);
-			
+
 			// Очищаем данные поддержки
 			_playerSupportTickets.Remove(player.userID);
 			_playerSupportMessages.Remove(player.userID);
@@ -1454,7 +1454,7 @@ namespace Oxide.Plugins
 				CuiHelper.DestroyUi(player, IconLayer);
 				return;
 			}
-			
+
 
 			if (CanRequestBasket(player))
 				InitializeStore(player, 0);
@@ -1541,7 +1541,7 @@ namespace Oxide.Plugins
 			// steamId: 0 = системное сообщение (со звуком), можно использовать реальный Steam ID для аватара
 			// Для звука используем steamId = 0 (системное сообщение со звуком уведомления)
 			player.SendConsoleCommand("chat.add", 0, 0, $"<color=#FFA500>[Поддержка]</color> {message}");
-			
+
 			// Также отправляем уведомление через ShowNotify для более заметного отображения
 			ShowNotify(player, $"Новое сообщение в поддержке: {message}", false);
 
@@ -1600,17 +1600,17 @@ namespace Oxide.Plugins
 				{
 					// Сохраняем текст из InputField (вызывается при изменении или нажатии Enter)
 					string messageText = "";
-					
+
 					// В Rust Oxide InputField передает текст как первый аргумент после команды
 					if (args.Args.Length > 1)
 					{
 						// Объединяем все аргументы в один текст (на случай пробелов)
 						messageText = string.Join(" ", args.Args.Skip(1));
 					}
-					
+
 					// Сохраняем текст
 					_playerSupportInputText[player.userID] = messageText;
-					
+
 					// Проверяем, пусто ли поле
 					if (string.IsNullOrWhiteSpace(messageText))
 					{
@@ -1627,7 +1627,7 @@ namespace Oxide.Plugins
 								Text = { Text = "Введите сообщение", FontSize = 12, Align = TextAnchor.MiddleLeft, Font = "RobotoCondensed-Bold.ttf", Color = "0.6 0.6 0.6 1" },
 							}, StoreLayer + ".SupportPanel.InputPanel", StoreLayer + ".SupportPanel.InputLabel");
 							CuiHelper.AddUi(player, labelContainer);
-							
+
 							// Возвращаем исходный цвет фона
 							var bgContainer = new CuiElementContainer();
 							bgContainer.Add(new CuiElement
@@ -1641,7 +1641,7 @@ namespace Oxide.Plugins
 								}
 							});
 							CuiHelper.AddUi(player, bgContainer);
-							
+
 							_playerSupportInputFocused[player.userID] = false;
 						}
 					}
@@ -1650,7 +1650,7 @@ namespace Oxide.Plugins
 						// Есть текст - скрываем label и меняем цвет фона
 						_playerSupportInputFocused[player.userID] = true;
 						CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel.InputLabel");
-						
+
 						// Меняем цвет фона на более светлый для индикации фокуса
 						var focusContainer = new CuiElementContainer();
 						focusContainer.Add(new CuiElement
@@ -1664,11 +1664,11 @@ namespace Oxide.Plugins
 							}
 						});
 						CuiHelper.AddUi(player, focusContainer);
-						
+
 						// Проверяем, был ли текст уже сохранен ранее (это может означать нажатие Enter)
 						// Если предыдущий текст совпадает с текущим, значит пользователь нажал Enter для отправки
-						if (_playerSupportLastInputText.TryGetValue(player.userID, out var lastText) && 
-						    lastText == messageText && 
+						if (_playerSupportLastInputText.TryGetValue(player.userID, out var lastText) &&
+						    lastText == messageText &&
 						    !string.IsNullOrWhiteSpace(messageText))
 						{
 							// Текст не изменился с последнего вызова, значит это нажатие Enter - отправляем сообщение
@@ -1679,11 +1679,11 @@ namespace Oxide.Plugins
 							_playerSupportLastInputText.Remove(player.userID);
 							return; // Выходим, чтобы не продолжать обработку
 						}
-						
+
 						// Сохраняем текущий текст как последний для следующей проверки
 						_playerSupportLastInputText[player.userID] = messageText;
 					}
-					
+
 					PrintWarning($"[Support] Input text: '{messageText}' (length: {messageText?.Length ?? 0})");
 					break;
 				}
@@ -1693,7 +1693,7 @@ namespace Oxide.Plugins
 					// Обработчик клика по label - скрываем label и фокусируем поле
 					CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel.InputLabel");
 					_playerSupportInputFocused[player.userID] = true;
-					
+
 					// Изменяем цвет фона поля ввода для визуальной индикации фокуса
 					var focusContainer = new CuiElementContainer();
 					focusContainer.Add(new CuiElement
@@ -1758,7 +1758,7 @@ namespace Oxide.Plugins
 					// ВАЖНО: Удаляем HelpPanel и SupportPanel ПЕРВЫМИ, так как они занимают весь экран и могут перехватывать клики
 					// Удаляем все дочерние элементы HelpPanel явно ПЕРЕД удалением самой панели
 					// Удаляем все элементы HelpPanel в правильном порядке (сначала дочерние, потом родительские)
-					
+
 					// Удаляем команды и их дочерние элементы (до 50)
 					for (int i = 0; i < 50; i++)
 					{
@@ -1766,17 +1766,17 @@ namespace Oxide.Plugins
 						CuiHelper.DestroyUi(player, StoreLayer + $".HelpPanel.Command{i}.Cmd");
 						CuiHelper.DestroyUi(player, StoreLayer + $".HelpPanel.Command{i}");
 					}
-					
+
 					// Удаляем элементы NextWipeBox
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.GlobalBadge");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.Content");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.Text");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox");
-					
+
 					// Удаляем элементы LastWipeBox
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.LastWipeBox.Text");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.LastWipeBox");
-					
+
 					// Удаляем другие элементы HelpPanel
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.OnlineBox");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.CommandsTitle");
@@ -1784,25 +1784,25 @@ namespace Oxide.Plugins
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.Instruction");
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.BackButton");
 					CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel.Help");
-					
+
 					// Удаляем саму панель помощи (это должно удалить все дочерние элементы автоматически)
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel");
-					
+
 					// Удаляем HelpPanel еще раз для надежности
 					CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel");
-					
+
 					// Удаляем панель поддержки
 					CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel");
-					
+
 					// Удаляем SupportPanel еще раз для надежности
 					CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel");
-					
+
 					// Добавляем небольшую задержку перед восстановлением корзины, чтобы убедиться, что HelpPanel полностью удален
 					timer.Once(0.15f, () =>
 					{
 						// ВАЖНО: Восстанавливаем панели в правильном порядке, чтобы обеспечить правильный z-order
 						// В Rust UI порядок элементов в контейнере определяет z-order - элементы, добавленные позже, отображаются поверх
-						
+
 						// Удаляем HelpPanel и все его дочерние элементы еще раз для надежности (на случай, если они не были полностью удалены)
 						// Удаляем все элементы HelpPanel в правильном порядке (сначала дочерние, потом родительские)
 						for (int i = 0; i < 50; i++)
@@ -1825,20 +1825,20 @@ namespace Oxide.Plugins
 						CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel.Help");
 						CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel");
 						CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel");
-						
+
 						// ВАЖНО: Восстанавливаем панели точно так же, как при первоначальном открытии через /store
 						// Используем CreateBlockPanel для правильного порядка создания панелей
 						var restoreContainer = new CuiElementContainer();
-						
+
 						// Удаляем старые панели, если они существуют (на случай, если они были созданы неправильно)
 						CuiHelper.DestroyUi(player, StoreLayer + ".PopularItemsPanel");
 						CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel");
-						
+
 						// Создаем панели заново в правильном порядке, как в CreateBlockPanel
 						// Сначала PopularItemsPanel (чтобы была внизу по z-order)
 						restoreContainer.Add(new CuiPanel
 						{
-							RectTransform = 
+							RectTransform =
 							{
 								AnchorMin = _config.UI.PopularItemsPanel.AnchorMin,
 								AnchorMax = _config.UI.PopularItemsPanel.AnchorMax,
@@ -1847,11 +1847,11 @@ namespace Oxide.Plugins
 							},
 							Image = {Color = "0 0 0 0"} // Прозрачный фон
 						}, StoreLayer + ".Window", StoreLayer + ".PopularItemsPanel");
-						
+
 						// Затем BlockPanel (чтобы была поверх PopularItemsPanel)
 						restoreContainer.Add(new CuiPanel
 						{
-							RectTransform = 
+							RectTransform =
 							{
 								AnchorMin = _config.UI.BlockPanel.AnchorMin,
 								AnchorMax = _config.UI.BlockPanel.AnchorMax,
@@ -1860,27 +1860,27 @@ namespace Oxide.Plugins
 							},
 							Image = {Color = "0 0 0 0"} // Прозрачный фон
 						}, StoreLayer + ".Window", StoreLayer + ".BlockPanel");
-						
+
 						// Заголовок для товаров корзины
 						restoreContainer.Add(new CuiLabel
 						{
 							RectTransform = {AnchorMin = "0 0.92", AnchorMax = "0 0.98", OffsetMin = "10 0", OffsetMax = "200 0"},
 							Text = {Text = "МОИ ТОВАРЫ", Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf", FontSize = 14, Color = "1 0.38 0.204 1"}
 						}, StoreLayer + ".BlockPanel", StoreLayer + ".BlockPanel.Title");
-						
+
 						// Заголовок для популярных товаров
 						restoreContainer.Add(new CuiLabel
 						{
 							RectTransform = {AnchorMin = "1 0.92", AnchorMax = "1 0.98", OffsetMin = "-200 0", OffsetMax = "-10 0"},
 							Text = {Text = "МОМЕНТАЛЬНАЯ ПОКУПКА", Align = TextAnchor.MiddleRight, Font = "robotocondensed-bold.ttf", FontSize = 14, Color = "1 0.38 0.204 1"}
 						}, StoreLayer + ".PopularItemsPanel", StoreLayer + ".PopularItemsPanel.Title");
-						
+
 						// Добавляем восстановленные панели
 						CuiHelper.AddUi(player, restoreContainer);
-						
+
 						// Сначала показываем популярные товары (они будут внизу по z-order)
 						ShowPopularItemsUI(player);
-						
+
 						// Затем восстанавливаем корзину с товарами и пагинацией (карточки корзины будут поверх популярных товаров)
 						if (_playerBaskets.TryGetValue(player.userID, out var playerBasket))
 						{
@@ -1905,7 +1905,7 @@ namespace Oxide.Plugins
 					ProcessTakeCommand(player, index, basketID);
 					break;
 				}
-				
+
 				case "buypopular":
 				{
 					if (!args.HasArgs(1)) return;
@@ -1928,7 +1928,7 @@ namespace Oxide.Plugins
 			CuiHelper.DestroyUi(player, StoreLayer + ".Blur");
 			CuiHelper.DestroyUi(player, StoreLayer + ".Window");
 			CuiHelper.DestroyUi(player, StoreLayer);
-			
+
 			DequeueBasketRequest(player.userID);
 		}
 
@@ -2042,7 +2042,7 @@ namespace Oxide.Plugins
 			CreateBlockPanel(ref container, player);
 
 			// Кнопка выхода теперь в навигационной панели (крестик)
-			
+
 			// Нижняя граница меню (border-bottom) - 2px под меню (добавляем последним, чтобы было поверх всех элементов)
 			container.Add(new CuiPanel
 			{
@@ -2078,7 +2078,7 @@ namespace Oxide.Plugins
 		private void ShowNotify(BasePlayer player, string text, bool isError = false)
 		{
 			if (player == null || !player.IsConnected) return;
-			
+
 			// Используем API плагина Notify
 			// type 0 - обычное уведомление, type 1 - ошибка
 			int notifyType = isError ? 1 : 0;
@@ -2089,7 +2089,7 @@ namespace Oxide.Plugins
 		{
 			// Обновляем навигационное меню - делаем активной кнопку "Помощь"
 			UpdateNavigationBar(player, "help");
-			
+
 			// Удаляем панель поддержки, если она была открыта
 			CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel");
 
@@ -2242,12 +2242,12 @@ namespace Oxide.Plugins
 					FadeIn = 0f
 				}
 			}, StoreLayer + ".HelpPanel", StoreLayer + ".HelpPanel.BackButton");
-			
+
 			// Добавляем текст с отступами внутри кнопки (отступы слева и справа уменьшены в 3 раза)
 			container.Add(new CuiLabel
 			{
 				RectTransform = {AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "1 0", OffsetMax = "-1 0"},
-				Text = 
+				Text =
 				{
 					Text = "Перейти в корзину", Align = TextAnchor.MiddleCenter,
 					Font = "robotocondensed-bold.ttf", FontSize = 16, Color = "1 1 1 1"
@@ -2261,15 +2261,15 @@ namespace Oxide.Plugins
 			{
 				ApplyHelpInfoToUI(player);
 			}
-			
+
 			// Обновляем навигационное меню - делаем активной кнопку "Помощь"
 			UpdateNavigationBar(player, "help");
 		}
-		
+
 		private void ShowSupportUI(BasePlayer player)
 		{
 			PrintWarning($"[Support] ShowSupportUI called for player {player.UserIDString}");
-			
+
 			// Удаляем содержимое других разделов
 			// Удаляем только содержимое блока с товарами (все дочерние элементы), но оставляем сам BlockPanel
 			CuiHelper.DestroyUi(player, StoreLayer + ".BlockPanel.Text");
@@ -2417,21 +2417,21 @@ namespace Oxide.Plugins
 			int refreshButtonSizePixels = 30; // Фиксированный размер кнопки в пикселях (30x30)
 			float refreshButtonX = 0.9368f; // Центр кнопки по X (0.8946 + (0.979 - 0.8946) / 2)
 			float refreshButtonY = 0.5f; // Центр кнопки по Y (центр по вертикали панели ввода)
-			
+
 			container.Add(new CuiButton
 			{
-				RectTransform = { 
-					AnchorMin = $"{refreshButtonX:F4} {refreshButtonY:F4}", 
-					AnchorMax = $"{refreshButtonX:F4} {refreshButtonY:F4}", 
-					OffsetMin = $"{-refreshButtonSizePixels / 2} {-refreshButtonSizePixels / 2}", 
-					OffsetMax = $"{refreshButtonSizePixels / 2} {refreshButtonSizePixels / 2}" 
+				RectTransform = {
+					AnchorMin = $"{refreshButtonX:F4} {refreshButtonY:F4}",
+					AnchorMax = $"{refreshButtonX:F4} {refreshButtonY:F4}",
+					OffsetMin = $"{-refreshButtonSizePixels / 2} {-refreshButtonSizePixels / 2}",
+					OffsetMax = $"{refreshButtonSizePixels / 2} {refreshButtonSizePixels / 2}"
 				},
 				Button = { Color = "0 0 0 0", Command = "UI_GameStoresRUST support.refresh", Close = "" }, // Прозрачный фон как у кнопки закрытия
-				Text = { 
+				Text = {
 					Text = "↻", // Символ обновления
 					Align = TextAnchor.MiddleCenter,
-					Font = "robotocondensed-bold.ttf", 
-					FontSize = 20, 
+					Font = "robotocondensed-bold.ttf",
+					FontSize = 20,
 					Color = "0.561 0.561 0.561 1" // Серый цвет, как у крестика закрытия
 				},
 			}, StoreLayer + ".SupportPanel.InputPanel", StoreLayer + ".SupportPanel.RefreshButton");
@@ -2461,10 +2461,10 @@ namespace Oxide.Plugins
 			});
 
 			CuiHelper.AddUi(player, container);
-			
+
 			// Обновляем навигационное меню - делаем активной кнопку "Поддержка"
 			UpdateNavigationBar(player, "support");
-			
+
 			// Загружаем сообщения поддержки
 			LoadSupportMessages(player);
 		}
@@ -2473,12 +2473,12 @@ namespace Oxide.Plugins
 		private void LoadSupportMessages(BasePlayer player)
 		{
 			PrintWarning($"[Support] LoadSupportMessages called for player {player.UserIDString}");
-			
+
 			// Сначала получаем список тикетов
 			RequestSupport("support-game-stores/tickets", new Dictionary<string, string>(), (code, response) =>
 			{
 				PrintWarning($"[Support] LoadSupportMessages response: code={code}, response length={response?.Length ?? 0}");
-				
+
 				if (code == 200)
 				{
 					try
@@ -2486,35 +2486,35 @@ namespace Oxide.Plugins
 						PrintWarning($"[Support] Parsing tickets response...");
 						var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
 						PrintWarning($"[Support] JSON parsed, keys: {(json != null ? string.Join(", ", json.Keys) : "null")}");
-						
+
 						if (json != null && json.TryGetValue("data", out var dataObj))
 						{
 							PrintWarning($"[Support] Found 'data' key");
 							var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataObj.ToString());
 							PrintWarning($"[Support] Data parsed, keys: {(data != null ? string.Join(", ", data.Keys) : "null")}");
-							
+
 							if (data != null && data.TryGetValue("tickets", out var ticketsObj))
 							{
 								PrintWarning($"[Support] Found 'tickets' key");
 								var tickets = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(ticketsObj.ToString());
 								PrintWarning($"[Support] Tickets count: {tickets?.Count ?? 0}");
-								
+
 								if (tickets != null && tickets.Count > 0)
 								{
 									// Ищем только открытый тикет (не показываем закрытые, если нет открытых)
-									var openTicket = tickets.FirstOrDefault(t => 
+									var openTicket = tickets.FirstOrDefault(t =>
 										t.TryGetValue("status", out var status) && status?.ToString() == "open");
-									
+
 									if (openTicket != null)
 									{
 										PrintWarning($"[Support] Found open ticket: {(openTicket.TryGetValue("id", out var tid) ? tid.ToString() : "no id")}");
-										
+
 										if (openTicket.TryGetValue("id", out var ticketId))
 										{
 											string ticketNumber = ticketId.ToString();
 											_playerSupportTickets[player.userID] = ticketNumber;
 											PrintWarning($"[Support] Loading messages for open ticket {ticketNumber}");
-											
+
 											// Загружаем сообщения тикета
 											LoadSupportTicketMessages(player, ticketNumber);
 										}
@@ -2574,23 +2574,23 @@ namespace Oxide.Plugins
 		private void LoadSupportTicketMessages(BasePlayer player, string ticketId)
 		{
 			PrintWarning($"[Support] LoadSupportTicketMessages called for ticket {ticketId}, player {player.UserIDString}");
-			
+
 			RequestSupport($"support-game-stores/tickets/{ticketId}", new Dictionary<string, string>(), (code, response) =>
 			{
 				PrintWarning($"[Support] LoadSupportTicketMessages response: code={code}, response length={response?.Length ?? 0}");
-				
+
 				if (code == 200)
 				{
 					try
 					{
 						var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
 						PrintWarning($"[Support] Ticket messages JSON parsed, keys: {(json != null ? string.Join(", ", json.Keys) : "null")}");
-						
+
 						if (json != null && json.TryGetValue("data", out var dataObj))
 						{
 							var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataObj.ToString());
 							PrintWarning($"[Support] Ticket messages data parsed, keys: {(data != null ? string.Join(", ", data.Keys) : "null")}");
-							
+
 							if (data != null && data.TryGetValue("messages", out var messagesObj))
 							{
 								var messages = JsonConvert.DeserializeObject<List<Dictionary<string, object>>>(messagesObj.ToString());
@@ -2635,7 +2635,7 @@ namespace Oxide.Plugins
 		private void ShowDefaultSupportMessages(BasePlayer player)
 		{
 			PrintWarning($"[Support] ShowDefaultSupportMessages called for player {player.UserIDString}");
-			
+
 			// Создаем автоматическое системное сообщение (как на сайте)
 			var defaultMessages = new List<Dictionary<string, object>>
 			{
@@ -2647,7 +2647,7 @@ namespace Oxide.Plugins
 					{ "user", null }
 				}
 			};
-			
+
 			_playerSupportMessages[player.userID] = defaultMessages;
 			ShowSupportMessagesUI(player);
 		}
@@ -2656,7 +2656,7 @@ namespace Oxide.Plugins
 		private void ShowSupportMessagesUI(BasePlayer player)
 		{
 			PrintWarning($"[Support] ShowSupportMessagesUI called for player {player.UserIDString}");
-			
+
 			// Удаляем старые сообщения и контент
 			for (int i = 0; i < 100; i++)
 			{
@@ -2683,7 +2683,7 @@ namespace Oxide.Plugins
 			float paddingTop = 0.0005f; // Верхний отступ (уменьшен для более компактного вида)
 			// Для даты FontSize 9: 9 * 0.00286 ≈ 0.0257
 			float dateLineHeight = 0.026f; // Высота строки с датой (FontSize 9)
-			
+
 			// Более точный расчет: учитываем реальную ширину контейнера
 			// Ширина контейнера сообщений: от 0.05 до 0.9942 = ~0.9442 (94.42% ширины экрана)
 			// С учетом аватара (32px) и отступа слева (0.05), реальная ширина текста примерно 85-90% от ширины контейнера
@@ -2692,52 +2692,52 @@ namespace Oxide.Plugins
 			// Для более точного расчета используем меньшее значение
 			// Для системных сообщений (без аватара) ширина больше, поэтому больше символов на строку
 			int charsPerLine = 55; // Уменьшено для более точного расчета (учитывая переносы по словам)
-			
+
 			// Сначала вычисляем высоту каждого сообщения на основе размера текста
 			var messageHeights = new List<float>();
 			var messageLineCounts = new List<int>(); // Количество строк в каждом сообщении
 			float totalHeight = 0f;
-			
+
 			for (int i = 0; i < messages.Count; i++)
 			{
 				var message = messages[i];
 				string messageText = message.TryGetValue("message", out var msg) ? msg?.ToString() ?? "" : "";
 				// Определяем, является ли сообщение системным (автоматическим)
 				bool isSystem = !message.TryGetValue("user_id", out var userId) || userId == null;
-				
+
 				// Для системных сообщений (без аватара) ширина текста больше, поэтому больше символов на строку
 				int currentCharsPerLine = isSystem ? 65 : charsPerLine; // Для системных сообщений больше символов на строку
-				
+
 				// Подсчитываем количество строк в тексте сообщения (более точный расчет)
 				int textLineCount = 1; // Минимум одна строка для текста
 				if (!string.IsNullOrEmpty(messageText))
 				{
 					// Учитываем переносы строк (явные \n)
 					int newlineCount = messageText.Split('\n').Length;
-					
+
 					// Более точный расчет: учитываем реальную длину текста
 					// Убираем HTML теги для более точного подсчета
 					string textWithoutTags = System.Text.RegularExpressions.Regex.Replace(messageText, "<[^>]+>", "");
-					
+
 					// Убираем пробелы в начале и конце для более точного подсчета
 					textWithoutTags = textWithoutTags.Trim();
-					
+
 					// Учитываем длину текста (для системных сообщений больше символов на строку)
 					// Для более точного расчета учитываем, что длинные слова могут переноситься
 					int textLines = (int)Math.Ceiling((double)textWithoutTags.Length / currentCharsPerLine);
-					
+
 					// Берем максимум из явных переносов строк и расчетных строк
 					textLineCount = Math.Max(newlineCount, textLines);
-					
+
 					// Минимум 1 строка, даже если текст пустой (для даты)
 					if (textLineCount < 1) textLineCount = 1;
 				}
 				messageLineCounts.Add(textLineCount);
-				
+
 				// Высота текста = высота строк текста + высота строки с датой
 				// Используем более точную высоту строки
 				float textHeight = (textLineCount * baseLineHeight) + dateLineHeight;
-				
+
 				// Высота сообщения = верхний отступ + высота текста + нижний отступ для даты
 				// Добавляем небольшой дополнительный отступ снизу для даты
 				float paddingBottom = 0.005f; // Отступ снизу для даты
@@ -2754,9 +2754,9 @@ namespace Oxide.Plugins
 					totalHeight += messageHeight;
 				}
 			}
-			
+
 			if (totalHeight < 1f) totalHeight = 1f;
-			
+
 			// Пересоздаем скролл панель с правильным ContentTransform на основе totalHeight
 			container.Add(new CuiElement
 			{
@@ -2781,7 +2781,7 @@ namespace Oxide.Plugins
 					new CuiRectTransformComponent { AnchorMin = "0 0.0966", AnchorMax = "1 0.993", OffsetMin = "0 0", OffsetMax = "0 0" },
 				}
 			});
-			
+
 			// Создаем контейнер для контента scroll панели
 			// Контент должен быть размещен снизу вверх, чтобы последние сообщения были внизу и видны сразу
 			// Используем AnchorMin = "0 0", AnchorMax = "1 1" - контент заполняет весь доступный размер
@@ -2792,12 +2792,12 @@ namespace Oxide.Plugins
 				Components =
 				{
 					new CuiImageComponent { Color = "1 1 1 0" },
-					new CuiRectTransformComponent 
-					{ 
-						AnchorMin = "0 0", 
-						AnchorMax = "1 1", 
-						OffsetMin = "0 0", 
-						OffsetMax = "0 0" 
+					new CuiRectTransformComponent
+					{
+						AnchorMin = "0 0",
+						AnchorMax = "1 1",
+						OffsetMin = "0 0",
+						OffsetMax = "0 0"
 					},
 				}
 			});
@@ -2820,11 +2820,11 @@ namespace Oxide.Plugins
 				}
 				bool isSystem = !message.TryGetValue("user_id", out var userId) || userId == null;
 				string avatarUrl = "https://images.seeklogo.com/logo-png/39/2/rust-logo-png_seeklogo-399370.png";
-				
+
 				if (!isSystem && message.TryGetValue("user", out var userObj) && userObj != null)
 				{
 					Dictionary<string, object> user = null;
-					
+
 					// Проверяем тип объекта - может быть уже Dictionary, JObject или JSON строка
 					if (userObj is Dictionary<string, object>)
 					{
@@ -2844,7 +2844,7 @@ namespace Oxide.Plugins
 							PrintError($"[Support] Error processing user object for message {i}: {ex.Message}, type: {userObj.GetType().Name}");
 						}
 					}
-					
+
 					if (user != null && user.TryGetValue("avatar", out var avatar) && avatar != null)
 					{
 						avatarUrl = avatar.ToString();
@@ -2858,11 +2858,11 @@ namespace Oxide.Plugins
 
 				// Получаем высоту этого сообщения
 				float messageHeight = messageHeights[i];
-				
+
 				// Панель сообщения
 				string messageName = StoreLayer + $".SupportPanel.Message{i}";
 				float messageTop = currentY + messageHeight; // Верх сообщения = текущая позиция + высота
-				
+
 				container.Add(new CuiElement
 				{
 					Name = messageName,
@@ -2870,19 +2870,19 @@ namespace Oxide.Plugins
 					Components =
 					{
 						new CuiImageComponent { Color = "1 1 1 0" },
-						new CuiRectTransformComponent 
-						{ 
-							AnchorMin = $"0 {currentY:F4}", 
-							AnchorMax = $"1 {messageTop:F4}", 
-							OffsetMin = "0 0", 
-							OffsetMax = "0 0" 
+						new CuiRectTransformComponent
+						{
+							AnchorMin = $"0 {currentY:F4}",
+							AnchorMax = $"1 {messageTop:F4}",
+							OffsetMin = "0 0",
+							OffsetMax = "0 0"
 						},
 					}
 				});
 
 				// Получаем количество строк для этого сообщения (индекс i соответствует индексу в messageLineCounts)
 				int textLineCount = messageLineCounts[i];
-				
+
 				// Вычисляем динамические отступы для текста на основе размера текста
 				// Верхний отступ - минимальный (одинаковый для всех сообщений)
 				float textTop = 1f - paddingTop; // Верхний отступ от верха сообщения
@@ -2896,9 +2896,9 @@ namespace Oxide.Plugins
 					// Делаем аватар строго квадратным, используя фиксированный размер в пикселях
 					// Позиционируем аватар слева от текста, выровненный по верхнему краю текста
 					int avatarSizePixels = 26; // Фиксированный размер аватара в пикселях (26x26, уменьшен на 20% с 32)
-					
+
 					PrintWarning($"[Support] Creating avatar for message {i}, URL: {avatarUrl}, textTop: {textTop:F4}, isSystem: {isSystem}");
-					
+
 					// Позиционируем аватар: якорь в левом верхнем углу текста (0, textTop)
 					// OffsetMin: (0, -avatarSizePixels) - отступ вниз на размер аватара от якоря
 					// OffsetMax: (avatarSizePixels, 0) - отступ вправо на размер аватара от якоря
@@ -2910,12 +2910,12 @@ namespace Oxide.Plugins
 						Components =
 						{
 							new CuiRawImageComponent { Color = "1 1 1 1", Url = avatarUrl },
-							new CuiRectTransformComponent 
-							{ 
-								AnchorMin = "0 " + textTop.ToString("F4"), 
-								AnchorMax = "0 " + textTop.ToString("F4"), 
-								OffsetMin = $"0 -{avatarSizePixels}", 
-								OffsetMax = $"{avatarSizePixels} 0" 
+							new CuiRectTransformComponent
+							{
+								AnchorMin = "0 " + textTop.ToString("F4"),
+								AnchorMax = "0 " + textTop.ToString("F4"),
+								OffsetMin = $"0 -{avatarSizePixels}",
+								OffsetMax = $"{avatarSizePixels} 0"
 							},
 						}
 					});
@@ -2927,13 +2927,13 @@ namespace Oxide.Plugins
 
 				// Текст сообщения (с отступом слева, если есть аватар)
 				// Всегда добавляем дату под текстом сообщения
-				string displayText = string.IsNullOrEmpty(messageText) 
-					? $"<size=9><color=#999>{createdAt}</color></size>" 
+				string displayText = string.IsNullOrEmpty(messageText)
+					? $"<size=9><color=#999>{createdAt}</color></size>"
 					: $"{messageText}\n<size=9><color=#999>{createdAt}</color></size>";
 				// Для системных сообщений без аватара - начинаем с левого края, для обычных - с отступом после квадратного аватара
 				// Аватар 32 пикселя, отступ между аватаром и текстом
 				string textAnchorMinX = isSystem ? "0" : "0.04"; // Отступ после квадратного аватара
-				
+
 				// Для автоматических сообщений делаем текст на 30% прозрачнее (альфа 0.7 вместо 1.0)
 				// Отступы одинаковые для всех типов сообщений
 				string textColor = isSystem ? "0.925 0.894 0.953 0.7" : "0.925 0.894 0.953 1";
@@ -2941,11 +2941,11 @@ namespace Oxide.Plugins
 				{
 					// Динамические отступы: сверху небольшой отступ, снизу отступ зависит от размера текста
 					// Одинаковые отступы для системных и пользовательских сообщений
-					RectTransform = { 
-						AnchorMin = $"{textAnchorMinX} {textBottom:F4}", 
-						AnchorMax = "0.9942 " + textTop.ToString("F4"), 
-						OffsetMin = "0 0", 
-						OffsetMax = "0 0" 
+					RectTransform = {
+						AnchorMin = $"{textAnchorMinX} {textBottom:F4}",
+						AnchorMax = "0.9942 " + textTop.ToString("F4"),
+						OffsetMin = "0 0",
+						OffsetMax = "0 0"
 					},
 					Text = { Text = displayText, FontSize = 11, Align = TextAnchor.UpperLeft, Font = "RobotoCondensed-Bold.ttf", Color = textColor },
 				}, messageName, messageName + ".Text");
@@ -2970,7 +2970,7 @@ namespace Oxide.Plugins
 		private void SendSupportMessage(BasePlayer player, string messageText)
 		{
 			PrintWarning($"[Support] SendSupportMessage called for player {player.UserIDString}, message length: {messageText?.Length ?? 0}");
-			
+
 			if (string.IsNullOrWhiteSpace(messageText))
 			{
 				PrintWarning($"[Support] Message is empty, aborting");
@@ -2985,7 +2985,7 @@ namespace Oxide.Plugins
 				// Сначала оптимистично добавляем сообщение в UI (как будто тикет уже открыт)
 				// Затем создаем тикет, который автоматически создаст системные сообщения
 				AddOptimisticMessage(player, messageText);
-				
+
 				// Создаем новый тикет (API автоматически создаст системные сообщения и добавит пользовательское)
 				CreateSupportTicket(player, messageText);
 			}
@@ -2997,11 +2997,11 @@ namespace Oxide.Plugins
 				{
 					{ "message", messageText }
 				};
-				
+
 				RequestSupport($"support-game-stores/tickets/{ticketId}/messages", args, (code, response) =>
 				{
 					PrintWarning($"[Support] SendSupportMessage response: code={code}");
-					
+
 					if (code == 200 || code == 201)
 					{
 						PrintWarning($"[Support] Message sent successfully, reloading messages");
@@ -3037,13 +3037,13 @@ namespace Oxide.Plugins
 		private void AddOptimisticMessage(BasePlayer player, string messageText)
 		{
 			PrintWarning($"[Support] AddOptimisticMessage called for player {player.UserIDString}");
-			
+
 			// Получаем текущие сообщения или создаем новый список
 			if (!_playerSupportMessages.TryGetValue(player.userID, out var messages))
 			{
 				messages = new List<Dictionary<string, object>>();
 			}
-			
+
 			// Добавляем временное сообщение пользователя (будет заменено после загрузки с сервера)
 			// Используем дефолтный аватар, так как GetUserAvatar может не существовать
 			var tempMessage = new Dictionary<string, object>
@@ -3056,10 +3056,10 @@ namespace Oxide.Plugins
 						{ "avatar", "https://images.seeklogo.com/logo-png/39/2/rust-logo-png_seeklogo-399370.png" }
 					}}
 			};
-			
+
 			messages.Add(tempMessage);
 			_playerSupportMessages[player.userID] = messages;
-			
+
 			// Обновляем UI
 			ShowSupportMessagesUI(player);
 		}
@@ -3068,17 +3068,17 @@ namespace Oxide.Plugins
 		private void CreateSupportTicket(BasePlayer player, string messageText)
 		{
 			PrintWarning($"[Support] CreateSupportTicket called for player {player.UserIDString}, message length: {messageText?.Length ?? 0}");
-			
+
 			var args = new Dictionary<string, string>
 			{
 				{ "message", messageText }
 			};
-			
+
 			// Используем правильный путь для создания тикета
 			RequestSupport("support-game-stores/create", args, (code, response) =>
 			{
 				PrintWarning($"[Support] CreateSupportTicket response: code={code}, response length={response?.Length ?? 0}");
-				
+
 				if (code == 200 || code == 201)
 				{
 					try
@@ -3086,7 +3086,7 @@ namespace Oxide.Plugins
 						PrintWarning($"[Support] Parsing create ticket response...");
 						var json = JsonConvert.DeserializeObject<Dictionary<string, object>>(response);
 						PrintWarning($"[Support] Create ticket JSON parsed, keys: {(json != null ? string.Join(", ", json.Keys) : "null")}");
-						
+
 						// Проверяем success флаг
 						if (json != null && json.TryGetValue("success", out var successObj) && successObj?.ToString().ToLower() == "false")
 						{
@@ -3099,26 +3099,26 @@ namespace Oxide.Plugins
 							ShowNotify(player, errorMsg, true);
 							return;
 						}
-						
+
 						if (json != null && json.TryGetValue("data", out var dataObj))
 						{
 							var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(dataObj.ToString());
 							PrintWarning($"[Support] Create ticket data parsed, keys: {(data != null ? string.Join(", ", data.Keys) : "null")}");
-							
+
 							if (data != null && data.TryGetValue("ticket", out var ticketObj))
 							{
 								var ticket = JsonConvert.DeserializeObject<Dictionary<string, object>>(ticketObj.ToString());
 								PrintWarning($"[Support] Create ticket ticket parsed, keys: {(ticket != null ? string.Join(", ", ticket.Keys) : "null")}");
-								
+
 								if (ticket != null && ticket.TryGetValue("id", out var ticketId))
 								{
 									string ticketNumber = ticketId.ToString();
 									PrintWarning($"[Support] Ticket created successfully with ID: {ticketNumber}");
 									_playerSupportTickets[player.userID] = ticketNumber;
-									
+
 									// Очищаем поле ввода
 									ClearSupportInput(player);
-									
+
 									// Загружаем все сообщения тикета (включая автоматические системные сообщения)
 									// Это заменит оптимистично добавленное сообщение на полные данные с сервера
 									LoadSupportTicketMessages(player, ticketNumber);
@@ -3173,25 +3173,25 @@ namespace Oxide.Plugins
 				}
 			}, player);
 		}
-		
+
 		// Очищает поле ввода поддержки
 		private void ClearSupportInput(BasePlayer player)
 		{
 			PrintWarning($"[Support] ClearSupportInput called for player {player.UserIDString}");
-			
+
 			// Удаляем все элементы поля ввода (в том же порядке, как они создаются)
 			CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel.InputFieldBg");
 			CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel.InputLabel");
 			CuiHelper.DestroyUi(player, StoreLayer + ".SupportPanel.InputField");
-			
+
 			// Очищаем сохраненный текст и фокус
 			_playerSupportInputText.Remove(player.userID);
 			_playerSupportInputFocused.Remove(player.userID);
 			_playerSupportLastInputText.Remove(player.userID);
-			
+
 			// Восстанавливаем поле ввода точно так же, как в ShowSupportUI (в том же порядке)
 			var container = new CuiElementContainer();
-			
+
 			// 1. Поле ввода сообщения с фоном (как в ShowSupportUI)
 			container.Add(new CuiElement
 			{
@@ -3203,7 +3203,7 @@ namespace Oxide.Plugins
 					new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "0.592 1", OffsetMin = "0 0", OffsetMax = "0 0" },
 				}
 			});
-			
+
 			// 2. Label "Введите сообщение" (как в ShowSupportUI)
 			container.Add(new CuiButton
 			{
@@ -3211,7 +3211,7 @@ namespace Oxide.Plugins
 				Button = { Color = "0 0 0 0", Command = "UI_GameStoresRUST support.inputfocus", Close = "" },
 				Text = { Text = "Введите сообщение", FontSize = 12, Align = TextAnchor.MiddleLeft, Font = "RobotoCondensed-Bold.ttf", Color = "0.6 0.6 0.6 1" },
 			}, StoreLayer + ".SupportPanel.InputPanel", StoreLayer + ".SupportPanel.InputLabel");
-			
+
 			// 3. Панель для поля ввода (как в ShowSupportUI)
 			container.Add(new CuiElement
 			{
@@ -3223,7 +3223,7 @@ namespace Oxide.Plugins
 					new CuiRectTransformComponent { AnchorMin = "-0.0044 0", AnchorMax = "0.592 1", OffsetMin = "15 0", OffsetMax = "-15 0" },
 				}
 			});
-			
+
 			// 4. Вложенный элемент с InputFieldComponent (как в ShowSupportUI)
 			container.Add(new CuiElement
 			{
@@ -3245,9 +3245,9 @@ namespace Oxide.Plugins
 					new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1" },
 				}
 			});
-			
+
 			CuiHelper.AddUi(player, container);
-			
+
 			PrintWarning($"[Support] Input field cleared and reset for player {player.UserIDString}");
 		}
 
@@ -3347,12 +3347,12 @@ namespace Oxide.Plugins
 			CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.Text");
 			CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.Content");
 			CuiHelper.DestroyUi(player, StoreLayer + ".HelpPanel.NextWipeBox.GlobalBadge");
-			
+
 			var container = new CuiElementContainer();
-			
+
 			// Обновляем информацию о последнем вайпе
 			string lastWipeText = lastWipe ?? "НЕИЗВЕСТНО";
-			
+
 			// Плашка уже создана в ShowHelpUI, просто обновляем текст внутри
 			container.Add(new CuiLabel
 			{
@@ -3363,21 +3363,21 @@ namespace Oxide.Plugins
 			// Обновляем информацию о следующем вайпе
 			string nextWipeText = nextWipe ?? "НЕИЗВЕСТНО";
 			bool isGlobal = !string.IsNullOrEmpty(nextWipe) && !string.IsNullOrEmpty(nextGlobalWipe) && nextWipe == nextGlobalWipe;
-			
+
 			// Создаем контейнер для содержимого (прозрачный, без фона)
 			container.Add(new CuiPanel
 			{
 				RectTransform = {AnchorMin = "0 0", AnchorMax = "1 1", OffsetMax = "0 0"},
 				Image = {Color = "0 0 0 0"} // Прозрачный фон
 			}, StoreLayer + ".HelpPanel.NextWipeBox", StoreLayer + ".HelpPanel.NextWipeBox.Content");
-			
+
 			// Текст следующего вайпа
 			container.Add(new CuiLabel
 			{
 				RectTransform = {AnchorMin = "0 0", AnchorMax = isGlobal ? "0.7 1" : "1 1", OffsetMax = "0 0"},
 				Text = {Text = nextWipeText, Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf", FontSize = 16, Color = "1 1 1 1"}
 			}, StoreLayer + ".HelpPanel.NextWipeBox.Content");
-			
+
 			// Красный бэйдж "ГЛОБАЛ" если следующий вайп = глобальному
 			if (isGlobal)
 			{
@@ -3409,13 +3409,13 @@ namespace Oxide.Plugins
 			var container = new CuiElementContainer();
 
 			var commands = new List<string>();
-			
+
 			foreach (var item in commandsData)
 			{
-				
+
 				Dictionary<string, object> category = null;
 				string catName = "";
-				
+
 				// Пробуем разные способы получения категории
 				if (item is Dictionary<string, object> dict)
 				{
@@ -3438,25 +3438,25 @@ namespace Oxide.Plugins
 						continue;
 					}
 				}
-				
+
 				if (category == null)
 				{
 					continue;
 				}
-				
+
 				if (category.TryGetValue("category", out var categoryName))
 				{
 					catName = categoryName?.ToString() ?? "";
 
 					// Получаем команды из категории "Команды сервера"
 					bool hasCommands = category.TryGetValue("commands", out var commandsObj);
-					
+
 					if (catName == "Команды сервера" && hasCommands)
 					{
-						
+
 						// commandsObj может быть List<object>, JArray или нужно десериализовать
 						List<object> commandsList = null;
-						
+
 						if (commandsObj is List<object> directList)
 						{
 							commandsList = directList;
@@ -3485,7 +3485,7 @@ namespace Oxide.Plugins
 							{
 							}
 						}
-						
+
 						if (commandsList != null)
 						{
 							foreach (var cmd in commandsList)
@@ -3549,7 +3549,7 @@ namespace Oxide.Plugins
 
 				// Разделяем команду и описание
 				string[] parts = null;
-				
+
 				if (commandText.Contains(":"))
 				{
 					parts = commandText.Split(new[] { ':' }, 2);
@@ -3558,19 +3558,19 @@ namespace Oxide.Plugins
 				{
 					parts = commandText.Split(new[] { " - " }, 2, StringSplitOptions.None);
 				}
-				
+
 				if (parts != null && parts.Length == 2)
 				{
 					string cmd = parts[0].Trim();
 					string desc = parts[1].Trim();
-					
+
 					// Команда (жирный, красный текст) - выровнена по левому краю с таким же отступом как блок "ОНЛАЙН"
 					container.Add(new CuiLabel
 			{
 						RectTransform = {AnchorMin = $"0.05 {yMin:F2}", AnchorMax = $"0.9 {yMax:F2}", OffsetMax = "0 0"},
 						Text = {Text = cmd, Align = TextAnchor.MiddleLeft, Font = "robotocondensed-bold.ttf", FontSize = 14, Color = "0.9 0.3 0.1 1"} // Красный, жирный
 					}, StoreLayer + ".HelpPanel", StoreLayer + $".HelpPanel.Command{i}.Cmd");
-					
+
 					// Дефис и описание - накладываются поверх команды, начиная сразу после текста
 					// Используем тот же контейнер, но с отступом слева, равным ширине команды в пикселях
 					// Примерно 7-8 пикселей на символ для шрифта 14px
@@ -3595,13 +3595,13 @@ namespace Oxide.Plugins
 			// Текст с инструкцией после списка команд (с таким же отступом как блок "ОНЛАЙН")
 			float instructionY = startY - (commands.Count * (itemHeight + spacing)) - spacing * 2; // Отступ после последней команды
 			float instructionHeight = 0.03f;
-			
+
 			container.Add(new CuiLabel
 			{
 				RectTransform = {AnchorMin = $"0.05 {instructionY - instructionHeight:F2}", AnchorMax = $"0.9 {instructionY:F2}", OffsetMax = "0 0"},
 				Text = {Text = "Чтобы приобрести товары и вывести их на сервер в игре, зайдите на сайт prostoj.store", Align = TextAnchor.MiddleLeft, Font = "robotocondensed-regular.ttf", FontSize = 12, Color = "0.7 0.7 0.7 1"}
 			}, StoreLayer + ".HelpPanel", StoreLayer + ".HelpPanel.Instruction");
-			
+
 			// Нижняя граница меню (border-bottom) - 2px под меню (добавляем последним, чтобы было поверх всех элементов)
 			container.Add(new CuiPanel
 			{
@@ -3640,7 +3640,7 @@ namespace Oxide.Plugins
 			for (var index = 0; index < wItems.Count; index++)
 			{
 				var item = wItems[index];
-				
+
 				// Вычисляем позицию для каждой карточки
 				UI_RecountPosition(out var xSwitch, out var ySwitch, index, basketItemsPerPage);
 
@@ -3672,11 +3672,11 @@ namespace Oxide.Plugins
 					}
 				}
 			});
-			
+
 			// Определяем, какое изображение фона использовать в зависимости от статуса
 			string cardImageName = ImageCard; // По умолчанию
 			string cardImageUrl = "https://storage.prostoj.store/plugin-file/card.png";
-			
+
 			// Если товар в ожидании (обрабатывается), используем серую карточку
 			if (!CanRequestGetItem(Convert.ToInt32(item.basketId)))
 			{
@@ -3689,17 +3689,17 @@ namespace Oxide.Plugins
 				cardImageName = ImageCardRed;
 				cardImageUrl = "https://storage.prostoj.store/plugin-file/card_red.png";
 			}
-			
+
 			// Используем кешированное изображение, если доступно
 			string cachedCardId = GetCachedImageId(cardImageName);
 			if (!string.IsNullOrEmpty(cachedCardId))
 			{
 				cardImageUrl = null; // Указываем, что используем кеш
 			}
-			
+
 			// Получаем кешированное изображение light.png
 			string cachedLightId = GetCachedImageId(ImageLight);
-			
+
 			// Если кеш недоступен, пробуем получить напрямую из ImageCache
 			if (string.IsNullOrEmpty(cachedLightId) && _imageCache != null)
 			{
@@ -3708,7 +3708,7 @@ namespace Oxide.Plugins
 					cachedLightId = _imageCache.GetImageId("light");
 				}
 			}
-			
+
 			// Изображение light.png на всю карточку как прозрачный фон (добавляем первым, под card изображениями)
 			secondContainer.Add(new CuiElement
 			{
@@ -3716,7 +3716,7 @@ namespace Oxide.Plugins
 				Name = StoreLayer + $".BlockPanel.{index}.LightBg",
 				Components =
 				{
-					!string.IsNullOrEmpty(cachedLightId) 
+					!string.IsNullOrEmpty(cachedLightId)
 						? new CuiRawImageComponent {Png = cachedLightId, Color = "1 1 1 1"}
 						: new CuiRawImageComponent {Url = "https://storage.prostoj.store/plugin-file/light.png", Color = "1 1 1 1"},
 					new CuiRectTransformComponent
@@ -3728,7 +3728,7 @@ namespace Oxide.Plugins
 					}
 				}
 			});
-			
+
 			// Изображение card.png/card_red.png/card_gray.png на всю карточку как основной фон (добавляем вторым, поверх light.png)
 			secondContainer.Add(new CuiElement
 			{
@@ -3736,7 +3736,7 @@ namespace Oxide.Plugins
 				Name = StoreLayer + $".BlockPanel.{index}.CardBg",
 				Components =
 				{
-					!string.IsNullOrEmpty(cachedCardId) 
+					!string.IsNullOrEmpty(cachedCardId)
 						? new CuiRawImageComponent {Png = cachedCardId}
 						: GetCardImageComponent(cardImageName, cardImageUrl ?? "https://storage.prostoj.store/plugin-file/card.png"),
 					new CuiRectTransformComponent
@@ -3748,7 +3748,7 @@ namespace Oxide.Plugins
 					}
 				}
 			});
-			
+
 			if (item.IsBlueprint) ItemBlueprintImageUI(ref secondContainer, index);
 
 			// Изображение предмета внутри карточки (уменьшено на 20%)
@@ -3775,11 +3775,11 @@ namespace Oxide.Plugins
 				{
 					string imageUrlToUse = item.ImageUrl;
 					string fileName = $"IconGS.{item.basketId}";
-					
+
 					// Проверяем кеш изображений предметов (загружается при использовании, не при инициализации)
 					// Только если это валидный URL (начинается с http:// или https://)
-					if ((item.ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
-					     item.ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) && 
+					if ((item.ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+					     item.ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)) &&
 					    _imageCache != null)
 					{
 						// Проверяем, есть ли уже кешированное изображение
@@ -3796,7 +3796,7 @@ namespace Oxide.Plugins
 							_imageCache.CacheItemImage(fileName, item.ImageUrl);
 						}
 					}
-					
+
 					if (!imageUrlToUse.Contains("http"))
 						secondContainer.Add(new CuiElement
 						{
@@ -3948,7 +3948,7 @@ namespace Oxide.Plugins
 				Image = {Material = "assets/content/ui/uibackgroundblur.mat", Color = "0 0 0 0.5"},
 				CursorEnabled = true
 			}, "Overlay", StoreLayer + ".Blur");
-			
+
 			// Кнопки для закрытия при клике на blur фон (вне окна)
 			// Разделяем на 4 области вокруг окна, чтобы клик по самому окну не закрывал его
 			// Верхняя область
@@ -3958,7 +3958,7 @@ namespace Oxide.Plugins
 				Button = {Color = "0 0 0 0", Command = "closemenu"},
 				Text = {Text = ""}
 			}, StoreLayer + ".Blur", StoreLayer + ".Blur.CloseTop");
-			
+
 			// Нижняя область
 			container.Add(new CuiButton
 			{
@@ -3966,7 +3966,7 @@ namespace Oxide.Plugins
 				Button = {Color = "0 0 0 0", Command = "closemenu"},
 				Text = {Text = ""}
 			}, StoreLayer + ".Blur", StoreLayer + ".Blur.CloseBottom");
-			
+
 			// Левая область
 			container.Add(new CuiButton
 			{
@@ -3974,7 +3974,7 @@ namespace Oxide.Plugins
 				Button = {Color = "0 0 0 0", Command = "closemenu"},
 				Text = {Text = ""}
 			}, StoreLayer + ".Blur", StoreLayer + ".Blur.CloseLeft");
-			
+
 			// Правая область
 			container.Add(new CuiButton
 			{
@@ -3982,7 +3982,7 @@ namespace Oxide.Plugins
 				Button = {Color = "0 0 0 0", Command = "closemenu"},
 				Text = {Text = ""}
 			}, StoreLayer + ".Blur", StoreLayer + ".Blur.CloseRight");
-			
+
 			// Создаем основное окно по центру с изображением modal_background.png
 			// Используем "Overlay" чтобы модальное окно было поверх всех элементов интерфейса игры
 			container.Add(new CuiElement
@@ -4079,7 +4079,7 @@ namespace Oxide.Plugins
 					Color = basketTextColor
 				}
 			}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Basket");
-			
+
 			// Кнопка "Помощь" (без фона, с полоской внизу)
 			string helpTextColor = isHelpActive ? "1 0.38 0.204 1" : "0.561 0.561 0.561 1";
 			container.Add(new CuiButton
@@ -4094,7 +4094,7 @@ namespace Oxide.Plugins
 					Color = helpTextColor
 				}
 			}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Help");
-			
+
 			// Кнопка "Поддержка" (без фона, с полоской внизу)
 			string supportTextColor = isSupportActive ? "1 0.38 0.204 1" : "0.561 0.561 0.561 1";
 			container.Add(new CuiButton
@@ -4130,7 +4130,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4138,7 +4138,7 @@ namespace Oxide.Plugins
 					Image = {Color = basketTextColor} // Цвет текста активной кнопки
 				}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Basket.Underline");
 			}
-			
+
 			// Фон menu_punkt_bg.png для активной кнопки "Помощь"
 			if (isHelpActive)
 			{
@@ -4159,7 +4159,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4167,7 +4167,7 @@ namespace Oxide.Plugins
 					Image = {Color = helpTextColor} // Цвет текста активной кнопки
 				}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Help.Underline");
 			}
-			
+
 			// Фон menu_punkt_bg.png для активной кнопки "Поддержка"
 			if (isSupportActive)
 			{
@@ -4188,7 +4188,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4273,7 +4273,7 @@ namespace Oxide.Plugins
 					Color = helpTextColor
 				}
 			}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Help");
-			
+
 			// Кнопка "Поддержка" (без фона, с полоской внизу)
 			string supportTextColor = isSupportActive ? "1 0.38 0.204 1" : "0.561 0.561 0.561 1";
 			container.Add(new CuiButton
@@ -4309,7 +4309,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4338,7 +4338,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4346,7 +4346,7 @@ namespace Oxide.Plugins
 					Image = {Color = helpTextColor} // Цвет текста активной кнопки
 				}, StoreLayer + ".TopNav", StoreLayer + ".TopNav.Help.Underline");
 			}
-			
+
 			// Фон menu_punkt_bg.png для активной кнопки "Поддержка"
 			if (isSupportActive)
 			{
@@ -4367,7 +4367,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Полоска внизу кнопки в цвет текста активной кнопки (позиционируется относительно TopNav, как разделитель)
 				container.Add(new CuiPanel
 				{
@@ -4479,7 +4479,7 @@ namespace Oxide.Plugins
 			// Это важно, чтобы она не перекрывала карточки корзины
 			container.Add(new CuiPanel
 			{
-				RectTransform = 
+				RectTransform =
 				{
 					AnchorMin = _config.UI.PopularItemsPanel.AnchorMin,
 					AnchorMax = _config.UI.PopularItemsPanel.AnchorMax,
@@ -4488,11 +4488,11 @@ namespace Oxide.Plugins
 				},
 				Image = {Color = "0 0 0 0"} // Прозрачный фон
 			}, StoreLayer + ".Window", StoreLayer + ".PopularItemsPanel");
-			
+
 			// Создаем панель для карточек товаров корзины (левая часть) ПОСЛЕ PopularItemsPanel, чтобы она была поверх
 			container.Add(new CuiPanel
 			{
-				RectTransform = 
+				RectTransform =
 				{
 					AnchorMin = _config.UI.BlockPanel.AnchorMin,
 					AnchorMax = _config.UI.BlockPanel.AnchorMax,
@@ -4616,10 +4616,10 @@ namespace Oxide.Plugins
 			var rightMargin = 10; // Отступ от правого края панели в пикселях
 			var topYPosition = 0 + (float) stringAmount / 2 * _config.UI.ItemSide +
 			                   ((float) stringAmount / 2 - 1) * _config.UI.ItemMargin * 2;
-			
+
 			var curYPosition = topYPosition - currentString * _config.UI.ItemSide - currentString *
 				_config.UI.ItemMargin * 2;
-			
+
 			// Позиция X от правого края: правая колонка (currentPosition = 1) ближе к правому краю
 			// Для правой колонки (currentPosition = 1): отступ = rightMargin
 			// Для левой колонки (currentPosition = 0): отступ = rightMargin + ItemSide + ItemMargin*2
@@ -4630,7 +4630,7 @@ namespace Oxide.Plugins
 			// Но мы не знаем ширину панели в пикселях, поэтому используем AnchorMin = "1 1" и OffsetMin с отрицательными значениями
 			// Возвращаем отрицательные значения для OffsetMin (от правого края)
 			var offsetFromRight = rightMargin + (itemsPerRow - 1 - currentPosition) * (_config.UI.ItemSide + _config.UI.ItemMargin * 2);
-			
+
 			// xSwitch будет использован как отрицательное значение в OffsetMin для позиционирования от правого края
 			// OffsetMin.x = -offsetFromRight - ItemSide (левая граница карточки от правого края)
 			xSwitch = -offsetFromRight - _config.UI.ItemSide;
@@ -4717,10 +4717,10 @@ namespace Oxide.Plugins
 							{
 								double.TryParse(leftTimeObj?.ToString(), out apiLeftTime);
 							}
-							
+
 							// Проверяем вайп-блок через плагин (дополнительная проверка)
 							var leftTime = Instance?.WB_GetLeftTime(item.productId, item.ItemID, item.IsBlueprint) ?? 0;
-							
+
 							if (leftTime > 0 || apiIsBlocked)
 							{
 								item.IsBlocked = true;
@@ -4733,7 +4733,7 @@ namespace Oxide.Plugins
 								item.IsBlocked = false;
 								item.LeftTime = 0;
 							}
-							
+
 							BasketItems[basketId] = item;
 						}
 					}
@@ -4863,7 +4863,7 @@ namespace Oxide.Plugins
 			reqHeaders.Add("serverIp", serverIp);
 			reqHeaders.Add("serverPort", serverPort.ToString());
 		}
-		
+
 		private void RegisterCommands()
 		{
 			AddCovalenceCommand(_config.Plugin.Commands, nameof(CmdChatStore));
@@ -4948,14 +4948,14 @@ namespace Oxide.Plugins
 		{
 			// Проверяем, что url является валидным URL (начинается с http:// или https://)
 			// Если url является числом (item ID), не пытаемся загружать его как URL
-			if (!string.IsNullOrEmpty(url) && 
-			    !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && 
+			if (!string.IsNullOrEmpty(url) &&
+			    !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
 			    !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
 			{
 				// url не является валидным URL, пропускаем загрузку
 				return;
 			}
-			
+
 			// Если это изображение предмета (начинается с "IconGS."), используем кеширование
 			if (fileName.StartsWith("IconGS.") && _imageCache != null)
 			{
@@ -4974,11 +4974,11 @@ namespace Oxide.Plugins
 #endif
 					return;
 				}
-				
+
 				// Если кеша нет, начинаем кеширование в фоне (для следующих разов)
 				_imageCache.CacheItemImage(fileName, url);
 			}
-			
+
 			// Обычная загрузка через ImageLibrary (используем URL, так как кеш еще не готов)
 #if CARBON
 			imageDatabase.Queue(true, new Dictionary<string, string>
@@ -5011,12 +5011,12 @@ namespace Oxide.Plugins
 					cachedImageId = _imageCache.GetImageId(imageName);
 				}
 			}
-			
+
 			if (!string.IsNullOrEmpty(cachedImageId))
 			{
 				return new CuiRawImageComponent {Png = cachedImageId};
 			}
-			
+
 #if CARBON
 			if (HasImage(imageName))
 			{
@@ -5031,7 +5031,7 @@ namespace Oxide.Plugins
 			return new CuiRawImageComponent {Url = fallbackUrl};
 #endif
 		}
-		
+
 		private ICuiComponent GetCachedImageComponent(string imageName, string fallbackUrl)
 		{
 			// Если imageName уже является именем в кеше (например, "card_gray"), используем его напрямую
@@ -5045,7 +5045,7 @@ namespace Oxide.Plugins
 					cachedImageId = _imageCache.GetImageId(imageName);
 				}
 			}
-			
+
 			// Для bg_right используем 80% прозрачности, для остальных - белый цвет
 			if (!string.IsNullOrEmpty(cachedImageId))
 			{
@@ -5072,12 +5072,12 @@ namespace Oxide.Plugins
 			// Инициализируем кеш изображений только один раз
 			if (_imagesCacheInitialized)
 				return;
-				
+
 			_imagesCacheInitialized = true;
 			// Инициализируем кеш изображений (не выводим сообщения для уменьшения шума в логах)
 			_imageCache = new ImageCache(this);
 			_imageCache.DownloadImages();
-			
+
 #if CARBON
 			imageDatabase.Queue(true, new Dictionary<string, string>
 			{
@@ -5165,7 +5165,7 @@ namespace Oxide.Plugins
 			}
 
 			var item = ItemManager.Create(itemInfo.itemDefinition, itemInfo.Amount);
-			
+
 			if (item == null)
 			{
 				LogAction(player, $"ProcessItem: ERROR - Failed to create item. basketId={itemInfo.basketId}, itemId={itemInfo.ItemID}, name={itemInfo.Name}", true);
@@ -5522,7 +5522,7 @@ namespace Oxide.Plugins
 				}
 			}, player);
 		}
-		
+
 		// Загружает популярные товары один раз при инициализации
 		private void LoadPopularItems()
 		{
@@ -5549,12 +5549,12 @@ namespace Oxide.Plugins
 											string productId = "";
 											int itemId = 0;
 											bool isBlueprint = false;
-											
+
 											if (item.TryGetValue("productId", out var productIdObj))
 											{
 												productId = productIdObj?.ToString() ?? "";
 											}
-											
+
 											// Получаем itemId из разных возможных мест
 											if (item.TryGetValue("item_id", out var itemIdObj1))
 											{
@@ -5574,13 +5574,13 @@ namespace Oxide.Plugins
 													}
 												}
 											}
-											
+
 											// Определяем, является ли товар blueprint
 											if (itemId == ItemManager.blueprintBaseDef.itemid)
 											{
 												isBlueprint = true;
 											}
-											
+
 											// Проверяем вайп-блок только если есть productId и itemId
 											if (!string.IsNullOrEmpty(productId) && itemId != 0)
 											{
@@ -5600,7 +5600,7 @@ namespace Oxide.Plugins
 												// Для команд и товаров без itemId блокировка не применяется
 												item["isBlocked"] = false;
 											}
-											
+
 											items.Add(item);
 										}
 									}
@@ -5639,12 +5639,12 @@ namespace Oxide.Plugins
 									string productId = "";
 									int itemId = 0;
 									bool isBlueprint = false;
-									
+
 									if (item.TryGetValue("productId", out var productIdObj))
 									{
 										productId = productIdObj?.ToString() ?? "";
 									}
-									
+
 									// Получаем itemId из разных возможных мест
 									if (item.TryGetValue("item_id", out var itemIdObj1))
 									{
@@ -5664,14 +5664,14 @@ namespace Oxide.Plugins
 											}
 										}
 									}
-									
+
 									// Определяем, является ли товар blueprint
 									// Blueprint имеет itemid = ItemManager.blueprintBaseDef.itemid (который равен -1580979675)
 									if (itemId == ItemManager.blueprintBaseDef.itemid)
 									{
 										isBlueprint = true;
 									}
-									
+
 									// Проверяем вайп-блок только если есть productId и itemId
 									if (!string.IsNullOrEmpty(productId) && itemId != 0)
 									{
@@ -5691,7 +5691,7 @@ namespace Oxide.Plugins
 										// Для команд и товаров без itemId блокировка не применяется
 										item["isBlocked"] = false;
 									}
-									
+
 									items.Add(item);
 								}
 							}
@@ -5720,7 +5720,7 @@ namespace Oxide.Plugins
 				// Fallback на персональный список (для обратной совместимости)
 				items = playerItems;
 			}
-			
+
 			if (items == null || items.Count == 0)
 				return;
 
@@ -5736,13 +5736,13 @@ namespace Oxide.Plugins
 			// Используем тот же размер, что и для карточек корзины (ItemSide x ItemSide)
 			int maxItems = Math.Min(items.Count, 8);
 			int itemsPerRow = 2; // 2 колонки
-			
+
 			// Используем тот же метод расчета позиций, что и для корзины (UI_RecountPosition)
 			// Но адаптируем для 2 колонок вместо 7
 			for (int i = 0; i < maxItems; i++)
 			{
 				var item = items[i];
-				
+
 				// Вычисляем позицию используя UI_RecountPosition для 2 колонок
 				UI_RecountPositionPopular(out var xSwitch, out var ySwitch, i, maxItems, itemsPerRow);
 
@@ -5756,17 +5756,17 @@ namespace Oxide.Plugins
 			int index, float xPos, float yPos)
 		{
 			// Получаем данные товара
-			if (!itemData.TryGetValue("productId", out var productIdObj)) 
+			if (!itemData.TryGetValue("productId", out var productIdObj))
 			{
 				PrintError($"GameStoresRUST: ShowPopularItemUI: productId not found in itemData at index {index}");
 				return;
 			}
-			if (!int.TryParse(productIdObj?.ToString(), out var dropId)) 
+			if (!int.TryParse(productIdObj?.ToString(), out var dropId))
 			{
 				PrintError($"GameStoresRUST: ShowPopularItemUI: Failed to parse productId '{productIdObj}' as int at index {index}");
 				return;
 			}
-			
+
 			// Логирование для отладки - какой dropId используется при создании карточки
 			string itemName = itemData.TryGetValue("name", out var nameObjDebug) ? nameObjDebug?.ToString() ?? "" : "";
 			int itemIdFromData = 0;
@@ -5774,9 +5774,9 @@ namespace Oxide.Plugins
 				int.TryParse(itemIdObj?.ToString(), out itemIdFromData);
 			else if (itemData.TryGetValue("item_id", out var itemIdObj2))
 				int.TryParse(itemIdObj2?.ToString(), out itemIdFromData);
-			
+
 			PrintError($"ShowPopularItemUI: Creating card. index: {index}, dropId (productId): {dropId}, itemName: {itemName}, itemId: {itemIdFromData}, productId from data: {productIdObj?.ToString()}");
-			
+
 			// Отладочное логирование отключено для уменьшения шума в логах
 
 			string name = itemData.TryGetValue("name", out var nameObj) ? nameObj?.ToString() ?? "Товар" : "Товар";
@@ -5827,32 +5827,32 @@ namespace Oxide.Plugins
 			{
 				double.TryParse(leftTimeObj?.ToString(), out leftTime);
 			}
-			
+
 			// Определяем, какое изображение фона использовать в зависимости от статуса
 			string cardImageName = ImageCardPopular; // Используем card_popular для популярных товаров
 			string cardImageUrl = "https://storage.prostoj.store/plugin-file/card_popular.png";
-			
+
 			// Если товар заблокирован вайп-блоком, используем красную карточку
 			if (isBlocked)
 			{
 				cardImageName = ImageCardRed;
 				cardImageUrl = "https://storage.prostoj.store/plugin-file/card_red.png";
 			}
-			
+
 			// Используем кешированное изображение, если доступно
 			string cachedCardId = GetCachedImageId(cardImageName);
 			if (!string.IsNullOrEmpty(cachedCardId))
 			{
 				cardImageUrl = null; // Указываем, что используем кеш
 			}
-			
+
 			// Получаем кешированное изображение light.png (как в корзине)
 			string cachedLightId = GetCachedImageId(ImageLight);
 			if (string.IsNullOrEmpty(cachedLightId) && _imageCache != null)
 			{
 				cachedLightId = _imageCache.GetImageId("light");
 			}
-			
+
 			// Изображение light.png на всю карточку как прозрачный фон (добавляем ПЕРВЫМ, под card изображениями)
 			container.Add(new CuiElement
 			{
@@ -5860,7 +5860,7 @@ namespace Oxide.Plugins
 				Name = StoreLayer + $".PopularItemsPanel.Item{index}.LightBg",
 				Components =
 				{
-					!string.IsNullOrEmpty(cachedLightId) 
+					!string.IsNullOrEmpty(cachedLightId)
 						? new CuiRawImageComponent {Png = cachedLightId, Color = "1 1 1 1"}
 						: new CuiRawImageComponent {Url = "https://storage.prostoj.store/plugin-file/light.png", Color = "1 1 1 1"},
 					new CuiRectTransformComponent
@@ -5872,7 +5872,7 @@ namespace Oxide.Plugins
 					}
 				}
 			});
-			
+
 			// Фон карточки (добавляем ВТОРЫМ, поверх light.png)
 			container.Add(new CuiElement
 			{
@@ -5880,7 +5880,7 @@ namespace Oxide.Plugins
 				Name = StoreLayer + $".PopularItemsPanel.Item{index}.CardBg",
 				Components =
 				{
-					cardImageUrl == null 
+					cardImageUrl == null
 						? GetCachedImageComponent(cardImageName, cardImageUrl ?? "https://storage.prostoj.store/plugin-file/card_popular.png")
 						: GetCardImageComponent(cardImageName, cardImageUrl),
 					new CuiRectTransformComponent
@@ -5892,7 +5892,7 @@ namespace Oxide.Plugins
 					}
 				}
 			});
-			
+
 			// Получаем item_id и type для определения, является ли это предметом или чертежом
 			int itemId = 0;
 			bool isBlueprint = false;
@@ -5904,7 +5904,7 @@ namespace Oxide.Plugins
 			{
 				int.TryParse(itemIdObj2?.ToString(), out itemId);
 			}
-			
+
 			// Проверяем, является ли это чертежом
 			if (itemId == ItemManager.blueprintBaseDef.itemid)
 			{
@@ -5918,7 +5918,7 @@ namespace Oxide.Plugins
 					isBlueprint = true;
 				}
 			}
-			
+
 			// Если есть item_id, всегда используем CuiImageComponent (как в корзине)
 			// Это позволяет использовать встроенные иконки игры вместо загрузки по URL
 			if (itemId != 0)
@@ -5963,7 +5963,7 @@ namespace Oxide.Plugins
 			{
 				string imageUrlToUse = imgUrl;
 				string fileName = $"IconGS.Popular.{dropId}";
-				
+
 				// Проверяем кеш изображений предметов (загружается при использовании, не при инициализации)
 				if (_imageCache != null)
 				{
@@ -5981,7 +5981,7 @@ namespace Oxide.Plugins
 						_imageCache.CacheItemImage(fileName, imgUrl);
 					}
 				}
-				
+
 				// Отображаем изображение товара с теми же отступами что и в корзине
 				if (!imageUrlToUse.Contains("http"))
 				{
@@ -6051,7 +6051,7 @@ namespace Oxide.Plugins
 
 		private void ProcessBuyPopularItem(BasePlayer player, int dropId)
 		{
-			
+
 			if (maintenance)
 			{
 				Reply(player, Maintenance);
@@ -6094,29 +6094,29 @@ namespace Oxide.Plugins
 			{
 				items = playerItems;
 			}
-			
+
 			if (items != null)
 			{
-				var item = items.FirstOrDefault(i => 
-					i.TryGetValue("productId", out var pid) && 
-					int.TryParse(pid?.ToString(), out var id) && 
+				var item = items.FirstOrDefault(i =>
+					i.TryGetValue("productId", out var pid) &&
+					int.TryParse(pid?.ToString(), out var id) &&
 					id == dropId);
-				
+
 				if (item != null)
 				{
 					bool isBlocked = false;
 					double leftTime = 0;
-					
+
 					if (item.TryGetValue("isBlocked", out var isBlockedObj))
 					{
 						isBlocked = isBlockedObj?.ToString()?.ToLower() == "true" || isBlockedObj?.ToString() == "1";
 					}
-					
+
 					if (item.TryGetValue("leftTime", out var leftTimeObj))
 					{
 						double.TryParse(leftTimeObj?.ToString(), out leftTime);
 					}
-					
+
 					// Если товар заблокирован, проверяем еще раз (на случай, если время изменилось)
 					if (isBlocked && leftTime > 0)
 					{
@@ -6124,12 +6124,12 @@ namespace Oxide.Plugins
 						string productId = "";
 						int itemId = 0;
 						bool isBlueprint = false;
-						
+
 						if (item.TryGetValue("productId", out var productIdObj))
 						{
 							productId = productIdObj?.ToString() ?? "";
 						}
-						
+
 						// Получаем itemId из разных возможных мест
 						if (item.TryGetValue("item_id", out var itemIdObj1))
 						{
@@ -6149,13 +6149,13 @@ namespace Oxide.Plugins
 								}
 							}
 						}
-						
+
 						// Определяем, является ли товар blueprint
 						if (itemId == ItemManager.blueprintBaseDef.itemid)
 						{
 							isBlueprint = true;
 						}
-						
+
 						if (!string.IsNullOrEmpty(productId) && itemId != 0)
 						{
 							double currentLeftTime = WB_GetLeftTime(productId, itemId, isBlueprint);
@@ -6178,11 +6178,11 @@ namespace Oxide.Plugins
 			}
 
 			// Логирование для отладки - какой dropId передается в API
-			var itemForLogging = items?.FirstOrDefault(i => 
-				i.TryGetValue("productId", out var pid) && 
-				int.TryParse(pid?.ToString(), out var id) && 
+			var itemForLogging = items?.FirstOrDefault(i =>
+				i.TryGetValue("productId", out var pid) &&
+				int.TryParse(pid?.ToString(), out var id) &&
 				id == dropId);
-			
+
 			if (itemForLogging != null)
 			{
 				string itemName = "";
@@ -6193,14 +6193,14 @@ namespace Oxide.Plugins
 					int.TryParse(itemIdObj?.ToString(), out itemIdFromList);
 				else if (itemForLogging.TryGetValue("item_id", out var itemIdObj2))
 					int.TryParse(itemIdObj2?.ToString(), out itemIdFromList);
-				
+
 				PrintError($"ProcessBuyPopularItem: Purchasing item. dropId: {dropId}, itemName: {itemName}, itemId from list: {itemIdFromList}");
 			}
 			else
 			{
 				PrintError($"ProcessBuyPopularItem: Item not found in list for dropId: {dropId}");
 			}
-			
+
 			// Отправляем запрос на покупку
 			Request("store.buyAndTake", new Dictionary<string, string>
 			{
@@ -6236,7 +6236,7 @@ namespace Oxide.Plugins
 											// Выдаем товары игроку сразу после покупки
 											int itemsProcessed = 0;
 											List<int> basketIds = new List<int>(); // Собираем basketId для пометки как выданные
-											
+
 											foreach (var itemObj in items)
 											{
 												if (itemObj is Dictionary<string, object> item)
@@ -6259,7 +6259,7 @@ namespace Oxide.Plugins
 																basketIds.Add(basketId);
 															}
 														}
-														
+
 														// Проверяем, есть ли вложенная структура "data" (как в корзине)
 														Dictionary<string, object> itemData = item;
 														if (item.TryGetValue("data", out var itemDataObj) && itemDataObj is Dictionary<string, object> nestedData)
@@ -6292,22 +6292,22 @@ namespace Oxide.Plugins
 															// Но убеждаемся, что itemId и item_id доступны
 															itemData = new Dictionary<string, object>(item);
 														}
-														
+
 														// Проверяем, является ли это набором (set) с вложенными items
 														// Сначала проверяем тип товара - если это "set", ищем поле "items"
 														bool isSet = false;
 														bool itemProcessed = false;
 														List<object> setItems = null;
-														
+
 														// Проверяем тип товара
 														string itemType = null;
 														if (itemData.TryGetValue("type", out var typeObj))
 														{
 															itemType = typeObj?.ToString();
 														}
-														
+
 														// Если тип "set" или есть поле "items", это набор
-														if (itemType == "set" || itemData.ContainsKey("items") || 
+														if (itemType == "set" || itemData.ContainsKey("items") ||
 														    (itemData.TryGetValue("data", out var checkDataObj) && checkDataObj is Dictionary<string, object> checkData && checkData.ContainsKey("items")))
 														{
 															// Проверяем в корне данных
@@ -6328,14 +6328,14 @@ namespace Oxide.Plugins
 																	isSet = true;
 																}
 															}
-															
+
 															// Если тип "set", но items не найдены, выводим предупреждение
 															if (itemType == "set" && !isSet)
 															{
 																PrintError($"Popular item has type 'set' but no 'items' field found. Item data: {JsonConvert.SerializeObject(itemData)}");
 															}
 														}
-														
+
 														if (isSet && setItems != null && setItems.Count > 0)
 														{
 															// Обрабатываем набор - выдаем каждый элемент отдельно
@@ -6348,7 +6348,7 @@ namespace Oxide.Plugins
 																		// Копируем basketId из корневого элемента в каждый элемент набора
 																		if (!setItem.ContainsKey("basketId") && itemData.TryGetValue("basketId", out var rootBasketId))
 																			setItem["basketId"] = rootBasketId;
-																		
+
 																		// Создаем WItem для каждого элемента набора
 																		var setWItem = new WItem(setItem);
 																		if (setWItem.IsValid)
@@ -6368,7 +6368,7 @@ namespace Oxide.Plugins
 																				ProcessBlueprint(player, setWItem);
 																				itemsProcessed++;
 																			}
-																			
+
 																			// Собираем basketId для пометки как выданный
 																			if (!string.IsNullOrEmpty(setWItem.basketId) && int.TryParse(setWItem.basketId, out var setBasketId))
 																			{
@@ -6408,11 +6408,11 @@ namespace Oxide.Plugins
 														{
 															PrintError($"item_id value in root item: {item["item_id"]} (type: {item["item_id"]?.GetType()?.Name ?? "null"})");
 														}
-														
+
 														var wItem = new WItem(itemData);
-														
+
 														PrintError($"WItem created. ItemID: {wItem.ItemID}, IsItem: {wItem.IsItem}, itemDefinition: {wItem.itemDefinition?.shortname ?? "null"}");
-														
+
 														if (wItem.IsValid)
 														{
 															if (wItem.IsItem)
@@ -6490,7 +6490,7 @@ namespace Oxide.Plugins
 													}
 												}
 											}
-											
+
 											// Помечаем все выданные товары как выданные через baskets.makeIssued (как в корзине)
 											// Примечание: API store.buyAndTake может уже пометить товары как выданные,
 											// поэтому ошибка 107 (предмет уже получен/продан) не является критической
@@ -6523,12 +6523,12 @@ namespace Oxide.Plugins
 														{
 															// Если не удалось распарсить ответ, продолжаем как обычно
 														}
-														
+
 														PrintError($"Failed to mark popular item as issued (basketId: {basketId}): {makeIssuedResponse}");
 													}
 												}, player);
 											}
-											
+
 											if (itemsProcessed == 0)
 											{
 												PrintError($"No items were processed from buyAndTake response. Items count: {items.Count}");
@@ -6572,14 +6572,14 @@ namespace Oxide.Plugins
 							// Обрабатываем ошибки из API
 							string errorMessage = "Ошибка при покупке товара";
 							int errorCode = 0;
-							
+
 							if (json != null)
 							{
 								if (json.TryGetValue("message", out var message))
 								{
 									errorMessage = message.ToString();
 								}
-								
+
 								if (json.TryGetValue("code", out var codeObj))
 								{
 									if (int.TryParse(codeObj.ToString(), out errorCode))
@@ -6609,7 +6609,7 @@ namespace Oxide.Plugins
 									}
 								}
 							}
-							
+
 							// Показываем уведомление об ошибке через Notify API
 							ShowNotify(player, errorMessage, true);
 						}
@@ -6731,7 +6731,7 @@ namespace Oxide.Plugins
 					{
 						// Удаляем старое изображение фона
 						CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-						
+
 						// Добавляем новое изображение card_red.png
 						container.Add(new CuiElement
 						{
@@ -6749,7 +6749,7 @@ namespace Oxide.Plugins
 								}
 							}
 						});
-						
+
 						// Overlay без цветного фона, только текст
 						container.Add(new CuiButton
 							{
@@ -6794,7 +6794,7 @@ namespace Oxide.Plugins
 			// Инициализируем словарь для индекса, если его нет
 			if (!ListTimeOutCommand.ContainsKey(index))
 				ListTimeOutCommand[index] = new Dictionary<ulong, int>();
-			
+
 			if (!ListTimeOutCommand[index].ContainsKey(player.userID))
 				ListTimeOutCommand[index][player.userID] = 1;
 			else
@@ -6810,7 +6810,7 @@ namespace Oxide.Plugins
 				return false;
 			if (!ListTimeOutCommand.ContainsKey(2) || !ListTimeOutCommand[2].ContainsKey(player.userID))
 				return false;
-			
+
 			return ListTimeOutCommand[0][player.userID] >= 10 ||
 			       ListTimeOutCommand[1][player.userID] >= 20 ||
 			       ListTimeOutCommand[2][player.userID] >= 30;
@@ -6828,7 +6828,7 @@ namespace Oxide.Plugins
 				ShowNotify(player,  Msg(player, MsgItemnotfound), true);
 				return;
 			}
-			
+
 			if (_config.Plugin.UseBuildingBlocked && player.IsBuildingBlocked())
 			{
 				ShowNotify(player, Msg(player, MsgBuildingBlocked), true);
@@ -6846,19 +6846,19 @@ namespace Oxide.Plugins
 				ShowNotify(player, Msg(player, MsgRaidBlocked), true);
 				return;
 			}
-			
+
 			if (item.IsBlocked)
 			{
 				var time = FormatTime(player, item.LeftTime);
 
 				ShowNotify(player, Msg(player, MsgTakeItemBlocked, time), true);
-				
+
 				// Заменяем фон карточки на card_red.png при блокировке
 				UpdateUI(player, container =>
 				{
 					// Удаляем старое изображение фона
 					CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-					
+
 					// Добавляем новое изображение card_red.png
 					container.Add(new CuiElement
 					{
@@ -6876,7 +6876,7 @@ namespace Oxide.Plugins
 							}
 						}
 					});
-					
+
 					// Overlay без цветного фона, только текст
 					container.Add(new CuiButton
 						{
@@ -6908,7 +6908,7 @@ namespace Oxide.Plugins
 				{
 					// Удаляем старое изображение фона
 					CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-					
+
 					// Добавляем новое изображение card_gray.png
 					container.Add(new CuiElement
 					{
@@ -6926,7 +6926,7 @@ namespace Oxide.Plugins
 							}
 						}
 					});
-					
+
 					// Overlay без цветного фона, только текст
 					container.Add(new CuiButton
 						{
@@ -6945,8 +6945,8 @@ namespace Oxide.Plugins
 								Text = Msg(player, MsgTakeWait), Align = TextAnchor.MiddleCenter,
 								Font = "robotocondensed-bold.ttf", Color = "1 1 1 0.4", FontSize = 16
 							}
-						}, StoreLayer + ".BlockPanel." + index, 
-						StoreLayer + ".BlockPanel." + index + ".Open", 
+						}, StoreLayer + ".BlockPanel." + index,
+						StoreLayer + ".BlockPanel." + index + ".Open",
 						StoreLayer + ".BlockPanel." + index + ".Open");
 				});
 				return;
@@ -6957,7 +6957,7 @@ namespace Oxide.Plugins
 			{
 				// Удаляем старое изображение фона
 				CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-				
+
 				// Добавляем новое изображение card_gray.png
 				container.Add(new CuiElement
 				{
@@ -6975,7 +6975,7 @@ namespace Oxide.Plugins
 						}
 					}
 				});
-				
+
 				// Overlay без цветного фона, только текст
 				container.Add(new CuiButton
 					{
@@ -6994,8 +6994,8 @@ namespace Oxide.Plugins
 							Text = Msg(player, MsgTakeWait), Align = TextAnchor.MiddleCenter,
 							Font = "robotocondensed-bold.ttf", Color = "1 1 1 0.4", FontSize = 24
 						}
-					}, StoreLayer + ".BlockPanel." + index, 
-					StoreLayer + ".BlockPanel." + index + ".Open", 
+					}, StoreLayer + ".BlockPanel." + index,
+					StoreLayer + ".BlockPanel." + index + ".Open",
 					StoreLayer + ".BlockPanel." + index + ".Open");
 			});
 
@@ -7030,7 +7030,7 @@ namespace Oxide.Plugins
 						{
 							// Удаляем старое изображение фона
 							CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-							
+
 							// Добавляем новое изображение card_red.png
 							container.Add(new CuiElement
 							{
@@ -7048,7 +7048,7 @@ namespace Oxide.Plugins
 									}
 								}
 							});
-							
+
 							// Overlay без цветного фона, только текст
 							container.Add(new CuiButton
 								{
@@ -7090,7 +7090,7 @@ namespace Oxide.Plugins
 								{
 									// Удаляем старое изображение фона
 									CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-									
+
 									// Добавляем новое изображение card_red.png
 									container.Add(new CuiElement
 									{
@@ -7108,7 +7108,7 @@ namespace Oxide.Plugins
 											}
 										}
 									});
-									
+
 									// Overlay без цветного фона, только текст
 									container.Add(new CuiButton
 										{
@@ -7145,7 +7145,7 @@ namespace Oxide.Plugins
 					{
 						// Удаляем старое изображение фона
 						CuiHelper.DestroyUi(player, StoreLayer + $".BlockPanel.{index}.CardBg");
-						
+
 						// Добавляем новое изображение card_success.png
 						container.Add(new CuiElement
 						{
@@ -7163,7 +7163,7 @@ namespace Oxide.Plugins
 								}
 							}
 						});
-						
+
 						// Overlay без цветного фона, только текст
 						container.Add(new CuiButton
 							{
@@ -7299,7 +7299,7 @@ namespace Oxide.Plugins
 			int serverPort = ConVar.Server.port;
 			// API определяет сервер по IP и порту, store_id не нужен
 			string queryParams = $"?server_ip={serverIp}&server_port={serverPort}";
-			
+
 			// Используем базовый URL без /game-stores/ для поддержки
 			string baseUrl = BestApiLink.Replace("/v1/game-stores/", "/v1/");
 			if (!baseUrl.EndsWith("/"))
@@ -7795,7 +7795,7 @@ namespace Oxide.Plugins
 				text += $"{span.Minutes} " + Msg(player, MsgTimeMINUTES) + " ";
 			if (span.Seconds >= 1)
 				text += $"{span.Seconds} " + Msg(player, MsgTimeSECONDS);
-			
+
 			return text;
 		}
 
@@ -7805,38 +7805,38 @@ namespace Oxide.Plugins
 		private string FormatBalance(object balanceObj)
 		{
 			if (balanceObj == null) return "0";
-			
+
 			// Пробуем разные типы данных
 			if (balanceObj is int intBalance)
 			{
 				return intBalance.ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 			}
-			
+
 			if (balanceObj is double doubleBalance)
 			{
 				return ((long)Math.Round(doubleBalance)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 			}
-			
+
 			if (balanceObj is float floatBalance)
 			{
 				return ((long)Math.Round(floatBalance)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 			}
-			
+
 			if (balanceObj is long longBalance)
 			{
 				return longBalance.ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 			}
-			
+
 			// Пробуем распарсить как строку
 			string balanceStr = balanceObj.ToString();
 			if (double.TryParse(balanceStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedBalance))
 			{
 				return ((long)Math.Round(parsedBalance)).ToString("N0", System.Globalization.CultureInfo.InvariantCulture).Replace(",", " ");
 			}
-			
+
 			return balanceStr;
 		}
-		
+
 		#endregion
 
 		#region Additional
@@ -8069,7 +8069,7 @@ namespace Oxide.Plugins
 							case "set":
 								// Наборы обрабатываются отдельно, не устанавливаем тип здесь
 								// Но если есть поле "items", это набор
-								if (data.TryGetValue("items", out var setItems) || 
+								if (data.TryGetValue("items", out var setItems) ||
 								    (data.TryGetValue("data", out var setData) && setData is Dictionary<string, object> setDataDict && setDataDict.TryGetValue("items", out var _)))
 								{
 									// Это набор, устанавливаем флаг IsSet
@@ -8124,7 +8124,7 @@ namespace Oxide.Plugins
 							}
 						}
 					}
-					
+
 					if (data.TryGetValue("data", out var product))
 						if (product is Dictionary<string, object> productData)
 						{
@@ -8218,7 +8218,7 @@ namespace Oxide.Plugins
 								}
 							}
 						}
-						
+
 						// Проверяем команду также в корне данных (для совместимости с ProstojRUST)
 						if (IsCommand && string.IsNullOrEmpty(Command) && (commands == null || commands.Count == 0))
 						{
@@ -8238,7 +8238,7 @@ namespace Oxide.Plugins
 								}
 							}
 						}
-						
+
 						// Проверяем команду также в корне данных (для совместимости с ProstojRUST)
 						if (IsCommand && string.IsNullOrEmpty(Command) && (commands == null || commands.Count == 0))
 						{
@@ -8257,7 +8257,7 @@ namespace Oxide.Plugins
 									commands = commandsList;
 								}
 							}
-							
+
 							// Если команды нет ни в виде строки, ни в виде списка, товар невалиден
 							if ((commands == null || commands.Count == 0) && string.IsNullOrEmpty(Command))
 								return;
@@ -8279,7 +8279,7 @@ namespace Oxide.Plugins
 						// Если ItemID == 0 и нет ImageUrl, товар невалиден (для наборов нужен ImageUrl)
 						if (ItemID == 0 && string.IsNullOrEmpty(ImageUrl))
 							return;
-						
+
 						// Пытаемся найти itemDefinition только если ItemID != 0
 						if (ItemID != 0)
 						{
@@ -8320,7 +8320,7 @@ namespace Oxide.Plugins
 					// Для команд валидность определяется наличием команды (уже проверено выше)
 					// Для других типов товаров (если прошли все проверки) устанавливаем IsValid
 					IsValid = true;
-					
+
 					// Проверяем isBlocked и leftTime из API
 					if (data.TryGetValue("isBlocked", out var isBlockedObj))
 					{
@@ -8333,7 +8333,7 @@ namespace Oxide.Plugins
 							LeftTime = leftTime;
 						}
 					}
-					
+
 					// Логирование данных от API
 					Interface.Oxide.LogInfo($"[WItem] Created. basketId={basketId}, productId={productId}, itemId={ItemID}, name={Name}, isItem={IsItem}, isCommand={IsCommand}, isBlueprint={IsBlueprint}, isBlocked={IsBlocked}, leftTime={LeftTime}, isValid={IsValid}");
 
@@ -8353,8 +8353,8 @@ namespace Oxide.Plugins
 						// Кеширование в локальную папку будет происходить при отображении в UI
 						// НО только если ImageUrl является валидным URL (начинается с http:// или https://)
 						// Если ImageUrl является числом (item ID), не пытаемся загружать его как URL
-						else if (!string.IsNullOrEmpty(ImageUrl) && 
-						         (ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+						else if (!string.IsNullOrEmpty(ImageUrl) &&
+						         (ImageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
 						          ImageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase)))
 						{
 							Instance.AddImage(ImageUrl.Replace("https", "http"),
@@ -8445,10 +8445,10 @@ namespace Oxide.Plugins
 
         private Regex _checkBalanceMessage = new(@"/^([^'`string.Empty]{1,64})$");
 
-		private const string 
+		private const string
 			API_ChangePlayerBalance_Action_Plus = "plus",
 			API_ChangePlayerBalance_Action_Minus = "minus";
-		
+
 		private void API_ChangePlayerBalance(ulong steamId, int amount, string type, string message = null,
 			Action<bool, string> callback = null)
 		{
@@ -8456,7 +8456,7 @@ namespace Oxide.Plugins
 
 			if (amount is < 1 or > 1000000)
 			{
-				HandlePlayerBalanceError(callback, steamId, "wrong_amount", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: количество должно быть в диапазоне от 1 до 1000000"); 
+				HandlePlayerBalanceError(callback, steamId, "wrong_amount", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: количество должно быть в диапазоне от 1 до 1000000");
 				return;
 			}
 
@@ -8486,7 +8486,7 @@ namespace Oxide.Plugins
 
 			if (!string.IsNullOrEmpty(message) && _checkBalanceMessage.IsMatch(message))
 			{
-				HandlePlayerBalanceError(callback, steamId, "wrong_message", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: сообщение не может содержать специальные символы"); 
+				HandlePlayerBalanceError(callback, steamId, "wrong_message", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: сообщение не может содержать специальные символы");
 				return;
 			}
 
@@ -8515,7 +8515,7 @@ namespace Oxide.Plugins
 						break;
 
 					default:
-						HandlePlayerBalanceError(callback, steamId, "request_error", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}. Код: {code}, ответ от сервера: {response}"); 
+						HandlePlayerBalanceError(callback, steamId, "request_error", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}. Код: {code}, ответ от сервера: {response}");
 						return;
 				}
 			});
@@ -8546,11 +8546,11 @@ namespace Oxide.Plugins
 					}
 
 					case "fail" when json["playerNotFound"]?.ToString().ToLower() == "true":
-						HandlePlayerBalanceError(callback, steamId, "player_not_found", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: Игрок не найден"); 
+						HandlePlayerBalanceError(callback, steamId, "player_not_found", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}: Игрок не найден");
 						break;
 
 					default:
-						HandlePlayerBalanceError(callback, steamId, "request_error", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}. Неизвестная ошибка при сериализации ответа: {response}"); 
+						HandlePlayerBalanceError(callback, steamId, "request_error", $"Ошибка выполнения запроса для изменения баланса игрока {steamId}. Неизвестная ошибка при сериализации ответа: {response}");
 						break;
 				}
 			}
@@ -8571,11 +8571,11 @@ namespace Oxide.Plugins
 				{
 					case "success":
 						{
-							
+
                             var playerBalance = json["data"]?["player_balance"]?.ToString();
 							var storeBalance = json["data"]?["store_balance"]?.ToString();
-							var paymentId = json["data"]?["payment_id"]?.ToString();                          
-							
+							var paymentId = json["data"]?["payment_id"]?.ToString();
+
 							break;
 						}
 					case "fail" when json["code"]?.ToString() == "102":
