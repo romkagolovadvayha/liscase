@@ -124,6 +124,21 @@ namespace Oxide.Plugins
 
         #region API
 
+        /// <summary>
+        /// Для дополнительных плагинов (например ClanCupboardReporter): актуальный кэш кланов без HTTP.
+        /// </summary>
+        public string API_GetClansSnapshotJson()
+        {
+            try
+            {
+                return JsonConvert.SerializeObject(Clans ?? new List<ClanData>());
+            }
+            catch
+            {
+                return "[]";
+            }
+        }
+
         private void FetchClansWebRequest()
         {
             string serverIp = ConVar.Server.ip;
