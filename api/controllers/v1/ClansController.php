@@ -446,58 +446,37 @@ class ClansController extends BaseApiController
             ->with(['clan.server', 'permissions.permission'])
             ->all();
 
-        $mainTcSquareByKey = [];
-        $orTriples = ['or'];
+        $clanIdsForCupboards = [];
         foreach ($members as $m) {
             if (!$m->clan || !$m->clan->server || !$m->clan->server->isClansSystemEnabled()) {
                 continue;
             }
-            $srv = $m->clan->server;
-            $wipe = $srv->currentWipe();
-            $orTriples[] = [
-                'server_id' => (int)$srv->id,
-                'wipe' => $wipe,
-                'clan_id' => (int)$m->clan->id,
-            ];
+            $clanIdsForCupboards[(int)$m->clan->id] = true;
         }
-        if (count($orTriples) > 1) {
+        $clanIdsForCupboards = array_keys($clanIdsForCupboards);
+
+        /** clan_id => map_square главного шкафа (main_cupboard = 1); при нескольких вайпах — самая свежая запись */
+        $mainTcSquareByClanId = [];
+        if ($clanIdsForCupboards !== []) {
             $cupRows = ClanPluginCupboard::find()
-                ->select(['server_id', 'wipe', 'clan_id', 'map_square', 'main_cupboard', 'protected_blocks'])
-                ->where($orTriples)
+                ->select(['clan_id', 'map_square', 'updated_at'])
+                ->where(['clan_id' => $clanIdsForCupboards, 'main_cupboard' => 1])
                 ->asArray()
                 ->all();
-            $bucket = [];
+            $bestTs = [];
             foreach ($cupRows as $cr) {
+                $cid = (int)($cr['clan_id'] ?? 0);
+                if ($cid <= 0) {
+                    continue;
+                }
                 $sq = trim((string)($cr['map_square'] ?? ''));
                 if ($sq === '') {
                     continue;
                 }
-                $k = (int)$cr['server_id'] . "\x1f" . (string)$cr['wipe'] . "\x1f" . (int)$cr['clan_id'];
-                $bucket[$k][] = $cr;
-            }
-            foreach ($bucket as $k => $rows) {
-                $best = null;
-                foreach ($rows as $cr) {
-                    $isMain = (int)($cr['main_cupboard'] ?? 0) === 1;
-                    $pb = (int)($cr['protected_blocks'] ?? 0);
-                    if ($best === null) {
-                        $best = $cr;
-                        continue;
-                    }
-                    $bestMain = (int)($best['main_cupboard'] ?? 0) === 1;
-                    if ($isMain && !$bestMain) {
-                        $best = $cr;
-                        continue;
-                    }
-                    if (!$isMain && $bestMain) {
-                        continue;
-                    }
-                    if ($pb > (int)($best['protected_blocks'] ?? 0)) {
-                        $best = $cr;
-                    }
-                }
-                if ($best !== null) {
-                    $mainTcSquareByKey[$k] = trim((string)$best['map_square']);
+                $ts = (int)($cr['updated_at'] ?? 0);
+                if (!isset($mainTcSquareByClanId[$cid]) || $ts >= ($bestTs[$cid] ?? 0)) {
+                    $mainTcSquareByClanId[$cid] = $sq;
+                    $bestTs[$cid] = $ts;
                 }
             }
         }
@@ -511,9 +490,7 @@ class ClansController extends BaseApiController
             if (!$server || !$server->isClansSystemEnabled()) {
                 continue;
             }
-            $wipe = $server->currentWipe();
-            $tcKey = (int)$server->id . "\x1f" . (string)$wipe . "\x1f" . (int)$m->clan->id;
-            $mainSquare = $mainTcSquareByKey[$tcKey] ?? null;
+            $mainSquare = $mainTcSquareByClanId[(int)$m->clan->id] ?? null;
             $items[] = [
                 'member_id' => (int)$m->id,
                 'role' => $m->role,
