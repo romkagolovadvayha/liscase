@@ -12,6 +12,7 @@ use common\models\clan\ClanEvent;
 use common\models\clan\ClanInvite;
 use common\models\clan\ClanInviteLink;
 use common\models\clan\ClanMember;
+use common\models\clan\ClanPluginCupboard;
 use common\models\clan\ClanPost;
 use common\models\clan\ClanMemberStatistics;
 use common\models\clan\ClanPermission;
@@ -445,6 +446,34 @@ class ClansController extends BaseApiController
             ->with(['clan.server', 'permissions.permission'])
             ->all();
 
+        $mainTcSquareByKey = [];
+        $orMainTc = ['or'];
+        foreach ($members as $m) {
+            if (!$m->clan || !$m->clan->server || !$m->clan->server->isClansSystemEnabled()) {
+                continue;
+            }
+            $srv = $m->clan->server;
+            $wipe = $srv->currentWipe();
+            $orMainTc[] = [
+                'server_id' => (int)$srv->id,
+                'wipe' => $wipe,
+                'clan_id' => (int)$m->clan->id,
+                'main_cupboard' => 1,
+            ];
+        }
+        if (count($orMainTc) > 1) {
+            $cupRows = ClanPluginCupboard::find()
+                ->select(['server_id', 'wipe', 'clan_id', 'map_square'])
+                ->where(['main_cupboard' => 1])
+                ->andWhere($orMainTc)
+                ->asArray()
+                ->all();
+            foreach ($cupRows as $cr) {
+                $k = (int)$cr['server_id'] . "\x1f" . (string)$cr['wipe'] . "\x1f" . (int)$cr['clan_id'];
+                $mainTcSquareByKey[$k] = (string)$cr['map_square'];
+            }
+        }
+
         $items = [];
         foreach ($members as $m) {
             if (!$m->clan) {
@@ -454,12 +483,16 @@ class ClansController extends BaseApiController
             if (!$server || !$server->isClansSystemEnabled()) {
                 continue;
             }
+            $wipe = $server->currentWipe();
+            $tcKey = (int)$server->id . "\x1f" . $wipe . "\x1f" . (int)$m->clan->id;
+            $mainSquare = $mainTcSquareByKey[$tcKey] ?? null;
             $items[] = [
                 'member_id' => (int)$m->id,
                 'role' => $m->role,
                 'permission_keys' => $m->getPermissionKeys(),
                 'clan' => $this->serializeClanListItem($m->clan),
                 'server_tab' => $this->serializeServerTabFields($server),
+                'main_cupboard_map_square' => $mainSquare !== null && $mainSquare !== '' ? $mainSquare : null,
             ];
         }
 
