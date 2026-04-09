@@ -447,30 +447,58 @@ class ClansController extends BaseApiController
             ->all();
 
         $mainTcSquareByKey = [];
-        $orMainTc = ['or'];
+        $orTriples = ['or'];
         foreach ($members as $m) {
             if (!$m->clan || !$m->clan->server || !$m->clan->server->isClansSystemEnabled()) {
                 continue;
             }
             $srv = $m->clan->server;
             $wipe = $srv->currentWipe();
-            $orMainTc[] = [
+            $orTriples[] = [
                 'server_id' => (int)$srv->id,
                 'wipe' => $wipe,
                 'clan_id' => (int)$m->clan->id,
-                'main_cupboard' => 1,
             ];
         }
-        if (count($orMainTc) > 1) {
+        if (count($orTriples) > 1) {
             $cupRows = ClanPluginCupboard::find()
-                ->select(['server_id', 'wipe', 'clan_id', 'map_square'])
-                ->where(['main_cupboard' => 1])
-                ->andWhere($orMainTc)
+                ->select(['server_id', 'wipe', 'clan_id', 'map_square', 'main_cupboard', 'protected_blocks'])
+                ->where($orTriples)
                 ->asArray()
                 ->all();
+            $bucket = [];
             foreach ($cupRows as $cr) {
+                $sq = trim((string)($cr['map_square'] ?? ''));
+                if ($sq === '') {
+                    continue;
+                }
                 $k = (int)$cr['server_id'] . "\x1f" . (string)$cr['wipe'] . "\x1f" . (int)$cr['clan_id'];
-                $mainTcSquareByKey[$k] = (string)$cr['map_square'];
+                $bucket[$k][] = $cr;
+            }
+            foreach ($bucket as $k => $rows) {
+                $best = null;
+                foreach ($rows as $cr) {
+                    $isMain = (int)($cr['main_cupboard'] ?? 0) === 1;
+                    $pb = (int)($cr['protected_blocks'] ?? 0);
+                    if ($best === null) {
+                        $best = $cr;
+                        continue;
+                    }
+                    $bestMain = (int)($best['main_cupboard'] ?? 0) === 1;
+                    if ($isMain && !$bestMain) {
+                        $best = $cr;
+                        continue;
+                    }
+                    if (!$isMain && $bestMain) {
+                        continue;
+                    }
+                    if ($pb > (int)($best['protected_blocks'] ?? 0)) {
+                        $best = $cr;
+                    }
+                }
+                if ($best !== null) {
+                    $mainTcSquareByKey[$k] = trim((string)$best['map_square']);
+                }
             }
         }
 
@@ -484,7 +512,7 @@ class ClansController extends BaseApiController
                 continue;
             }
             $wipe = $server->currentWipe();
-            $tcKey = (int)$server->id . "\x1f" . $wipe . "\x1f" . (int)$m->clan->id;
+            $tcKey = (int)$server->id . "\x1f" . (string)$wipe . "\x1f" . (int)$m->clan->id;
             $mainSquare = $mainTcSquareByKey[$tcKey] ?? null;
             $items[] = [
                 'member_id' => (int)$m->id,
