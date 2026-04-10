@@ -887,6 +887,7 @@ class ClansController extends BaseApiController
                 'blocks_hqm',
                 'score',
                 'main_cupboard',
+                'raider_clan_id',
             ])
             ->andWhere(['server_id' => (int)$clan->server_id])
             // В прод-данных type может быть "cupboard" или содержать префиксы/суффиксы.
@@ -1094,6 +1095,9 @@ class ClansController extends BaseApiController
                 'blocks_hqm' => (int)($row['blocks_hqm'] ?? 0),
                 'score' => (int)($row['score'] ?? 0),
                 'main_cupboard' => (int)($row['main_cupboard'] ?? 0),
+                'raider_clan_id' => isset($row['raider_clan_id']) && $row['raider_clan_id'] !== null && (int)$row['raider_clan_id'] > 0
+                    ? (int)$row['raider_clan_id']
+                    : null,
                 'raider_user' => isset($attackerUsers[(int)$row['user_id']]) ? [
                     'id' => (int)$attackerUsers[(int)$row['user_id']]->id,
                     'username' => (string)$attackerUsers[(int)$row['user_id']]->username,

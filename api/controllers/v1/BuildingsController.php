@@ -435,6 +435,9 @@ class BuildingsController extends BaseApiController
                     'blocks_hqm' => $raid->hasAttribute('blocks_hqm') ? (int)$raid->blocks_hqm : 0,
                     'score' => $raid->hasAttribute('score') ? (int)$raid->score : 0,
                     'main_cupboard' => $raid->hasAttribute('main_cupboard') ? (int)$raid->main_cupboard : 0,
+                    'raider_clan_id' => $raid->hasAttribute('raider_clan_id') && $raid->raider_clan_id !== null && (int)$raid->raider_clan_id > 0
+                        ? (int)$raid->raider_clan_id
+                        : null,
                 ];
 
                 if ($raid->user) {

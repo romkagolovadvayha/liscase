@@ -51,6 +51,12 @@ class SaveRaidJob extends BaseObject implements JobInterface
 
                         $model = new UserRaid();
                         $model->user_id = $user->id;
+                        if ($model->hasAttribute('raider_clan_id')) {
+                            $raiderCid = $this->resolveActiveClanIdForUserOnServer((int)$user->id, (int)$server->id);
+                            if ($raiderCid !== null) {
+                                $model->raider_clan_id = $raiderCid;
+                            }
+                        }
                         $model->location = $location;
                         $model->explosives = json_encode($explosives);
                         $model->owners = json_encode($owners);
@@ -204,25 +210,37 @@ class SaveRaidJob extends BaseObject implements JobInterface
             if (strlen($steam) < 17) {
                 continue;
             }
-            $user = User::find()->select(['id'])->where(['steam_id' => $steam])->one();
-            if ($user === null) {
-                $user = User::find()->select(['id'])->where(['steam_id' => (string)$raw])->one();
+            $u = User::find()->select(['id'])->where(['steam_id' => $steam])->one();
+            if ($u === null) {
+                $u = User::find()->select(['id'])->where(['steam_id' => (string)$raw])->one();
             }
-            if ($user === null) {
+            if ($u === null) {
                 continue;
             }
-            $clanId = ClanMember::find()
-                ->alias('cm')
-                ->select(['cm.clan_id'])
-                ->innerJoin(['c' => Clan::tableName()], 'c.id = cm.clan_id')
-                ->where(['cm.user_id' => (int)$user->id])
-                ->andWhere(['IS', 'cm.leave_date', null])
-                ->andWhere(['c.server_id' => $serverId])
-                ->orderBy(['cm.id' => SORT_ASC])
-                ->scalar();
-            if ($clanId !== null && (int)$clanId > 0) {
-                return (int)$clanId;
+            $cid = $this->resolveActiveClanIdForUserOnServer((int)$u->id, $serverId);
+            if ($cid !== null) {
+                return $cid;
             }
+        }
+        return null;
+    }
+
+    /**
+     * Активное членство пользователя в клане на указанном сервере (первый по cm.id).
+     */
+    private function resolveActiveClanIdForUserOnServer(int $userId, int $serverId): ?int
+    {
+        $clanId = ClanMember::find()
+            ->alias('cm')
+            ->select(['cm.clan_id'])
+            ->innerJoin(['c' => Clan::tableName()], 'c.id = cm.clan_id')
+            ->where(['cm.user_id' => $userId])
+            ->andWhere(['IS', 'cm.leave_date', null])
+            ->andWhere(['c.server_id' => $serverId])
+            ->orderBy(['cm.id' => SORT_ASC])
+            ->scalar();
+        if ($clanId !== null && (int)$clanId > 0) {
+            return (int)$clanId;
         }
         return null;
     }

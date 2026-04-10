@@ -18,6 +18,7 @@ use Yii;
  * @property string|null $type
  * @property string|null $entity_id
  * @property int|null $clan_id Клан жертв (из clan_plugin_cupboards или активный участник из owners на этом сервере)
+ * @property int|null $raider_clan_id Клан атакующего (активное членство user_id на server_id рейда)
  * @property int $blocks_wood
  * @property int $blocks_stone
  * @property int $blocks_metal
@@ -29,6 +30,7 @@ use Yii;
  * @property string|null $wipe
  *
  * @property Clan|null $clan
+ * @property Clan|null $raiderClan
  * @property Servers $server
  * @property User $user
  */
@@ -49,13 +51,14 @@ class UserRaid extends \yii\db\ActiveRecord
     {
         return [
             [['user_id', 'server_id'], 'required'],
-            [['user_id', 'notify', 'server_id', 'clan_id', 'blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard'], 'integer'],
+            [['user_id', 'notify', 'server_id', 'clan_id', 'raider_clan_id', 'blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard'], 'integer'],
             [['owners'], 'string'],
             [['created_at'], 'safe'],
             [['location', 'explosives', 'wipe'], 'string', 'max' => 255],
             [['entity_id'], 'string', 'max' => 64],
             [['type'], 'string', 'max' => 255],
             [['clan_id'], 'exist', 'skipOnError' => true, 'skipOnEmpty' => true, 'targetClass' => Clan::class, 'targetAttribute' => ['clan_id' => 'id']],
+            [['raider_clan_id'], 'exist', 'skipOnError' => true, 'skipOnEmpty' => true, 'targetClass' => Clan::class, 'targetAttribute' => ['raider_clan_id' => 'id']],
             [['server_id'], 'exist', 'skipOnError' => true, 'targetClass' => Servers::class, 'targetAttribute' => ['server_id' => 'id']],
             [['user_id'], 'exist', 'skipOnError' => true, 'targetClass' => User::class, 'targetAttribute' => ['user_id' => 'id']],
         ];
@@ -92,6 +95,7 @@ class UserRaid extends \yii\db\ActiveRecord
             'entity_id' => 'Entity ID',
             'type' => 'Type',
             'clan_id' => 'Clan ID',
+            'raider_clan_id' => 'Raider clan ID',
             'blocks_wood' => 'Blocks wood',
             'blocks_stone' => 'Blocks stone',
             'blocks_metal' => 'Blocks metal',
@@ -109,6 +113,16 @@ class UserRaid extends \yii\db\ActiveRecord
     public function getClan()
     {
         return $this->hasOne(Clan::class, ['id' => 'clan_id']);
+    }
+
+    /**
+     * Клан игрока, совершившего рейд.
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRaiderClan()
+    {
+        return $this->hasOne(Clan::class, ['id' => 'raider_clan_id']);
     }
 
     /**
