@@ -25,6 +25,7 @@ use Yii;
  * @property int $blocks_hqm
  * @property int $score
  * @property int $main_cupboard
+ * @property int $real_raid 1 — рейд шкафа прошёл анти-накрутку (SaveRaidJob)
  * @property string|null $created_at
  * @property int $server_id
  * @property string|null $wipe
@@ -51,7 +52,7 @@ class UserRaid extends \yii\db\ActiveRecord
     {
         return [
             [['user_id', 'server_id'], 'required'],
-            [['user_id', 'notify', 'server_id', 'clan_id', 'raider_clan_id', 'blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard'], 'integer'],
+            [['user_id', 'notify', 'server_id', 'clan_id', 'raider_clan_id', 'blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard', 'real_raid'], 'integer'],
             [['owners'], 'string'],
             [['created_at'], 'safe'],
             [['location', 'explosives', 'wipe'], 'string', 'max' => 255],
@@ -69,7 +70,7 @@ class UserRaid extends \yii\db\ActiveRecord
         if (!parent::beforeSave($insert)) {
             return false;
         }
-        foreach (['blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard'] as $attr) {
+        foreach (['blocks_wood', 'blocks_stone', 'blocks_metal', 'blocks_hqm', 'score', 'main_cupboard', 'real_raid'] as $attr) {
             if ($this->hasAttribute($attr) && ($this->$attr === null || $this->$attr === '')) {
                 $this->$attr = 0;
             }
@@ -102,6 +103,7 @@ class UserRaid extends \yii\db\ActiveRecord
             'blocks_hqm' => 'Blocks HQM',
             'score' => 'Score',
             'main_cupboard' => 'Main cupboard',
+            'real_raid' => 'Real raid',
         ];
     }
 

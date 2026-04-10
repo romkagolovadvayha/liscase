@@ -147,8 +147,8 @@ class ClansController extends BaseApiController
             throw new ForbiddenHttpException('Clan system is disabled on this server');
         }
 
-        if ($this->hasActiveClanOnServer($user->id, $serverId)) {
-            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan on this server', [], 409);
+        if ($this->hasActiveClanMembership($user->id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan', [], 409);
         }
 
         $clan = new Clan();
@@ -631,13 +631,30 @@ class ClansController extends BaseApiController
     public function actionUpdate($serverTag, $id)
     {
         $user = $this->getCurrentUser();
-        $clan = $this->findClanByServerTag($serverTag, (int)$id);
+        $clan = $this->findClanForUpdate($serverTag, (int)$id);
         $member = $this->requireClanMember($clan);
         if (!$member->canEditClan()) {
             throw new ForbiddenHttpException('No permission to edit clan');
         }
 
         $body = $this->getJsonBody();
+        $oldServerId = (int)$clan->server_id;
+
+        if (array_key_exists('server_id', $body)) {
+            if (!$member->isLeader()) {
+                throw new ForbiddenHttpException('Only the leader can change the clan server');
+            }
+            $newServerId = (int)$body['server_id'];
+            if ($newServerId <= 0) {
+                throw new BadRequestHttpException('server_id is invalid');
+            }
+            $targetServer = Servers::findOne($newServerId);
+            if (!$targetServer || !$targetServer->isClansSystemEnabled()) {
+                throw new BadRequestHttpException('Invalid server');
+            }
+            $clan->server_id = $newServerId;
+        }
+
         $tagUpdated = false;
         if (isset($body['tag'])) {
             $clan->tag = trim((string)$body['tag']);
@@ -660,6 +677,15 @@ class ClansController extends BaseApiController
 
         if (!$clan->save()) {
             return $this->validationErrorResponse($clan);
+        }
+
+        if ($oldServerId !== (int)$clan->server_id) {
+            $clan->addEvent(
+                'server_changed',
+                Yii::t('common', 'Клан перенесён на другой сервер'),
+                $user->id,
+                ['from_server_id' => $oldServerId, 'to_server_id' => (int)$clan->server_id]
+            );
         }
 
         $clan->addEvent('clan_updated', Yii::t('common', 'Информация клана обновлена'), $user->id);
@@ -1467,8 +1493,8 @@ class ClansController extends BaseApiController
             throw new BadRequestHttpException('User not found');
         }
 
-        if ($this->hasActiveClanOnServer($invitedUserId, $clan->server_id)) {
-            return $this->errorResponse('USER_IN_CLAN', 'User is already in a clan on this server', [], 409);
+        if ($this->hasActiveClanMembership($invitedUserId)) {
+            return $this->errorResponse('USER_IN_CLAN', 'User is already in a clan', [], 409);
         }
 
         $invite = new ClanInvite();
@@ -1505,8 +1531,8 @@ class ClansController extends BaseApiController
             throw new NotFoundHttpException('Invite not found');
         }
 
-        if ($this->hasActiveClanOnServer($user->id, $invite->clan->server_id)) {
-            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan on this server', [], 409);
+        if ($this->hasActiveClanMembership($user->id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan', [], 409);
         }
 
         if (!$invite->accept()) {
@@ -1832,8 +1858,8 @@ class ClansController extends BaseApiController
             return $this->errorResponse('CLAN_CLOSED', 'Clan is closed — use application', [], 400);
         }
 
-        if ($this->hasActiveClanOnServer($user->id, $clan->server_id)) {
-            return $this->errorResponse('ALREADY_IN_CLAN', 'Already in a clan on this server', [], 400);
+        if ($this->hasActiveClanMembership($user->id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan', [], 400);
         }
 
         $tx = Yii::$app->db->beginTransaction();
@@ -1978,8 +2004,8 @@ class ClansController extends BaseApiController
             return $this->errorResponse('INVITE_ONLY', 'This clan accepts invites only', [], 400);
         }
 
-        if ($this->hasActiveClanOnServer($user->id, $clan->server_id)) {
-            return $this->errorResponse('ALREADY_IN_CLAN', 'Already in a clan on this server', [], 400);
+        if ($this->hasActiveClanMembership($user->id)) {
+            return $this->errorResponse('ALREADY_IN_CLAN', 'You already have an active clan', [], 400);
         }
 
         $pending = ClanApplication::find()
@@ -2052,7 +2078,7 @@ class ClansController extends BaseApiController
             throw new NotFoundHttpException('Application not found');
         }
 
-        if ($this->hasActiveClanOnServer($app->user_id, $clan->server_id)) {
+        if ($this->hasActiveClanMembership($app->user_id)) {
             $app->status = ClanApplication::STATUS_REJECTED;
             $app->resolved_at = time();
             $app->resolved_by_user_id = $user->id;
@@ -2495,6 +2521,31 @@ class ClansController extends BaseApiController
         return $clan;
     }
 
+    /**
+     * Клан по id для PATCH: сегмент URL — любой сервер с включёнными кланами (как у findClanByServerTag),
+     * сам клан может уже принадлежать другому server_id после переноса.
+     */
+    protected function findClanForUpdate(string $serverTag, int $id): Clan
+    {
+        $server = Servers::find()
+            ->where('LOWER(tag) = :tag', [':tag' => mb_strtolower(trim($serverTag), 'UTF-8')])
+            ->one();
+        if (!$server || !$server->isClansSystemEnabled()) {
+            throw new NotFoundHttpException('Server not found');
+        }
+
+        $clan = Clan::find()
+            ->where(['id' => $id])
+            ->with(['leaderUser.userProfile', 'server'])
+            ->one();
+
+        if (!$clan) {
+            throw new NotFoundHttpException('Clan not found');
+        }
+
+        return $clan;
+    }
+
     protected function getActiveMember(Clan $clan): ?ClanMember
     {
         if (Yii::$app->user->isGuest) {
@@ -2521,13 +2572,12 @@ class ClansController extends BaseApiController
         return $m;
     }
 
-    protected function hasActiveClanOnServer(int $userId, int $serverId): bool
+    /** Активное членство в любом клане (один клан на аккаунт). */
+    protected function hasActiveClanMembership(int $userId): bool
     {
         return ClanMember::find()
-            ->alias('m')
-            ->innerJoin(['c' => Clan::tableName()], 'c.id = m.clan_id')
-            ->where(['m.user_id' => $userId, 'c.server_id' => $serverId])
-            ->andWhere(['IS', 'm.leave_date', null])
+            ->where(['user_id' => $userId])
+            ->andWhere(['IS', 'leave_date', null])
             ->exists();
     }
 
@@ -2650,6 +2700,67 @@ class ClansController extends BaseApiController
         return $out;
     }
 
+    /**
+     * Снимок главного шкафа (main_cupboard) за текущий вайп сервера — только для участников в UI.
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function loadMainCupboardSnapshotForClan(Clan $clan): ?array
+    {
+        $server = $clan->server;
+        if (!$server) {
+            return null;
+        }
+        $wipe = (string)$server->currentWipe();
+        $row = ClanPluginCupboard::find()
+            ->where([
+                'clan_id' => (int)$clan->id,
+                'server_id' => (int)$server->id,
+                'wipe' => $wipe,
+                'main_cupboard' => 1,
+            ])
+            ->asArray()
+            ->one();
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'map_square' => (string)($row['map_square'] ?? ''),
+            'protected_blocks' => (int)($row['protected_blocks'] ?? 0),
+            'blocks_twigs' => (int)($row['blocks_twigs'] ?? 0),
+            'blocks_wood' => (int)($row['blocks_wood'] ?? 0),
+            'blocks_stone' => (int)($row['blocks_stone'] ?? 0),
+            'blocks_metal' => (int)($row['blocks_metal'] ?? 0),
+            'blocks_hqm' => (int)($row['blocks_hqm'] ?? 0),
+            'score' => (int)($row['score'] ?? 0),
+        ];
+    }
+
+    /**
+     * URL иконок стен как в калькуляторе рейдов (RaidTableController): те же ключи Drop → image_large.
+     *
+     * @return array<string, string|null>
+     */
+    protected function mainBaseWallGradeIconUrls(): array
+    {
+        $images = Statistics::productsImages();
+        $pairs = [
+            'twigs' => 'barricade.wood',
+            'wood' => 'wood-wall',
+            'stone' => 'stone-wall',
+            'metal' => 'metal-wall',
+            'hqm' => 'armored-wall',
+        ];
+        $out = [];
+        foreach ($pairs as $grade => $raidKey) {
+            $u = Statistics::getImageLarge($images, $raidKey);
+            $out[$grade] = ($u !== null && $u !== '') ? (string)$u : null;
+        }
+
+        return $out;
+    }
+
     protected function serializeClanListItem(Clan $clan): array
     {
         $memberCount = (int)ClanMember::find()
@@ -2685,6 +2796,13 @@ class ClansController extends BaseApiController
             'role' => $currentMember ? $currentMember->role : null,
             'permission_keys' => $currentMember ? $currentMember->getPermissionKeys() : [],
         ];
+
+        if ($currentMember !== null) {
+            $snap = $this->loadMainCupboardSnapshotForClan($clan);
+            $data['main_base_snapshot'] = $snap !== null
+                ? array_merge($snap, ['wall_icons' => $this->mainBaseWallGradeIconUrls()])
+                : null;
+        }
 
         return $data;
     }

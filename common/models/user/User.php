@@ -13,7 +13,6 @@ use common\models\avatar\AvatarFrame;
 use common\models\auth\AuthAssignment;
 use common\models\bans\Bans;
 use common\models\box\Drop;
-use common\models\clan\Clan;
 use common\models\invoice\Invoice;
 use common\models\invoice\Deposit;
 use common\models\profit\Profit;
@@ -1784,57 +1783,11 @@ class User extends ActiveRecord implements IdentityInterface
         if (!$insert && isset($changedAttributes['server_id']) && $this->server_id != $changedAttributes['server_id']) {
             $oldServerId = $changedAttributes['server_id'];
             $this->updateDiscordRolesOnServerChange($oldServerId);
-            $this->syncLeaderClanServers((int)$oldServerId);
         }
 
         // Синхронизация роли «Медиа» в Discord при смене признака блогера
         if (!$insert && isset($changedAttributes['is_blogger'])) {
             $this->queueDiscordRolesAfterBloggerFlagChange();
-        }
-    }
-
-    /**
-     * Если пользователь — лидер клана, сервер клана синхронизируем с сервером лидера.
-     *
-     * @param int $oldServerId
-     * @return void
-     */
-    protected function syncLeaderClanServers(int $oldServerId): void
-    {
-        $newServerId = (int)$this->server_id;
-        if ($newServerId <= 0 || $newServerId === $oldServerId) {
-            return;
-        }
-
-        $clans = Clan::find()
-            ->where([
-                'leader_user_id' => (int)$this->id,
-                'server_id' => $oldServerId,
-            ])
-            ->all();
-
-        if ($clans === []) {
-            return;
-        }
-
-        foreach ($clans as $clan) {
-            $clan->server_id = $newServerId;
-            if ($clan->save()) {
-                $clan->addEvent(
-                    'server_changed',
-                    Yii::t('common', 'Сервер клана автоматически изменен вслед за лидером'),
-                    (int)$this->id,
-                    [
-                        'old_server_id' => $oldServerId,
-                        'new_server_id' => $newServerId,
-                    ]
-                );
-            } else {
-                Yii::warning(
-                    "Failed to sync clan server for clan {$clan->id} after leader server change",
-                    __METHOD__
-                );
-            }
         }
     }
 
@@ -1972,10 +1925,13 @@ class User extends ActiveRecord implements IdentityInterface
             $useDailyRewards = true;
         }
 
-        // Зарейдил шкафов (количество рейдов типа 'cupboard')
-        $cupboardsRaided = UserRaid::find()
-            ->where(['user_id' => $this->id, 'type' => 'cupboard'])
-            ->count();
+        // Зарейдил шкафов (подлинные рейды чужих шкафов — real_raid, иначе только старый учёт по type)
+        $cupboardsRaidedQuery = UserRaid::find()->where(['user_id' => $this->id])->andWhere(['like', 'type', 'cupboard', false]);
+        $schema = Yii::$app->db->getTableSchema(UserRaid::tableName(), true);
+        if ($schema !== null && $schema->getColumn('real_raid') !== null) {
+            $cupboardsRaidedQuery->andWhere(['real_raid' => 1]);
+        }
+        $cupboardsRaided = $cupboardsRaidedQuery->count();
 
         // Максимальная дистанция убийства (из таблицы kills)
         $maxKillDistance = Kills::find()
