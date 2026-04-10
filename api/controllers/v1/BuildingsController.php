@@ -425,6 +425,16 @@ class BuildingsController extends BaseApiController
                     'id' => $raid->id,
                     'type' => $raid->type,
                     'createdAt' => $raid->created_at,
+                    'entity_id' => $raid->entity_id !== null && $raid->entity_id !== '' ? (string)$raid->entity_id : null,
+                    'clan_id' => $raid->hasAttribute('clan_id') && $raid->clan_id !== null && (int)$raid->clan_id > 0
+                        ? (int)$raid->clan_id
+                        : null,
+                    'blocks_wood' => $raid->hasAttribute('blocks_wood') ? (int)$raid->blocks_wood : 0,
+                    'blocks_stone' => $raid->hasAttribute('blocks_stone') ? (int)$raid->blocks_stone : 0,
+                    'blocks_metal' => $raid->hasAttribute('blocks_metal') ? (int)$raid->blocks_metal : 0,
+                    'blocks_hqm' => $raid->hasAttribute('blocks_hqm') ? (int)$raid->blocks_hqm : 0,
+                    'score' => $raid->hasAttribute('score') ? (int)$raid->score : 0,
+                    'main_cupboard' => $raid->hasAttribute('main_cupboard') ? (int)$raid->main_cupboard : 0,
                 ];
 
                 if ($raid->user) {

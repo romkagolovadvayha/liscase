@@ -2,7 +2,9 @@
 
 namespace common\components\queue\stats;
 
-use common\components\queue\telegram\SendMessageJob;
+use common\models\clan\Clan;
+use common\models\clan\ClanMember;
+use common\models\clan\ClanPluginCupboard;
 use common\models\servers\Servers;
 use common\models\user\User;
 use common\models\user\UserRaid;
@@ -58,6 +60,15 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         if (!empty($item['type'])) {
                             $model->type = $item['type'];
                         }
+                        if (isset($item['entity_id']) && $item['entity_id'] !== '') {
+                            $eid = (string)$item['entity_id'];
+                            if (strlen($eid) <= 64) {
+                                $model->entity_id = $eid;
+                            }
+                        }
+
+                        $ownersList = is_array($owners) ? $owners : [];
+                        $this->enrichCupboardRaidFromPlugin($model, $server, $wipeDate, $ownersList);
 
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
@@ -137,5 +148,82 @@ class SaveRaidJob extends BaseObject implements JobInterface
             Yii::$app->telegramChats->sendMessage($this->data);
             Yii::$app->telegramChats->sendMessage("SaveRaidJob: " . $e->getLine() . ":" . $e->getMessage());
         }
+    }
+
+    /**
+     * Для рейда шкафа: clan_id жертв и снимок блоков/score/main_cupboard из clan_plugin_cupboards по entity_id.
+     */
+    private function enrichCupboardRaidFromPlugin(UserRaid $model, Servers $server, string $wipeDate, array $ownersSteamIds): void
+    {
+        $type = (string)($model->type ?? '');
+        if ($type === '' || stripos($type, 'cupboard') === false) {
+            return;
+        }
+
+        $eid = trim((string)($model->entity_id ?? ''));
+        if ($eid !== '') {
+            $cup = ClanPluginCupboard::find()
+                ->where([
+                    'entity_id' => $eid,
+                    'server_id' => (int)$server->id,
+                    'wipe' => $wipeDate,
+                ])
+                ->one();
+            if ($cup !== null) {
+                if ($model->hasAttribute('blocks_wood')) {
+                    $model->blocks_wood = (int)$cup->blocks_wood;
+                    $model->blocks_stone = (int)$cup->blocks_stone;
+                    $model->blocks_metal = (int)$cup->blocks_metal;
+                    $model->blocks_hqm = (int)$cup->blocks_hqm;
+                    $model->score = (int)$cup->score;
+                    $model->main_cupboard = (int)$cup->main_cupboard;
+                }
+                if ($model->hasAttribute('clan_id') && $cup->clan_id !== null && (int)$cup->clan_id > 0) {
+                    $model->clan_id = (int)$cup->clan_id;
+                }
+            }
+        }
+
+        if (!$model->hasAttribute('clan_id')) {
+            return;
+        }
+        $cid = $model->clan_id;
+        if ($cid !== null && (int)$cid > 0) {
+            return;
+        }
+        $resolved = $this->resolveVictimClanIdFromOwners($ownersSteamIds, (int)$server->id);
+        if ($resolved !== null) {
+            $model->clan_id = $resolved;
+        }
+    }
+
+    private function resolveVictimClanIdFromOwners(array $ownersSteamIds, int $serverId): ?int
+    {
+        foreach ($ownersSteamIds as $raw) {
+            $steam = preg_replace('/\D/', '', (string)$raw);
+            if (strlen($steam) < 17) {
+                continue;
+            }
+            $user = User::find()->select(['id'])->where(['steam_id' => $steam])->one();
+            if ($user === null) {
+                $user = User::find()->select(['id'])->where(['steam_id' => (string)$raw])->one();
+            }
+            if ($user === null) {
+                continue;
+            }
+            $clanId = ClanMember::find()
+                ->alias('cm')
+                ->select(['cm.clan_id'])
+                ->innerJoin(['c' => Clan::tableName()], 'c.id = cm.clan_id')
+                ->where(['cm.user_id' => (int)$user->id])
+                ->andWhere(['IS', 'cm.leave_date', null])
+                ->andWhere(['c.server_id' => $serverId])
+                ->orderBy(['cm.id' => SORT_ASC])
+                ->scalar();
+            if ($clanId !== null && (int)$clanId > 0) {
+                return (int)$clanId;
+            }
+        }
+        return null;
     }
 }

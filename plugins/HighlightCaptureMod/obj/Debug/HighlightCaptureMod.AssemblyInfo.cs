@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HighlightCaptureMod")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+945c3a840afedab7312d9f8d271c359f25cd9319")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ea1db257d6200a3d3ebdb26d0cca2cb3ff68916")]
 [assembly: System.Reflection.AssemblyProductAttribute("HighlightCaptureMod")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HighlightCaptureMod")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

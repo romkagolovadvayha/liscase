@@ -872,7 +872,22 @@ class ClansController extends BaseApiController
         }
 
         $raidsQuery = UserRaid::find()
-            ->select(['id', 'user_id', 'owners', 'created_at', 'location', 'type'])
+            ->select([
+                'id',
+                'user_id',
+                'owners',
+                'created_at',
+                'location',
+                'type',
+                'entity_id',
+                'clan_id',
+                'blocks_wood',
+                'blocks_stone',
+                'blocks_metal',
+                'blocks_hqm',
+                'score',
+                'main_cupboard',
+            ])
             ->andWhere(['server_id' => (int)$clan->server_id])
             // В прод-данных type может быть "cupboard" или содержать префиксы/суффиксы.
             ->andWhere(['like', 'type', 'cupboard']);
@@ -1067,6 +1082,18 @@ class ClansController extends BaseApiController
                 'created_at' => (string)($row['created_at'] ?? ''),
                 'location' => (string)($row['location'] ?? ''),
                 'type' => (string)($row['type'] ?? ''),
+                'entity_id' => isset($row['entity_id']) && $row['entity_id'] !== null && $row['entity_id'] !== ''
+                    ? (string)$row['entity_id']
+                    : null,
+                'clan_id' => isset($row['clan_id']) && $row['clan_id'] !== null && (int)$row['clan_id'] > 0
+                    ? (int)$row['clan_id']
+                    : null,
+                'blocks_wood' => (int)($row['blocks_wood'] ?? 0),
+                'blocks_stone' => (int)($row['blocks_stone'] ?? 0),
+                'blocks_metal' => (int)($row['blocks_metal'] ?? 0),
+                'blocks_hqm' => (int)($row['blocks_hqm'] ?? 0),
+                'score' => (int)($row['score'] ?? 0),
+                'main_cupboard' => (int)($row['main_cupboard'] ?? 0),
                 'raider_user' => isset($attackerUsers[(int)$row['user_id']]) ? [
                     'id' => (int)$attackerUsers[(int)$row['user_id']]->id,
                     'username' => (string)$attackerUsers[(int)$row['user_id']]->username,

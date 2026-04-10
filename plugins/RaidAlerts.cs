@@ -15,7 +15,7 @@ using ConVar;
 
 namespace Oxide.Plugins
 {
-    [Info("Raid Alerts", "Prostoj", "1.0.1")]
+    [Info("Raid Alerts", "Prostoj", "1.0.2")]
     [Description("Raid Alert.")]
     public class RaidAlerts : CovalencePlugin
     {
@@ -132,6 +132,8 @@ namespace Oxide.Plugins
         private class Raid
         {
             public string steam_id = "";
+            /// <summary>Сетевой ID сущности (как в ClanCupboardReporter entity_id) для сопоставления с шкафами.</summary>
+            public string entity_id = "";
             public string entityLocation = "";
             public string type = "";
             public List<string> explosiveUsed = new List<string>();
@@ -204,6 +206,7 @@ namespace Oxide.Plugins
 
             Raid model = new Raid();
                 model.steam_id = attackerUserId;
+                model.entity_id = entity.net != null ? entity.net.ID.Value.ToString() : "";
                 model.entityLocation = entityLocation;
                 model.type = "cupboard";
 
@@ -282,6 +285,7 @@ namespace Oxide.Plugins
 
                 Raid model = new Raid();
                 model.steam_id = attackerUserId;
+                model.entity_id = entity.net != null ? entity.net.ID.Value.ToString() : "";
                 model.entityLocation = entityLocation;
                 model.type = type;
 

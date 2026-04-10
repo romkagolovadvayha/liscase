@@ -7,6 +7,7 @@ using Oxide.Core.Libraries;
 using Oxide.Core.Plugins;
 using UnityEngine;
 using ConVar;
+using Rust;
 
 namespace Oxide.Plugins
 {
@@ -14,7 +15,7 @@ namespace Oxide.Plugins
     /// Сбор шкафов по кланам: «главный» = с максимальным числом строительных блоков на upkeep (один проход по BuildingBlock).
     /// Дополнение к ClanManager: при загруженном ClanManager список кланов берётся через API без лишнего GET.
     /// </summary>
-    [Info("ClanCupboardReporter", "Prostoj", "1.0.1")]
+    [Info("ClanCupboardReporter", "Prostoj", "1.0.2")]
     public class ClanCupboardReporter : RustPlugin
     {
         [PluginReference] private Plugin ClanManager;
@@ -199,7 +200,7 @@ namespace Oxide.Plugins
                 }
             }
 
-            var blockCounts = new Dictionary<BuildingPrivlidge, int>();
+            var blockCounts = new Dictionary<BuildingPrivlidge, GradeBlockCounts>();
             var allCupboards = new List<BuildingPrivlidge>();
             foreach (var ent in BaseNetworkable.serverEntities)
             {
@@ -213,9 +214,12 @@ namespace Oxide.Plugins
                 var priv = block.GetBuildingPrivilege() as BuildingPrivlidge;
                 if (priv == null || priv.IsDestroyed)
                     continue;
-                if (!blockCounts.ContainsKey(priv))
-                    blockCounts[priv] = 0;
-                blockCounts[priv]++;
+                if (!blockCounts.TryGetValue(priv, out var gc))
+                {
+                    gc = new GradeBlockCounts();
+                    blockCounts[priv] = gc;
+                }
+                IncrementBlockCountForGrade(gc, block.grade);
             }
 
             var byTag = new Dictionary<string, List<CupboardRow>>(StringComparer.Ordinal);
@@ -245,7 +249,7 @@ namespace Oxide.Plugins
             {
                 var tag = kv.Key;
                 var rows = kv.Value;
-                var main = rows.OrderByDescending(r => r.protected_blocks).First();
+                var main = rows.OrderByDescending(r => r.protected_blocks).ThenBy(r => r.entity_id, StringComparer.Ordinal).First();
                 var mainId = main.entity_id;
 
                 if (mode == "summary")
@@ -266,6 +270,7 @@ namespace Oxide.Plugins
                             r.map_square,
                             r.placer_steam_id,
                             r.protected_blocks,
+                            r.protected_blocks_by_grade,
                             main_cupboard = r.entity_id == mainId,
                         })
                         .OrderByDescending(x => x.protected_blocks)
@@ -318,17 +323,55 @@ namespace Oxide.Plugins
             }, this, RequestMethod.POST, headers, 60f);
         }
 
-        private static CupboardRow BuildRow(BuildingPrivlidge cup, Dictionary<BuildingPrivlidge, int> blockCounts)
+        private static CupboardRow BuildRow(BuildingPrivlidge cup, Dictionary<BuildingPrivlidge, GradeBlockCounts> blockCounts)
         {
             var pos = cup.transform.position;
-            blockCounts.TryGetValue(cup, out var n);
+            if (!blockCounts.TryGetValue(cup, out var gc))
+                gc = new GradeBlockCounts();
             return new CupboardRow
             {
                 entity_id = cup.net.ID.Value.ToString(),
                 map_square = GetRustMapSquare(pos),
                 placer_steam_id = cup.OwnerID.ToString(),
-                protected_blocks = n,
+                protected_blocks = gc.Total,
+                protected_blocks_by_grade = ProtectedBlocksByGradeDto.FromCounts(gc),
             };
+        }
+
+        /// <summary>Twigs / wood / stone / metal / TopTier (HQM) — как <see cref="BuildingGrade.Enum"/>.</summary>
+        private sealed class GradeBlockCounts
+        {
+            public int twigs;
+            public int wood;
+            public int stone;
+            public int metal;
+            public int hqm;
+
+            public int Total => twigs + wood + stone + metal + hqm;
+        }
+
+        private static void IncrementBlockCountForGrade(GradeBlockCounts c, BuildingGrade.Enum g)
+        {
+            switch (g)
+            {
+                case BuildingGrade.Enum.Twigs:
+                    c.twigs++;
+                    break;
+                case BuildingGrade.Enum.Wood:
+                    c.wood++;
+                    break;
+                case BuildingGrade.Enum.Stone:
+                    c.stone++;
+                    break;
+                case BuildingGrade.Enum.Metal:
+                    c.metal++;
+                    break;
+                case BuildingGrade.Enum.TopTier:
+                    c.hqm++;
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>Квадрат карты как SignStatistics / RustApp MapHelper (сетка 146.3).</summary>
@@ -351,6 +394,29 @@ namespace Oxide.Plugins
             public string map_square;
             public string placer_steam_id;
             public int protected_blocks;
+            [JsonProperty("protected_blocks_by_grade")]
+            public ProtectedBlocksByGradeDto protected_blocks_by_grade;
+        }
+
+        private sealed class ProtectedBlocksByGradeDto
+        {
+            [JsonProperty("twigs")] public int twigs;
+            [JsonProperty("wood")] public int wood;
+            [JsonProperty("stone")] public int stone;
+            [JsonProperty("metal")] public int metal;
+            [JsonProperty("hqm")] public int hqm;
+
+            public static ProtectedBlocksByGradeDto FromCounts(GradeBlockCounts g)
+            {
+                return new ProtectedBlocksByGradeDto
+                {
+                    twigs = g.twigs,
+                    wood = g.wood,
+                    stone = g.stone,
+                    metal = g.metal,
+                    hqm = g.hqm,
+                };
+            }
         }
 
     }

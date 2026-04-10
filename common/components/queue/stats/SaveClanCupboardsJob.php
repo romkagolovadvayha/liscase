@@ -235,6 +235,19 @@ class SaveClanCupboardsJob extends BaseObject implements JobInterface
             $protected = 0;
         }
 
+        $g = isset($cup['protected_blocks_by_grade']) && is_array($cup['protected_blocks_by_grade'])
+            ? $cup['protected_blocks_by_grade']
+            : [];
+        $blocksTwigs = max(0, (int) ($g['twigs'] ?? 0));
+        $blocksWood = max(0, (int) ($g['wood'] ?? 0));
+        $blocksStone = max(0, (int) ($g['stone'] ?? 0));
+        $blocksMetal = max(0, (int) ($g['metal'] ?? 0));
+        $blocksHqm = max(0, (int) ($g['hqm'] ?? 0));
+        $sumGrades = $blocksTwigs + $blocksWood + $blocksStone + $blocksMetal + $blocksHqm;
+        if ($sumGrades > 0) {
+            $protected = $sumGrades;
+        }
+
         $model = ClanPluginCupboard::find()
             ->where([
                 'entity_id' => $entityId,
@@ -254,6 +267,12 @@ class SaveClanCupboardsJob extends BaseObject implements JobInterface
         $model->map_square = $mapSquare;
         $model->placer_steam_id = $placer;
         $model->protected_blocks = $protected;
+        $model->blocks_twigs = $blocksTwigs;
+        $model->blocks_wood = $blocksWood;
+        $model->blocks_stone = $blocksStone;
+        $model->blocks_metal = $blocksMetal;
+        $model->blocks_hqm = $blocksHqm;
+        $model->score = ClanPluginCupboard::computeBaseScore($blocksHqm, $blocksMetal, $blocksStone, $blocksWood);
         $model->main_cupboard = 0;
         $model->clan_id = $clanId;
         $model->clan_tag = $clanTag;
