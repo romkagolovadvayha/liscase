@@ -4,6 +4,7 @@ namespace common\models\clan;
 
 use common\components\base\ActiveRecord;
 use common\models\servers\Servers;
+use common\models\user\UserRaid;
 use Yii;
 
 /**
@@ -101,7 +102,8 @@ class ClanRanking extends ActiveRecord
     }
 
     /**
-     * Расчет рейтингов для всех кланов
+     * Расчёт рейтингов: сумма {@see UserRaid::score} по {@see UserRaid::raider_clan_id} на сервере.
+     * Период задаёт фильтр по вайпу или дате рейда; сохраняется только {@see RANKING_OVERALL}.
      *
      * @param int $serverId
      * @param string $period
@@ -114,53 +116,84 @@ class ClanRanking extends ActiveRecord
             return;
         }
 
-        $wipe = $server->currentWipe();
+        static::deleteAll([
+            'and',
+            ['server_id' => (int)$serverId],
+            ['period' => (string)$period],
+            ['in', 'ranking_type', static::obsoleteRankingTypes()],
+        ]);
+
+        $sumsByClan = static::sumRaidScoresByRaiderClan((int)$serverId, $period, $server);
 
         $clans = Clan::find()
-            ->innerJoin(
-                ['cs' => ClanStatistics::tableName()],
-                '[[cs]].[[clan_id]] = [[clans]].[[id]] AND [[cs]].[[server_id]] = :sid AND [[cs]].[[wipe]] = :wipe',
-                [':sid' => (int)$serverId, ':wipe' => (string)$wipe]
-            )
+            ->where(['server_id' => (int)$serverId])
             ->all();
 
         foreach ($clans as $clan) {
-            // Только статистика по серверу рейтинга ($serverId). getClanStatistics() смотрит на clans.server_id —
-            // при переносе клана на другой сервер в clan_rankings для старого сервера попадали чужие top_*.
-            $statistics = ClanStatistics::find()
-                ->where([
-                    'clan_id' => (int)$clan->id,
-                    'server_id' => (int)$serverId,
-                    'wipe' => (string)$wipe,
-                ])
-                ->one();
-            if ($statistics === null) {
-                continue;
-            }
-
-            // Расчет рейтингов по различным типам
-            $rankingTypes = [
-                self::RANKING_KILLS => $statistics->top_kills,
-                self::RANKING_REIDER => $statistics->top_reider,
-                self::RANKING_FARMER => $statistics->top_farmer,
-                self::RANKING_FISHING => $statistics->top_fishing,
-                self::RANKING_HUNTER => $statistics->top_hunter,
-                self::RANKING_FERMER => $statistics->top_fermer,
-                self::RANKING_PLAYTIME => $statistics->top_playtime,
-            ];
-
-            // Overall рейтинг - среднее всех рейтингов
-            $overallScore = array_sum($rankingTypes) / count($rankingTypes);
-
-            foreach ($rankingTypes as $type => $score) {
-                static::updateClanRanking($clan->id, $serverId, $type, $period, $score);
-            }
-
-            static::updateClanRanking($clan->id, $serverId, self::RANKING_OVERALL, $period, $overallScore);
+            $score = (float)($sumsByClan[(int)$clan->id] ?? 0.0);
+            static::updateClanRanking((int)$clan->id, (int)$serverId, self::RANKING_OVERALL, $period, $score);
         }
 
-        // Обновление позиций после расчета всех баллов
         static::updatePositions($serverId, $period);
+    }
+
+    /**
+     * @return string[]
+     */
+    private static function obsoleteRankingTypes(): array
+    {
+        return [
+            self::RANKING_KILLS,
+            self::RANKING_REIDER,
+            self::RANKING_FARMER,
+            self::RANKING_FISHING,
+            self::RANKING_HUNTER,
+            self::RANKING_FERMER,
+            self::RANKING_PLAYTIME,
+            self::RANKING_ACTIVITY,
+        ];
+    }
+
+    /**
+     * @return array<int, float> clan_id => sum(score)
+     */
+    private static function sumRaidScoresByRaiderClan(int $serverId, string $period, Servers $server): array
+    {
+        $q = UserRaid::find()
+            ->select([
+                'raider_clan_id',
+                'SUM(COALESCE([[score]], 0)) AS raid_total',
+            ])
+            ->where(['server_id' => $serverId])
+            ->andWhere(['not', ['raider_clan_id' => null]])
+            ->andWhere(['>', 'raider_clan_id', 0]);
+
+        switch ($period) {
+            case self::PERIOD_CURRENT_WIPE:
+                $q->andWhere(['wipe' => (string)$server->currentWipe()]);
+                break;
+            case self::PERIOD_MONTHLY:
+                $q->andWhere(['>=', 'created_at', date('Y-m-01 00:00:00')]);
+                break;
+            case self::PERIOD_WEEKLY:
+                $q->andWhere(['>=', 'created_at', date('Y-m-d H:i:s', strtotime('-7 days'))]);
+                break;
+            case self::PERIOD_ALL_TIME:
+            default:
+                break;
+        }
+
+        $q->groupBy(['raider_clan_id']);
+        $rows = $q->asArray()->all();
+        $out = [];
+        foreach ($rows as $row) {
+            $cid = (int)($row['raider_clan_id'] ?? 0);
+            if ($cid <= 0) {
+                continue;
+            }
+            $out[$cid] = (float)($row['raid_total'] ?? 0);
+        }
+        return $out;
     }
 
     /**
@@ -208,13 +241,6 @@ class ClanRanking extends ActiveRecord
     {
         $rankingTypes = [
             self::RANKING_OVERALL,
-            self::RANKING_KILLS,
-            self::RANKING_REIDER,
-            self::RANKING_FARMER,
-            self::RANKING_FISHING,
-            self::RANKING_HUNTER,
-            self::RANKING_FERMER,
-            self::RANKING_PLAYTIME,
         ];
 
         foreach ($rankingTypes as $type) {

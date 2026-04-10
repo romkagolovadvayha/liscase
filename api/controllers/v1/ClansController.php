@@ -92,9 +92,15 @@ class ClansController extends BaseApiController
         ]);
 
         $models = $provider->getModels();
+        $raidScoresByClan = $this->loadMainCupboardRaidScoresForClans($models);
         $items = [];
         foreach ($models as $clan) {
-            $items[] = $this->serializeClanListItem($clan);
+            $row = $this->serializeClanListItem($clan);
+            $cid = (int)$clan->id;
+            $row['main_cupboard_raid_score'] = array_key_exists($cid, $raidScoresByClan)
+                ? $raidScoresByClan[$cid]
+                : null;
+            $items[] = $row;
         }
 
         return $this->successResponse([
@@ -213,6 +219,20 @@ class ClansController extends BaseApiController
         $serverTag = $request->get('server_tag');
         $type = $request->get('type', 'overall');
         $period = $request->get('period', 'all_time');
+        // Рейтинг хранится только как overall (очки рейдов); старые type из UI ведут сюда же.
+        $legacyTypes = [
+            ClanRanking::RANKING_KILLS,
+            ClanRanking::RANKING_REIDER,
+            ClanRanking::RANKING_FARMER,
+            ClanRanking::RANKING_FISHING,
+            ClanRanking::RANKING_HUNTER,
+            ClanRanking::RANKING_FERMER,
+            ClanRanking::RANKING_PLAYTIME,
+            ClanRanking::RANKING_ACTIVITY,
+        ];
+        if (in_array((string)$type, $legacyTypes, true)) {
+            $type = ClanRanking::RANKING_OVERALL;
+        }
         $page = max(1, (int)$request->get('page', 1));
         $pageSize = min(50, max(1, (int)$request->get('pageSize', 20)));
 
@@ -289,7 +309,7 @@ class ClansController extends BaseApiController
             ->where([
                 'r.server_id' => $server->id,
                 'r.ranking_type' => ClanRanking::RANKING_OVERALL,
-                'r.period' => ClanRanking::PERIOD_ALL_TIME,
+                'r.period' => ClanRanking::PERIOD_CURRENT_WIPE,
             ])
             ->orderBy(['r.position' => SORT_ASC])
             ->limit(3)
@@ -2562,6 +2582,72 @@ class ClansController extends BaseApiController
         }
 
         return $slugBase . '-' . (int)$clan->id;
+    }
+
+    /**
+     * Очки {@see ClanPluginCupboard::score} с главного шкафа клана (main_cupboard = 1) за текущий вайп сервера.
+     *
+     * @param Clan[] $clans
+     * @return array<int, int|null> clan_id => score или null, если строки нет
+     */
+    protected function loadMainCupboardRaidScoresForClans(array $clans): array
+    {
+        if ($clans === []) {
+            return [];
+        }
+        $clanIds = [];
+        $serverIds = [];
+        foreach ($clans as $clan) {
+            if (!$clan instanceof Clan) {
+                continue;
+            }
+            $clanIds[] = (int)$clan->id;
+            $serverIds[(int)$clan->server_id] = true;
+        }
+        $clanIds = array_values(array_unique(array_filter($clanIds)));
+        if ($clanIds === []) {
+            return [];
+        }
+
+        $servers = Servers::find()
+            ->where(['id' => array_keys($serverIds)])
+            ->indexBy('id')
+            ->all();
+        $or = ['or'];
+        foreach ($servers as $sid => $srv) {
+            $or[] = ['server_id' => (int)$sid, 'wipe' => (string)$srv->currentWipe()];
+        }
+        if (count($or) < 2) {
+            return array_fill_keys($clanIds, null);
+        }
+
+        $rows = ClanPluginCupboard::find()
+            ->select(['clan_id', 'score'])
+            ->where(['main_cupboard' => 1])
+            ->andWhere(['not', ['clan_id' => null]])
+            ->andWhere(['>', 'clan_id', 0])
+            ->andWhere(['in', 'clan_id', $clanIds])
+            ->andWhere($or)
+            ->asArray()
+            ->all();
+
+        $best = [];
+        foreach ($rows as $r) {
+            $cid = (int)($r['clan_id'] ?? 0);
+            if ($cid <= 0) {
+                continue;
+            }
+            $sc = (int)($r['score'] ?? 0);
+            if (!isset($best[$cid]) || $sc > $best[$cid]) {
+                $best[$cid] = $sc;
+            }
+        }
+
+        $out = [];
+        foreach ($clanIds as $cid) {
+            $out[$cid] = array_key_exists($cid, $best) ? $best[$cid] : null;
+        }
+        return $out;
     }
 
     protected function serializeClanListItem(Clan $clan): array
