@@ -238,8 +238,9 @@ class ClansController extends BaseApiController
 
         $query = ClanRanking::find()->alias('r')->with(['clan']);
         $query->innerJoin(['srv' => Servers::tableName()], '[[srv]].[[id]] = [[r]].[[server_id]]');
-        // Только существующий клан; server_id клана может отличаться от r.server_id — клан «играл» на этом сервере.
+        // Только клан, зарегистрированный на этом же сервере (после переноса клана старые строки r.server_id не показываем).
         $query->innerJoin(['c' => Clan::tableName()], '[[c]].[[id]] = [[r]].[[clan_id]]');
+        $query->andWhere('[[c]].[[server_id]] = [[r]].[[server_id]]');
         if (Servers::hasClansEnabledColumn()) {
             $query->andWhere(['srv.clans_enabled' => 1]);
         }
@@ -311,6 +312,7 @@ class ClansController extends BaseApiController
                 'r.ranking_type' => ClanRanking::RANKING_OVERALL,
                 'r.period' => ClanRanking::PERIOD_CURRENT_WIPE,
             ])
+            ->andWhere('[[c]].[[server_id]] = [[r]].[[server_id]]')
             ->orderBy(['r.position' => SORT_ASC])
             ->limit(3)
             ->with(['clan.leaderUser.userProfile', 'clan.server'])

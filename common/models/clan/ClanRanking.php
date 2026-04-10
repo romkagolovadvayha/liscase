@@ -134,6 +134,23 @@ class ClanRanking extends ActiveRecord
             static::updateClanRanking((int)$clan->id, (int)$serverId, self::RANKING_OVERALL, $period, $score);
         }
 
+        $validClanIds = array_map(static fn (Clan $c): int => (int)$c->id, $clans);
+        if ($validClanIds === []) {
+            static::deleteAll([
+                'server_id' => (int)$serverId,
+                'period' => (string)$period,
+                'ranking_type' => self::RANKING_OVERALL,
+            ]);
+        } else {
+            static::deleteAll([
+                'and',
+                ['server_id' => (int)$serverId],
+                ['period' => (string)$period],
+                ['ranking_type' => self::RANKING_OVERALL],
+                ['not in', 'clan_id', $validClanIds],
+            ]);
+        }
+
         static::updatePositions($serverId, $period);
     }
 
