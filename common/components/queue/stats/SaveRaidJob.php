@@ -74,7 +74,8 @@ class SaveRaidJob extends BaseObject implements JobInterface
                         }
 
                         $ownersList = is_array($owners) ? $owners : [];
-                        $this->enrichCupboardRaidFromPlugin($model, $server, $wipeDate, $ownersList);
+                        $cupPluginRow = $this->enrichCupboardRaidFromPlugin($model, $server, $wipeDate, $ownersList);
+                        $this->assignRealRaidCupboard($model, $server, $ownersList, $cupPluginRow);
 
                         if (!empty($model->getErrors())) {
                             Yii::$app->telegramChats->sendMessage("SaveRaidJob save UserRaid: " . json_encode($model->getErrors()));
@@ -158,14 +159,17 @@ class SaveRaidJob extends BaseObject implements JobInterface
 
     /**
      * Для рейда шкафа: clan_id жертв и снимок блоков/score/main_cupboard из clan_plugin_cupboards по entity_id.
+     *
+     * @return ClanPluginCupboard|null строка плагина, если сущность найдена в снимке на этот вайп
      */
-    private function enrichCupboardRaidFromPlugin(UserRaid $model, Servers $server, string $wipeDate, array $ownersSteamIds): void
+    private function enrichCupboardRaidFromPlugin(UserRaid $model, Servers $server, string $wipeDate, array $ownersSteamIds): ?ClanPluginCupboard
     {
         $type = (string)($model->type ?? '');
         if ($type === '' || stripos($type, 'cupboard') === false) {
-            return;
+            return null;
         }
 
+        $cup = null;
         $eid = trim((string)($model->entity_id ?? ''));
         if ($eid !== '') {
             $cup = ClanPluginCupboard::find()
@@ -190,38 +194,166 @@ class SaveRaidJob extends BaseObject implements JobInterface
             }
         }
 
-        if (!$model->hasAttribute('clan_id')) {
+        if ($model->hasAttribute('clan_id')) {
+            $cid = $model->clan_id;
+            if ($cid === null || (int)$cid <= 0) {
+                $resolved = $this->resolveVictimClanIdFromOwners($ownersSteamIds, (int)$server->id);
+                if ($resolved !== null) {
+                    $model->clan_id = $resolved;
+                }
+            }
+        }
+
+        return $cup;
+    }
+
+    /**
+     * real_raid=1 только для шкафа: есть снимок плагина по entity_id, чужая база, не альт в клане атакующих, был расход взрывчатки.
+     */
+    private function assignRealRaidCupboard(
+        UserRaid $model,
+        Servers $server,
+        array $ownersSteamIds,
+        ?ClanPluginCupboard $pluginRow
+    ): void {
+        if (!$model->hasAttribute('real_raid')) {
             return;
         }
-        $cid = $model->clan_id;
-        if ($cid !== null && (int)$cid > 0) {
+        $type = (string)($model->type ?? '');
+        if (stripos($type, 'cupboard') === false) {
+            $model->real_raid = 0;
+
             return;
         }
-        $resolved = $this->resolveVictimClanIdFromOwners($ownersSteamIds, (int)$server->id);
-        if ($resolved !== null) {
-            $model->clan_id = $resolved;
+
+        $model->real_raid = 0;
+
+        if ($pluginRow === null) {
+            return;
         }
+
+        $victimClanId = (int)($model->clan_id ?? 0);
+        if ($victimClanId <= 0) {
+            return;
+        }
+
+        $victimClan = Clan::find()->select(['id', 'server_id'])->where(['id' => $victimClanId])->one();
+        if ($victimClan === null || (int)$victimClan->server_id !== (int)$server->id) {
+            return;
+        }
+
+        $raiderClanId = isset($model->raider_clan_id) && (int)$model->raider_clan_id > 0
+            ? (int)$model->raider_clan_id
+            : null;
+
+        if ($raiderClanId !== null && $raiderClanId === $victimClanId) {
+            return;
+        }
+
+        if ($this->isUserActiveMemberOfClan((int)$model->user_id, $victimClanId)) {
+            return;
+        }
+
+        $raider = User::find()->select(['id', 'steam_id'])->where(['id' => (int)$model->user_id])->one();
+        $raiderSteam = $raider && !empty($raider->steam_id) ? $this->normalizeSteamDigits((string)$raider->steam_id) : null;
+
+        if ($pluginRow->placer_steam_id !== null && $pluginRow->placer_steam_id !== '') {
+            $placer = $this->normalizeSteamDigits((string)$pluginRow->placer_steam_id);
+            if ($placer !== null && $raiderSteam !== null && $placer === $raiderSteam) {
+                return;
+            }
+        }
+
+        foreach ($ownersSteamIds as $raw) {
+            $oSteam = $this->normalizeSteamDigits((string)$raw);
+            if ($oSteam !== null && $raiderSteam !== null && $oSteam === $raiderSteam) {
+                return;
+            }
+            $ownerUid = $this->resolveUserIdBySteam($raw);
+            if ($ownerUid === null) {
+                continue;
+            }
+            if ($ownerUid === (int)$model->user_id) {
+                return;
+            }
+            if ($raiderClanId !== null) {
+                $ownersRaidingClan = $this->resolveActiveClanIdForUserOnServer($ownerUid, (int)$server->id);
+                if ($ownersRaidingClan !== null && $ownersRaidingClan === $raiderClanId) {
+                    return;
+                }
+            }
+        }
+
+        if (!$this->hasMeaningfulExplosives($model->explosives)) {
+            return;
+        }
+
+        $model->real_raid = 1;
+    }
+
+    private function hasMeaningfulExplosives(?string $json): bool
+    {
+        if ($json === null || $json === '') {
+            return false;
+        }
+        $arr = json_decode($json, true);
+        if (!is_array($arr) || $arr === []) {
+            return false;
+        }
+        foreach ($arr as $v) {
+            if (is_numeric($v) && (float)$v > 0) {
+                return true;
+            }
+            if (is_string($v) && trim($v) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function normalizeSteamDigits(string $raw): ?string
+    {
+        $digits = preg_replace('/\D/', '', $raw);
+
+        return strlen($digits) >= 17 ? $digits : null;
+    }
+
+    private function resolveUserIdBySteam($raw): ?int
+    {
+        $steam = preg_replace('/\D/', '', (string)$raw);
+        if (strlen($steam) < 17) {
+            return null;
+        }
+        $u = User::find()->select(['id'])->where(['steam_id' => $steam])->one();
+        if ($u === null) {
+            $u = User::find()->select(['id'])->where(['steam_id' => (string)$raw])->one();
+        }
+
+        return $u !== null ? (int)$u->id : null;
+    }
+
+    private function isUserActiveMemberOfClan(int $userId, int $clanId): bool
+    {
+        return ClanMember::find()
+            ->where(['user_id' => $userId, 'clan_id' => $clanId])
+            ->andWhere(['IS', 'leave_date', null])
+            ->exists();
     }
 
     private function resolveVictimClanIdFromOwners(array $ownersSteamIds, int $serverId): ?int
     {
         foreach ($ownersSteamIds as $raw) {
-            $steam = preg_replace('/\D/', '', (string)$raw);
-            if (strlen($steam) < 17) {
+            $uid = $this->resolveUserIdBySteam($raw);
+            if ($uid === null) {
                 continue;
             }
-            $u = User::find()->select(['id'])->where(['steam_id' => $steam])->one();
-            if ($u === null) {
-                $u = User::find()->select(['id'])->where(['steam_id' => (string)$raw])->one();
-            }
-            if ($u === null) {
-                continue;
-            }
-            $cid = $this->resolveActiveClanIdForUserOnServer((int)$u->id, $serverId);
+            $cid = $this->resolveActiveClanIdForUserOnServer($uid, $serverId);
             if ($cid !== null) {
                 return $cid;
             }
         }
+
         return null;
     }
 

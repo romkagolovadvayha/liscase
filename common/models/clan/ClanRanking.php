@@ -102,7 +102,7 @@ class ClanRanking extends ActiveRecord
     }
 
     /**
-     * Расчёт рейтингов: сумма {@see UserRaid::score} по {@see UserRaid::raider_clan_id} на сервере.
+     * Расчёт рейтингов: сумма {@see UserRaid::score} только по строкам {@see UserRaid::real_raid} = 1.
      * Период задаёт фильтр по вайпу или дате рейда; сохраняется только {@see RANKING_OVERALL}.
      *
      * @param int $serverId
@@ -167,6 +167,12 @@ class ClanRanking extends ActiveRecord
             ->where(['server_id' => $serverId])
             ->andWhere(['not', ['raider_clan_id' => null]])
             ->andWhere(['>', 'raider_clan_id', 0]);
+
+        $raidSchema = Yii::$app->db->getTableSchema(UserRaid::tableName(), true);
+        if ($raidSchema === null || $raidSchema->getColumn('real_raid') === null) {
+            return [];
+        }
+        $q->andWhere(['real_raid' => 1]);
 
         switch ($period) {
             case self::PERIOD_CURRENT_WIPE:
