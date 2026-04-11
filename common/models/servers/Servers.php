@@ -805,7 +805,7 @@ class Servers extends \common\components\base\ActiveRecord
 
     public function getWipes($update = false)
     {
-        $cacheKey = 'Servers_getWipes_' . $this->id;
+        $cacheKey = 'Servers_getWipes2_' . $this->id;
         if (Yii::$app->cache->get($cacheKey) && !$update) {
             return Yii::$app->cache->get($cacheKey);
         }
@@ -827,7 +827,7 @@ class Servers extends \common\components\base\ActiveRecord
             }
         }
 
-        Yii::$app->cache->set($cacheKey, $result, 30*24*60*60); // 30 дней
+        Yii::$app->cache->set($cacheKey, $result, 60*60); // 1 час
         return $result;
     }
 
