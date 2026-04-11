@@ -66,7 +66,7 @@ class StatsCacheHelper
         $tag = preg_replace('/[^a-zA-Z0-9_-]/', '_', $serverTag);
         $h = md5($wipe);
 
-        return 'api_stats_server_players_table_v1_' . $tag . '_' . $h;
+        return 'api_stats_server_players_table_' . $tag . '_' . $h;
     }
 
     /**
