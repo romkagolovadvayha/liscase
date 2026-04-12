@@ -535,7 +535,11 @@ class AuthController extends BaseApiController
         // SteamAuth (Vikas5914) хранит steamid в $_SESSION['steamdata']. Пока это не сброшено,
         // следующий заход на /v1/auth/oauth считает пользователя уже залогиненным в Steam и
         // сразу выдаёт JWT — без экрана Steam (выглядит как «вход под старыми данными»).
-        if (session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['steamdata'])) {
+        // Нужно явно открыть сессию: при XHR с Cookie сессия иначе может быть не загружена в $_SESSION.
+        if (Yii::$app->has('session')) {
+            Yii::$app->session->open();
+        }
+        if (isset($_SESSION['steamdata'])) {
             unset($_SESSION['steamdata']);
         }
 
