@@ -14,6 +14,7 @@ use common\models\support\SupportSticker;
 use common\models\support\SupportRead;
 use common\models\user\User;
 use common\models\statistics\Reports;
+use common\models\servers\Servers;
 use common\components\helpers\Role;
 use common\components\queue\support\BeforeMessageJob;
 use api\components\jwt\JwtAuthFilter;
@@ -319,7 +320,7 @@ class SupportController extends BaseApiController
         // Сервер тикета, профиль и steam_id нужны для блока USER_INFO (как в frontend/views/support/message/_user_info.php)
         $ticket = Support::find()
             ->where(['id' => $ticket->id])
-            ->with(['user', 'user.userProfile', 'server'])
+            ->with(['user', 'user.userProfile', 'user.server', 'server'])
             ->one();
 
         // Просмотр тикета (в т.ч. закрытого) разрешён: создателю, админу, модератору, поддержке
@@ -1212,13 +1213,38 @@ class SupportController extends BaseApiController
             ];
         }
 
+        // Сервер для UI — текущий сервер автора тикета (User::getCurrentServer), не support.server_tag
         $serverPayload = null;
-        if ($ticket->server) {
-            $serverPayload = [
-                'id' => (int) $ticket->server->id,
-                'name' => Yii::t('database', $ticket->server->name),
-                'tag' => $ticket->server->tag,
-            ];
+        $serverTagOut = null;
+        if ($ticket->user) {
+            $current = $ticket->user->getCurrentServer();
+            if ($current instanceof Servers) {
+                $serverPayload = [
+                    'id' => (int) $current->id,
+                    'name' => Yii::t('database', $current->name),
+                    'tag' => $current->tag,
+                ];
+                $tg = $current->tag;
+                $serverTagOut = ($tg !== null && $tg !== '') ? trim((string) $tg) : null;
+            } elseif (is_string($current) && trim($current) !== '') {
+                $tagTrim = trim($current);
+                $srv = Servers::find()->where(['tag' => $tagTrim])->limit(1)->one();
+                if ($srv) {
+                    $serverPayload = [
+                        'id' => (int) $srv->id,
+                        'name' => Yii::t('database', $srv->name),
+                        'tag' => $srv->tag,
+                    ];
+                    $serverTagOut = trim((string) $srv->tag);
+                } else {
+                    $serverPayload = [
+                        'id' => 1,
+                        'name' => $tagTrim,
+                        'tag' => $tagTrim,
+                    ];
+                    $serverTagOut = $tagTrim;
+                }
+            }
         }
 
         $out = [
@@ -1228,9 +1254,9 @@ class SupportController extends BaseApiController
             'status' => $ticket->status === Support::STATUS_OPEN ? 'open' : 'closed',
             'status_name' => Support::getStatusList()[$ticket->status] ?? null,
             'user' => $userPayload,
-            /** Сервер тикета (по server_tag), как $model->support->server в _user_info.php */
+            /** Текущий сервер автора тикета (User::getCurrentServer) */
             'server' => $serverPayload,
-            'server_tag' => $ticket->server_tag,
+            'server_tag' => $serverTagOut,
             'created_at' => $ticket->created_at,
             'updated_at' => $ticket->updated_at,
             'unread_count' => 0, // Для нового тикета всегда 0
