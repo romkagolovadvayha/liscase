@@ -1,6 +1,7 @@
 <?php
 
-use yii\base\Component;
+use yii\helpers\ReplaceArrayValue;
+use yii\helpers\UnsetArrayValue;
 
 // Убеждаемся что Yii загружен (для тестов)
 if (!class_exists('Yii', false)) {
@@ -18,13 +19,15 @@ $languages = [
     'es' => 'es-ES',
 ];
 $config = [
-    'id' => 'basic',
+    // Отдельный id от фронта — удобнее в логах/метриках
+    'id' => 'liscase-api',
     'basePath' => dirname(__DIR__),
     'language' => 'ru-RU',
-    'bootstrap' => [
+    // После merge с common/web.php иначе получится bootstrap: log, log, LanguageBootstrap (дубль log).
+    'bootstrap' => new ReplaceArrayValue([
         'log',
         'api\components\LanguageBootstrap', // Yii::$app->language из куки NEXT_LOCALE / Accept-Language / ?language= для Yii::t()
-    ],
+    ]),
     'controllerNamespace' => 'api\controllers',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
@@ -34,8 +37,14 @@ $config = [
         'swagger' => [
             'class' => 'api\modules\swagger\Module',
         ],
+        // Модули фронта из common/web.php JSON API не использует — не регистрируем Kartik/yii2mod.
+        'gridview' => new UnsetArrayValue(),
+        'comment' => new UnsetArrayValue(),
     ],
     'components' => [
+        'response' => [
+            'format' => yii\web\Response::FORMAT_JSON,
+        ],
         'jwt' => [
             'class' => 'api\components\jwt\JwtService',
             'secret' => $params['jwt']['secret'] ?? getenv('JWT_SECRET'),
@@ -336,9 +345,12 @@ $config = [
                 'application/json' => 'yii\web\JsonParser',
             ],
         ],
+        // REST почти без ассетов; в prod не трогаем диск лишний раз при редких HTML/ошибках.
         'assetManager' => [
             'class' => 'yii\web\AssetManager',
             'forceCopy' => YII_DEBUG,
+            'appendTimestamp' => YII_DEBUG,
+            'linkAssets' => false,
         ],
         'errorHandler' => [
             'errorAction' => 'site/error',
@@ -349,7 +361,8 @@ $config = [
             // send all mails to a file by default.
             'useFileTransport' => true,
         ],
-        'log' => [
+        // Полная замена log с common: иначе merge добавит второй FileTarget и дублирует telegram.
+        'log' => new ReplaceArrayValue([
             'traceLevel' => YII_DEBUG ? 3 : 0,
             'targets' => [
                 [
@@ -377,7 +390,7 @@ $config = [
                     'exportInterval' => 1,
                 ],
             ],
-        ],
+        ]),
         'db' => $db,
     ],
     'params' => $params,
@@ -403,21 +416,23 @@ if (isset($_SERVER['HTTP_HOST']) && !empty($_SERVER['HTTP_HOST'])) {
 }
 
 if (YII_ENV_DEV) {
+    $boot = $config['bootstrap'];
+    $bootstrapList = $boot instanceof ReplaceArrayValue ? $boot->value : (array) $boot;
     if (class_exists(\yii\debug\Module::class)) {
-        $config['bootstrap'][] = 'debug';
+        $bootstrapList[] = 'debug';
         $config['modules']['debug'] = [
             'class' => \yii\debug\Module::class,
             //'allowedIPs' => ['127.0.0.1', '::1'],
         ];
     }
-
     if (class_exists(\yii\gii\Module::class)) {
-        $config['bootstrap'][] = 'gii';
+        $bootstrapList[] = 'gii';
         $config['modules']['gii'] = [
             'class' => \yii\gii\Module::class,
             //'allowedIPs' => ['127.0.0.1', '::1'],
         ];
     }
+    $config['bootstrap'] = $bootstrapList;
 }
 
 // Устанавливаем homePage только если доступны необходимые переменные
