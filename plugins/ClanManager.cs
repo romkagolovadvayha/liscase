@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.5")]
+    [Info("ClanManager", "CA$HR(discord: CASHR#6906)", "1.1.4")]
     public class ClanManager : RustPlugin
     {
         #region Var
@@ -187,21 +187,6 @@ namespace Oxide.Plugins
                         Clans.Add(clan);
                     }
 
-                    // Исключённых из клана снимаем со всех отслеживаемых шкафов/замков/турелей,
-                    // а не только с кэшей оставшихся участников (иначе авторизации залипают).
-                    if (usersToDeauthorize.Count > 0)
-                    {
-                        foreach (var kickedId in usersToDeauthorize)
-                        {
-                            foreach (var kv in _playerEntities)
-                            {
-                                RemoveFromCupboards(kv.Value.cupboards, kickedId);
-                                RemoveFromCodeLocks(kv.Value.codeLocks, kickedId);
-                                RemoveFromTurrets(kv.Value.turrets, kickedId);
-                            }
-                        }
-                    }
-
                     foreach (var steamId in clan.users)
                     {
                         SetCustomPrefix(steamId.SteamId, clan.tag, clan.color_tag);
@@ -212,6 +197,13 @@ namespace Oxide.Plugins
                             UpdateCupboardAuthorization(cache.cupboards, steamId.SteamId);
                             UpdateCodeLockAuthorization(cache.codeLocks, steamId.SteamId);
                             UpdateTurretAuthorization(cache.turrets, steamId.SteamId);
+
+                            foreach (var userId in usersToDeauthorize)
+                            {
+                                RemoveFromCupboards(cache.cupboards, userId);
+                                RemoveFromCodeLocks(cache.codeLocks, userId);
+                                RemoveFromTurrets(cache.turrets, userId);
+                            }
                         }
 
                         yield return new WaitForSeconds(0.001f);
@@ -498,7 +490,6 @@ namespace Oxide.Plugins
             if (clan == null) return;
 
             var clanUsersById = clan.users.ToDictionary(u => u.SteamId, u => u);
-            var clanSteamIds = new HashSet<ulong>(clan.users.Select(u => u.SteamId));
 
             foreach (var cupboard in cupboards)
             {
@@ -511,11 +502,9 @@ namespace Oxide.Plugins
                         .Select(u => u.SteamId)
                 );
 
-                // Снимаем и тех, кто уже не в клане (кик/выход), и тех, кто в клане без cupboard_auth
                 var toRemove = authorizedPlayers
                     .Where(id => id != ownerId &&
-                                 (!clanSteamIds.Contains(id) ||
-                                  (clanUsersById.TryGetValue(id, out var user) && !user.cupboard_auth)))
+                                 clanUsersById.TryGetValue(id, out var user) && !user.cupboard_auth)
                     .ToList();
 
                 var toAdd = clanAuthorizedIds
@@ -542,7 +531,6 @@ namespace Oxide.Plugins
             if (clan == null) return;
 
             var clanUsersById = clan.users.ToDictionary(u => u.SteamId, u => u);
-            var clanSteamIds = new HashSet<ulong>(clan.users.Select(u => u.SteamId));
             var clanUserIdsWithLock = new HashSet<ulong>(
                 clan.users.Where(u => u.Lock).Select(u => u.SteamId));
 
@@ -562,8 +550,7 @@ namespace Oxide.Plugins
 
                     var toRemove = authorizedPlayers
                         .Where(ap => ap != ownerId &&
-                                 (!clanSteamIds.Contains(ap) ||
-                                  (clanUsersById.TryGetValue(ap, out var user) && !user.Lock)))
+                                 clanUsersById.TryGetValue(ap, out var user) && !user.Lock)
                         .ToList();
 
                     var toAdd = clanAuthorizedIds
@@ -596,8 +583,7 @@ namespace Oxide.Plugins
 
                     var toRemove = authorizedPlayers
                         .Where(ap => ap != ownerId &&
-                                 (!clanSteamIds.Contains(ap) ||
-                                  (clanUsersById.TryGetValue(ap, out var user) && !user.Lock)))
+                                 clanUsersById.TryGetValue(ap, out var user) && !user.Lock)
                         .ToList();
 
                     var toAdd = clanAuthorizedIds
@@ -626,7 +612,6 @@ namespace Oxide.Plugins
                 return;
 
             var clanUsersById = clan.users.ToDictionary(u => u.SteamId, u => u);
-            var clanSteamIds = new HashSet<ulong>(clan.users.Select(u => u.SteamId));
 
             foreach (var turret in AutoTurrets)
             {
@@ -647,8 +632,7 @@ namespace Oxide.Plugins
 
                 var toRemove = authorizedPlayers
                     .Where(id => id != ownerId &&
-                                 (!clanSteamIds.Contains(id) ||
-                                  (clanUsersById.TryGetValue(id, out var user) && !user.turrets)))
+                                 clanUsersById.TryGetValue(id, out var user) && !user.turrets)
                     .ToList();
 
                 var toAdd = clanAuthorizedIds
