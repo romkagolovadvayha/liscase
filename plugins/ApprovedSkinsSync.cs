@@ -20,7 +20,7 @@ namespace Oxide.Plugins
         public class Configuration
         {
             [JsonProperty(PropertyName = "API URL")]
-            public string apiUrl = "https://api.moscow77.store/skins/approved";
+            public string apiUrl = "https://api.prostoj.store/skins/approved";
 
             [JsonProperty(PropertyName = "Sync Interval (minutes)")]
             public int syncInterval = 60;
@@ -47,7 +47,7 @@ namespace Oxide.Plugins
 
         protected override void LoadDefaultConfig() => config = new Configuration
         {
-            apiUrl = "https://api.moscow77.store/skins/approved",
+            apiUrl = "https://api.prostoj.store/skins/approved",
             syncInterval = 60,
             enableAutoSync = true
         };

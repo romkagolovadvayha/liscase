@@ -26,9 +26,9 @@ namespace Oxide.Plugins
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
             [JsonProperty(PropertyName = "Базовый URL отправки рейдов (v1, без / на конце)")]
-            public string PluginStatsIngestBaseUrl = "https://api.moscow77.store/v1/plugin-ingest";
+            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
             [JsonProperty(PropertyName = "Базовый URL API конфига из панели (v1, без / на конце)")]
-            public string RustPluginConfigApiBase = "https://api.moscow77.store/v1/rust-plugin-config";
+            public string RustPluginConfigApiBase = "https://api.prostoj.store/v1/rust-plugin-config";
 
             public static Configuration DefaultConfig()
             {
@@ -70,7 +70,7 @@ namespace Oxide.Plugins
                 String pluginName = Name; // "RaidAlerts"
 
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
-                    ? "https://api.moscow77.store/v1/rust-plugin-config"
+                    ? "https://api.prostoj.store/v1/rust-plugin-config"
                     : config.RustPluginConfigApiBase.TrimEnd('/');
                 String apiUrl = $"{cfgBase}/get?ip={serverIp}&port={serverPort}&name={pluginName}";
 
@@ -179,7 +179,7 @@ namespace Oxide.Plugins
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
             string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
-                ? "https://api.moscow77.store/v1/plugin-ingest"
+                ? "https://api.prostoj.store/v1/plugin-ingest"
                 : config.PluginStatsIngestBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{ingest}/raid/{config.server_tag}", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             raids.Clear();

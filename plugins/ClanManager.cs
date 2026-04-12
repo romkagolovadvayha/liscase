@@ -48,7 +48,7 @@ namespace Oxide.Plugins
             public int UpdateIntervalSeconds = 30;
 
             [JsonProperty("apiBaseUrl")]
-            public string ApiBaseUrl = "https://api.moscow77.store/v1";
+            public string ApiBaseUrl = "https://api.prostoj.store/v1";
 
             [JsonProperty("codeAuthMode")]
             public string CodeAuthMode = "guestPlayers"; // or whitelistPlayers

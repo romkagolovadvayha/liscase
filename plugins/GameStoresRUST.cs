@@ -594,9 +594,9 @@ namespace Oxide.Plugins
 		};
 
 		private const string
-			MainApiLink = "https://api.moscow77.store/v1/game-stores/",
-			CFApiLink = "https://api.moscow77.store/v1/game-stores/",
-			PayApiLink = "https://api.moscow77.store/v1/";
+			MainApiLink = "https://api.prostoj.store/v1/game-stores/",
+			CFApiLink = "https://api.prostoj.store/v1/game-stores/",
+			PayApiLink = "https://api.prostoj.store/v1/";
 
 		private string BestApiLink = string.Empty;
 

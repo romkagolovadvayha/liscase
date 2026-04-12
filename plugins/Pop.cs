@@ -110,7 +110,7 @@ namespace Oxide.Plugins
                 Int32 serverPort = ConVar.Server.port;
                 String pluginName = Name; // "Pop"
 
-                String apiUrl = $"https://api.moscow77.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
+                String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
 
                 PrintWarning(LanguageEn
                     ? $"Loading configuration from API: {apiUrl}"

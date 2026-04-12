@@ -21,7 +21,7 @@ namespace Oxide.Plugins
         private class Configuration
         {
             [JsonProperty(PropertyName = "Базовый URL отправки табличек (v1, без / на конце)")]
-            public string PluginStatsIngestBaseUrl = "https://api.moscow77.store/v1/plugin-ingest";
+            public string PluginStatsIngestBaseUrl = "https://api.prostoj.store/v1/plugin-ingest";
         }
 
         private Configuration config = new Configuration();
@@ -91,7 +91,7 @@ namespace Oxide.Plugins
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
             string ingest = string.IsNullOrWhiteSpace(config.PluginStatsIngestBaseUrl)
-                ? "https://api.moscow77.store/v1/plugin-ingest"
+                ? "https://api.prostoj.store/v1/plugin-ingest"
                 : config.PluginStatsIngestBaseUrl.TrimEnd('/');
             webrequest.Enqueue($"{ingest}/signs", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             signEvents.Clear();

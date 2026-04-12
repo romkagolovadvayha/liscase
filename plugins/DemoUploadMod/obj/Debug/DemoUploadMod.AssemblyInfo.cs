@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DemoUploadMod")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1ea1db257d6200a3d3ebdb26d0cca2cb3ff68916")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+af4d7c8a1890ef4dc4508ca31d4279f574fdb839")]
 [assembly: System.Reflection.AssemblyProductAttribute("DemoUploadMod")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DemoUploadMod")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
