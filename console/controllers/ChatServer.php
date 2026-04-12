@@ -754,6 +754,27 @@ class ChatServer extends WebSocketServer
         }
     }
 
+    /**
+     * Убрать клиента из индекса по чату (при смене подписки или полной очистке).
+     */
+    private function unindexClientFromChat(ConnectionInterface $client, $chat = null)
+    {
+        $chatKey = $chat !== null && $chat !== '' ? (string)$chat : (!empty($client->chat) ? (string)$client->chat : '');
+        if ($chatKey === '') {
+            return;
+        }
+        if (!isset($this->clientsByChat[$chatKey])) {
+            return;
+        }
+        $idx = array_search($client, $this->clientsByChat[$chatKey], true);
+        if ($idx !== false) {
+            unset($this->clientsByChat[$chatKey][$idx]);
+            if (empty($this->clientsByChat[$chatKey])) {
+                unset($this->clientsByChat[$chatKey]);
+            }
+        }
+    }
+
     public function init()
     {
         parent::init();
@@ -914,11 +935,12 @@ class ChatServer extends WebSocketServer
 
             // Уведомляем других пользователей в том же чате
             if (!empty($e->client->chat) && !empty($e->client->user)) {
-                $chatClients = $this->getClientsByChat($e->client->chat);
+                $blurChatId = (string)$e->client->chat;
+                $chatClients = $this->getClientsByChat($blurChatId);
                 foreach ($chatClients as $chatClient) {
                     if ($chatClient !== $e->client && !empty($chatClient->user)) {
                         try {
-                            $chatClient->send(json_encode(['type' => 'chatBlur']));
+                            $chatClient->send(json_encode(['type' => 'chatBlur', 'chatId' => $blurChatId]));
                         } catch (\Exception $ex) {
                             $this->log("Error sending chatBlur: " . $ex->getMessage());
                         }
@@ -1033,6 +1055,7 @@ class ChatServer extends WebSocketServer
                                     $response = [
                                         'type' => 'chat',
                                         'messageId' => $chatData['messageId'] ?? null,
+                                        'chatId' => (string)$chatId,
                                     ];
                                     if (!empty($chatData['tempId'])) {
                                         $response['tempId'] = $chatData['tempId'];
@@ -1253,6 +1276,11 @@ class ChatServer extends WebSocketServer
             if (!empty($client->user) && !empty($request['chat'])) {
                 // Нормализуем chat ID (приводим к строке для единообразия)
                 $chatId = (string)$request['chat'];
+
+                // Смена тикета: убрать из старого индекса, иначе клиент остаётся в нескольких чатах
+                if (!empty($client->chat) && (string)$client->chat !== $chatId) {
+                    $this->unindexClientFromChat($client, $client->chat);
+                }
 
                 // Кешируем поиск тикета на 30 секунд
                 $cacheKey = 'ws_ticket_' . $chatId;
@@ -1611,7 +1639,11 @@ class ChatServer extends WebSocketServer
         if (!empty($request['user_id']) && !empty($request['id'])) {
             // Используем индекс для быстрого поиска клиентов по chat
             $chatClients = $this->getClientsByChat($request['id']);
-            $response = json_encode(['type' => 'chat', 'messageId' => $request['messageId']]);
+            $response = json_encode([
+                'type' => 'chat',
+                'messageId' => $request['messageId'],
+                'chatId' => (string)$request['id'],
+            ]);
 
             foreach ($chatClients as $chatClient) {
                 try {
@@ -2039,9 +2071,11 @@ class ChatServer extends WebSocketServer
 
         try {
             // Используем индекс для быстрого поиска клиентов по chat
-            $chatClients = $this->getClientsByChat($request['chatId']);
+            $focusChatId = (string)$request['chatId'];
+            $chatClients = $this->getClientsByChat($focusChatId);
             $response = json_encode([
                 'type' => 'chatFocus',
+                'chatId' => $focusChatId,
                 'content' => "Пользователь {$client->user->username} печатает сообщение...",
             ]);
 
@@ -2068,8 +2102,9 @@ class ChatServer extends WebSocketServer
         }
 
         try {
-            $chatClients = $this->getClientsByChat($request['chatId']);
-            $response = json_encode(['type' => 'chatBlur']);
+            $blurChatId = (string)$request['chatId'];
+            $chatClients = $this->getClientsByChat($blurChatId);
+            $response = json_encode(['type' => 'chatBlur', 'chatId' => $blurChatId]);
 
             foreach ($chatClients as $chatClient) {
                 if ($chatClient !== $client && !empty($chatClient->user)) {
@@ -2220,16 +2255,17 @@ class ChatServer extends WebSocketServer
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);
                 $hash = md5(time());
                 $tempId = !empty($request['tempId']) ? $request['tempId'] : null;
+                $chatNumber = $chat->getNumber();
                 $chatResponse = [
                     'type' => 'chat',
                     'messageId' => $model->id,
+                    'chatId' => (string)$chatNumber,
                 ];
                 if ($tempId) {
                     $chatResponse['tempId'] = $tempId;
                 }
                 $chatResponseJson = json_encode($chatResponse);
                 $ticketsUpdateJson = json_encode(['type' => 'ticketsUpdate']);
-                $chatNumber = $chat->getNumber();
 
                 // Отправка ответа по чату только подписчикам этого чата
                 $chatClients = $this->getClientsByChat($requestChatId);

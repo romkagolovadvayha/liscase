@@ -1181,6 +1181,8 @@ class SupportController extends BaseApiController
                 'blocked_support_at' => $ticket->user->blocked_support_at,
                 'status' => (int) $ticket->user->status,
             ] : null,
+            /** Для UI до запроса деталей тикета (бейдж сервера и т.п.) */
+            'server_tag' => $ticket->server_tag,
             'created_at' => $ticket->created_at,
             'updated_at' => $ticket->updated_at,
             'unread_count' => $unreadCount,
