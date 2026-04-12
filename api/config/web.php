@@ -354,12 +354,14 @@ $config = [
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error', 'warning', 'info'],
+                    // В prod без info — иначе в app.log сыпятся каждый SQL (yii\db\*), Session, User::login и т.д.
+                    'levels' => YII_DEBUG ? ['error', 'warning', 'info'] : ['error', 'warning'],
                     'logFile' => '@runtime/logs/app.log',
                     'maxFileSize' => 10240, // 10MB
                     'maxLogFiles' => 5,
-                    'categories' => ['application', 'yii\*', 'api\*'],
-                    'logVars' => ['_GET', '_POST', '_FILES', '_COOKIE', '_SESSION', '_SERVER'],
+                    'categories' => YII_DEBUG ? ['application', 'yii\*', 'api\*'] : ['application', 'api\*'],
+                    // В prod не дублировать весь $_SERVER на каждый запрос
+                    'logVars' => YII_DEBUG ? ['_GET', '_POST', '_FILES', '_COOKIE', '_SESSION', '_SERVER'] : [],
                 ],
                 'telegram-error' => [
                     'class' => 'common\components\log\TelegramSenderErrors',
