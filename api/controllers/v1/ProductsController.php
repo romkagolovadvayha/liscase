@@ -10,6 +10,7 @@ use common\models\box\DropImage;
 use common\models\box\DropDrop;
 use common\models\box\DropFavorite;
 use common\models\user\UserDrop;
+use common\models\user\UserBalance;
 use common\models\invoice\Invoice;
 use api\components\jwt\JwtAuthFilter;
 use api\components\jwt\JwtService;
@@ -26,6 +27,9 @@ use OpenApi\Annotations as OA;
  */
 class ProductsController extends BaseApiController
 {
+    /** Максимум единиц товара за один запрос покупки (защита от переполнения и злоупотреблений). */
+    private const BUY_QUANTITY_MAX = 9999;
+
     /**
      * Настройка behaviors
      */
@@ -563,69 +567,119 @@ class ProductsController extends BaseApiController
     public function actionBuy($id)
     {
         $user = $this->getCurrentUser();
-        
-        // Получаем товар
+
+        // Получаем товар (как в витрине: активен и доступен на маркете)
         $drop = Drop::find()
-            ->where(['id' => $id, 'status' => Drop::STATUS_ACTIVE])
+            ->where([
+                'id' => $id,
+                'status' => Drop::STATUS_ACTIVE,
+                'market_status' => Drop::MARKET_STATUS_ACTIVE,
+            ])
             ->one();
-        
+
         if (!$drop) {
             return $this->errorResponse('PRODUCT_NOT_FOUND', 'Товар не найден или неактивен', [], 404);
         }
-        
+
         $post = Yii::$app->request->post();
-        $quantity = isset($post['quantity']) ? (int)$post['quantity'] : 1;
+        if (!array_key_exists('quantity', $post) || $post['quantity'] === null || $post['quantity'] === '') {
+            $quantity = 1;
+        } else {
+            $quantity = $this->parseBuyQuantity($post['quantity']);
+            if ($quantity === null) {
+                return $this->errorResponse('INVALID_QUANTITY', 'Некорректное количество товара', [], 400);
+            }
+        }
+
+        if ($quantity < 1 || $quantity > self::BUY_QUANTITY_MAX) {
+            return $this->errorResponse(
+                'INVALID_QUANTITY',
+                Yii::t('common', 'Количество должно быть от 1 до {max}.', ['max' => self::BUY_QUANTITY_MAX]),
+                ['min' => 1, 'max' => self::BUY_QUANTITY_MAX],
+                400
+            );
+        }
+
         $selectedDropId = $post['drop_id'] ?? null;
-        
+
         // Для TYPE_SELECT (drop_type = 3) требуется выбрать вариант
-        if ($drop->drop_type == 3 && empty($selectedDropId)) {
+        if ($drop->drop_type == 3 && ($selectedDropId === null || $selectedDropId === '')) {
             return $this->errorResponse('DROP_ID_REQUIRED', 'Необходимо выбрать вариант товара (drop_id)', [], 400);
         }
-        
+
+        if ($selectedDropId !== null && $selectedDropId !== '') {
+            $parsedDropId = $this->parseBuyQuantity($selectedDropId);
+            if ($parsedDropId === null || $parsedDropId < 1) {
+                return $this->errorResponse('INVALID_DROP_ID', 'Некорректный идентификатор варианта товара', [], 400);
+            }
+            $selectedDropId = $parsedDropId;
+        } else {
+            $selectedDropId = null;
+        }
+
         // Определяем какой drop покупать (для TYPE_SELECT - выбранный вариант, иначе - сам товар)
         $targetDrop = $drop;
         $targetDropId = $drop->id;
-        
+
         if ($drop->drop_type == 3 && $selectedDropId) {
             // Для TYPE_SELECT проверяем, что выбранный вариант существует
             $subDropRelation = DropDrop::find()
                 ->where(['parent_drop_id' => $drop->id, 'drop_id' => $selectedDropId])
                 ->one();
-            
+
             if (!$subDropRelation) {
                 return $this->errorResponse('INVALID_DROP_ID', 'Выбранный вариант товара не найден', [], 400);
             }
-            
+
             $targetDrop = Drop::findOne($selectedDropId);
             if (!$targetDrop || $targetDrop->status != Drop::STATUS_ACTIVE) {
                 return $this->errorResponse('INVALID_DROP_ID', 'Выбранный вариант товара неактивен', [], 400);
             }
             $targetDropId = $selectedDropId;
         }
-        
+
         // Рассчитываем цену (упрощенная версия, без floating price для API)
         $basePrice = $targetDrop->price - ($targetDrop->price * ($targetDrop->discount ?? 0) / 100);
-        $pricePerItem = ceil($basePrice);
-        $totalPrice = $pricePerItem * $quantity;
-        
-        // Проверяем баланс
-        $balance = $user->getPersonalBalance();
-        if ($totalPrice > $balance->balanceCeil) {
-            return $this->errorResponse('INSUFFICIENT_FUNDS', 'Недостаточно средств на счете', [
-                'required' => $totalPrice,
-                'available' => $balance->balanceCeil,
-            ], 400);
+        $pricePerItem = (int) ceil((float) $basePrice);
+        if ($pricePerItem > 0 && $quantity > intdiv(PHP_INT_MAX, $pricePerItem)) {
+            return $this->errorResponse('INVALID_QUANTITY', 'Слишком большое количество для данной цены', [], 400);
         }
-        
-        // Начинаем транзакцию
+        $totalPrice = $pricePerItem * $quantity;
+
+        if ($totalPrice < 1) {
+            return $this->errorResponse('INVALID_PRICE', 'Некорректная цена покупки', [], 400);
+        }
+
+        // Транзакция + блокировка строки баланса: проверка средств по актуальным данным, без гонок
         $dbTransaction = Yii::$app->db->beginTransaction();
         try {
+            $balanceRow = $user->getPersonalBalance();
+            /** @var UserBalance|null $locked */
+            $locked = UserBalance::findBySql(
+                'SELECT * FROM ' . UserBalance::tableName() . ' WHERE [[id]] = :id FOR UPDATE',
+                [':id' => (int) $balanceRow->id]
+            )->one();
+
+            if ($locked === null) {
+                throw new \RuntimeException('user_balance row not found');
+            }
+
+            $locked->recalculateBalance();
+
+            if ($totalPrice > $locked->balanceCeil) {
+                $dbTransaction->rollBack();
+                return $this->errorResponse('INSUFFICIENT_FUNDS', 'Недостаточно средств на счете', [
+                    'required' => $totalPrice,
+                    'available' => $locked->balanceCeil,
+                ], 400);
+            }
+
             // Создаем Invoice для списания средств
             $comment = Yii::t('common', 'Покупка предмета "{PARAMS_PREDNAME}"', [
                 'PARAMS_PREDNAME' => Yii::t('database', $targetDrop->name)
             ]);
-            
-            Invoice::createRecord(
+
+            $marketInvoiceId = (int) Invoice::createRecord(
                 $user->id,
                 $totalPrice,
                 Invoice::TYPE_PAYMENT_MARKET_DROP,
@@ -634,7 +688,7 @@ class ProductsController extends BaseApiController
                 $targetDropId, // drop_id
                 $comment
             );
-            
+
             // Создаем UserDrop записи
             if ($drop->drop_type == 2) {
                 // TYPE_SET - создаем записи для всех subDrops
@@ -642,7 +696,7 @@ class ProductsController extends BaseApiController
                     ->where(['parent_drop_id' => $drop->id])
                     ->with('drop')
                     ->all();
-                
+
                 foreach ($subDrops as $subDropRelation) {
                     if ($subDropRelation->drop) {
                         $subDropCount = ($subDropRelation->count ?? 1) * $quantity;
@@ -655,7 +709,8 @@ class ProductsController extends BaseApiController
                             false, // auto
                             $subDropCount, // count
                             null, // created_at
-                            $drop->id // parent_drop_id
+                            $drop->id, // parent_drop_id
+                            $marketInvoiceId > 0 ? $marketInvoiceId : null
                         );
                     }
                 }
@@ -671,15 +726,15 @@ class ProductsController extends BaseApiController
                     false, // auto
                     $dropCount, // count
                     null, // created_at
-                    $drop->drop_type == 3 ? $drop->id : null // parent_drop_id для TYPE_SELECT
+                    $drop->drop_type == 3 ? $drop->id : null, // parent_drop_id для TYPE_SELECT
+                    $marketInvoiceId > 0 ? $marketInvoiceId : null
                 );
             }
-            
+
             $dbTransaction->commit();
-            
-            // Получаем обновленный баланс
-            $balance->recalculateBalance();
-            $newBalance = $balance->balanceCeil;
+
+            $locked->recalculateBalance();
+            $newBalance = $locked->balanceCeil;
             
             // Отправляем уведомление через WebSocket
             try {
@@ -698,6 +753,44 @@ class ProductsController extends BaseApiController
             Yii::error('Error buying product: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 'products');
             return $this->errorResponse('PURCHASE_ERROR', 'Произошла ошибка при покупке товара: ' . $e->getMessage(), [], 500);
         }
+    }
+
+    /**
+     * Разбор quantity / drop_id из тела запроса: только целые числа, без дробей и «мусорных» строк.
+     *
+     * @param mixed $value
+     */
+    private function parseBuyQuantity($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_bool($value)) {
+            return null;
+        }
+        if (is_int($value)) {
+            return $value;
+        }
+        if (is_float($value)) {
+            if (!is_finite($value) || floor($value) !== $value) {
+                return null;
+            }
+            if ($value < (float) PHP_INT_MIN || $value > (float) PHP_INT_MAX) {
+                return null;
+            }
+
+            return (int) $value;
+        }
+        if (is_string($value)) {
+            $trim = trim($value);
+            if ($trim === '' || !preg_match('/^-?\d+$/', $trim)) {
+                return null;
+            }
+
+            return (int) $trim;
+        }
+
+        return null;
     }
 
     /**

@@ -12,6 +12,7 @@ use Yii;
  * @property int                 $user_id
  * @property int                 $drop_id
  * @property int                 $parent_drop_id
+ * @property int|null            $invoice_id
  * @property int                 $box_id
  * @property int                 $sets_id
  * @property int                 $count
@@ -65,6 +66,7 @@ class UserDrop extends ActiveRecord
         return [
             [['drop_id', 'created_at'], 'required'],
             [['drop_id', 'box_id', 'status'], 'integer'],
+            [['invoice_id'], 'integer', 'skipOnEmpty' => true],
             [['created_at'], 'safe'],
         ];
     }
@@ -171,10 +173,11 @@ class UserDrop extends ActiveRecord
      * @param false $auto
      * @param int   $count
      * @param null  $createdAt
+     * @param int|null $invoiceId invoice.id для покупки с маркета (точный возврат)
      *
      * @return UserDrop
      */
-    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null, $parentDropId = null)
+    public static function createRecord($userId, $dropId, $boxId = null, $setsId = null, $status = null, $auto = false, $count = 1, $createdAt = null, $parentDropId = null, $invoiceId = null)
     {
         $model = new UserDrop();
         $model->user_id = $userId;
@@ -182,6 +185,7 @@ class UserDrop extends ActiveRecord
         $model->box_id = $boxId;
         $model->sets_id = $setsId;
         $model->parent_drop_id = $parentDropId;
+        $model->invoice_id = $invoiceId;
         $model->auto = $auto;
         $model->count = $count;
         $model->status = $status ?? UserDrop::STATUS_ACTIVE;

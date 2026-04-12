@@ -6,15 +6,14 @@ use Yii;
 use yii\web\BadRequestHttpException;
 use common\models\user\User;
 use common\models\user\UserDrop;
-use common\models\profit\Profit;
 use common\models\servers\Servers;
 use common\models\box\Category;
 use common\models\box\DropBlocked;
 use common\models\box\Drop;
-use common\models\invoice\Invoice;
 use common\models\rcon\RconTasks;
 use common\models\statistics\Statistics;
 use common\models\user\UserVip;
+use common\components\helpers\MarketRefundHelper;
 use common\components\queue\process\ReturnDropJob;
 use common\components\queue\process\ActivatedDropJob;
 use api\components\jwt\JwtAuthFilter;
@@ -73,31 +72,6 @@ class StoreController extends BaseApiController
             $storeVisible = true;
         }
         return $storeVisible;
-    }
-
-    /**
-     * Возврат в баланс: брать сумму из invoice маркета (как при покупке через v1/products/buy и др.),
-     * чтобы не умножать цену на user_drop.count (стек из drop.count за одну покупку).
-     *
-     * Берём последний подходящий invoice с тем же drop_id, созданный не позже этой строки корзины.
-     */
-    private function resolveRefundAmountFromPurchaseInvoice(User $user, UserDrop $userDrop): ?int
-    {
-        $invoice = Invoice::find()
-            ->where([
-                'user_id' => (int) $user->id,
-                'type' => Invoice::TYPE_PAYMENT_MARKET_DROP,
-                'drop_id' => (int) $userDrop->drop_id,
-            ])
-            ->andWhere(['<=', 'created_at', $userDrop->created_at])
-            ->orderBy(['id' => SORT_DESC])
-            ->one();
-
-        if ($invoice === null) {
-            return null;
-        }
-
-        return (int) ceil((float) $invoice->amount);
     }
 
     /**
@@ -315,6 +289,10 @@ class StoreController extends BaseApiController
             return $this->errorResponse('INVALID_STATUS', 'Предмет не доступен для выдачи', [], 400);
         }
 
+        if ((int) $userDrop->count < 1) {
+            return $this->errorResponse('INVALID_COUNT', Yii::t('common', 'Некорректное количество предмета в корзине.'), [], 400);
+        }
+
         // Как в ChatServer commandGetDrop: выдача только если пользователь «на сервере» (у него выбран сервер)
         if (empty($user->server)) {
             return $this->errorResponse(
@@ -526,58 +504,33 @@ class StoreController extends BaseApiController
             return $this->errorResponse('INVALID_DATA', 'Не указан ID предмета', [], 400);
         }
 
-        $userDrop = UserDrop::findOne($itemId);
-        if (!$userDrop || $userDrop->user_id !== $user->id) {
-            return $this->errorResponse('ITEM_NOT_FOUND', 'Предмет не найден', [], 404);
-        }
+        $result = MarketRefundHelper::performMarketCartReturn($user, (int) $itemId);
+        if (empty($result['ok'])) {
+            $code = $result['error'] ?? 'RETURN_FAILED';
+            $http = (int) ($result['http'] ?? 400);
+            $messages = [
+                'ITEM_NOT_FOUND' => 'Предмет не найден',
+                'CANNOT_RETURN' => 'Предмет не подлежит возврату',
+                'INVALID_STATUS' => 'Предмет не доступен для возврата',
+                'INVALID_COUNT' => Yii::t('common', 'Некорректное количество предмета в корзине.'),
+                'DROP_NOT_FOUND' => 'Предмет не найден',
+                'INVALID_REFUND' => Yii::t('common', 'Сумма возврата некорректна.'),
+                'SAVE_ERROR' => 'Ошибка при сохранении возврата',
+                'EXCEPTION' => Yii::t('common', 'Произошла ошибка, попробуйте позже.'),
+            ];
+            $message = $messages[$code] ?? Yii::t('common', 'Не удалось выполнить возврат.');
 
-        if (!empty($userDrop->box_id) || !empty($userDrop->sets_id) || !empty($userDrop->parent_drop_id)) {
-            return $this->errorResponse('CANNOT_RETURN', 'Предмет не подлежит возврату', [], 400);
-        }
-
-        if ($userDrop->status !== UserDrop::STATUS_ACTIVE) {
-            return $this->errorResponse('INVALID_STATUS', 'Предмет не доступен для возврата', [], 400);
-        }
-
-        $userBalance = $user->getPersonalBalance();
-        $drop = $userDrop->dropOne;
-        if (!$drop) {
-            $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
-        }
-        if (!$drop) {
-            return $this->errorResponse('DROP_NOT_FOUND', 'Предмет не найден', [], 404);
-        }
-
-        $refundAmount = $this->resolveRefundAmountFromPurchaseInvoice($user, $userDrop);
-        if ($refundAmount === null) {
-            $refundAmount = Drop::getRefundAmountForUserDropLine($userDrop, $drop);
-        }
-
-        $profit = new Profit();
-        $profit->status = 1;
-        $profit->type = Profit::TYPE_SELL_DROP;
-        $profit->amount = $refundAmount;
-        $profit->user_balance_id = $userBalance->id;
-        $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
-            'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-        ]);
-        $profit->created_at = date('Y-m-d H:i:s');
-        if (!$profit->save(false)) {
-            return $this->errorResponse('SAVE_ERROR', 'Ошибка при сохранении возврата', [], 500);
-        }
-
-        $userDrop->status = UserDrop::STATUS_SELL;
-        if (!$userDrop->save(false)) {
-            return $this->errorResponse('SAVE_ERROR', 'Ошибка при обновлении статуса', [], 500);
+            return $this->errorResponse($code, $message, [], $http > 0 ? $http : 400);
         }
 
         if (Yii::$app->has('queueProcess')) {
-            Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $userDrop]));
+            Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $result['userDrop']]));
         }
 
         return $this->successResponse([
             'message' => 'Предмет успешно возвращен',
-            'itemId' => $userDrop->id,
+            'itemId' => $result['userDrop']->id,
+            'refundAmount' => $result['refundAmount'] ?? null,
         ]);
     }
 }

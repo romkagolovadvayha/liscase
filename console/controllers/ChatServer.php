@@ -1,6 +1,7 @@
 <?php
 namespace console\controllers;
 
+use common\components\helpers\MarketRefundHelper;
 use common\components\queue\process\ReturnDropJob;
 use common\components\queue\support\BeforeMessageJob;
 use common\components\queue\support\OpenAiJob;
@@ -13,7 +14,6 @@ use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
 use common\models\user\UserDrop;
-use common\models\profit\Profit;
 use Yii;
 use common\components\helpers\Role;
 use common\models\auth\AuthAssignment;
@@ -1718,7 +1718,7 @@ class ChatServer extends WebSocketServer
                     return;
                 }
 
-                if ($client->user->id != $model->user->id) {
+                if ((int) $client->user->id !== (int) $model->user_id) {
                     $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 500,
@@ -1728,7 +1728,7 @@ class ChatServer extends WebSocketServer
                     return;
                 }
 
-                // Атомарная блокировка предмета на время обработки (используем общий ключ для getDrop и returnDrop)
+                // Как при выдаче: кеш-ключ совпадает с API deliver — не даём параллелить return/deliver
                 $lockKey = 'userDrop_lock_' . $model->id;
                 if (Yii::$app->cache->get($lockKey)) {
                     $this->safeSend($client, [
@@ -1739,56 +1739,49 @@ class ChatServer extends WebSocketServer
                     ]);
                     return;
                 }
-                Yii::$app->cache->set($lockKey, true, 10); // Блокируем на 10 секунд
+                Yii::$app->cache->set($lockKey, true, 10);
 
-                // Перезагружаем модель после блокировки для проверки актуального статуса
-                $model->refresh();
-
-                if (!empty($model->box_id) || !empty($model->sets_id) || !empty($model->parent_drop_id)) {
-                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                    $this->safeSend($client, [
-                        'type' => 'store.return.item',
-                        'code' => 500,
-                        'message' => Yii::t('common', "Не подлежит возврату!", [], $client->user->current_language),
-                        'id' => $model->id,
-                    ]);
-                    return;
-                }
-
-                if ($model->status !== UserDrop::STATUS_ACTIVE) {
-                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку
-                    $this->safeSend($client, [
-                        'type' => 'store.return.item',
-                        'code' => 500,
-                        'message' => Yii::t('common', "Не найдена вещь в корзине!", [], $client->user->current_language),
-                        'id' => $model->id,
-                    ]);
-                    return;
-                }
-
-                // Выполняем возврат
                 try {
-                    $userBalance = $model->user->getPersonalBalance();
-                    $this->_sellUserDrop($model, $userBalance->id);
+                    $returnResult = MarketRefundHelper::performMarketCartReturn($client->user, (int) $model->id);
 
-                    // Отправляем через websocket
-                    try {
-                        Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $model]));
-                    } catch (\Throwable $e) {
-                        $this->log("Error pushing ReturnDropJob to queue: " . $e->getMessage());
-                        // Не прерываем выполнение, так как возврат уже выполнен
+                    if (empty($returnResult['ok'])) {
+                        Yii::$app->cache->delete($lockKey);
+                        $code = $returnResult['error'] ?? 'RETURN_FAILED';
+                        $messages = [
+                            'ITEM_NOT_FOUND' => Yii::t('common', "Товар не найден!", [], $client->user->current_language),
+                            'CANNOT_RETURN' => Yii::t('common', "Не подлежит возврату!", [], $client->user->current_language),
+                            'INVALID_STATUS' => Yii::t('common', "Не найдена вещь в корзине!", [], $client->user->current_language),
+                            'INVALID_COUNT' => Yii::t('common', "Некорректное количество предмета в корзине.", [], $client->user->current_language),
+                            'DROP_NOT_FOUND' => Yii::t('common', "Товар не найден!", [], $client->user->current_language),
+                            'INVALID_REFUND' => Yii::t('common', "Сумма возврата некорректна.", [], $client->user->current_language),
+                            'SAVE_ERROR' => Yii::t('common', "Ошибка при сохранении возврата", [], $client->user->current_language),
+                            'EXCEPTION' => Yii::t('common', "Произошла ошибка при возврате товара!", [], $client->user->current_language),
+                        ];
+                        $this->safeSend($client, [
+                            'type' => 'store.return.item',
+                            'code' => 500,
+                            'message' => $messages[$code] ?? Yii::t('common', "Произошла ошибка при возврате товара!", [], $client->user->current_language),
+                            'id' => $model->id,
+                        ]);
+                        return;
                     }
 
-                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку после успешного возврата
+                    try {
+                        Yii::$app->queueProcess->push(new ReturnDropJob(['userDrop' => $returnResult['userDrop']]));
+                    } catch (\Throwable $e) {
+                        $this->log("Error pushing ReturnDropJob to queue: " . $e->getMessage());
+                    }
+
+                    Yii::$app->cache->delete($lockKey);
 
                     $this->safeSend($client, [
                         'type' => 'store.return.item',
                         'code' => 200,
                         'message' => Yii::t('common', "Предмет успешно возвращен!", [], $client->user->current_language),
-                        'id' => $model->id,
+                        'id' => $returnResult['userDrop']->id,
                     ]);
                 } catch (\Exception $e) {
-                    Yii::$app->cache->delete($lockKey); // Снимаем блокировку при ошибке
+                    Yii::$app->cache->delete($lockKey);
                     throw $e;
                 }
             }
@@ -1803,49 +1796,6 @@ class ChatServer extends WebSocketServer
                 ]);
             }
         }
-    }
-
-    /**
-     * Продажа товара (возврат)
-     * @param UserDrop $userDrop
-     * @param int $userBalanceId
-     */
-    private function _sellUserDrop($userDrop, $userBalanceId)
-    {
-        // Используем dropOne для получения одного предмета
-        $drop = $userDrop->dropOne;
-
-        if (empty($drop)) {
-            // Если dropOne не найден, пытаемся загрузить через drop_id
-            $drop = \common\models\box\Drop::findOne($userDrop->drop_id);
-        }
-
-        if (empty($drop)) {
-            $this->log("Drop not found for UserDrop ID: {$userDrop->id}, drop_id: {$userDrop->drop_id}");
-            throw new \Exception('Предмет не найден');
-        }
-
-        $profit = new Profit();
-        $profit->status = 1;
-        $profit->type = Profit::TYPE_SELL_DROP;
-        $profit->amount = $drop->getRealPrice(false);
-        $profit->user_balance_id = $userBalanceId;
-        $profit->comment = Yii::t('common', 'Возврат предмета "{PARAMS_PREDNAME}"', [
-            'PARAMS_PREDNAME' => Yii::t('database', $drop->name)
-        ], 'ru-RU');
-        $profit->created_at = date('Y-m-d H:i:s');
-
-        if (!$profit->save(false)) {
-            $this->log("Failed to save profit for UserDrop ID: {$userDrop->id}, errors: " . json_encode($profit->getErrors()));
-            throw new \Exception('Ошибка при сохранении возврата');
-        }
-
-        $userDrop->status = UserDrop::STATUS_SELL;
-        if (!$userDrop->save(false)) {
-            $this->log("Failed to save UserDrop ID: {$userDrop->id}, errors: " . json_encode($userDrop->getErrors()));
-            throw new \Exception('Ошибка при обновлении статуса товара');
-        }
-        $userDrop->save(false);
     }
 
     public function commandActivatedDrop(ConnectionInterface $client, $msg)
