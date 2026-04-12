@@ -128,6 +128,24 @@ class ClanMember extends ActiveRecord
     }
 
     /**
+     * Убрать из БД права auth_* у этой записи участника (кик/выход — флаги авторизации в игре сбрасываются).
+     */
+    public function clearAuthEntityPermissions(): void
+    {
+        $permIds = ClanPermission::find()
+            ->select('id')
+            ->where(['key' => ClanPermission::AUTH_ENTITY_KEYS])
+            ->column();
+        if ($permIds === []) {
+            return;
+        }
+        ClanMemberPermission::deleteAll([
+            'clan_member_id' => $this->id,
+            'permission_id' => $permIds,
+        ]);
+    }
+
+    /**
      * Получение периода членства
      *
      * @return array

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("InspectDll")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+af4d7c8a1890ef4dc4508ca31d4279f574fdb839")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fb595375b621fa96979abfc8b7c8804a060ca936")]
 [assembly: System.Reflection.AssemblyProductAttribute("InspectDll")]
 [assembly: System.Reflection.AssemblyTitleAttribute("InspectDll")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

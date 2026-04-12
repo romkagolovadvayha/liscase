@@ -19,6 +19,13 @@ use Yii;
 class ClanPermission extends ActiveRecord
 {
     /**
+     * Права «авторизация на объектах» в игре (совпадают с флагами плагина ClanManager / API clans/list).
+     *
+     * @var list<string>
+     */
+    public const AUTH_ENTITY_KEYS = ['auth_lock', 'auth_turret', 'auth_cupboard', 'auth_sam'];
+
+    /**
      * {@inheritdoc}
      */
     public static function tableName()

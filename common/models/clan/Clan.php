@@ -411,6 +411,9 @@ class Clan extends ActiveRecord
                 $joinEventMetadata
             );
 
+            // GET …/clans/list отдаёт update_at с клана; плагин ClanManager сравнивает его и иначе не подхватывает новый состав.
+            $this->updateAttributes(['updated_at' => time()]);
+
             return $member;
         }
         
@@ -433,12 +436,15 @@ class Clan extends ActiveRecord
         if ($member) {
             $member->leave_date = date('Y-m-d H:i:s');
             if ($member->save()) {
+                $member->clearAuthEntityPermissions();
                 $server = $this->server ?: Servers::findOne($this->server_id);
                 if ($server) {
                     $wipe = $server->currentWipe();
                     ClanMemberStatistics::finalizeAndFreeze($member, $this->server_id, $wipe);
                 }
                 $this->addEvent('member_left', Yii::t('common', 'Пользователь {username} покинул клан', ['username' => $member->user->username]), $userId);
+                // Иначе плагин не видит смену списка users (см. GamePluginClanListBuilder + ClanManager update_at).
+                $this->updateAttributes(['updated_at' => time()]);
                 return true;
             }
         }
