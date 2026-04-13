@@ -557,6 +557,13 @@ class AuthController extends BaseApiController
      *     tags={"Auth"},
      *     summary="Получить информацию о текущем пользователе",
      *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="expand",
+     *         in="query",
+     *         required=false,
+     *         description="Доп. блоки через запятую. balance — те же поля, что GET /v1/user/balance (внутри data.balances)",
+     *         @OA\Schema(type="string", example="balance")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Информация о пользователе",
@@ -585,9 +592,45 @@ class AuthController extends BaseApiController
             return $this->errorResponse('UNAUTHORIZED', 'Authentication required', [], 401);
         }
 
+        /** @var User $user */
         $user = Yii::$app->user->identity;
 
-        return $this->successResponse($this->formatUser($user));
+        $data = $this->formatUser($user);
+
+        $expand = Yii::$app->request->get('expand', '');
+        $parts = array_filter(array_map('trim', explode(',', strtolower((string) $expand))));
+        if (in_array('balance', $parts, true)) {
+            $data['balances'] = $this->buildBalancesPayloadForMe($user);
+        }
+
+        return $this->successResponse($data);
+    }
+
+    /**
+     * Payload балансов как у {@see UserController::actionBalance()} (корень data ответа).
+     *
+     * @return array{personal: array, skins: array, referral: array}
+     */
+    protected function buildBalancesPayloadForMe(User $user): array
+    {
+        $personalBalance = $user->getPersonalBalance();
+        $skinsBalance = $user->getSkinsBalance();
+        $referralBalance = $user->getReferralBalance();
+
+        return [
+            'personal' => [
+                'balance' => (float) $personalBalance->balance,
+                'balanceCeil' => (int) ceil($personalBalance->balance),
+                'balanceFormat' => $personalBalance->getBalanceFormat(),
+            ],
+            'skins' => [
+                'balance' => (float) $skinsBalance->balance,
+                'balanceCeil' => (int) ceil($skinsBalance->balance),
+            ],
+            'referral' => [
+                'balance' => (float) $referralBalance,
+            ],
+        ];
     }
 
     /**
