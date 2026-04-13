@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\web\Response;
 use common\models\servers\ServersRadioStation;
 use OpenApi\Annotations as OA;
@@ -71,7 +72,7 @@ class RadioController extends BaseApiController
             }
 
             // Сохраняем в кэш на 10 минут (600 секунд)
-            $cache->set($cacheKey, $list, 600);
+            $cache->set($cacheKey, $list, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($list);

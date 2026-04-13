@@ -14,8 +14,8 @@ class SettingsCacheHelper
     /** Категории по умолчанию (как в SettingsController::ALLOWED_CATEGORIES). */
     public const DEFAULT_CATEGORIES = ['design', 'colors', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side', 'media'];
 
-    /** TTL кэша в секундах (1 час). */
-    public const CACHE_TTL = 3600;
+    /** TTL кэша в секундах (публичный payload настроек). */
+    public const CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /** Исключаемые паттерны ключей (секретные данные). */
     public const EXCLUDED_PATTERNS = [

@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\helpers\ProductsCacheHelper;
 use common\models\box\Drop;
 use common\models\box\Category;
@@ -337,7 +338,7 @@ class ProductsController extends BaseApiController
                         'hasMore' => ($offset + count($products)) < $pagination->totalCount,
                     ],
                 ];
-                $cache->set($cacheKey, $responseData, 300); // 5 минут
+                $cache->set($cacheKey, $responseData, ApiPublicCacheTtl::SECONDS);
             }
 
             return $this->successResponse($products, [
@@ -462,7 +463,7 @@ class ProductsController extends BaseApiController
             ];
 
             // Сохраняем в кэш на 10 минут
-            $cache->set($cacheKey, $product, 600);
+            $cache->set($cacheKey, $product, ApiPublicCacheTtl::SECONDS);
         } else {
             $product = $cachedProduct;
         }

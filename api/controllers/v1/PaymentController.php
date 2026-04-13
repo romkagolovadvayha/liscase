@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\web\NotFoundHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\BadRequestHttpException;
@@ -126,7 +127,7 @@ class PaymentController extends BaseApiController
             'methods' => $methods,
             'bonuses' => $bonusesList,
         ];
-        $cache->set($cacheKey, $response, 600); // 10 минут
+        $cache->set($cacheKey, $response, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($response);
     }

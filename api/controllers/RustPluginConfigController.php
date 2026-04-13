@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\helpers\ApiPublicCacheTtl;
 use common\models\rustplugin\RustPluginConfig;
 use common\models\servers\Servers;
 use yii\web\Controller;
@@ -151,8 +152,7 @@ class RustPluginConfigController extends Controller
                 ];
             }
             
-            // Сохраняем в кэш на 5 минут
-            Yii::$app->cache->set($cacheKey, $items, 300);
+            Yii::$app->cache->set($cacheKey, $items, ApiPublicCacheTtl::SECONDS);
         }
 
         return $items;

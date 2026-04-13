@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use OpenApi\Annotations as OA;
 
 /**
@@ -60,7 +61,7 @@ class ReferralController extends BaseApiController
             ];
 
             // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $settings, 3600);
+            $cache->set($cacheKey, $settings, ApiPublicCacheTtl::SECONDS);
         }
 
         $data = [

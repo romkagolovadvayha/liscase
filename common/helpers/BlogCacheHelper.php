@@ -11,8 +11,8 @@ use common\models\blog\BlogCategory;
  */
 class BlogCacheHelper
 {
-    /** TTL кэша категорий в секундах (1 час). */
-    public const CATEGORIES_CACHE_TTL = 3600;
+    /** TTL кэша категорий в секундах. */
+    public const CATEGORIES_CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /**
      * Собрать дерево категорий блога (как BlogController::actionCategories).

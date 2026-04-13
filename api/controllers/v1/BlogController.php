@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\helpers\BlogCacheHelper;
 use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
@@ -262,7 +263,7 @@ class BlogController extends BaseApiController
 
         // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
         if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
-            $cache->set($cacheKey, $responseData, 300); // 5 минут
+            $cache->set($cacheKey, $responseData, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($responseData);

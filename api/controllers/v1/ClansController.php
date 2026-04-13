@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use api\components\jwt\JwtAuthFilter;
+use common\helpers\ApiPublicCacheTtl;
 use common\components\clan\ApplicantTrustHelper;
 use common\components\clan\GamePluginClanListBuilder;
 use common\models\clan\Clan;
@@ -782,7 +783,7 @@ class ClansController extends BaseApiController
                 'kills' => $this->mapClanKillsForApi($killsList),
                 'medical' => [],
             ];
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);

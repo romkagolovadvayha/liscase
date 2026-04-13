@@ -4,6 +4,7 @@ namespace api\controllers\v1;
 
 use Yii;
 use yii\db\Query;
+use common\helpers\ApiPublicCacheTtl;
 use common\components\google\TranslateApi;
 use DemonDogSL\translateManager\models\LanguageTranslate;
 
@@ -26,9 +27,6 @@ class TranslationsController extends BaseApiController
      * Ответ: { "key": "translation", ... } — ключ как в language_source.message.
      * Ключи: GET ?keys= (для коротких без запятых) или POST body JSON {"keys": ["текст1", "текст2"]}.
      */
-    private const TRANSLATIONS_CACHE_TTL = 300; // 5 минут
-    private const NEW_FRONT_CACHE_TTL = 300; // 5 минут
-
     public function actionIndex()
     {
         $language = Yii::$app->language;
@@ -56,7 +54,7 @@ class TranslationsController extends BaseApiController
         foreach ($rows as $row) {
             $data[$row['message']] = (string) ($row['translation'] ?? $row['message']);
         }
-        Yii::$app->cache->set($cacheKey, $data, self::NEW_FRONT_CACHE_TTL);
+        Yii::$app->cache->set($cacheKey, $data, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($data);
     }
@@ -86,7 +84,7 @@ class TranslationsController extends BaseApiController
         foreach ($rows as $row) {
             $data[$row['message']] = (string) ($row['translation'] ?? $row['message']);
         }
-        Yii::$app->cache->set($cacheKey, $data, self::TRANSLATIONS_CACHE_TTL);
+        Yii::$app->cache->set($cacheKey, $data, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($data);
     }

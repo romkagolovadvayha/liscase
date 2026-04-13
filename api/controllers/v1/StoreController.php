@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\web\BadRequestHttpException;
 use common\models\user\User;
 use common\models\user\UserDrop;
@@ -226,7 +227,7 @@ class StoreController extends BaseApiController
                     'sort' => (int) ($c['sort'] ?? 0),
                 ];
             }
-            $cache->set($cacheKey, $list, 3600); // 1 час
+            $cache->set($cacheKey, $list, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse(['categories' => $list]);

@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\models\map\MapList;
 use common\models\map\MapListVote;
 use common\models\servers\Servers;
@@ -137,7 +138,7 @@ class MapsController extends BaseApiController
                 ->select('map_list_id')
                 ->andWhere(['IS NOT', 'map_list_id', null])
                 ->column();
-            $cache->set($cacheKey, $fixedMapIds, 300); // 5 минут
+            $cache->set($cacheKey, $fixedMapIds, ApiPublicCacheTtl::SECONDS);
         }
 
         // Вычисляем дату через 3 суток от текущего момента
@@ -382,7 +383,7 @@ class MapsController extends BaseApiController
             'totalVotes' => $totalVotes,
             'maxVotes' => $maxVotes,
         ];
-        $cache->set($listCacheKey, $toCache, 300);
+        $cache->set($listCacheKey, $toCache, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($response);
     }
@@ -692,7 +693,7 @@ class MapsController extends BaseApiController
 
         $toCache = $mapData;
         $toCache['userVotedMapIds'] = [];
-        $cache->set($cacheKey, $toCache, 300); // 5 минут
+        $cache->set($cacheKey, $toCache, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($mapData);
     }

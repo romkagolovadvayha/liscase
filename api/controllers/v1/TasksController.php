@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\web\NotFoundHttpException;
 use yii\web\BadRequestHttpException;
 use common\models\tasks_v2\TaskV2;
@@ -91,7 +92,7 @@ class TasksController extends BaseApiController
             $allModels = $query->all();
             
             // Сохраняем в кэш только модели (без пользовательских данных)
-            $cache->set($cacheKey, $allModels, 180); // 3 минуты (общий список заданий без прогресса)
+            $cache->set($cacheKey, $allModels, ApiPublicCacheTtl::SECONDS);
         } else {
             $allModels = $cachedTasks;
         }

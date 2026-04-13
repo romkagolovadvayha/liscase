@@ -14,6 +14,7 @@ use common\models\tasks_v2\TaskV2;
 use common\models\tasks_v2\TaskV2UserCompletion;
 use common\models\user\UserTop;
 use common\models\teams\Teams as TeamsModel;
+use common\helpers\ApiPublicCacheTtl;
 use common\helpers\StatsCacheHelper;
 use api\components\jwt\JwtAuthFilter;
 use api\components\jwt\JwtService;
@@ -1089,7 +1090,7 @@ class StatsController extends BaseApiController
             ];
 
             // Сохраняем в кэш на 5 минут
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         // Всегда подставляем актуальный текущий вайп сервера для отображения на фронте
@@ -1173,7 +1174,7 @@ class StatsController extends BaseApiController
             }
 
             $cached = $this->buildPlayerResourcesData($server, $user, $wipe, $periodAll, $playerStats);
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);
@@ -1321,7 +1322,7 @@ class StatsController extends BaseApiController
             }
 
             $cached = $this->buildPlayerKillsData($server, $user, $wipe, $periodAll, $playerStats);
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);
@@ -1371,7 +1372,7 @@ class StatsController extends BaseApiController
             }
             // В кэше только публичный ответ; иначе чужой запрос после владельца получил бы список тимейтов
             $cached = $this->buildPlayerTeamData($server, $user, $wipe, false);
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         if ($this->isViewerProfileOwner($steamId)) {
@@ -1432,7 +1433,7 @@ class StatsController extends BaseApiController
             }
 
             $cached = $this->buildPlayerLootCraftsData($playerStats);
-            Yii::$app->cache->set($cacheKey, $cached, 300);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);

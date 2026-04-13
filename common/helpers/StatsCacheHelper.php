@@ -52,11 +52,11 @@ class StatsCacheHelper
         return 'api_stats_v2_' . $serverTag . '_' . ($wipe ?? 'current');
     }
 
-    /** TTL кэша в секундах (5 минут, как в API). */
-    public const CACHE_TTL = 300;
+    /** TTL кэша в секундах (публичная статистика сервера / топы). */
+    public const CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /** TTL таблицы «все игроки сервера» (GET /v1/stats/server-players-table), секунды. */
-    public const SERVER_PLAYERS_TABLE_TTL = 900;
+    public const SERVER_PLAYERS_TABLE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /**
      * Кэш плоского списка игроков с метриками за вайп (сортировка на клиенте).

@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\web\NotFoundHttpException;
 use yii\web\ForbiddenHttpException;
 use yii\web\BadRequestHttpException;
@@ -263,8 +264,7 @@ class SupportController extends BaseApiController
                 ];
             }
             
-            // Кэшируем на 1 час (3600 секунд)
-            Yii::$app->cache->set($cacheKey, $formattedStickers, 3600);
+            Yii::$app->cache->set($cacheKey, $formattedStickers, ApiPublicCacheTtl::SECONDS);
             
             return $this->successResponse([
                 'stickers' => $formattedStickers,

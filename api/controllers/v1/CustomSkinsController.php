@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\models\serverskin\ServerSkin;
 use common\models\serverskin\ServerSkinCategory;
 use common\models\serverskin\ServerSkinLike;
@@ -209,7 +210,7 @@ class CustomSkinsController extends BaseApiController
 
             // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
             if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
-                $cache->set($cacheKey, $responseData, 300); // 5 минут
+                $cache->set($cacheKey, $responseData, ApiPublicCacheTtl::SECONDS);
             }
 
             return $this->successResponse($responseData);
@@ -254,7 +255,7 @@ class CustomSkinsController extends BaseApiController
             }
 
             // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $categoriesData, 3600);
+            $cache->set($cacheKey, $categoriesData, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($categoriesData);

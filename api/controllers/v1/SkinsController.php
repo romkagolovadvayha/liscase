@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use OpenApi\Annotations as OA;
 use yii\web\NotFoundHttpException;
 use yii\web\BadRequestHttpException;
@@ -483,8 +484,7 @@ class SkinsController extends BaseApiController
                 ->where(['status' => UserPayoutSkins::STATUS_SUCCESS, 'type' => 'cs2'])
                 ->sum(new \yii\db\Expression('COALESCE(NULLIF(amount, 0), price)'));
 
-            // Сохраняем в кэш на 10 минут (600 секунд)
-            $cache->set($cacheKey, $data, 600);
+            $cache->set($cacheKey, $data, ApiPublicCacheTtl::SECONDS);
         } else {
             // Старый кэш мог быть без totalAmount — дополняем при отдаче
             if (!isset($data['rust']['totalAmount'])) {
@@ -650,8 +650,7 @@ class SkinsController extends BaseApiController
                 'totalAmount' => (float)(Skindrops::find()->sum('price') ?? 0),
             ];
 
-            // Сохраняем общие данные в кэш на 10 минут (600 секунд)
-            $cache->set($commonCacheKey, $commonData, 600);
+            $cache->set($commonCacheKey, $commonData, ApiPublicCacheTtl::SECONDS);
         } elseif (!isset($commonData['chartByDay'])) {
             // Старый кэш без chartByDay — дополняем из таблицы skindrops
             $chartByDay = [0, 0, 0, 0, 0, 0, 0];

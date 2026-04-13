@@ -10,8 +10,8 @@ use common\models\box\Category;
  */
 class ProductsCacheHelper
 {
-    /** TTL кэша категорий в секундах (1 час). */
-    public const CATEGORIES_CACHE_TTL = 3600;
+    /** TTL кэша категорий в секундах. */
+    public const CATEGORIES_CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /**
      * Собрать список категорий в формате API (как ProductsController::actionCategories).

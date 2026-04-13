@@ -12,8 +12,8 @@ use common\models\statistics\Statistics;
  */
 class ServersCacheHelper
 {
-    /** TTL кэша в секундах (180, как в API). */
-    public const CACHE_TTL = 180;
+    /** TTL кэша в секундах (публичный список серверов). */
+    public const CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
     /**
      * Собрать payload для кэша списка серверов (servers + projectStats).

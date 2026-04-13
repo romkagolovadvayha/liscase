@@ -8,6 +8,7 @@ use common\models\servers\Servers;
 use common\models\statistics\Reports;
 use common\models\user\User;
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use yii\data\ActiveDataProvider;
 use yii\helpers\ArrayHelper;
 
@@ -267,7 +268,7 @@ class BanlistController extends BaseApiController
                 
                 // Сохраняем в кэш только базовый список (без фильтров, первая страница, стандартная сортировка)
                 if (!$hasFilters && $page === 1 && $sortField === 'banned_at' && $sortOrder === SORT_DESC && $cacheKey) {
-                    $cache->set($cacheKey, $response, 300); // 5 минут
+                    $cache->set($cacheKey, $response, ApiPublicCacheTtl::SECONDS);
                 }
                 
                 return $response;

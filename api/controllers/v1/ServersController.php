@@ -4,6 +4,7 @@ namespace api\controllers\v1;
 
 use Yii;
 use yii\web\NotFoundHttpException;
+use common\helpers\ApiPublicCacheTtl;
 use common\helpers\ServersCacheHelper;
 use common\models\box\Drop;
 use common\models\servers\Servers;
@@ -100,8 +101,7 @@ class ServersController extends BaseApiController
 
             $cached = $this->formatServer($server, true);
             
-            // Кэшируем на 180 секунд
-            Yii::$app->cache->set($cacheKey, $cached, 180);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);
@@ -169,8 +169,7 @@ class ServersController extends BaseApiController
                 'servers' => $serversData,
             ];
 
-            // Кэшируем на 180 секунд (по языку — name/description переводятся)
-            Yii::$app->cache->set($cacheKey, $cached, 180);
+            Yii::$app->cache->set($cacheKey, $cached, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($cached);
@@ -262,8 +261,7 @@ class ServersController extends BaseApiController
             'categories' => array_values($categories),
         ];
 
-        // Сохраняем в кэш на 10 минут (600 секунд)
-        Yii::$app->cache->set($cacheKey, $result, 600);
+        Yii::$app->cache->set($cacheKey, $result, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($result);
     }
@@ -421,7 +419,7 @@ class ServersController extends BaseApiController
         }
 
         $result = array_values($groups);
-        Yii::$app->cache->set($cacheKey, $result, 300);
+        Yii::$app->cache->set($cacheKey, $result, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($result);
     }

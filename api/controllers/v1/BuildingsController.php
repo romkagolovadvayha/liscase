@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\models\building\Building;
 use common\models\building\BuildingLike;
 use common\models\building\BuildingImage;
@@ -287,7 +288,7 @@ class BuildingsController extends BaseApiController
 
             // Сохраняем в кэш только базовый список (без фильтров, первая страница)
             if (!$hasFilters && $page === 1 && $cacheKey) {
-                $cache->set($cacheKey, $responseData, 300); // 5 минут
+                $cache->set($cacheKey, $responseData, ApiPublicCacheTtl::SECONDS);
             }
 
             return $this->successResponse($responseData);
@@ -489,7 +490,7 @@ class BuildingsController extends BaseApiController
             ];
 
             // Сохраняем в кэш на 10 минут
-            $cache->set($cacheKey, $buildingData, 600);
+            $cache->set($cacheKey, $buildingData, ApiPublicCacheTtl::SECONDS);
         } else {
             $buildingData = $cachedBuilding;
         }

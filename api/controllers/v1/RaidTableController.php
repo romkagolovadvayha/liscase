@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\helpers\ApiPublicCacheTtl;
 use common\models\statistics\Statistics;
 use OpenApi\Annotations as OA;
 
@@ -84,7 +85,7 @@ class RaidTableController extends BaseApiController
             ];
 
             // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $data, 3600);
+            $cache->set($cacheKey, $data, ApiPublicCacheTtl::SECONDS);
         }
 
         return $this->successResponse($data);
