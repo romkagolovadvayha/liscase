@@ -13,19 +13,65 @@ using Server = ConVar.Server;
 
 namespace Oxide.Plugins
 {
-    [Info("Team Statistics", "Prostoj", "1.0.0")]
+    [Info("Team Statistics", "Prostoj", "1.1.0")]
     [Description("Team Statistics.")]
     public class TeamStatistics : CovalencePlugin
     {
-       #region Config
-       private class TeamInfo
+        private const string DefaultTeamsIngestUrl = "https://api.prostoj.store/v1/plugin-ingest/teams";
+
+        private class PluginConfiguration
+        {
+            [JsonProperty("teamsIngestUrl")]
+            public string TeamsIngestUrl = DefaultTeamsIngestUrl;
+        }
+
+        private PluginConfiguration _config;
+
+        protected override void LoadDefaultConfig()
+        {
+            _config = new PluginConfiguration();
+            SaveConfig();
+        }
+
+        protected override void LoadConfig()
+        {
+            base.LoadConfig();
+            try
+            {
+                _config = Config.ReadObject<PluginConfiguration>() ?? new PluginConfiguration();
+            }
+            catch
+            {
+                PrintError("Team Statistics: ошибка конфига, сброс к умолчаниям.");
+                LoadDefaultConfig();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_config.TeamsIngestUrl))
+            {
+                _config.TeamsIngestUrl = DefaultTeamsIngestUrl;
+                SaveConfig();
+            }
+        }
+
+        protected override void SaveConfig() => Config.WriteObject(_config);
+
+        private void Init()
+        {
+            LoadConfig();
+        }
+
+        #region State
+        private class TeamInfo
         {
             public string LeaderSteamId { get; set; } // SteamID лидера команды
             public List<string> Members { get; set; } // Список SteamID всех участников команды
             public string Action { get; set; } // Тип изменения (created, updated, disbanded)
             public string Timestamp { get; set; } // Время события
-        };
+        }
+
         private List<TeamInfo> teamEvents = new List<TeamInfo>();
+        #endregion
 
         void OnServerInitialized(bool initial)
         {
@@ -44,7 +90,6 @@ namespace Oxide.Plugins
             teamEvents.Clear();
             SaveAll();
         }
-        #endregion
 
 		private void TrySnapshotAllTeams()
 		{
@@ -81,7 +126,7 @@ namespace Oxide.Plugins
 
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
-            webrequest.Enqueue($"https://api.prostoj.store/api-stats/teams", requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
+            webrequest.Enqueue(_config.TeamsIngestUrl, requestBody, (code, response) => {}, this, RequestMethod.POST, header, timeout: 1F);
             teamEvents.Clear();
         }
 
