@@ -274,6 +274,7 @@ $config = [
                 ['pattern' => 'v1/plugin-ingest/update-users/<serverTag:[\w-]+>', 'route' => 'stats/update-users', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/raid/<serverTag:[\w-]+>', 'route' => 'stats/raid', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/signs', 'route' => 'stats/signs', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/plugin-ingest/teams', 'route' => 'stats/teams', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/clan-cupboards', 'route' => 'stats/clan-cupboards', 'verb' => ['POST', 'OPTIONS']],
 
                 // Конфиг плагинов из панели (явный v1-префикс)
