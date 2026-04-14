@@ -41,6 +41,7 @@ class Profit extends \common\components\base\ActiveRecord
     public const TYPE_WINNER_SKINS = 16;
     public const TYPE_TASK_V2 = 17;
     public const TYPE_AUDIENCE_BONUS = 18;
+    public const TYPE_MEDIA_LIVE = 19;
 
     /**
      * @return array
@@ -66,6 +67,7 @@ class Profit extends \common\components\base\ActiveRecord
             self::TYPE_WINNER_SKINS => Yii::t('common', 'Выигран скин'),
             self::TYPE_TASK_V2 => Yii::t('common', 'Выполнение задания v2'),
             self::TYPE_AUDIENCE_BONUS => Yii::t('common', 'Бонус аудитории'),
+            self::TYPE_MEDIA_LIVE => Yii::t('common', 'Бонус за эфир (стрим)'),
         ];
     }
 

@@ -21,6 +21,7 @@ use common\models\servers\Servers;
 use common\models\skindrops\Skindrops;
 use common\models\statistics\Kills;
 use common\models\statistics\Reports;
+use common\models\media\MediaLive;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use GeoIp2\Database\Reader;
@@ -104,6 +105,7 @@ use yii\web\JsExpression;
  * @property Auth            $auth
  * @property UserTree        $userTree
  * @property Servers         $server
+ * @property MediaLive[]     $mediaLives
  */
 class User extends ActiveRecord implements IdentityInterface
 {
@@ -645,6 +647,14 @@ class User extends ActiveRecord implements IdentityInterface
     public function getUserTasks()
     {
         return $this->hasMany(UserTask::class, ['user_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getMediaLives()
+    {
+        return $this->hasMany(MediaLive::class, ['user_id' => 'id']);
     }
 
     /**
