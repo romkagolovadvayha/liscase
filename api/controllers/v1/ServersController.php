@@ -50,10 +50,30 @@ class ServersController extends BaseApiController
     {
         $cacheKey = 'api_servers_index_' . Yii::$app->language;
         $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached !== false) {
+            return $this->successResponse($cached);
+        }
 
-        if ($cached === false) {
+        // Смягчаем «cache stampede»: при истечении TTL несколько воркеров не должны одновременно грузить БД.
+        $lockKey = $cacheKey . '_building';
+        $lockOk = Yii::$app->cache->add($lockKey, 1, 30);
+        if (!$lockOk) {
+            for ($i = 0; $i < 40; $i++) {
+                usleep(50000);
+                $cached = Yii::$app->cache->get($cacheKey);
+                if ($cached !== false) {
+                    return $this->successResponse($cached);
+                }
+            }
+        }
+
+        try {
             $cached = ServersCacheHelper::buildIndexPayload(Yii::$app->language);
             Yii::$app->cache->set($cacheKey, $cached, ServersCacheHelper::CACHE_TTL);
+        } finally {
+            if ($lockOk) {
+                Yii::$app->cache->delete($lockKey);
+            }
         }
 
         return $this->successResponse($cached);

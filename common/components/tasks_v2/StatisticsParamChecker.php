@@ -47,8 +47,11 @@ class StatisticsParamChecker implements TaskCheckerInterface
         $currentValue = 0;
 
         if ($sumAllServers) {
-            // Суммируем статистику по всем серверам начиная с указанной даты
-            $servers = Servers::find()->where(['is_active' => 1])->all();
+            // Суммируем статистику по всем серверам начиная с указанной даты (не закрытые — колонки is_active в servers нет)
+            $servers = Servers::find()
+                ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+                ->orderBy(['sort' => SORT_ASC])
+                ->all();
             foreach ($servers as $server) {
                 $playerStats = $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate);
                 $currentValue += $this->getStatsSum($playerStats, $statKeys);
@@ -64,7 +67,10 @@ class StatisticsParamChecker implements TaskCheckerInterface
                 }
             } else {
                 // Используем текущий сервер пользователя
-                $server = $user->server ?? Servers::find()->where(['is_active' => 1])->orderBy(['sort' => SORT_ASC])->one();
+                $server = $user->server ?? Servers::find()
+                    ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+                    ->orderBy(['sort' => SORT_ASC])
+                    ->one();
                 if (!$server) {
                     return CheckResult::failure(
                         Yii::t('common', 'Не удалось определить сервер.')

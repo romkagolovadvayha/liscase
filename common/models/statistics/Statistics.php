@@ -11,6 +11,7 @@ use common\models\user\User;
 use common\models\user\UserTop;
 use common\models\user\UserTree;
 use Yii;
+use yii\db\Query;
 
 /**
  * @property int    $id
@@ -462,8 +463,11 @@ class Statistics extends ActiveRecord
 
     public static function projectStats($update = false) {
         $cacheKey = 'Statistics_projectStats_';
-        if (Yii::$app->cache->get($cacheKey) && !$update) {
-            return Yii::$app->cache->get($cacheKey);
+        if (!$update) {
+            $cached = Yii::$app->cache->get($cacheKey);
+            if ($cached !== false) {
+                return $cached;
+            }
         }
 
         $result = [];
@@ -483,16 +487,38 @@ class Statistics extends ActiveRecord
             ->cache(60)
             ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
             ->all();
+
+        $pingByServerId = [];
+        if ($servers !== []) {
+            $serverIds = [];
+            foreach ($servers as $server) {
+                $serverIds[] = (int) $server->id;
+            }
+            $serverIds = array_values(array_unique(array_filter($serverIds)));
+            if ($serverIds !== []) {
+                $threshold = date('Y-m-d H:i:s', time() - 5 * 60);
+                $rows = (new Query())
+                    ->from(['u' => User::tableName()])
+                    ->select(['server_id' => 'u.server_id', 'avg_ping' => 'AVG(u.ping)'])
+                    ->where(['>=', 'u.last_visit_server_at', $threshold])
+                    ->andWhere(['u.status' => User::STATUS_ACTIVE])
+                    ->andWhere(['u.server_id' => $serverIds])
+                    ->groupBy(['u.server_id'])
+                    ->all();
+                foreach ($rows as $row) {
+                    $sid = (int) ($row['server_id'] ?? 0);
+                    if ($sid > 0) {
+                        $pingByServerId[$sid] = (float) ($row['avg_ping'] ?? 0);
+                    }
+                }
+            }
+        }
+
         $result['servers'] = [];
         foreach ($servers as $server) {
-            if (empty($result['servers'][$server->id])) {
-                $result['servers'][$server->id] = [];
-            }
-            $result['servers'][$server->id]['ping'] = User::find()
-                                                          ->andWhere(['>=', 'last_visit_server_at', date('Y-m-d H:i:s', time() - 5 * 60)])
-                                                          ->andWhere(['server_id' => $server->id])
-                                                          ->andWhere(['status' => User::STATUS_ACTIVE])
-                                                          ->average('ping') ?? 0;
+            $result['servers'][$server->id] = [
+                'ping' => $pingByServerId[(int) $server->id] ?? 0,
+            ];
         }
 
         Yii::$app->cache->set($cacheKey, $result, 7*24*60*60);
