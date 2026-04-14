@@ -5,6 +5,7 @@ namespace api\controllers\v1;
 use api\components\jwt\JwtAuthFilter;
 use common\components\VideoMetadataFetcher;
 use common\components\VideoPosterUploader;
+use common\models\media\MediaLive;
 use common\models\user\User;
 use common\models\video\UserVideo;
 use common\models\video\UserVideoLike;
@@ -36,13 +37,12 @@ class UserVideoController extends BaseApiController
 
     /**
      * Список стримеров (is_blogger) с Twitch/Kick ссылками и статусом «В эфире».
-     * Статус и сортировка по stream_live_at (обновляется кроном раз в 3 мин).
+     * «В эфире» — активная запись в media_live (крон streamers/update-live-status).
+     * live_started_at — ISO 8601 (Europe/Moscow) для таймера на фронте.
      * GET /v1/user-videos/streamers
      */
     public function actionStreamers()
     {
-        $liveThreshold = date('Y-m-d H:i:s', time() - 5 * 60); // 5 мин — считаем «в эфире»
-
         $query = User::find()
             ->joinWith(['userProfile'])
             ->where(['user.is_blogger' => 1])
@@ -55,6 +55,17 @@ class UserVideoController extends BaseApiController
             ->orderBy(['user.stream_live_at' => SORT_DESC, 'user.username' => SORT_ASC]);
 
         $users = $query->all();
+        $userIds = array_map(static function (User $u) {
+            return (int) $u->id;
+        }, $users);
+        $activeLiveByUser = [];
+        if ($userIds !== []) {
+            $activeLiveByUser = MediaLive::find()
+                ->where(['user_id' => $userIds, 'status' => MediaLive::STATUS_LIVE])
+                ->indexBy('user_id')
+                ->all();
+        }
+
         $items = [];
         foreach ($users as $user) {
             $twitchLink = $user->userProfile && trim((string) ($user->userProfile->twitch_link ?? '')) !== ''
@@ -67,7 +78,16 @@ class UserVideoController extends BaseApiController
                 continue;
             }
             $streamLiveAt = $user->stream_live_at ?? null;
-            $isLive = $streamLiveAt !== null && $streamLiveAt >= $liveThreshold;
+            /** @var MediaLive|null $liveRow */
+            $liveRow = $activeLiveByUser[$user->id] ?? null;
+            $isLive = $liveRow !== null;
+            $liveStartedAtIso = null;
+            if ($liveRow !== null && !empty($liveRow->started_at)) {
+                $dt = \DateTime::createFromFormat('Y-m-d H:i:s', $liveRow->started_at, new \DateTimeZone('Europe/Moscow'));
+                if ($dt instanceof \DateTime) {
+                    $liveStartedAtIso = $dt->format(\DateTime::ATOM);
+                }
+            }
             $items[] = [
                 'id' => $user->id,
                 'username' => $user->username,
@@ -77,8 +97,25 @@ class UserVideoController extends BaseApiController
                 'kick_link' => $kickLink,
                 'is_live' => $isLive,
                 'stream_live_at' => $streamLiveAt,
+                'live_started_at' => $liveStartedAtIso,
             ];
         }
+
+        usort($items, static function (array $a, array $b): int {
+            $aLive = !empty($a['is_live']) ? 1 : 0;
+            $bLive = !empty($b['is_live']) ? 1 : 0;
+            if ($aLive !== $bLive) {
+                return $bLive <=> $aLive;
+            }
+            $ta = $a['live_started_at'] ?? $a['stream_live_at'] ?? '';
+            $tb = $b['live_started_at'] ?? $b['stream_live_at'] ?? '';
+            $cmp = strcmp((string) $tb, (string) $ta);
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            return strcmp((string) ($a['username'] ?? ''), (string) ($b['username'] ?? ''));
+        });
+
         return $this->successResponse(['streamers' => $items]);
     }
 
