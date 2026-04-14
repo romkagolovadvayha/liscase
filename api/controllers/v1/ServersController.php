@@ -58,7 +58,8 @@ class ServersController extends BaseApiController
         $lockKey = $cacheKey . '_building';
         $lockOk = Yii::$app->cache->add($lockKey, 1, 30);
         if (!$lockOk) {
-            for ($i = 0; $i < 40; $i++) {
+            // До ~6 с: при медленной БД первый воркер может долго собирать payload; 2 с раньше давали лишние параллельные сборки.
+            for ($i = 0; $i < 120; $i++) {
                 usleep(50000);
                 $cached = Yii::$app->cache->get($cacheKey);
                 if ($cached !== false) {
@@ -70,6 +71,18 @@ class ServersController extends BaseApiController
         try {
             $cached = ServersCacheHelper::buildIndexPayload(Yii::$app->language);
             Yii::$app->cache->set($cacheKey, $cached, ServersCacheHelper::CACHE_TTL);
+        } catch (\Throwable $e) {
+            Yii::error(
+                'api_servers_index build failed: ' . $e->getMessage() . "\n" . $e->getTraceAsString(),
+                'api'
+            );
+
+            return $this->errorResponse(
+                'SERVICE_UNAVAILABLE',
+                YII_DEBUG ? $e->getMessage() : 'Service temporarily unavailable. Please retry.',
+                [],
+                503
+            );
         } finally {
             if ($lockOk) {
                 Yii::$app->cache->delete($lockKey);
