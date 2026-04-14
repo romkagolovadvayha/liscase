@@ -20,6 +20,7 @@ use common\models\statistics\Statistics;
 use common\models\tasks_v2\TaskV2;
 use common\models\box\Drop;
 use common\models\box\DropFavorite;
+use common\helpers\FrontendPublicUrl;
 use frontend\forms\profile\ProfileForm;
 use frontend\forms\user\TransferForm;
 use frontend\forms\promocode\UserPromocodeForm;
@@ -969,9 +970,7 @@ class UserController extends BaseApiController
 
             // Формируем партнерскую ссылку
             $refCode = $user->ref_code ?? '';
-            $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
-            // Убираем api. из URL если есть
-            $baseUrl = str_replace('api.', '', $baseUrl);
+            $baseUrl = FrontendPublicUrl::getBaseUrl();
             $partnerLink = !empty($refCode) ? ($baseUrl . '/p/' . $refCode) : '';
 
             return $this->successResponse([
@@ -1638,7 +1637,7 @@ class UserController extends BaseApiController
         // Формируем ссылку на статистику
         $userStatsLink = null;
         if ($server) {
-            $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
+            $baseUrl = FrontendPublicUrl::getBaseUrl();
             $userStatsLink = $baseUrl . '/servers/' . $server->tag . '?steam_id=' . $user->steam_id;
         }
         
@@ -1753,8 +1752,7 @@ class UserController extends BaseApiController
             ->all();
 
         $items = [];
-        $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
-        $baseUrl = str_replace('api.', '', $baseUrl);
+        $baseUrl = FrontendPublicUrl::getBaseUrl();
 
         $defaultStatsServer = Servers::find()
             ->where(['in', 'status', [0, 1]])

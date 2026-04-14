@@ -4,6 +4,7 @@ namespace api\controllers\v1;
 
 use Yii;
 use common\helpers\ApiPublicCacheTtl;
+use common\helpers\FrontendPublicUrl;
 use OpenApi\Annotations as OA;
 
 /**
@@ -72,9 +73,7 @@ class ReferralController extends BaseApiController
         $user = Yii::$app->user->identity;
         if ($user) {
             $refCode = $user->ref_code ?? '';
-            $baseUrl = Yii::$app->params['baseUrl'] ?? (Yii::$app->params['homePage'] ?? 'http://localhost');
-            // Убираем api. из URL если есть
-            $baseUrl = str_replace('api.', '', $baseUrl);
+            $baseUrl = FrontendPublicUrl::getBaseUrl();
             $partnerLink = !empty($refCode) ? ($baseUrl . '/p/' . $refCode) : '';
             
             $data['user'] = [

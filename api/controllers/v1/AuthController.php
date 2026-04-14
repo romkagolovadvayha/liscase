@@ -7,6 +7,8 @@ use yii\web\Response;
 use yii\web\Cookie;
 use yii\authclient\OpenId;
 use common\models\user\User;
+use common\models\user\UserTree;
+use common\components\web\Cookie as WebCookie;
 use common\components\helpers\Role;
 use common\components\oauth\Steam;
 use api\components\jwt\JwtService;
@@ -85,6 +87,13 @@ class AuthController extends BaseApiController
                     ]));
                 }
             }
+        }
+
+        // Реферальный refCode: cookie ставит Next.js (/p/{code}), не подписан Yii — дублируем в сессию OAuth (callback на API).
+        $refForSession = $this->sanitizeReferralRefCode($_COOKIE['refCode'] ?? null)
+            ?: $this->sanitizeReferralRefCode(Yii::$app->request->cookies->getValue('refCode'));
+        if ($refForSession !== null) {
+            $_SESSION['oauth_ref_code'] = $refForSession;
         }
         
         // URL, на который Steam вернёт пользователя после авторизации — обязательно текущий хост API,
@@ -198,6 +207,8 @@ class AuthController extends BaseApiController
                 // Обновляем данные пользователя из Steam
                 $this->updateUserFromSteam($user, $steamAttributes);
             }
+
+            unset($_SESSION['oauth_ref_code']);
 
             // Генерируем JWT токены
             $jwtService = Yii::$app->get('jwt');
@@ -662,6 +673,8 @@ class AuthController extends BaseApiController
             $user->userProfile->save(false);
         }
 
+        $this->attachReferralParentForNewUser($user);
+
         return $user;
     }
 
@@ -687,6 +700,68 @@ class AuthController extends BaseApiController
             }
             $user->userProfile->save(false);
         }
+    }
+
+    /**
+     * Нормализация реферального кода (цифры, как в /p/{refCode}).
+     */
+    protected function sanitizeReferralRefCode($raw): ?string
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        $digits = preg_replace('/\D/', '', (string)$raw);
+
+        return $digits !== '' ? $digits : null;
+    }
+
+    /**
+     * refCode из cookie (Next.js /p/ не подписан Yii) и резервно из сессии OAuth.
+     */
+    protected function getReferralRefCodeForNewUser(): ?string
+    {
+        $fromCookie = $this->sanitizeReferralRefCode($_COOKIE['refCode'] ?? null)
+            ?: $this->sanitizeReferralRefCode(Yii::$app->request->cookies->getValue('refCode'));
+        if ($fromCookie !== null) {
+            return $fromCookie;
+        }
+        if (!empty($_SESSION['oauth_ref_code'])) {
+            return $this->sanitizeReferralRefCode($_SESSION['oauth_ref_code']);
+        }
+
+        return null;
+    }
+
+    /**
+     * Привязка нового пользователя к рефереру (user_tree), как в common/controllers/AuthController::onAuthSuccess.
+     */
+    protected function attachReferralParentForNewUser(User $user): void
+    {
+        /** @var int Корневой родитель по умолчанию (legacy) */
+        $defaultRootParentId = 509;
+
+        $refCode = $this->getReferralRefCodeForNewUser();
+        $parentUserId = $defaultRootParentId;
+
+        if ($refCode !== null) {
+            $parentUser = User::findByRefCode($refCode);
+            if ($parentUser && (int)$parentUser->id !== (int)$user->id) {
+                $parentUserId = (int)$parentUser->id;
+                if (!empty($parentUser->telegram_chat_id) && Yii::$app->has('personalBotTelegram')) {
+                    try {
+                        Yii::$app->personalBotTelegram->sendMessage(
+                            $parentUser->telegram_chat_id,
+                            "По вашей ссылке зарегистировался новый пользователь.\nПользователь: {$user->steam_id}"
+                        );
+                    } catch (\Throwable $e) {
+                        Yii::warning('Referral telegram notify failed: ' . $e->getMessage(), 'auth');
+                    }
+                }
+            }
+            WebCookie::remove('refCode');
+        }
+
+        UserTree::appendUser((int)$user->id, $parentUserId);
     }
 
     /**

@@ -172,10 +172,19 @@ abstract class BaseApiController extends Controller
      */
     protected function validationErrorResponse($model)
     {
+        $details = $model->getFirstErrors();
+        $message = 'Validation failed';
+        if (!empty($details)) {
+            $first = reset($details);
+            if (is_string($first) && $first !== '') {
+                $message = $first;
+            }
+        }
+
         return $this->errorResponse(
             'VALIDATION_ERROR',
-            'Validation failed',
-            $model->getFirstErrors(),
+            $message,
+            $details,
             422
         );
     }

@@ -436,11 +436,25 @@ if (YII_ENV_DEV) {
     $config['bootstrap'] = $bootstrapList;
 }
 
-// Устанавливаем homePage только если доступны необходимые переменные
-if (isset($_SERVER['REQUEST_SCHEME']) && isset($_SERVER['HTTP_HOST'])) {
-    $config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+// Публичный URL API (homePage): за nginx часто нет REQUEST_SCHEME — берём X-Forwarded-Proto / HTTPS.
+$homePageHost = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '';
+if ($homePageHost !== '' && strpos($homePageHost, ',') !== false) {
+    $homePageHost = trim(explode(',', $homePageHost)[0]);
+}
+$homePageScheme = null;
+if (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+    $homePageScheme = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'])[0]);
+}
+if ($homePageScheme === null || $homePageScheme === '') {
+    $homePageScheme = $_SERVER['REQUEST_SCHEME'] ?? null;
+}
+if ($homePageScheme === null || $homePageScheme === '') {
+    $homePageScheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+}
+if ($homePageHost !== '') {
+    $config['params']['homePage'] = $homePageScheme . '://' . $homePageHost;
 } else {
-    $config['params']['homePage'] = $params['homePage'] ?? 'http://localhost';
+    $config['params']['homePage'] = $params['homePage'] ?? ($params['baseUrl'] ?? 'http://localhost');
 }
 
 // Хосты, на которые разрешён редирект после OAuth (привязка Twitch/Discord/Kick). По умолчанию — фронт + локальная разработка.
