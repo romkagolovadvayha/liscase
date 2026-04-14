@@ -710,6 +710,7 @@ class UserController extends BaseApiController
                 Profit::TYPE_ACHIEVEMENT,   // Достижения
                 Profit::TYPE_TASK,          // Задания
                 Profit::TYPE_TASK_V2,       // Задания v2
+                Profit::TYPE_MEDIA_LIVE,    // Бонус за эфир (стрим)
                 Profit::TYPE_TRANSFER_SKINS,   // Перевод из скинов в магазин
                 Profit::TYPE_TRANSFER_REFERRAL, // Перевод из реферальной системы
             ]])
