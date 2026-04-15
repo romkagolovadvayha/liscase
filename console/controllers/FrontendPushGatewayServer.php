@@ -19,6 +19,7 @@ use yii\db\Exception as DbException;
  * Протокол:
  * - Клиент → сервер: JSON с полем "action": auth | subscribeTicket | unsubscribeTicket | typing | ping
  * - Сервер → клиент: единый конверт { v, channel, event, payload, ts }
+ *   Пример: channel notification, event media.streamers.live_changed — обновить стримеров в эфире.
  *
  * События между PHP (API) и этим процессом передаются через кеш (префикс fp_ws_*), см. static queue*().
  */
@@ -41,6 +42,8 @@ class FrontendPushGatewayServer extends WebSocketServer
     public const EVENT_BALANCE_UPDATED = 'balance.updated';
     /** Корзина /store: нужно перезагрузить список (покупка, награда и т.п.) */
     public const EVENT_STORE_INVENTORY_CHANGED = 'store.inventory.changed';
+    /** Список онлайн-стримеров изменился (крон streamers/update-live-status) — перезапрос GET /v1/user-videos/streamers */
+    public const EVENT_MEDIA_STREAMERS_LIVE_CHANGED = 'media.streamers.live_changed';
 
     public const EVENT_AUTH_OK = 'auth.ok';
     public const EVENT_PONG = 'pong';
@@ -727,6 +730,20 @@ class FrontendPushGatewayServer extends WebSocketServer
     }
 
     /**
+     * Рассылка всем авторизованным WS-клиентам: обновить блок «Онлайн стримеры» / список стримеров на /media.
+     */
+    private function dispatchMediaStreamersLiveChanged(array $payload): void
+    {
+        $recipients = [];
+        foreach ($this->clients as $client) {
+            if (!empty($client->authenticated)) {
+                $recipients[] = $client;
+            }
+        }
+        $this->sendToMany($recipients, self::EVENT_MEDIA_STREAMERS_LIVE_CHANGED, $payload);
+    }
+
+    /**
      * Доставка на фронт (Next.js) того же обновления баланса, что лаунчер получает через ChatServer.
      * Ключ кеша пишет {@see \common\models\user\UserBalance::recalculateBalance()}.
      */
@@ -1112,6 +1129,40 @@ class FrontendPushGatewayServer extends WebSocketServer
                 Yii::$app->cache->set($readReceiptsQueueKey, $readReceiptsQueue, 15);
             }
         }
+
+        $mediaStreamersQueueKey = 'fp_ws_media_streamers_queue';
+        $mediaStreamersQueue = Yii::$app->cache->get($mediaStreamersQueueKey);
+        if (!is_array($mediaStreamersQueue)) {
+            $mediaStreamersQueue = [];
+        }
+        $processedMs = [];
+        foreach ($mediaStreamersQueue as $uniq => $queueTimestamp) {
+            if (($now - (int) $queueTimestamp) > 15) {
+                continue;
+            }
+            $cacheKey = 'fp_ws_media_streamers_live_' . $uniq;
+            $data = Yii::$app->cache->get($cacheKey);
+            if ($data && isset($data['type']) && $data['type'] === 'media.streamers.live_changed') {
+                if (isset($data['timestamp']) && ($now - (int) $data['timestamp']) < 15) {
+                    Yii::$app->cache->delete($cacheKey);
+                    $this->dispatchMediaStreamersLiveChanged([
+                        'userId' => isset($data['userId']) ? (int) $data['userId'] : 0,
+                        'reason' => isset($data['reason']) ? (string) $data['reason'] : 'update',
+                    ]);
+                    $processedMs[] = $uniq;
+                }
+            }
+        }
+        if (!empty($processedMs)) {
+            foreach ($processedMs as $uniq) {
+                unset($mediaStreamersQueue[$uniq]);
+            }
+            if (empty($mediaStreamersQueue)) {
+                Yii::$app->cache->delete($mediaStreamersQueueKey);
+            } else {
+                Yii::$app->cache->set($mediaStreamersQueueKey, $mediaStreamersQueue, 20);
+            }
+        }
     }
 
     private function log(string $message): void
@@ -1361,6 +1412,43 @@ class FrontendPushGatewayServer extends WebSocketServer
             return true;
         } catch (\Exception $ex) {
             error_log('FrontendPushGatewayServer::queueMessageDelete: ' . $ex->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Поставить в очередь рассылку {@see self::EVENT_MEDIA_STREAMERS_LIVE_CHANGED} (обрабатывает processCacheQueues).
+     *
+     * @param string $reason live_started | live_ended
+     */
+    public static function queueMediaStreamersLiveChanged(int $userId, string $reason = 'update'): bool
+    {
+        try {
+            $uniq = str_replace('.', '_', uniqid('msl', true));
+            $cacheKey = 'fp_ws_media_streamers_live_' . $uniq;
+            $data = [
+                'type' => 'media.streamers.live_changed',
+                'userId' => $userId,
+                'reason' => $reason,
+                'timestamp' => time(),
+            ];
+            Yii::$app->cache->set($cacheKey, $data, 20);
+            $queueKey = 'fp_ws_media_streamers_queue';
+            $queue = Yii::$app->cache->get($queueKey);
+            if (!is_array($queue)) {
+                $queue = [];
+            }
+            $queue[$uniq] = time();
+            if (count($queue) > 500) {
+                arsort($queue);
+                $queue = array_slice($queue, 0, 500, true);
+            }
+            Yii::$app->cache->set($queueKey, $queue, 20);
+
+            return true;
+        } catch (\Exception $ex) {
+            error_log('FrontendPushGatewayServer::queueMediaStreamersLiveChanged: ' . $ex->getMessage());
+
             return false;
         }
     }

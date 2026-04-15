@@ -50,14 +50,17 @@ class StreamersController extends Controller
                 }
             }
 
+            $userId = (int) $user->id;
+            $hadActiveLive = MediaLive::findActiveForUser($userId) !== null;
+
             $tx = Yii::$app->db->beginTransaction();
             try {
-                $active = MediaLive::ensureSingleActiveSession((int) $user->id, $now);
+                $active = MediaLive::ensureSingleActiveSession($userId, $now);
 
                 if ($platform !== null) {
                     if ($active === null) {
                         $live = new MediaLive();
-                        $live->user_id = (int) $user->id;
+                        $live->user_id = $userId;
                         $live->started_at = $now;
                         $live->status = MediaLive::STATUS_LIVE;
                         $live->platform = $platform;
@@ -66,7 +69,7 @@ class StreamersController extends Controller
                     } elseif ($active->platform !== $platform) {
                         $active->finalize($now, true);
                         $live = new MediaLive();
-                        $live->user_id = (int) $user->id;
+                        $live->user_id = $userId;
                         $live->started_at = $now;
                         $live->status = MediaLive::STATUS_LIVE;
                         $live->platform = $platform;
@@ -78,6 +81,14 @@ class StreamersController extends Controller
                 }
 
                 $tx->commit();
+
+                $hasActiveLive = MediaLive::findActiveForUser($userId) !== null;
+                if ($hadActiveLive !== $hasActiveLive) {
+                    FrontendPushGatewayServer::queueMediaStreamersLiveChanged(
+                        $userId,
+                        $hasActiveLive ? 'live_started' : 'live_ended'
+                    );
+                }
             } catch (\Throwable $e) {
                 $tx->rollBack();
                 Yii::error('Streamers update-live-status user ' . $user->id . ': ' . $e->getMessage(), __METHOD__);
