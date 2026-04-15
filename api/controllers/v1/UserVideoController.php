@@ -37,6 +37,7 @@ class UserVideoController extends BaseApiController
 
     /**
      * Список стримеров (is_blogger) с Twitch/Kick/YouTube ссылками и статусом «В эфире».
+     * has_vip, avatar_frame_url — как в профиле/статистике (рамка VIP поверх аватара).
      * «В эфире» — активная запись в media_live (крон streamers/update-live-status).
      * live_started_at — ISO 8601 (Europe/Moscow) для таймера на фронте.
      * GET /v1/user-videos/streamers
@@ -97,6 +98,8 @@ class UserVideoController extends BaseApiController
                 'username' => $user->username,
                 'avatar' => $user->getAvatar(),
                 'steam_id' => $user->steam_id ? (string) $user->steam_id : null,
+                'has_vip' => $user->hasVip(),
+                'avatar_frame_url' => $user->getAvatarFrameImageUrl(),
                 'twitch_link' => $twitchLink,
                 'kick_link' => $kickLink,
                 'youtube_link' => $youtubeLink,
