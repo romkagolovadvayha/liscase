@@ -79,6 +79,13 @@ class DiscordRolesJob extends BaseObject implements JobInterface
     public const USERS_PER_BATCH = 100;
 
     /**
+     * Только пользователи с флагом блогера ({@see User::is_blogger} = 1) и привязанным Discord.
+     * Консоль: {@see \console\controllers\DiscordRolesController::actionCheck} с опцией --bloggersOnly=1
+     * @var bool|int|string сериализация очереди может дать 0/1 или строку
+     */
+    public $bloggersOnly = false;
+
+    /**
      * Ставит в очередь несколько батч-задач по {@see USERS_PER_BATCH} пользователей (короткие воркеры).
      *
      * @param \yii\queue\Queue $queue
@@ -100,14 +107,24 @@ class DiscordRolesJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $userIds = User::find()
+            $onlyBloggers = $this->isBloggersOnlyEnabled();
+
+            $userQuery = User::find()
                 ->select('id')
                 ->andWhere(['IS NOT', 'discord_id', null])
-                ->andWhere(['<>', 'discord_id', ''])
-                ->column();
+                ->andWhere(['<>', 'discord_id', '']);
+            if ($onlyBloggers) {
+                $userQuery->andWhere(['is_blogger' => 1]);
+            }
+            $userIds = $userQuery->column();
 
             if ($userIds === []) {
-                Yii::info('DiscordRolesJob: no users with Discord linked', __METHOD__);
+                Yii::info(
+                    $onlyBloggers
+                        ? 'DiscordRolesJob: no blogger users with Discord linked'
+                        : 'DiscordRolesJob: no users with Discord linked',
+                    __METHOD__
+                );
                 return;
             }
 
@@ -117,7 +134,8 @@ class DiscordRolesJob extends BaseObject implements JobInterface
             }
 
             Yii::info(
-                'DiscordRolesJob: enqueued ' . count($chunks) . ' batch job(s) for ' . count($userIds) . ' user(s)',
+                'DiscordRolesJob: enqueued ' . count($chunks) . ' batch job(s) for ' . count($userIds)
+                . ' user(s)' . ($onlyBloggers ? ' (bloggers only)' : ''),
                 __METHOD__
             );
         } catch (\Exception $ex) {
@@ -126,6 +144,22 @@ class DiscordRolesJob extends BaseObject implements JobInterface
                 Yii::$app->telegramChats->sendMessage('DiscordRolesJob: ' . PHP_EOL . $ex->getFile() . ": " . $ex->getLine() . PHP_EOL . $ex->getMessage());
             }
         }
+    }
+
+    /**
+     * Флаг «только блогеры» из свойства джоба (очередь/консоль могут передать bool, 0/1 или строку).
+     */
+    protected function isBloggersOnlyEnabled(): bool
+    {
+        $v = $this->bloggersOnly;
+        if ($v === true || $v === 1) {
+            return true;
+        }
+        if (is_string($v)) {
+            $s = strtolower(trim($v));
+            return in_array($s, ['1', 'true', 'yes', 'on'], true);
+        }
+        return false;
     }
 
     /**

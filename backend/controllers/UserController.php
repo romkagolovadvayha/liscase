@@ -145,6 +145,11 @@ class UserController extends CrudController
 
         $user->$attribute = $value;
         if ($user->save(false)) {
+            // Дублируем постановку джоба: afterSave может не увидеть смену is_blogger в changedAttributes;
+            // {@see User::queueDiscordRolesUserJobIfLinked} убирает повтор в том же запросе.
+            if ($attribute === 'is_blogger') {
+                User::queueDiscordRolesUserJobIfLinked($userId);
+            }
             return ['success' => true];
         }
         return ['success' => false, 'error' => implode(', ', $user->getFirstErrors())];

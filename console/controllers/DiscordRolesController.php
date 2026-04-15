@@ -16,24 +16,80 @@ use yii\console\ExitCode;
 class DiscordRolesController extends Controller
 {
     /**
-     * Проверить и выдать роли Discord всем пользователям\
-     * discord-roles/check
+     * Ограничить {@see actionCheck} только пользователями с флагом блогера (is_blogger=1) и Discord.
+     * Примеры: `php yii discord-roles/check --bloggersOnly=1` или `--bloggers-only=true`
+     * @var bool|int|string
+     */
+    public $bloggersOnly = 0;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function options($actionID)
+    {
+        $base = parent::options($actionID);
+        return $actionID === 'check'
+            ? array_merge($base, ['bloggersOnly'])
+            : $base;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function optionAliases()
+    {
+        $base = parent::optionAliases();
+        return array_merge($base, [
+            'bloggers-only' => 'bloggersOnly',
+        ]);
+    }
+
+    /**
+     * Проверить и выдать роли Discord пользователям с привязанным Discord (по умолчанию — все).
+     *
+     * `php yii discord-roles/check` — все пользователи с discord_id.
+     * `php yii discord-roles/check --bloggersOnly=1` — только is_blogger=1.
+     *
      * @return int Exit code
      */
     public function actionCheck()
     {
-        $this->stdout("Starting Discord roles check...\n");
+        $onlyBloggers = $this->isBloggersOnlyCliOption();
+        $this->stdout(
+            'Starting Discord roles check'
+            . ($onlyBloggers ? " (bloggers only: is_blogger=1)\n" : " (all users with Discord)\n")
+        );
 
         try {
-            // Добавляем задачу в очередь
-            Yii::$app->queueVk->push(new DiscordRolesJob());
+            $job = new DiscordRolesJob(['bloggersOnly' => $onlyBloggers ? 1 : 0]);
+            Yii::$app->queueVk->push($job);
 
-            $this->stdout("Discord roles scheduler job added to queue (batches of " . DiscordRolesJob::USERS_PER_BATCH . " users).\n");
+            $this->stdout(
+                'Discord roles scheduler job added to queue (batches of '
+                . DiscordRolesJob::USERS_PER_BATCH
+                . " users).\n"
+            );
             return ExitCode::OK;
         } catch (\Exception $e) {
             $this->stderr("Error: " . $e->getMessage() . "\n");
             return ExitCode::UNSPECIFIED_ERROR;
         }
+    }
+
+    /**
+     * Разбор опции --bloggersOnly из консоли (строка/число/bool).
+     */
+    protected function isBloggersOnlyCliOption(): bool
+    {
+        $v = $this->bloggersOnly;
+        if ($v === true || $v === 1) {
+            return true;
+        }
+        if (is_string($v)) {
+            $s = strtolower(trim($v, " \t\n\r\0\x0B'\""));
+            return in_array($s, ['1', 'true', 'yes', 'on'], true);
+        }
+        return false;
     }
 
     /**

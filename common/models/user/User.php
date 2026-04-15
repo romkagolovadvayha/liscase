@@ -1781,6 +1781,43 @@ class User extends ActiveRecord implements IdentityInterface
         }
     }
 
+    /** @var array<int, true> один джоб на пользователя за запрос PHP (afterSave + явный вызов из админки) */
+    private static $discordRolesUserJobQueuedThisRequest = [];
+
+    /**
+     * Поставить в очередь пересчёт ролей Discord для пользователя (VIP, «Медиа»/блогер, сервер, статистика…).
+     * Нужен привязанный discord_id. Сначала {@see \yii\base\Module::get} queueProcess, иначе queue-vk (как у батч-джобов).
+     */
+    public static function queueDiscordRolesUserJobIfLinked(int $userId): void
+    {
+        if ($userId <= 0 || !empty(self::$discordRolesUserJobQueuedThisRequest[$userId])) {
+            return;
+        }
+        try {
+            $user = static::findOne($userId);
+            if ($user === null || $user->discord_id === null || $user->discord_id === '') {
+                return;
+            }
+
+            $job = new DiscordRolesUserJob(['userId' => $userId]);
+            if (Yii::$app->has('queueProcess')) {
+                Yii::$app->queueProcess->push($job);
+                self::$discordRolesUserJobQueuedThisRequest[$userId] = true;
+                Yii::info("DiscordRolesUserJob queued on queueProcess for user {$userId}", __METHOD__);
+                return;
+            }
+            if (Yii::$app->has('queueVk')) {
+                Yii::$app->queueVk->push($job);
+                self::$discordRolesUserJobQueuedThisRequest[$userId] = true;
+                Yii::info("DiscordRolesUserJob queued on queueVk for user {$userId}", __METHOD__);
+                return;
+            }
+            Yii::warning("Discord roles: queueProcess/queueVk missing, job not queued for user {$userId}", __METHOD__);
+        } catch (\Throwable $e) {
+            Yii::error('Discord roles: queueDiscordRolesUserJobIfLinked failed: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
     /**
      * {@inheritdoc}
      * Проверяет изменение server_id и обновляет Discord роли при необходимости
@@ -1795,56 +1832,31 @@ class User extends ActiveRecord implements IdentityInterface
             $this->updateDiscordRolesOnServerChange($oldServerId);
         }
 
-        // Синхронизация роли «Медиа» в Discord при смене признака блогера
+        // Роль «Медиа» в Discord при смене признака блогера (админка и любые save по User)
         if (!$insert && isset($changedAttributes['is_blogger'])) {
-            $this->queueDiscordRolesAfterBloggerFlagChange();
+            self::queueDiscordRolesUserJobIfLinked((int)$this->id);
         }
     }
 
     /**
      * Обновляет Discord роли при изменении server_id
-     * 
+     *
      * @param int|null $oldServerId Старый server_id
      * @return void
      */
     protected function updateDiscordRolesOnServerChange($oldServerId = null)
     {
         try {
-            // Проверяем, что у пользователя есть привязанный Discord аккаунт
-            if (empty($this->discord_id)) {
-                return;
-            }
-
-            // Добавляем job в очередь для обновления Discord ролей
-            if (Yii::$app->has('queueProcess')) {
-                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $this->id]));
+            self::queueDiscordRolesUserJobIfLinked((int)$this->id);
+            if (!empty($this->discord_id)) {
                 $oldServerIdStr = $oldServerId !== null ? (string)$oldServerId : 'null';
-                Yii::info("Discord roles update job queued for user {$this->id} after server_id change (old: {$oldServerIdStr}, new: {$this->server_id})", __METHOD__);
+                Yii::info(
+                    "Discord roles update requested for user {$this->id} after server_id change (old: {$oldServerIdStr}, new: {$this->server_id})",
+                    __METHOD__
+                );
             }
         } catch (\Exception $e) {
-            // Логируем ошибку, но не прерываем процесс сохранения
             Yii::error("Failed to queue Discord roles update for user {$this->id} after server_id change: " . $e->getMessage(), __METHOD__);
-        }
-    }
-
-    /**
-     * После смены is_blogger — обновить роли Discord (роль «Медиа»).
-     */
-    protected function queueDiscordRolesAfterBloggerFlagChange(): void
-    {
-        try {
-            if (empty($this->discord_id)) {
-                return;
-            }
-            if (Yii::$app->has('queueProcess')) {
-                Yii::$app->queueProcess->push(new DiscordRolesUserJob(['userId' => $this->id]));
-                Yii::info("Discord roles update job queued for user {$this->id} after is_blogger change", __METHOD__);
-            }
-        } catch (\Exception $e) {
-            Yii::error(
-                "Failed to queue Discord roles update for user {$this->id} after is_blogger change: " . $e->getMessage(),
-                __METHOD__
-            );
         }
     }
 
