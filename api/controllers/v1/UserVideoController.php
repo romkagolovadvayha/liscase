@@ -36,7 +36,7 @@ class UserVideoController extends BaseApiController
     }
 
     /**
-     * Список стримеров (is_blogger) с Twitch/Kick ссылками и статусом «В эфире».
+     * Список стримеров (is_blogger) с Twitch/Kick/YouTube ссылками и статусом «В эфире».
      * «В эфире» — активная запись в media_live (крон streamers/update-live-status).
      * live_started_at — ISO 8601 (Europe/Moscow) для таймера на фронте.
      * GET /v1/user-videos/streamers
@@ -49,6 +49,7 @@ class UserVideoController extends BaseApiController
             ->andWhere(
                 '(user_profile.twitch_link IS NOT NULL AND TRIM(COALESCE(user_profile.twitch_link, "")) != "")' .
                 ' OR (user_profile.kick_link IS NOT NULL AND TRIM(COALESCE(user_profile.kick_link, "")) != "")' .
+                ' OR (user_profile.youtube_link IS NOT NULL AND TRIM(COALESCE(user_profile.youtube_link, "")) != "")' .
                 ' OR (user.twitch_id IS NOT NULL AND user.twitch_id != "")' .
                 ' OR (user.kick_id IS NOT NULL AND user.kick_id != "")'
             )
@@ -74,7 +75,10 @@ class UserVideoController extends BaseApiController
             $kickLink = $user->userProfile && trim((string) ($user->userProfile->kick_link ?? '')) !== ''
                 ? trim($user->userProfile->kick_link)
                 : ($user->kick_id ? 'https://kick.com/channel/' . $user->kick_id : null);
-            if ($twitchLink === null && $kickLink === null) {
+            $youtubeLink = $user->userProfile && trim((string) ($user->userProfile->youtube_link ?? '')) !== ''
+                ? trim($user->userProfile->youtube_link)
+                : null;
+            if ($twitchLink === null && $kickLink === null && $youtubeLink === null) {
                 continue;
             }
             $streamLiveAt = $user->stream_live_at ?? null;
@@ -95,6 +99,7 @@ class UserVideoController extends BaseApiController
                 'steam_id' => $user->steam_id ? (string) $user->steam_id : null,
                 'twitch_link' => $twitchLink,
                 'kick_link' => $kickLink,
+                'youtube_link' => $youtubeLink,
                 'is_live' => $isLive,
                 'stream_live_at' => $streamLiveAt,
                 'live_started_at' => $liveStartedAtIso,
