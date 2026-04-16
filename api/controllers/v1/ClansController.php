@@ -266,14 +266,31 @@ class ClansController extends BaseApiController
             ],
         ]);
 
+        $rankModels = $provider->getModels();
+        $clansForRaid = [];
+        foreach ($rankModels as $row) {
+            if ($row->clan instanceof Clan) {
+                $clansForRaid[] = $row->clan;
+            }
+        }
+        $raidScoresByClan = $this->loadMainCupboardRaidScoresForClans($clansForRaid);
+
         $items = [];
-        foreach ($provider->getModels() as $row) {
+        foreach ($rankModels as $row) {
+            $clanPayload = null;
+            if ($row->clan instanceof Clan) {
+                $clanPayload = $this->serializeClanListItem($row->clan);
+                $cid = (int)$row->clan->id;
+                $clanPayload['main_cupboard_raid_score'] = array_key_exists($cid, $raidScoresByClan)
+                    ? $raidScoresByClan[$cid]
+                    : null;
+            }
             $items[] = [
                 'position' => (int)$row->position,
                 'score' => (float)$row->score,
                 'ranking_type' => $row->ranking_type,
                 'period' => $row->period,
-                'clan' => $row->clan ? $this->serializeClanListItem($row->clan) : null,
+                'clan' => $clanPayload,
             ];
         }
 
