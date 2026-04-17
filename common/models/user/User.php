@@ -355,6 +355,7 @@ class User extends ActiveRecord implements IdentityInterface
                 'u.id',
                 'u.steam_id',
                 'u.username',
+                'u.server_id',
                 'u.avatar_frame',
                 'u.last_visit_server_at',
             ])
@@ -1264,25 +1265,30 @@ class User extends ActiveRecord implements IdentityInterface
      * @return Servers|string|null
      */
     public function getCurrentServer() {
-        if (!empty($this->server)) {
+        // Не обращаться к $this->server при пустом server_id: Yii2 делает лишний SELECT … WHERE 0=1 на каждого пользователя.
+        $serverId = (int)$this->getAttribute('server_id');
+        if ($serverId > 0) {
             return $this->server;
         }
-        
-        // Используем статический кэш для результата, чтобы не делать запрос каждый раз
-        static $cachedServer = null;
-        if ($cachedServer !== null) {
-            return $cachedServer;
+
+        // Один fallback-запрос на процесс для пользователей без server_id (в т.ч. если список серверов пуст).
+        static $defaultServerLoaded = false;
+        static $defaultServer = null;
+        if ($defaultServerLoaded) {
+            return $defaultServer;
         }
-        
+        $defaultServerLoaded = true;
+
         /** @var Servers[] $servers */
         $servers = Servers::find()
-                          ->cache(30)
+                          ->cache(60)
                           ->andWhere(['IN', 'status', [Servers::STATUS_ACTIVE, Servers::STATUS_WAIT, Servers::STATUS_NOACTIVE]])
                           ->orderBy(['sort' => SORT_ASC])
                           ->all();
 
-        $cachedServer = !empty($servers[0]) ? $servers[0] : null;
-        return $cachedServer;
+        $defaultServer = !empty($servers[0]) ? $servers[0] : null;
+
+        return $defaultServer;
     }
 
     public function getLink($key) {
@@ -1367,6 +1373,7 @@ class User extends ActiveRecord implements IdentityInterface
         $date->modify('-30 day');
         /** @var User[] $users */
         $users = static::findQueryPublicAvatar()
+                     ->with(['server'])
                      ->andWhere(['>=', 'u.last_visit_server_at', $date->format('Y-m-d H:i:s')])
                      ->andWhere(['u.status' => User::STATUS_ACTIVE])
                      ->andWhere(['u.server_id' => $serverId])

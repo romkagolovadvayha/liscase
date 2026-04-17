@@ -1754,16 +1754,36 @@ class UserController extends BaseApiController
         $items = [];
         $baseUrl = FrontendPublicUrl::getBaseUrl();
 
-        $defaultStatsServer = Servers::find()
-            ->where(['in', 'status', [0, 1]])
-            ->orderBy(['sort' => SORT_ASC])
-            ->one();
-        if (!$defaultStatsServer) {
-            $defaultStatsServer = Servers::find()->orderBy(['sort' => SORT_ASC])->one();
+        $serverForLink = null;
+        if (!empty($serverId)) {
+            $serverForLink = Servers::find()
+                ->cache(60)
+                ->where(['id' => (int)$serverId])
+                ->one();
         }
-        $defaultStatsTag = ($defaultStatsServer && $defaultStatsServer->tag !== '')
-            ? $defaultStatsServer->tag
-            : null;
+
+        $defaultStatsTag = Yii::$app->cache->getOrSet(
+            'v1_user_search_default_stats_tag',
+            static function (): ?string {
+                $defaultStatsServer = Servers::find()
+                    ->cache(60)
+                    ->where(['in', 'status', [0, 1]])
+                    ->orderBy(['sort' => SORT_ASC])
+                    ->one();
+                if (!$defaultStatsServer) {
+                    $defaultStatsServer = Servers::find()
+                        ->cache(60)
+                        ->orderBy(['sort' => SORT_ASC])
+                        ->one();
+                }
+                if ($defaultStatsServer && $defaultStatsServer->tag !== '') {
+                    return (string)$defaultStatsServer->tag;
+                }
+
+                return null;
+            },
+            300
+        );
 
         foreach ($users as $user) {
             try {
@@ -1776,11 +1796,8 @@ class UserController extends BaseApiController
             $statsLink = null;
             if ($serverTag) {
                 $statsLink = $baseUrl . '/stats/' . rawurlencode($serverTag) . '/' . rawurlencode((string) $user->steam_id);
-            } elseif ($serverId) {
-                $server = Servers::findOne($serverId);
-                if ($server && $server->tag !== '') {
-                    $statsLink = $baseUrl . '/stats/' . rawurlencode($server->tag) . '/' . rawurlencode((string) $user->steam_id);
-                }
+            } elseif ($serverForLink && $serverForLink->tag !== '') {
+                $statsLink = $baseUrl . '/stats/' . rawurlencode($serverForLink->tag) . '/' . rawurlencode((string) $user->steam_id);
             }
             if ($statsLink === null && $defaultStatsTag !== null) {
                 $statsLink = $baseUrl . '/stats/' . rawurlencode($defaultStatsTag) . '/' . rawurlencode((string) $user->steam_id);
