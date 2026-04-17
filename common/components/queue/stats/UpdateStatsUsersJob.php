@@ -21,9 +21,6 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
     public $serverId;
     public $wipeDate;
 
-    /** Размер пачки для batch upsert (снижает нагрузку на БД и размер запроса) */
-    private const BATCH_SIZE = 500;
-
     /**
      * @param \yii\queue\Queue $queue
      *
@@ -64,16 +61,7 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $db = Yii::$app->db;
-            $tableName = $db->schema->getRawTableName(Statistics::tableName());
-            $isMysql = ($db->driverName === 'mysql');
-
-            if ($isMysql) {
-                $this->executeMysqlBatchUpsert($tableName, $rows);
-            } else {
-                $this->executeFallbackPerUser($rows, $cupboardSteamIds, $wipeDate);
-                return;
-            }
+            Statistics::batchUpsertIncrementValues($rows);
 
             $this->sendRaidNotifyPromoForSteamIds($cupboardSteamIds);
         } catch (\Exception $e) {
@@ -81,75 +69,6 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
                 "UpdateStatsUsersJob::execute: " . $e->getFile() . ':' . $e->getLine() . ':' . $e->getMessage()
             );
         }
-    }
-
-    /**
-     * Пакетный upsert для MySQL: один запрос на пачку строк вместо N SELECT + M save на пользователя.
-     */
-    private function executeMysqlBatchUpsert(string $tableName, array $rows): void
-    {
-        $chunks = array_chunk($rows, self::BATCH_SIZE);
-
-        foreach ($chunks as $chunk) {
-            $placeholders = [];
-            $params = [];
-            $i = 0;
-            foreach ($chunk as $row) {
-                $placeholders[] = "(:s{$i}, :t{$i}, :k{$i}, :v{$i}, :w{$i})";
-                $params[":s{$i}"] = $row[0];
-                $params[":t{$i}"] = $row[1];
-                $params[":k{$i}"] = $row[2];
-                $params[":v{$i}"] = $row[3];
-                $params[":w{$i}"] = $row[4];
-                $i++;
-            }
-            $sql = "INSERT INTO {$tableName} (steam_id, server_tag, `key`, value, wipe)\nVALUES "
-                . implode(",\n", $placeholders)
-                . "\nON DUPLICATE KEY UPDATE value = value + VALUES(value)";
-
-            Yii::$app->db->createCommand($sql)->bindValues($params)->execute();
-        }
-    }
-
-    /**
-     * Fallback для не-MySQL: по одному пользователю (без массового SELECT по всем ключам).
-     */
-    private function executeFallbackPerUser(array $rows, array $cupboardSteamIds, string $wipeDate): void
-    {
-        $bySteam = [];
-        foreach ($rows as $row) {
-            $bySteam[$row[0]][$row[2]] = ($bySteam[$row[0]][$row[2]] ?? 0) + $row[3];
-        }
-        foreach ($bySteam as $steamId => $params) {
-            $statistics = Statistics::find()
-                ->andWhere(['steam_id' => $steamId])
-                ->andWhere(['server_tag' => $this->serverTag])
-                ->andWhere(['wipe' => $wipeDate])
-                ->indexBy('key')
-                ->all();
-            $transaction = Yii::$app->db->beginTransaction();
-            try {
-                foreach ($params as $key => $value) {
-                    if (!empty($statistics[$key])) {
-                        $statistics[$key]->value += $value;
-                        $statistics[$key]->save(false);
-                    } else {
-                        $m = new Statistics();
-                        $m->steam_id = $steamId;
-                        $m->server_tag = $this->serverTag;
-                        $m->key = $key;
-                        $m->value = $value;
-                        $m->wipe = $wipeDate;
-                        $m->save(false);
-                    }
-                }
-                $transaction->commit();
-            } catch (\Exception $e) {
-                $transaction->rollBack();
-                throw $e;
-            }
-        }
-        $this->sendRaidNotifyPromoForSteamIds($cupboardSteamIds);
     }
 
     private function sendRaidNotifyPromoForSteamIds(array $steamIds): void

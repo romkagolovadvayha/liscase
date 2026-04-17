@@ -589,4 +589,133 @@ class Statistics extends ActiveRecord
         Yii::$app->cache->set($cacheKey, $result, 30*60);
         return $result;
     }
+
+    /**
+     * Пакетный INSERT … ON DUPLICATE KEY UPDATE value = value + VALUES(value) по уникальному
+     * (steam_id, server_tag, wipe, key). Каждая строка: [steam_id, server_tag, key, delta_int, wipe].
+     * MySQL — пачками; иной драйвер — fallback с меньшим числом SELECT.
+     *
+     * @param array<int, array{0: string, 1: string, 2: string, 3: int, 4: string}> $rows
+     */
+    public static function batchUpsertIncrementValues(array $rows, int $batchSize = 500): void
+    {
+        if ($rows === []) {
+            return;
+        }
+        $merged = self::mergeStatisticsIncrementRows($rows);
+        if ($merged === []) {
+            return;
+        }
+        $db = Yii::$app->db;
+        if ($db->driverName === 'mysql') {
+            self::executeMysqlBatchUpsertIncrement($merged, $batchSize);
+
+            return;
+        }
+        self::executeFallbackBatchUpsertIncrement($merged);
+    }
+
+    /**
+     * @param array<int, array{0: string, 1: string, 2: string, 3: int, 4: string}> $rows
+     * @return array<int, array{0: string, 1: string, 2: string, 3: int, 4: string}>
+     */
+    private static function mergeStatisticsIncrementRows(array $rows): array
+    {
+        $sums = [];
+        foreach ($rows as $r) {
+            if (!isset($r[0], $r[1], $r[2], $r[3], $r[4])) {
+                continue;
+            }
+            $delta = (int) $r[3];
+            if ($delta === 0) {
+                continue;
+            }
+            $k = (string) $r[0] . "\x1e" . (string) $r[1] . "\x1e" . (string) $r[2] . "\x1e" . (string) $r[4];
+            $sums[$k] = ($sums[$k] ?? 0) + $delta;
+        }
+        $out = [];
+        foreach ($sums as $k => $v) {
+            $parts = explode("\x1e", $k, 4);
+            if (count($parts) !== 4) {
+                continue;
+            }
+            $out[] = [$parts[0], $parts[1], $parts[2], $v, $parts[3]];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param array<int, array{0: string, 1: string, 2: string, 3: int, 4: string}> $merged
+     */
+    private static function executeMysqlBatchUpsertIncrement(array $merged, int $batchSize): void
+    {
+        $db = Yii::$app->db;
+        $tableName = $db->schema->getRawTableName(self::tableName());
+        $chunks = array_chunk($merged, $batchSize);
+        foreach ($chunks as $chunk) {
+            $placeholders = [];
+            $params = [];
+            $i = 0;
+            foreach ($chunk as $row) {
+                $placeholders[] = "(:s{$i}, :t{$i}, :k{$i}, :v{$i}, :w{$i})";
+                $params[":s{$i}"] = $row[0];
+                $params[":t{$i}"] = $row[1];
+                $params[":k{$i}"] = $row[2];
+                $params[":v{$i}"] = $row[3];
+                $params[":w{$i}"] = $row[4];
+                $i++;
+            }
+            $sql = "INSERT INTO {$tableName} (steam_id, server_tag, `key`, value, wipe)\nVALUES "
+                . implode(",\n", $placeholders)
+                . "\nON DUPLICATE KEY UPDATE value = value + VALUES(value)";
+            $db->createCommand($sql)->bindValues($params)->execute();
+        }
+    }
+
+    /**
+     * @param array<int, array{0: string, 1: string, 2: string, 3: int, 4: string}> $merged
+     */
+    private static function executeFallbackBatchUpsertIncrement(array $merged): void
+    {
+        $groups = [];
+        foreach ($merged as $row) {
+            $g = $row[0] . "\x1e" . $row[1] . "\x1e" . $row[4];
+            $groups[$g][] = [$row[2], $row[3]];
+        }
+        foreach ($groups as $g => $keyDeltas) {
+            $parts = explode("\x1e", $g, 3);
+            if (count($parts) !== 3) {
+                continue;
+            }
+            [$steamId, $serverTag, $wipe] = $parts;
+            $statistics = self::find()
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $serverTag])
+                ->andWhere(['wipe' => $wipe])
+                ->indexBy('key')
+                ->all();
+            $transaction = Yii::$app->db->beginTransaction();
+            try {
+                foreach ($keyDeltas as [$key, $value]) {
+                    if (!empty($statistics[$key])) {
+                        $statistics[$key]->value += $value;
+                        $statistics[$key]->save(false);
+                    } else {
+                        $m = new self();
+                        $m->steam_id = $steamId;
+                        $m->server_tag = $serverTag;
+                        $m->key = $key;
+                        $m->value = $value;
+                        $m->wipe = $wipe;
+                        $m->save(false);
+                    }
+                }
+                $transaction->commit();
+            } catch (\Exception $e) {
+                $transaction->rollBack();
+                throw $e;
+            }
+        }
+    }
 }

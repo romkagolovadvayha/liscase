@@ -53,30 +53,40 @@ class UpdateOnlineJob extends BaseObject implements JobInterface
             }
 
             if (time() - $data['time'] >= 5 * 60) {
-                foreach ($data['items'] as $steamId => $playTime) {
-                    $user = User::findBySteamId($steamId, false, 'online');
-                    $statistics = Statistics::find()
-                                            ->andWhere(['steam_id' => $steamId])
-                                            ->andWhere(['server_tag' => $this->serverTag])
-                                            ->andWhere(['key' => 'playtime'])
-                                            ->andWhere(['wipe' => $this->wipeDate])
-                                            ->indexBy('key')
-                                            ->all();
-                    if (!empty($statistics['playtime'])) {
-                        $statistics['playtime']->value += $playTime;
-                        $statistics['playtime']->save();
-                    } else {
-                        $model = new Statistics();
-                        $model->steam_id = $steamId;
-                        $model->server_tag = $this->serverTag;
-                        $model->key = 'playtime';
-                        $model->value = $playTime;
-                        $model->wipe = $this->wipeDate;
-                        $model->save();
+                $items = $data['items'];
+                if (!empty($items)) {
+                    $now = date('Y-m-d H:i:s');
+                    $statRows = [];
+                    $steamIds = [];
+                    foreach ($items as $steamId => $playTime) {
+                        $steamId = (string) $steamId;
+                        if (strlen($steamId) !== 17) {
+                            continue;
+                        }
+                        $steamIds[] = $steamId;
+                        $delta = (int) $playTime;
+                        if ($delta !== 0) {
+                            $statRows[] = [$steamId, $this->serverTag, 'playtime', $delta, $this->wipeDate];
+                        }
                     }
-                    $user->server_id = $this->serverId;
-                    $user->last_visit_server_at = date('Y-m-d H:i:s');
-                    $user->save();
+                    $steamIds = array_values(array_unique($steamIds));
+                    Statistics::batchUpsertIncrementValues($statRows);
+                    if ($steamIds !== []) {
+                        $existing = User::find()
+                            ->select(['steam_id'])
+                            ->where(['steam_id' => $steamIds])
+                            ->column();
+                        $existingSet = array_fill_keys($existing, true);
+                        foreach ($steamIds as $sid) {
+                            if (!isset($existingSet[$sid])) {
+                                User::findBySteamId($sid, false, 'online');
+                            }
+                        }
+                        User::updateAll(
+                            ['server_id' => $this->serverId, 'last_visit_server_at' => $now],
+                            ['steam_id' => $steamIds]
+                        );
+                    }
                 }
                 Yii::$app->cache->delete($cacheKey);
             } else {

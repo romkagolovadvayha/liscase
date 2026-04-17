@@ -43,10 +43,13 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                 return;
             }
             $playTimeCount = 5;
+            $wipe = $server->currentWipe();
+            $playtimeRows = [];
             foreach ($request['users'] as $item) {
                 try {
                     $user = User::findBySteamId($item['steam_id'], false, 'update user');
                     if (empty($user)) {
+                        Statistics::batchUpsertIncrementValues($playtimeRows);
                         Yii::$app->telegramChats->sendMessage("UpdateUsersJob: user empty " . $item['steam_id']);
                         return;
                     }
@@ -59,30 +62,12 @@ class UpdateUsersJob extends BaseObject implements JobInterface
                     $user->server_id = $server->id;
                     $user->last_visit_server_at = date('Y-m-d H:i:s');
                     $user->save();
-                    /** @var Statistics $playtime */
-                    $playtime = Statistics::find()
-                                           ->andWhere(['steam_id' => $item['steam_id']])
-                                           ->andWhere(['server_tag' => $this->serverTag])
-                                           ->andWhere(['key' => 'playtime'])
-                                           ->andWhere(['wipe' => $server->currentWipe()])
-                                           ->orderBy(['id' => SORT_ASC])
-                                           ->one();
-                    if (!empty($playtime)) {
-                        $playtime->value += $playTimeCount;
-                        $playtime->save();
-                    } else {
-                        $model = new Statistics();
-                        $model->steam_id = $item['steam_id'];
-                        $model->server_tag = $this->serverTag;
-                        $model->key = 'playtime';
-                        $model->value = $playTimeCount;
-                        $model->wipe = $server->currentWipe();
-                        $model->save();
-                    }
+                    $playtimeRows[] = [$item['steam_id'], $this->serverTag, 'playtime', $playTimeCount, $wipe];
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("UpdateOnlinesJob: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
                 }
             }
+            Statistics::batchUpsertIncrementValues($playtimeRows);
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateOnlinesJob: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
         }
