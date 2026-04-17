@@ -1671,14 +1671,9 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     /**
-     * @param $userStat
-     * @param $userTops
-     * @param Servers $server
-     */
-    /**
      * Пересчёт и запись рейтингов пользователя по текущему серверу/вайпу.
-     * Пишет в user_top атомно через UPSERT (INSERT ... ON DUPLICATE KEY UPDATE),
-     * чтобы не ловить дубликаты при параллельных запусках.
+     * Пишет в user_top одним multi-row UPSERT на все категории {@see UserTop::getRaiting()} (меньше round-trips к БД, чем N отдельных upsert).
+     * Требует уникальный индекс на (user_id, server_id, key, wipe).
      *
      * @param array $userStat  ['kills' => 12, 'deaths' => 3, ...] — сырые метрики пользователя
      * @param array $userTops  [user_id => [key => UserTop]] — уже загруженные записи (для локального кэша)
@@ -1692,6 +1687,7 @@ class User extends ActiveRecord implements IdentityInterface
         $serverId = (int)$server->id;
         $wipe     = (string)$server->currentWipe();
 
+        $batchRows = [];
         foreach ($rating as $type => $items) {
             $value = 0;
             foreach ($items as $key => $cof) {
@@ -1700,24 +1696,55 @@ class User extends ActiveRecord implements IdentityInterface
                 }
                 $value += $userStat[$key] * $cof;
             }
-            $value = (string)round($value);
-
-            // Атомная запись: требует уникальный индекс на (user_id, server_id, key, wipe)
-            $db->createCommand()->upsert('user_top', [
+            $valueStr = (string)round($value);
+            $batchRows[] = [
                 'user_id'   => $userId,
                 'server_id' => $serverId,
                 'key'       => (string)$type,
                 'wipe'      => $wipe,
-                'value'     => $value,
-            ], [
-                                             'value'     => $value,
-                                         ])->execute();
+                'value'     => $valueStr,
+            ];
+        }
 
-            // Обновим локальный кэш, если он есть (без повторного save)
+        if ($batchRows !== []) {
+            static::batchUpsertUserTopRows($db, $batchRows);
+        }
+
+        foreach ($batchRows as $row) {
+            $type = $row['key'];
+            $valueStr = $row['value'];
             if (!empty($userTops[$userId]) && !empty($userTops[$userId][$type])) {
-                $userTops[$userId][$type]->value = (int)$value;
+                $userTops[$userId][$type]->value = (int)$valueStr;
             }
         }
+    }
+
+    /**
+     * Одна INSERT ... ON DUPLICATE KEY UPDATE на несколько строк user_top (один пользователь × все типы топа).
+     *
+     * @param \yii\db\Connection $db
+     * @param array<int, array{user_id:int,server_id:int,key:string,wipe:string,value:string}> $rows
+     */
+    private static function batchUpsertUserTopRows(\yii\db\Connection $db, array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+        $schema = $db->getSchema();
+        $parts = [];
+        foreach ($rows as $r) {
+            $parts[] = '('
+                . (int)$r['user_id'] . ','
+                . (int)$r['server_id'] . ','
+                . $schema->quoteValue((string)$r['key']) . ','
+                . $schema->quoteValue((string)$r['wipe']) . ','
+                . $schema->quoteValue((string)$r['value'])
+                . ')';
+        }
+        $sql = 'INSERT INTO `user_top` (`user_id`, `server_id`, `key`, `wipe`, `value`) VALUES '
+            . implode(',', $parts)
+            . ' ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)';
+        $db->createCommand($sql)->execute();
     }
 
     /**
