@@ -24,6 +24,9 @@ use Yii;
 class BlogCategory extends \yii\db\ActiveRecord
 {
 
+    /** Кэш одной строки blog_category для API/списков, сек. Сброс: {@see invalidateApiRowCache()}, afterSave/afterDelete. */
+    public const API_ROW_CACHE_TTL = 300;
+
     const STATUS_NOT_ACTIVE = 0;
     const STATUS_ACTIVE = 1;
 
@@ -195,7 +198,7 @@ class BlogCategory extends \yii\db\ActiveRecord
         if (!empty($id)) {
             $query->andWhere(['blog_category_id' => $id]);
         }
-        $categories = $query->all();
+        $categories = $query->with(['parentCategory'])->all();
 
         $result = [];
         foreach ($categories as $category) {
@@ -215,5 +218,70 @@ class BlogCategory extends \yii\db\ActiveRecord
         return $this->hasMany(self::class, ['blog_category_id' => 'id'])
                     ->andWhere(['status' => self::STATUS_ACTIVE])
                     ->orderBy(['created_at' => SORT_DESC]);
+    }
+
+    public static function apiRowCacheKey(int $id): string
+    {
+        return 'blog_category_api_row_v1_' . $id;
+    }
+
+    /**
+     * Сброс кэша строки категории (после правок в админке).
+     */
+    public static function invalidateApiRowCache(?int $categoryId = null): void
+    {
+        if ($categoryId === null || $categoryId <= 0) {
+            return;
+        }
+        Yii::$app->cache->delete(static::apiRowCacheKey($categoryId));
+    }
+
+    /**
+     * Одна категория из кэша (атрибуты строки), TTL {@see API_ROW_CACHE_TTL}.
+     */
+    public static function findOneCached(int $id): ?self
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        $cache = Yii::$app->cache;
+        $key = static::apiRowCacheKey($id);
+        $cached = $cache->get($key);
+        if ($cached !== false && is_array($cached) && isset($cached['attrs']) && is_array($cached['attrs'])) {
+            $m = new static();
+            $m->setAttributes($cached['attrs'], false);
+            $m->setIsNewRecord(false);
+            $m->setOldAttributes($cached['attrs']);
+            return $m;
+        }
+
+        $m = static::find()->where(['id' => $id])->one();
+        if ($m === null) {
+            return null;
+        }
+        $cache->set($key, ['attrs' => $m->getAttributes()], static::API_ROW_CACHE_TTL);
+        return $m;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        static::invalidateApiRowCache((int)$this->id);
+        \common\helpers\BlogCacheHelper::invalidateBlogCategoriesApiCache();
+        \common\helpers\BlogCacheHelper::invalidateBlogListApiCache();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        static::invalidateApiRowCache((int)$this->id);
+        \common\helpers\BlogCacheHelper::invalidateBlogCategoriesApiCache();
+        \common\helpers\BlogCacheHelper::invalidateBlogListApiCache();
+        parent::afterDelete();
     }
 }

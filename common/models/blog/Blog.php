@@ -3,6 +3,7 @@
 namespace common\models\blog;
 
 use common\components\helpers\ArrayValIterator;
+use common\helpers\BlogCacheHelper;
 use common\models\user\User;
 use Yii;
 use yii2mod\comments\models\CommentModel;
@@ -42,6 +43,27 @@ class Blog extends \yii\db\ActiveRecord
     public static function tableName()
     {
         return 'blog';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $tracked = ['name', 'description', 'content', 'blog_category_id', 'status', 'link_name', 'created_at', 'update_at', 'keywords'];
+        if ($insert || !empty(array_intersect(array_keys($changedAttributes), $tracked))) {
+            BlogCacheHelper::invalidateBlogListApiCache();
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        BlogCacheHelper::invalidateBlogListApiCache();
+        parent::afterDelete();
     }
 
     public function beforeSave($insert)

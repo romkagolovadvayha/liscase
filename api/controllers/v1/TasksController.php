@@ -97,8 +97,15 @@ class TasksController extends BaseApiController
             $allModels = $cachedTasks;
         }
 
+        // Один запрос task_v2_user_completion на весь список + короткий кэш (инвалидация после check)
+        $completionsByTaskId = $this->loadTaskV2CompletionsIndexed($user, $allModels);
+        $userStatusByTaskId = [];
+        foreach ($allModels as $t) {
+            $userStatusByTaskId[(int)$t->id] = $t->getUserStatus($user, $completionsByTaskId);
+        }
+
         // Кастомная сортировка: ежедневная награда первая, затем новые, затем выполненные
-        usort($allModels, function ($a, $b) use ($user) {
+        usort($allModels, function ($a, $b) use ($userStatusByTaskId) {
             $aIsDaily = $a->type === TaskV2::TYPE_DAILY_REWARD && $a->check_type === TaskV2::CHECK_TYPE_DAILY_REWARD;
             $bIsDaily = $b->type === TaskV2::TYPE_DAILY_REWARD && $b->check_type === TaskV2::CHECK_TYPE_DAILY_REWARD;
             
@@ -106,8 +113,8 @@ class TasksController extends BaseApiController
             if (!$aIsDaily && $bIsDaily) return 1;
             if ($aIsDaily && $bIsDaily) return 0;
             
-            $statusA = $a->getUserStatus($user)['status'] ?? 'available';
-            $statusB = $b->getUserStatus($user)['status'] ?? 'available';
+            $statusA = $userStatusByTaskId[(int)$a->id]['status'] ?? 'available';
+            $statusB = $userStatusByTaskId[(int)$b->id]['status'] ?? 'available';
             
             if ($statusA === 'completed' && $statusB !== 'completed') return 1;
             if ($statusA !== 'completed' && $statusB === 'completed') return -1;
@@ -129,7 +136,7 @@ class TasksController extends BaseApiController
             }
             
             $totalTasks++;
-            $userStatus = $task->getUserStatus($user);
+            $userStatus = $userStatusByTaskId[(int)$task->id] ?? $task->getUserStatus($user, $completionsByTaskId);
             
             if ($task->reward_type === TaskV2::REWARD_TYPE_CURRENCY && $task->reward_amount) {
                 $totalPotentialCoins += $task->reward_amount;
@@ -174,8 +181,13 @@ class TasksController extends BaseApiController
         // Форматируем задания для API
         $tasks = [];
         foreach ($allModels as $task) {
-            $userStatus = $task->getUserStatus($user);
-            $tasks[] = $this->formatTask($task, $user, $tasksProgress[$task->id] ?? null);
+            $tasks[] = $this->formatTask(
+                $task,
+                $user,
+                $tasksProgress[$task->id] ?? null,
+                $completionsByTaskId,
+                $userStatusByTaskId[(int)$task->id] ?? null
+            );
         }
 
         // Фильтр по статусу (для вкладки "Выполненные" и др.)
@@ -261,12 +273,14 @@ class TasksController extends BaseApiController
             throw new NotFoundHttpException('Задание не найдено');
         }
 
-        $userStatus = $task->getUserStatus($user);
+        $completionMap = $this->loadTaskV2CompletionsIndexed($user, [$task]);
+        $completionRow = $completionMap[(int)$task->id] ?? null;
+        $userStatus = $task->getUserStatus($user, $completionMap);
 
         // Для ежедневных наград
         if ($task->type === TaskV2::TYPE_DAILY_REWARD && $task->check_type === TaskV2::CHECK_TYPE_DAILY_REWARD) {
-            $userStatus['currentReward'] = $task->getCurrentDailyReward($user);
-            $dailyRewardList = $task->getDailyRewardList($user);
+            $userStatus['currentReward'] = $task->getCurrentDailyReward($user, $completionRow);
+            $dailyRewardList = $task->getDailyRewardList($user, $completionRow);
         } else {
             $dailyRewardList = null;
         }
@@ -392,6 +406,8 @@ class TasksController extends BaseApiController
 
             $transaction->commit();
 
+            $this->bumpTaskV2UserCompletionCacheVersion((int)$user->id);
+
             $maxProgress = $task->max_progress ?? $checkResult->maxProgress;
             return $this->successResponse([
                 'success' => true,
@@ -407,17 +423,103 @@ class TasksController extends BaseApiController
     }
 
     /**
-     * Форматирование задания для списка
+     * Инкремент версии кэша выполнений заданий пользователя (после check / начисления).
      */
-    protected function formatTask($task, $user, $progressData = null)
+    protected function bumpTaskV2UserCompletionCacheVersion(int $userId): void
     {
-        $userStatus = $task->getUserStatus($user);
+        if ($userId <= 0) {
+            return;
+        }
+        $cache = Yii::$app->cache;
+        $k = 'api_task_v2_uc_ver_' . $userId;
+        $v = (int)($cache->get($k) ?: 0) + 1;
+        $cache->set($k, $v, 86400);
+    }
+
+    /**
+     * Один SELECT по task_v2_user_completion для списка заданий + короткий кэш (TTL как у публичного API).
+     * Ключ включает версию {@see bumpTaskV2UserCompletionCacheVersion}, чтобы после выполнения задания не отдавать старое.
+     *
+     * @param \common\models\user\User $user
+     * @param TaskV2[] $taskModels
+     * @return array<int, TaskV2UserCompletion> task_id => модель
+     */
+    protected function loadTaskV2CompletionsIndexed($user, array $taskModels): array
+    {
+        $taskIds = [];
+        foreach ($taskModels as $t) {
+            if ($t instanceof TaskV2) {
+                $taskIds[] = (int)$t->id;
+            }
+        }
+        $taskIds = array_values(array_unique($taskIds));
+        if ($taskIds === []) {
+            return [];
+        }
+        sort($taskIds);
+        $uid = (int)$user->id;
+        $ver = (int)(Yii::$app->cache->get('api_task_v2_uc_ver_' . $uid) ?: 0);
+        $cacheKey = 'api_task_v2_uc_' . $uid . '_' . $ver . '_' . md5(implode(',', $taskIds));
+        $cache = Yii::$app->cache;
+        $cached = $cache->get($cacheKey);
+        if ($cached !== false && is_array($cached)) {
+            $out = [];
+            foreach ($cached as $tid => $attrs) {
+                if (!is_array($attrs)) {
+                    continue;
+                }
+                $tid = (int)$tid;
+                $m = new TaskV2UserCompletion();
+                $m->setAttributes($attrs, false);
+                $m->setIsNewRecord(false);
+                $m->setOldAttributes($attrs);
+                $out[$tid] = $m;
+            }
+            return $out;
+        }
+
+        $rows = TaskV2UserCompletion::find()
+            ->where(['user_id' => $uid, 'task_id' => $taskIds])
+            ->indexBy('task_id')
+            ->all();
+
+        $serialized = [];
+        foreach ($rows as $tid => $m) {
+            $serialized[(int)$tid] = $m->getAttributes();
+        }
+        $cache->set($cacheKey, $serialized, \common\models\box\Drop::API_ROW_CACHE_TTL);
+
+        return $rows;
+    }
+
+    /**
+     * Форматирование задания для списка
+     * @param array<int, TaskV2UserCompletion>|null $completionsByTaskId батч из {@see loadTaskV2CompletionsIndexed()}
+     * @param array<string, mixed>|null $precomputedUserStatus уже посчитанный статус (без повторных запросов)
+     */
+    protected function formatTask($task, $user, $progressData = null, ?array $completionsByTaskId = null, ?array $precomputedUserStatus = null)
+    {
+        $userStatus = $precomputedUserStatus ?? $task->getUserStatus($user, $completionsByTaskId);
         
         // Для ежедневных наград добавляем currentReward
         if ($task->type === TaskV2::TYPE_DAILY_REWARD && $task->check_type === TaskV2::CHECK_TYPE_DAILY_REWARD) {
-            $userStatus['currentReward'] = $task->getCurrentDailyReward($user);
+            $completionRow = null;
+            if (is_array($completionsByTaskId)) {
+                $completionRow = $completionsByTaskId[(int)$task->id] ?? null;
+            }
+            $userStatus['currentReward'] = $task->getCurrentDailyReward($user, $completionRow);
         }
         
+        $rewardItemPayload = null;
+        $rewardDrop = $task->getRewardDropCached();
+        if ($rewardDrop !== null) {
+            $rewardItemPayload = [
+                'id' => $rewardDrop->id,
+                'name' => Yii::t('database', $rewardDrop->name),
+                'image' => $rewardDrop->imageOrig ? $rewardDrop->imageOrig->getImagePubUrl() : null,
+            ];
+        }
+
         return [
             'id' => $task->id,
             'title' => Yii::t('database', $task->title),
@@ -426,11 +528,7 @@ class TasksController extends BaseApiController
             'check_type' => $task->check_type,
             'reward_type' => $task->reward_type,
             'reward_amount' => $task->reward_amount ? (float)$task->reward_amount : null,
-            'reward_item' => $task->rewardItem ? [
-                'id' => $task->rewardItem->id,
-                'name' => Yii::t('database', $task->rewardItem->name),
-                'image' => $task->rewardItem->imageOrig ? $task->rewardItem->imageOrig->getImagePubUrl() : null,
-            ] : null,
+            'reward_item' => $rewardItemPayload,
             'is_vip_only' => (bool)$task->is_vip_only,
             'image' => $task->image_path ? rtrim(Yii::$app->settings->get('s3_publicUrl'), '/') . '/' . ltrim($task->image_path, '/') : null,
             'global_completed' => (int)$task->global_completed,
@@ -447,6 +545,16 @@ class TasksController extends BaseApiController
      */
     protected function formatTaskDetail($task)
     {
+        $rewardDetail = null;
+        $rewardDropDetail = $task->getRewardDropCached();
+        if ($rewardDropDetail !== null) {
+            $rewardDetail = [
+                'id' => $rewardDropDetail->id,
+                'name' => Yii::t('database', $rewardDropDetail->name),
+                'image' => $rewardDropDetail->imageOrig ? $rewardDropDetail->imageOrig->getImagePubUrl() : null,
+            ];
+        }
+
         return [
             'id' => $task->id,
             'title' => Yii::t('database', $task->title),
@@ -457,11 +565,7 @@ class TasksController extends BaseApiController
             'check_type' => $task->check_type,
             'reward_type' => $task->reward_type,
             'reward_amount' => $task->reward_amount ? (float)$task->reward_amount : null,
-            'reward_item' => $task->rewardItem ? [
-                'id' => $task->rewardItem->id,
-                'name' => Yii::t('database', $task->rewardItem->name),
-                'image' => $task->rewardItem->imageOrig ? $task->rewardItem->imageOrig->getImagePubUrl() : null,
-            ] : null,
+            'reward_item' => $rewardDetail,
             'is_vip_only' => (bool)$task->is_vip_only,
             'button_text' => $task->button_text ? Yii::t('database', $task->button_text) : null,
             'extra_buttons' => is_array($task->extra_buttons) ? $task->extra_buttons : ($task->extra_buttons ? json_decode($task->extra_buttons, true) : null),
@@ -495,7 +599,7 @@ class TasksController extends BaseApiController
             
             $balance->recalculateBalance();
         } elseif ($task->reward_type === TaskV2::REWARD_TYPE_ITEM && $task->reward_item_id) {
-            $drop = \common\models\box\Drop::findOne($task->reward_item_id);
+            $drop = \common\models\box\Drop::findOneCachedWithImageOrig((int)$task->reward_item_id);
             if ($drop) {
                 $count = (int)($task->reward_amount ?: 1);
                 
@@ -552,7 +656,7 @@ class TasksController extends BaseApiController
         $reward = $rewards[$currentIndex] ?? $rewards[0];
         
         if (isset($reward['drop_id'])) {
-            $drop = \common\models\box\Drop::findOne($reward['drop_id']);
+            $drop = \common\models\box\Drop::findOneCachedWithImageOrig((int)$reward['drop_id']);
             if ($drop) {
                 $count = (int)($reward['amount'] ?? 1);
                 if ($drop->id == 843) {

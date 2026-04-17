@@ -32,6 +32,7 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\HtmlPurifier;
 use yii\web\IdentityInterface;
 use common\components\base\ActiveRecord;
+use yii\db\ActiveQuery;
 use yii\web\JsExpression;
 
 /**
@@ -131,6 +132,12 @@ class User extends ActiveRecord implements IdentityInterface
     const REASON_MUTE_OSCORB = 3;
     const REASON_MUTE_OTHER = 4;
     const REASON_MUTE_ROZN = 5;
+
+    /** Верхняя граница TTL кэша {@see hasVip()} (сек.), согласована с публичным API ~5 мин. */
+    public const HAS_VIP_CACHE_TTL_MAX = 300;
+
+    /** Минимальный TTL при активном VIP (сек.), если до expires_at осталось мало времени. */
+    private const HAS_VIP_CACHE_TTL_MIN_ACTIVE = 5;
 
     /**
      * @return array
@@ -333,6 +340,66 @@ class User extends ActiveRecord implements IdentityInterface
         $attributes = ['telegram_chat_id' => $chatId];
 
         return static::findOne($attributes);
+    }
+
+    /**
+     * Публичные списки: без password_hash/jwt и т.п.; профиль — только поля для {@see getAvatar()}.
+     * Для {@see getAvatarFrameImageUrl()} по-прежнему отдельные запросы VIP/рамки.
+     */
+    public static function findQueryPublicAvatar(): ActiveQuery
+    {
+        $p = UserProfile::tableName();
+        return static::find()
+            ->alias('u')
+            ->select([
+                'u.id',
+                'u.steam_id',
+                'u.username',
+                'u.avatar_frame',
+                'u.last_visit_server_at',
+            ])
+            ->joinWith([
+                'userProfile' => function ($q) use ($p) {
+                    $q->select([
+                        "{$p}.user_id",
+                        "{$p}.steam_avatar_url",
+                        "{$p}.avatar",
+                    ]);
+                },
+            ], true, 'LEFT JOIN');
+    }
+
+    /**
+     * Поля, нужные для {@see \api\controllers\v1\ClansController::serializeUser()} (ник, аватар, страна, VIP, онлайн).
+     */
+    public static function findQueryForClansApiSerialize(): ActiveQuery
+    {
+        $p = UserProfile::tableName();
+        return static::find()
+            ->alias('u')
+            ->select([
+                'u.id',
+                'u.username',
+                'u.steam_id',
+                'u.last_visit_server_at',
+                'u.avatar_frame',
+                'u.ip',
+                'u.ip_country_code',
+                'u.ip_country_source_ip',
+                'u.ip_country_updated_at',
+                'u.telegram_chat_id',
+                'u.is_telegram_blocked',
+            ])
+            ->joinWith([
+                'userProfile' => function ($q) use ($p) {
+                    $q->select([
+                        "{$p}.user_id",
+                        "{$p}.steam_avatar_url",
+                        "{$p}.avatar",
+                        "{$p}.is_hide_online",
+                    ]);
+                },
+            ], true, 'LEFT JOIN');
     }
 
     public static function findBySteamId($steamId, $updated = false, $source = "unknown")
@@ -571,6 +638,70 @@ class User extends ActiveRecord implements IdentityInterface
         return UserVip::getActiveVip($this->id);
     }
 
+    public static function hasVipCacheKey(int $userId): string
+    {
+        return 'user_has_vip_v1_' . $userId;
+    }
+
+    /**
+     * Сброс кэша {@see hasVip()} (после выдачи/продления/отзыва VIP в user_vip).
+     */
+    public static function invalidateHasVipCache(?int $userId): void
+    {
+        if ($userId === null || $userId <= 0) {
+            return;
+        }
+        Yii::$app->cache->delete(static::hasVipCacheKey($userId));
+    }
+
+    /**
+     * Один запрос к user_vip: прогреть кэш {@see hasVip()} для списка пользователей (меньше N+1 в лентах).
+     *
+     * @param int[] $userIds
+     */
+    public static function preloadHasVipCacheForUserIds(array $userIds): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $userIds), static function ($id) {
+            return $id > 0;
+        })));
+        if ($ids === []) {
+            return;
+        }
+        $now = date('Y-m-d H:i:s');
+        $nowTs = time();
+        $rows = UserVip::find()
+            ->select(['user_id', 'expires_at'])
+            ->where(['user_id' => $ids])
+            ->andWhere(['>', 'expires_at', $now])
+            ->asArray()
+            ->all();
+        $activeExp = [];
+        foreach ($rows as $r) {
+            $activeExp[(int)$r['user_id']] = strtotime((string)$r['expires_at']);
+        }
+        $cache = Yii::$app->cache;
+        foreach ($ids as $uid) {
+            $key = static::hasVipCacheKey($uid);
+            if (isset($activeExp[$uid])) {
+                $exp = $activeExp[$uid];
+                $ttl = min(static::HAS_VIP_CACHE_TTL_MAX, max(static::HAS_VIP_CACHE_TTL_MIN_ACTIVE, $exp - $nowTs));
+                $cache->set($key, 1, $ttl);
+            } else {
+                $cache->set($key, 0, static::HAS_VIP_CACHE_TTL_MAX);
+            }
+        }
+    }
+
+    private static function hasVipCacheTtlForActive(int $expiresAtTs): int
+    {
+        $left = $expiresAtTs - time();
+        if ($left <= 0) {
+            return 1;
+        }
+
+        return min(static::HAS_VIP_CACHE_TTL_MAX, max(static::HAS_VIP_CACHE_TTL_MIN_ACTIVE, $left));
+    }
+
     /**
      * Проверяет, есть ли у пользователя активный VIP
      *
@@ -578,10 +709,33 @@ class User extends ActiveRecord implements IdentityInterface
      */
     public function hasVip(): bool
     {
-        return UserVip::find()
-            ->where(['user_id' => $this->id])
-            ->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])
-            ->exists();
+        $uid = (int)$this->id;
+        if ($uid <= 0) {
+            return false;
+        }
+        $cache = Yii::$app->cache;
+        $key = static::hasVipCacheKey($uid);
+        $cached = $cache->get($key);
+        if ($cached !== false) {
+            return (bool)(int)$cached;
+        }
+        $row = UserVip::find()
+            ->select(['expires_at'])
+            ->where(['user_id' => $uid])
+            ->asArray()
+            ->one();
+        if ($row === null) {
+            $cache->set($key, 0, static::HAS_VIP_CACHE_TTL_MAX);
+            return false;
+        }
+        $expTs = strtotime((string)$row['expires_at']);
+        $nowTs = time();
+        if ($expTs === false || $expTs <= $nowTs) {
+            $cache->set($key, 0, static::HAS_VIP_CACHE_TTL_MAX);
+            return false;
+        }
+        $cache->set($key, 1, static::hasVipCacheTtlForActive($expTs));
+        return true;
     }
 
     /**
@@ -1212,12 +1366,12 @@ class User extends ActiveRecord implements IdentityInterface
         $date = new \DateTime();
         $date->modify('-30 day');
         /** @var User[] $users */
-        $users = User::find()
-                     ->andWhere(['>=', 'last_visit_server_at', $date->format('Y-m-d H:i:s')])
-                     ->andWhere(['status' => User::STATUS_ACTIVE])
-                     ->andWhere(['server_id' => $serverId])
-                     ->andWhere(['is_stats' => true])
-                     ->orderBy(['last_visit_server_at' => SORT_DESC])
+        $users = static::findQueryPublicAvatar()
+                     ->andWhere(['>=', 'u.last_visit_server_at', $date->format('Y-m-d H:i:s')])
+                     ->andWhere(['u.status' => User::STATUS_ACTIVE])
+                     ->andWhere(['u.server_id' => $serverId])
+                     ->andWhere(['u.is_stats' => true])
+                     ->orderBy(['u.last_visit_server_at' => SORT_DESC])
                      ->all();
 
         $items = [];

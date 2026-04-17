@@ -17,12 +17,17 @@ $activeBadgeClass = $model->is_active ? 'ds-badge--success' : 'ds-badge--seconda
 $rewardLine = '—';
 if ($model->reward_type === TaskV2::REWARD_TYPE_CURRENCY) {
     $rewardLine = '<i class="fas fa-coins"></i> ' . number_format((float)$model->reward_amount, 0, '.', ' ');
-} elseif ($model->reward_type === TaskV2::REWARD_TYPE_ITEM && $model->rewardItem) {
-    try {
-        $img = $model->rewardItem->imageOrig->getImagePubUrl();
-        $rewardLine = '<img src="' . Html::encode($img) . '" alt="" style="width:20px;height:20px;object-fit:cover;border-radius:4px;vertical-align:middle;"> ' . Html::encode(Yii::t('database', $model->rewardItem->name));
-    } catch (\Throwable $e) {
-        $rewardLine = Html::encode(Yii::t('database', $model->rewardItem->name));
+} elseif ($model->reward_type === TaskV2::REWARD_TYPE_ITEM) {
+    $rewardDropCard = $model->getRewardDropCached();
+    if ($rewardDropCard) {
+        try {
+            $img = $rewardDropCard->imageOrig ? $rewardDropCard->imageOrig->getImagePubUrl() : '';
+            $rewardLine = $img !== ''
+                ? '<img src="' . Html::encode($img) . '" alt="" style="width:20px;height:20px;object-fit:cover;border-radius:4px;vertical-align:middle;"> ' . Html::encode(Yii::t('database', $rewardDropCard->name))
+                : Html::encode(Yii::t('database', $rewardDropCard->name));
+        } catch (\Throwable $e) {
+            $rewardLine = Html::encode(Yii::t('database', $rewardDropCard->name));
+        }
     }
 }
 ?>

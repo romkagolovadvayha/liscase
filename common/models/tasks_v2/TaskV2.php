@@ -277,6 +277,22 @@ class TaskV2 extends ActiveRecord
     }
 
     /**
+     * Награда-предмет для UI/API: не обращаться к {@see getRewardItem()} при пустом reward_item_id (иначе Yii даёт `drop WHERE 0=1`).
+     * Дроп кэшируется 5 минут, сброс при правках в админке — {@see \common\models\box\Drop::invalidateApiRowCache()}.
+     */
+    public function getRewardDropCached(): ?Drop
+    {
+        if ($this->reward_type !== self::REWARD_TYPE_ITEM) {
+            return null;
+        }
+        $id = (int)($this->reward_item_id ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+        return Drop::findOneCachedWithImageOrig($id);
+    }
+
+    /**
      * @return \yii\db\ActiveQuery
      */
     public function getUserCompletions()
@@ -300,9 +316,10 @@ class TaskV2 extends ActiveRecord
     /**
      * Получить статус задания для пользователя
      * @param User|null $user
+     * @param array<int, TaskV2UserCompletion>|null $completionsByTaskId предзагрузка из API (один запрос); иначе null — чтение из БД по месту
      * @return array Статус: 'available', 'completed', 'limit_reached', 'unavailable'
      */
-    public function getUserStatus($user)
+    public function getUserStatus($user, ?array $completionsByTaskId = null)
     {
         if (!$user || Yii::$app->user->isGuest) {
             if ($this->is_visible_for_guests) {
@@ -344,10 +361,13 @@ class TaskV2 extends ActiveRecord
             }
         }
 
-        // Отключаем кэш для тестирования
-        $completion = TaskV2UserCompletion::find()
-            ->where(['task_id' => $this->id, 'user_id' => $user->id])
-            ->one();
+        if ($completionsByTaskId !== null) {
+            $completion = $completionsByTaskId[(int)$this->id] ?? null;
+        } else {
+            $completion = TaskV2UserCompletion::find()
+                ->where(['task_id' => $this->id, 'user_id' => $user->id])
+                ->one();
+        }
 
         $countCompleted = $completion ? $completion->count_completed : 0;
 
@@ -369,7 +389,7 @@ class TaskV2 extends ActiveRecord
 
         // Для ежедневных наград
         if ($this->type === self::TYPE_DAILY_REWARD && $this->check_type === self::CHECK_TYPE_DAILY_REWARD) {
-            return $this->getDailyRewardStatus($user);
+            return $this->getDailyRewardStatus($user, $completion);
         }
 
         // Для одноразовых заданий
@@ -441,19 +461,20 @@ class TaskV2 extends ActiveRecord
     /**
      * Получить статус ежедневной награды для пользователя
      * @param User $user
+     * @param TaskV2UserCompletion|null $completion строка выполнения (из батча); null — загрузить из БД
      * @return array
      */
-    protected function getDailyRewardStatus($user)
+    protected function getDailyRewardStatus($user, ?TaskV2UserCompletion $completion = null)
     {
         $today = new \DateTime();
         $today->setTime(0, 0, 0);
         $todayStr = $today->format('Y-m-d');
 
-        // Проверяем через TaskV2UserCompletion - это более надежно, чем через Profit
-        // Проверяем, было ли задание выполнено СЕГОДНЯ
-        $completion = TaskV2UserCompletion::find()
-            ->where(['task_id' => $this->id, 'user_id' => $user->id])
-            ->one();
+        if ($completion === null) {
+            $completion = TaskV2UserCompletion::find()
+                ->where(['task_id' => $this->id, 'user_id' => $user->id])
+                ->one();
+        }
 
         if ($completion && $completion->last_completed) {
             $lastCompletedDate = new \DateTime($completion->last_completed);
@@ -481,9 +502,10 @@ class TaskV2 extends ActiveRecord
     /**
      * Получить список ежедневных наград с текущей позицией пользователя
      * @param User $user
+     * @param TaskV2UserCompletion|null $completion предзагруженная строка выполнения (батч API)
      * @return array ['items' => [...], 'currentIndex' => int, 'canReceive' => bool]
      */
-    public function getDailyRewardList($user)
+    public function getDailyRewardList($user, ?TaskV2UserCompletion $completion = null)
     {
         if ($this->type !== self::TYPE_DAILY_REWARD || $this->check_type !== self::CHECK_TYPE_DAILY_REWARD) {
             return ['items' => [], 'currentIndex' => -1, 'canReceive' => false];
@@ -510,10 +532,11 @@ class TaskV2 extends ActiveRecord
         $today->setTime(0, 0, 0);
         $todayStr = $today->format('Y-m-d');
 
-        // Получаем запись о выполнении из TaskV2UserCompletion
-        $completion = TaskV2UserCompletion::find()
-            ->where(['task_id' => $this->id, 'user_id' => $user->id])
-            ->one();
+        if ($completion === null) {
+            $completion = TaskV2UserCompletion::find()
+                ->where(['task_id' => $this->id, 'user_id' => $user->id])
+                ->one();
+        }
 
         // Определяем текущий индекс награды
         $currentIndex = 0;
@@ -586,7 +609,7 @@ class TaskV2 extends ActiveRecord
                 $item['image'] = '/images/design/icons/64px/coins.png'; // Иконка монет
             } elseif (isset($reward['drop_id'])) {
                 // Это предмет
-                $drop = \common\models\box\Drop::findOne($reward['drop_id']);
+                $drop = Drop::findOneCachedWithImageOrig((int)$reward['drop_id']);
                 if ($drop) {
                     $item['drop'] = $drop;
                     $item['image'] = $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '';
@@ -623,15 +646,16 @@ class TaskV2 extends ActiveRecord
     /**
      * Получить текущую или следующую награду для карточки
      * @param User $user
+     * @param TaskV2UserCompletion|null $completion предзагруженная строка выполнения (батч API)
      * @return array|null ['reward' => ..., 'drop' => ..., 'image' => ..., 'name' => ..., 'amount' => ...]
      */
-    public function getCurrentDailyReward($user)
+    public function getCurrentDailyReward($user, ?TaskV2UserCompletion $completion = null)
     {
         if ($this->type !== self::TYPE_DAILY_REWARD || $this->check_type !== self::CHECK_TYPE_DAILY_REWARD) {
             return null;
         }
 
-        $rewardList = $this->getDailyRewardList($user);
+        $rewardList = $this->getDailyRewardList($user, $completion);
         if (empty($rewardList['items'])) {
             return null;
         }

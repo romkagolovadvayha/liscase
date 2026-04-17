@@ -1373,6 +1373,14 @@ class ClansController extends BaseApiController
             }
         }
 
+        $vipWarmIds = [];
+        foreach ($members as $m) {
+            if ($m->user) {
+                $vipWarmIds[] = (int)$m->user->id;
+            }
+        }
+        User::preloadHasVipCacheForUserIds($vipWarmIds);
+
         $items = [];
         foreach ($members as $m) {
             $row = $statsByMemberId[$m->id] ?? null;
@@ -1938,8 +1946,8 @@ class ClansController extends BaseApiController
         }
         $joinerModels = [];
         if ($allJoinerIds !== []) {
-            $joinerModels = User::find()
-                ->where(['id' => array_keys($allJoinerIds)])
+            $joinerModels = User::findQueryForClansApiSerialize()
+                ->andWhere(['u.id' => array_keys($allJoinerIds)])
                 ->indexBy('id')
                 ->all();
         }
@@ -2419,6 +2427,18 @@ class ClansController extends BaseApiController
      */
     protected function serializeInviteLink(ClanInviteLink $l, array $joinerUserIds = [], array $usersById = []): array
     {
+        $vipWarm = [];
+        foreach ($joinerUserIds as $uid) {
+            $uid = (int)$uid;
+            if ($uid > 0) {
+                $vipWarm[] = $uid;
+            }
+        }
+        if ($l->inviterUser) {
+            $vipWarm[] = (int)$l->inviterUser->id;
+        }
+        User::preloadHasVipCacheForUserIds($vipWarm);
+
         $joined = [];
         foreach ($joinerUserIds as $uid) {
             $uid = (int)$uid;
@@ -2854,6 +2874,13 @@ class ClansController extends BaseApiController
         });
 
         $members = array_slice($members, 0, $limit);
+        $vipWarm = [];
+        foreach ($members as $m) {
+            if ($m->user) {
+                $vipWarm[] = (int)$m->user->id;
+            }
+        }
+        User::preloadHasVipCacheForUserIds($vipWarm);
         $out = [];
         foreach ($members as $m) {
             if ($m->user) {

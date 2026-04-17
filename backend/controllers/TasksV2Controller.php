@@ -45,7 +45,8 @@ class TasksV2Controller extends BackendController
      */
     public function actionIndex()
     {
-        $query = TaskV2::find()->with(['rewardItem', 'rewardItem.imageOrig']);
+        // Не подгружаем rewardItem для всех строк: при пустом reward_item_id Yii даёт лишний `drop WHERE 0=1`. См. TaskV2::getRewardDropCached().
+        $query = TaskV2::find();
         
         // Фильтры
         $isActive = Yii::$app->request->get('is_active');

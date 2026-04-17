@@ -121,8 +121,8 @@ class StatsController extends BaseApiController
 
         $usersBySteam = [];
         foreach (array_chunk($steamIds, 400) as $chunk) {
-            $models = User::find()
-                ->where(['steam_id' => $chunk])
+            $models = User::findQueryPublicAvatar()
+                ->andWhere(['u.steam_id' => $chunk])
                 ->all();
             foreach ($models as $u) {
                 $usersBySteam[(string) $u->steam_id] = $u;

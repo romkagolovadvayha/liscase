@@ -7,6 +7,7 @@ use common\components\VideoMetadataFetcher;
 use common\components\VideoPosterUploader;
 use common\models\media\MediaLive;
 use common\models\user\User;
+use common\models\user\UserProfile;
 use common\models\video\UserVideo;
 use common\models\video\UserVideoLike;
 use Yii;
@@ -44,17 +45,40 @@ class UserVideoController extends BaseApiController
      */
     public function actionStreamers()
     {
+        $p = UserProfile::tableName();
         $query = User::find()
-            ->joinWith(['userProfile'])
-            ->where(['user.is_blogger' => 1])
+            ->alias('u')
+            ->select([
+                'u.id',
+                'u.username',
+                'u.steam_id',
+                'u.stream_live_at',
+                'u.twitch_id',
+                'u.kick_id',
+                'u.is_blogger',
+                'u.avatar_frame',
+            ])
+            ->joinWith([
+                'userProfile' => function ($q) use ($p) {
+                    $q->select([
+                        "{$p}.user_id",
+                        "{$p}.twitch_link",
+                        "{$p}.kick_link",
+                        "{$p}.youtube_link",
+                        "{$p}.steam_avatar_url",
+                        "{$p}.avatar",
+                    ]);
+                },
+            ], true, 'LEFT JOIN')
+            ->where(['u.is_blogger' => 1])
             ->andWhere(
-                '(user_profile.twitch_link IS NOT NULL AND TRIM(COALESCE(user_profile.twitch_link, "")) != "")' .
-                ' OR (user_profile.kick_link IS NOT NULL AND TRIM(COALESCE(user_profile.kick_link, "")) != "")' .
-                ' OR (user_profile.youtube_link IS NOT NULL AND TRIM(COALESCE(user_profile.youtube_link, "")) != "")' .
-                ' OR (user.twitch_id IS NOT NULL AND user.twitch_id != "")' .
-                ' OR (user.kick_id IS NOT NULL AND user.kick_id != "")'
+                "({$p}.twitch_link IS NOT NULL AND TRIM(COALESCE({$p}.twitch_link, \"\")) != \"\")" .
+                " OR ({$p}.kick_link IS NOT NULL AND TRIM(COALESCE({$p}.kick_link, \"\")) != \"\")" .
+                " OR ({$p}.youtube_link IS NOT NULL AND TRIM(COALESCE({$p}.youtube_link, \"\")) != \"\")" .
+                ' OR (u.twitch_id IS NOT NULL AND u.twitch_id != "")' .
+                ' OR (u.kick_id IS NOT NULL AND u.kick_id != "")'
             )
-            ->orderBy(['user.stream_live_at' => SORT_DESC, 'user.username' => SORT_ASC]);
+            ->orderBy(['u.stream_live_at' => SORT_DESC, 'u.username' => SORT_ASC]);
 
         $users = $query->all();
         $userIds = array_map(static function (User $u) {
@@ -67,6 +91,8 @@ class UserVideoController extends BaseApiController
                 ->indexBy('user_id')
                 ->all();
         }
+
+        User::preloadHasVipCacheForUserIds($userIds);
 
         $items = [];
         foreach ($users as $user) {

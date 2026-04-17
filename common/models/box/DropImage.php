@@ -107,6 +107,30 @@ class DropImage extends ActiveRecord
         return true;
     }
 
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        $did = (int)$this->drop_id;
+        if ($did > 0) {
+            Drop::invalidateApiRowCache($did);
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        $did = (int)$this->drop_id;
+        if ($did > 0) {
+            Drop::invalidateApiRowCache($did);
+        }
+        parent::afterDelete();
+    }
+
     public static function resizeImage($sourcePath, $destinationPath, $newSize)
     {
         $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));

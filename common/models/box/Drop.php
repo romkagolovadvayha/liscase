@@ -58,6 +58,9 @@ class Drop extends ActiveRecord
     private $_imageOrigUrl;
     private $_imageOrig2Url;
 
+    /** Кэш одной строки drop (+ imageOrig) для API/заданий, сек. Инвалидация: {@see invalidateApiRowCache()}, afterSave/afterDelete. */
+    public const API_ROW_CACHE_TTL = 300;
+
     const STATUS_NOT_ACTIVE   = 0;
     const STATUS_ACTIVE       = 1;
     const MARKET_STATUS_NOT_ACTIVE   = 0;
@@ -237,6 +240,83 @@ class Drop extends ActiveRecord
             return false;
         }
         return true;
+    }
+
+    /**
+     * Ключ кэша строки drop для API (по id).
+     */
+    public static function apiRowCacheKey(int $id): string
+    {
+        return 'drop_api_row_v1_' . $id;
+    }
+
+    /**
+     * Сброс кэша строки drop (после правок в админке, смены картинки и т.п.).
+     */
+    public static function invalidateApiRowCache(?int $dropId = null): void
+    {
+        if ($dropId === null || $dropId <= 0) {
+            return;
+        }
+        Yii::$app->cache->delete(static::apiRowCacheKey($dropId));
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        static::invalidateApiRowCache((int)$this->id);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        static::invalidateApiRowCache((int)$this->id);
+        parent::afterDelete();
+    }
+
+    /**
+     * Один drop с imageOrig (TYPE_ORIG), с кэшем 5 мин — без лишних запросов из списков заданий/API.
+     */
+    public static function findOneCachedWithImageOrig(int $id): ?Drop
+    {
+        if ($id <= 0) {
+            return null;
+        }
+        $cache = Yii::$app->cache;
+        $key = static::apiRowCacheKey($id);
+        $cached = $cache->get($key);
+        if ($cached !== false && is_array($cached) && isset($cached['attrs']) && is_array($cached['attrs'])) {
+            $m = new static();
+            $m->setAttributes($cached['attrs'], false);
+            $m->setIsNewRecord(false);
+            $m->setOldAttributes($cached['attrs']);
+            if (!empty($cached['imageOrigAttrs']) && is_array($cached['imageOrigAttrs'])) {
+                $img = new DropImage();
+                $img->setAttributes($cached['imageOrigAttrs'], false);
+                $img->setIsNewRecord(false);
+                $img->setOldAttributes($cached['imageOrigAttrs']);
+                $m->populateRelation('imageOrig', $img);
+            } else {
+                $m->populateRelation('imageOrig', null);
+            }
+            return $m;
+        }
+
+        $m = static::find()->where(['id' => $id])->with('imageOrig')->one();
+        if ($m === null) {
+            return null;
+        }
+        $payload = [
+            'attrs' => $m->getAttributes(),
+            'imageOrigAttrs' => $m->imageOrig ? $m->imageOrig->getAttributes() : null,
+        ];
+        $cache->set($key, $payload, static::API_ROW_CACHE_TTL);
+        return $m;
     }
 
     /**

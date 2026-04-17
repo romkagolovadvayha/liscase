@@ -54,7 +54,13 @@ class BlogSearch extends Blog
      */
     public function search($params, callable $filter = null)
     {
-        $query = BlogSearch::find()->alias('b')->distinct()->joinWith(['blogCategory bc', 'blogImages i', 'blogRatings r', 'comments c', 'blogCategory.parentCategory pc'])->groupBy('b.id');
+        // Категорию и родителя подгружаем отдельным IN (...) — без join+cartesian и без N+1 при groupBy.
+        $query = BlogSearch::find()->alias('b')->with([
+            'blogCategory.parentCategory',
+            'blogImages',
+            'blogRatings',
+            'comments',
+        ]);
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);

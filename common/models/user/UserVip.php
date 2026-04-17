@@ -200,5 +200,29 @@ class UserVip extends ActiveRecord
         }
         return false;
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterSave($insert, $changedAttributes)
+    {
+        parent::afterSave($insert, $changedAttributes);
+        User::invalidateHasVipCache((int)$this->user_id);
+        if (!$insert && array_key_exists('user_id', $changedAttributes)) {
+            $oldUid = (int)$changedAttributes['user_id'];
+            if ($oldUid > 0 && $oldUid !== (int)$this->user_id) {
+                User::invalidateHasVipCache($oldUid);
+            }
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function afterDelete()
+    {
+        User::invalidateHasVipCache((int)$this->user_id);
+        parent::afterDelete();
+    }
 }
 

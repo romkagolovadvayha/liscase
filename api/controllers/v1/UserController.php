@@ -1731,24 +1731,23 @@ class UserController extends BaseApiController
         
         // Поиск пользователей по нику или steam_id, сортировка по дате последнего визита
         // Ограничиваем только активными пользователями (за последние 3 месяца)
-        $query = User::find()
-            ->select(['id', 'username', 'steam_id', 'last_visit_server_at'])
+        $query = User::findQueryPublicAvatar()
             ->andWhere([
                 'or',
-                ['>=', 'last_visit_server_at', $threeMonthsAgo],
-                ['IS', 'last_visit_server_at', null] // Включаем пользователей без даты (новые)
+                ['>=', 'u.last_visit_server_at', $threeMonthsAgo],
+                ['IS', 'u.last_visit_server_at', null] // Включаем пользователей без даты (новые)
             ]);
         
         if ($isNumeric) {
             // Если запрос числовой, ищем по steam_id (точное совпадение быстрее)
-            $query->andWhere(['steam_id' => $q]);
+            $query->andWhere(['u.steam_id' => $q]);
         } else {
             // Если запрос строковый, ищем по username (LIKE)
-            $query->andWhere(['LIKE', 'username', $q]);
+            $query->andWhere(['LIKE', 'u.username', $q]);
         }
         
         $users = $query
-            ->orderBy(['last_visit_server_at' => SORT_DESC])
+            ->orderBy(['u.last_visit_server_at' => SORT_DESC])
             ->limit(10)
             ->all();
 

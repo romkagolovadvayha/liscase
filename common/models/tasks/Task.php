@@ -265,10 +265,12 @@ class Task extends \common\components\base\ActiveRecord
         $result['received'] = false;
         foreach ($dailyRewardList as $i => $dailyRewardItem) {
             if (!empty($dailyRewardItem['drop_id'])) {
-                $drop = Drop::findOne($dailyRewardItem['drop_id']);
-                $dailyRewardItem['drop_name'] = $drop->name;
-                $dailyRewardItem['image'] = $drop->imageOrig->getImagePubUrl();
-                $dailyRewardList[$i] = $dailyRewardItem;
+                $drop = Drop::findOneCachedWithImageOrig((int)$dailyRewardItem['drop_id']);
+                if ($drop !== null) {
+                    $dailyRewardItem['drop_name'] = $drop->name;
+                    $dailyRewardItem['image'] = $drop->imageOrig ? $drop->imageOrig->getImagePubUrl() : '';
+                    $dailyRewardList[$i] = $dailyRewardItem;
+                }
             }
         }
 

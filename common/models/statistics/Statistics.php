@@ -11,6 +11,7 @@ use common\models\user\User;
 use common\models\user\UserTop;
 use common\models\user\UserTree;
 use Yii;
+use yii\db\Exception as DbException;
 use yii\db\Query;
 
 /**
@@ -654,6 +655,17 @@ class Statistics extends ActiveRecord
         $tableName = $db->schema->getRawTableName(self::tableName());
         $chunks = array_chunk($merged, $batchSize);
         foreach ($chunks as $chunk) {
+            // Стабильный порядок строк — меньше шанс взаимоблокировки при разном порядке пачек у воркеров.
+            usort($chunk, static function (array $a, array $b): int {
+                foreach ([0, 1, 4, 2] as $idx) {
+                    $cmp = strcmp((string) $a[$idx], (string) $b[$idx]);
+                    if ($cmp !== 0) {
+                        return $cmp;
+                    }
+                }
+
+                return 0;
+            });
             $placeholders = [];
             $params = [];
             $i = 0;
@@ -669,8 +681,40 @@ class Statistics extends ActiveRecord
             $sql = "INSERT INTO {$tableName} (steam_id, server_tag, `key`, value, wipe)\nVALUES "
                 . implode(",\n", $placeholders)
                 . "\nON DUPLICATE KEY UPDATE value = value + VALUES(value)";
-            $db->createCommand($sql)->bindValues($params)->execute();
+            self::executeCommandWithDeadlockRetries($db, $sql, $params);
         }
+    }
+
+    /**
+     * InnoDB: INSERT … ON DUPLICATE KEY UPDATE при конкурирующих воркерах иногда даёт 1213 — безопасно повторить.
+     *
+     * @param array<string, mixed> $params
+     */
+    private static function executeCommandWithDeadlockRetries(\yii\db\Connection $db, string $sql, array $params, int $maxAttempts = 5): void
+    {
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $db->createCommand($sql)->bindValues($params)->execute();
+
+                return;
+            } catch (DbException $e) {
+                if ($attempt >= $maxAttempts || !self::isMysqlDeadlockException($e)) {
+                    throw $e;
+                }
+                usleep(50000 * $attempt + random_int(0, 35000));
+            }
+        }
+    }
+
+    private static function isMysqlDeadlockException(DbException $e): bool
+    {
+        $info = $e->errorInfo ?? [];
+        if (isset($info[1]) && (int) $info[1] === 1213) {
+            return true;
+        }
+        $msg = $e->getMessage();
+
+        return stripos($msg, 'Deadlock') !== false && stripos($msg, '1213') !== false;
     }
 
     /**

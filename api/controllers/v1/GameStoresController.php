@@ -85,6 +85,7 @@ class GameStoresController extends BaseApiController
 
         /** @var User $user */
         $user = User::find()
+            ->select(['id', 'steam_id', 'server_id', 'server_tag'])
             ->andWhere(['steam_id' => $steamId])
             ->one();
 

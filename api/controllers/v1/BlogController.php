@@ -3,10 +3,8 @@
 namespace api\controllers\v1;
 
 use Yii;
-use common\helpers\ApiPublicCacheTtl;
 use common\helpers\BlogCacheHelper;
 use common\models\blog\Blog;
-use common\models\blog\BlogCategory;
 use common\models\user\User;
 use yii2mod\comments\models\CommentModel;
 use api\components\jwt\JwtAuthFilter;
@@ -146,7 +144,7 @@ class BlogController extends BaseApiController
             $query = Blog::find()
                 ->alias('b')
                 ->where(['b.status' => Blog::STATUS_ACTIVE])
-                ->with(['blogCategory', 'blogImages', 'comments']);
+                ->with(['blogCategory.parentCategory', 'blogImages', 'comments']);
 
         // Фильтр по категории
         if ($categoryId) {
@@ -203,11 +201,9 @@ class BlogController extends BaseApiController
             $categoryUrl = '';
             if ($blog->blogCategory) {
                 $categoryUrl = $blog->blogCategory->link_name;
-                if ($blog->blogCategory->blog_category_id) {
-                    $parentCategory = BlogCategory::findOne($blog->blogCategory->blog_category_id);
-                    if ($parentCategory) {
-                        $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
-                    }
+                $parentCategory = $blog->blogCategory->parentCategory;
+                if ($parentCategory) {
+                    $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
                 }
             }
 
@@ -263,7 +259,7 @@ class BlogController extends BaseApiController
 
         // Сохраняем в кэш только базовый список (без фильтров, первая страница, дефолтная сортировка)
         if (!$hasFilters && $page === 1 && $isDefaultSort && $cacheKey) {
-            $cache->set($cacheKey, $responseData, ApiPublicCacheTtl::SECONDS);
+            $cache->set($cacheKey, $responseData, BlogCacheHelper::CATEGORIES_CACHE_TTL);
         }
 
         return $this->successResponse($responseData);
@@ -351,7 +347,7 @@ class BlogController extends BaseApiController
         
         $similarPostsFull = Blog::find()
             ->where(['id' => $similarIds])
-            ->with(['blogImages', 'blogCategory'])
+            ->with(['blogImages', 'blogCategory.parentCategory'])
             ->indexBy('id')
             ->all();
 
@@ -388,11 +384,9 @@ class BlogController extends BaseApiController
             $categoryUrl = '';
             if ($similarBlogFull->blogCategory) {
                 $categoryUrl = $similarBlogFull->blogCategory->link_name;
-                if ($similarBlogFull->blogCategory->blog_category_id) {
-                    $parentCategory = BlogCategory::findOne($similarBlogFull->blogCategory->blog_category_id);
-                    if ($parentCategory) {
-                        $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
-                    }
+                $parentSimilar = $similarBlogFull->blogCategory->parentCategory;
+                if ($parentSimilar) {
+                    $categoryUrl = $parentSimilar->link_name . '/' . $categoryUrl;
                 }
             }
 

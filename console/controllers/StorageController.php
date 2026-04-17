@@ -318,8 +318,8 @@ class StorageController extends Controller
                 }
             }
 
-            // Категории блога: ru, en
-            foreach (['ru', 'en'] as $lang) {
+            // Категории блога (ключи как у API: язык в суффиксе)
+            foreach (['ru-RU', 'en-US'] as $lang) {
                 $payload = BlogCacheHelper::buildCategoriesPayload($lang);
                 $cache->set('api_blog_categories_' . $lang, $payload, BlogCacheHelper::CATEGORIES_CACHE_TTL);
             }

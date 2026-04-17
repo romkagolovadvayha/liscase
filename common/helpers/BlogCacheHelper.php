@@ -3,7 +3,6 @@
 namespace common\helpers;
 
 use Yii;
-use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 
 /**
@@ -11,8 +10,17 @@ use common\models\blog\BlogCategory;
  */
 class BlogCacheHelper
 {
-    /** TTL кэша категорий в секундах. */
-    public const CATEGORIES_CACHE_TTL = ApiPublicCacheTtl::SECONDS;
+    /**
+     * Языковые суффиксы ключей `api_blog_list_*` и `api_blog_categories_*`
+     * (полные теги i18n + короткие из console/storage/warm-caches).
+     */
+    public const API_BLOG_CACHE_LANGUAGE_KEYS = [
+        'en-US', 'ru-RU', 'de-DE', 'uk-UA', 'es-ES',
+        'en', 'ru',
+    ];
+
+    /** TTL дерева категорий и списка постов API, сек. (как строка drop — 5 мин). */
+    public const CATEGORIES_CACHE_TTL = 300;
 
     /**
      * Собрать дерево категорий блога (как BlogController::actionCategories).
@@ -62,5 +70,31 @@ class BlogCacheHelper
         } finally {
             Yii::$app->language = $prevLang;
         }
+    }
+
+    /**
+     * Сброс кэша списка постов `/v1/blog` (все limit × языки).
+     */
+    public static function invalidateBlogListApiCache(): void
+    {
+        $cache = Yii::$app->cache;
+        foreach (self::API_BLOG_CACHE_LANGUAGE_KEYS as $lang) {
+            for ($limit = 10; $limit <= 50; $limit += 10) {
+                $cache->delete('api_blog_list_' . $limit . '_' . $lang);
+            }
+        }
+    }
+
+    /**
+     * Сброс кэша `/v1/blog/categories` по всем известным языковым ключам.
+     */
+    public static function invalidateBlogCategoriesApiCache(): void
+    {
+        $cache = Yii::$app->cache;
+        foreach (self::API_BLOG_CACHE_LANGUAGE_KEYS as $lang) {
+            $cache->delete('api_blog_categories_' . $lang);
+        }
+        // Старый ключ без суффикса (до i18n в ключе)
+        $cache->delete('api_blog_categories');
     }
 }
