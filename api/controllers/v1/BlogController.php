@@ -3,6 +3,7 @@
 namespace api\controllers\v1;
 
 use Yii;
+use common\components\web\Cookie;
 use common\helpers\BlogCacheHelper;
 use common\models\blog\Blog;
 use common\models\user\User;
@@ -177,70 +178,7 @@ class BlogController extends BaseApiController
 
         $posts = [];
         foreach ($dataProvider->getModels() as $blog) {
-            $imageUrl = null;
-            $imageUrl100 = null;
-            $blogImages = $blog->blogImages; // Получаем коллекцию
-            if (!empty($blogImages) && is_array($blogImages) && count($blogImages) > 0) {
-                $firstImage = reset($blogImages);
-                if ($firstImage) {
-                    $imageUrl = $firstImage->getPublicUrl();
-                    $imageUrl100 = $firstImage->getPublicUrl100();
-                }
-            } elseif (!empty($blogImages) && is_object($blogImages)) {
-                // Если это ActiveQuery, получаем все записи
-                $images = $blogImages->all();
-                if (!empty($images)) {
-                    $firstImage = reset($images);
-                    if ($firstImage) {
-                        $imageUrl = $firstImage->getPublicUrl();
-                        $imageUrl100 = $firstImage->getPublicUrl100();
-                    }
-                }
-            }
-
-            $categoryUrl = '';
-            if ($blog->blogCategory) {
-                $categoryUrl = $blog->blogCategory->link_name;
-                $parentCategory = $blog->blogCategory->parentCategory;
-                if ($parentCategory) {
-                    $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
-                }
-            }
-
-            // Подсчитываем комментарии
-            $commentsCount = 0;
-            $comments = $blog->comments; // Получаем коллекцию
-            if (!empty($comments)) {
-                if (is_array($comments)) {
-                    $commentsCount = count($comments);
-                } elseif (is_object($comments)) {
-                    // Если это ActiveQuery, получаем количество
-                    $commentsCount = $comments->count();
-                }
-            }
-
-            // Контент: перевод по текущему языку (как во frontend), затем замена ссылок на S3
-            $contentTranslated = Yii::t('database', $blog->content);
-            $processedContent = $blog->processContentWithS3Images($contentTranslated);
-
-            $posts[] = [
-                'id' => $blog->id,
-                'title' => Yii::t('database', $blog->name),
-                'description' => Yii::t('database', $blog->description),
-                'content' => $processedContent,
-                'image' => $imageUrl,
-                'image_100' => $imageUrl100,
-                'views' => $blog->views ?? 0,
-                'commentsCount' => $commentsCount,
-                'linkName' => $blog->link_name,
-                'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$blog->link_name}" : "/posts/post-{$blog->link_name}",
-                'category' => $blog->blogCategory ? [
-                    'id' => $blog->blogCategory->id,
-                    'name' => Yii::t('database', $blog->blogCategory->name),
-                    'linkName' => $blog->blogCategory->link_name,
-                ] : null,
-                'createdAt' => $blog->created_at,
-            ];
+            $posts[] = $this->formatBlogPostForApi($blog);
         }
 
         $pagination = $dataProvider->getPagination();
@@ -294,6 +232,119 @@ class BlogController extends BaseApiController
         }
 
         return $this->successResponse($categories);
+    }
+
+    /**
+     * Один пост блога по link_name (как карточка в списке + keywords и родительская категория).
+     * Просмотры: как в frontend/views/blog/view.php — cookie blog_viewed_{id}, 360 мин.
+     * Параметр countView=0 — не увеличивать счётчик (SSR/метаданные, без ложных просмотров).
+     *
+     * @param string $linkName
+     * @return array
+     */
+    public function actionView($linkName)
+    {
+        $request = Yii::$app->request;
+        $countViewParam = $request->get('countView', '1');
+        $recordView = !($countViewParam === '0' || $countViewParam === 0 || $countViewParam === false);
+
+        $blog = Blog::find()
+            ->alias('b')
+            ->where(['b.link_name' => $linkName, 'b.status' => Blog::STATUS_ACTIVE])
+            ->with(['blogCategory.parentCategory', 'blogImages', 'comments'])
+            ->one();
+
+        if (!$blog) {
+            return $this->errorResponse('BLOG_NOT_FOUND', 'Пост не найден', [], 404);
+        }
+
+        if ($recordView) {
+            $cookieName = 'blog_viewed_' . $blog->id;
+            $cooldownMins = 360;
+            if (!Cookie::getValue($cookieName)) {
+                Blog::updateAllCounters(['views' => 1], ['id' => $blog->id]);
+                Cookie::add($cookieName, 1, false, $cooldownMins);
+                $blog->refresh();
+            }
+        }
+
+        return $this->successResponse([
+            'post' => $this->formatBlogPostForApi($blog),
+        ]);
+    }
+
+    /**
+     * Поля одного поста для API (список и просмотр).
+     *
+     * @param Blog $blog
+     * @return array
+     */
+    protected function formatBlogPostForApi(Blog $blog): array
+    {
+        $imageUrl = null;
+        $imageUrl100 = null;
+        $blogImages = $blog->blogImages;
+        if (!empty($blogImages) && is_array($blogImages) && count($blogImages) > 0) {
+            $firstImage = reset($blogImages);
+            if ($firstImage) {
+                $imageUrl = $firstImage->getPublicUrl();
+                $imageUrl100 = $firstImage->getPublicUrl100();
+            }
+        } elseif (!empty($blogImages) && is_object($blogImages)) {
+            $images = $blogImages->all();
+            if (!empty($images)) {
+                $firstImage = reset($images);
+                if ($firstImage) {
+                    $imageUrl = $firstImage->getPublicUrl();
+                    $imageUrl100 = $firstImage->getPublicUrl100();
+                }
+            }
+        }
+
+        $categoryUrl = '';
+        $parentCategory = null;
+        if ($blog->blogCategory) {
+            $categoryUrl = $blog->blogCategory->link_name;
+            $parentCategory = $blog->blogCategory->parentCategory;
+            if ($parentCategory) {
+                $categoryUrl = $parentCategory->link_name . '/' . $categoryUrl;
+            }
+        }
+
+        $commentsCount = 0;
+        $comments = $blog->comments;
+        if (!empty($comments)) {
+            if (is_array($comments)) {
+                $commentsCount = count($comments);
+            } elseif (is_object($comments)) {
+                $commentsCount = $comments->count();
+            }
+        }
+
+        $contentTranslated = Yii::t('database', $blog->content);
+        $processedContent = $blog->processContentWithS3Images($contentTranslated);
+
+        return [
+            'id' => $blog->id,
+            'title' => Yii::t('database', $blog->name),
+            'description' => Yii::t('database', $blog->description),
+            'content' => $processedContent,
+            'keywords' => Yii::t('database', $blog->keywords ?? ''),
+            'image' => $imageUrl,
+            'image_100' => $imageUrl100,
+            'views' => $blog->views ?? 0,
+            'commentsCount' => $commentsCount,
+            'linkName' => $blog->link_name,
+            'url' => $categoryUrl ? "/posts/{$categoryUrl}/post-{$blog->link_name}" : "/posts/post-{$blog->link_name}",
+            'category' => $blog->blogCategory ? [
+                'id' => $blog->blogCategory->id,
+                'name' => Yii::t('database', $blog->blogCategory->name),
+                'linkName' => $blog->blogCategory->link_name,
+            ] : null,
+            'parentCategoryName' => $parentCategory ? Yii::t('database', $parentCategory->name) : null,
+            'parentCategoryLinkName' => $parentCategory ? $parentCategory->link_name : null,
+            'createdAt' => $blog->created_at,
+        ];
     }
 
     /**

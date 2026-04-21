@@ -254,6 +254,7 @@ $config = [
                 'v1/blog/<linkName>/similar' => 'v1/blog/similar',
                 'v1/blog/<linkName>/comments' => 'v1/blog/comments',
                 'v1/blog/comments/<id:\d+>/like' => 'v1/blog/like-comment',
+                'v1/blog/<linkName>' => 'v1/blog/view',
                 'v1/blog' => 'v1/blog/index',
 
                 // Wipe Calendar
