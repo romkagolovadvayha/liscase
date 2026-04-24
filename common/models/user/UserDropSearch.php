@@ -10,10 +10,10 @@ use yii\db\ActiveQuery;
 class UserDropSearch extends UserDrop
 {
     public $user_username;
-    public $user_id;
+    /** Не объявлять public $user_id / $drop_id — совпадают с колонками AR и ломают связи user / dropOne. */
+
     public $server_id;
     public $drop_name;
-    public $drop_id;
 
     /** @var string|null Steam ID (частичное совпадение) */
     public $steam_id;
@@ -73,12 +73,15 @@ class UserDropSearch extends UserDrop
                 'ud.status' => $this->status,
             ]);
 
+        $hasExtraJoin = false;
         if ($this->steam_id !== null && $this->steam_id !== '') {
+            $hasExtraJoin = true;
             $query->innerJoin(['uf' => User::tableName()], 'uf.id = ud.user_id');
             $query->andWhere(['like', 'uf.steam_id', trim((string) $this->steam_id)]);
         }
 
         if ($this->drop_in_store !== null && $this->drop_in_store !== '') {
+            $hasExtraJoin = true;
             $query->leftJoin(['ds' => Drop::tableName()], 'ds.id = ud.drop_id');
             if ((string) $this->drop_in_store === '1') {
                 $query->andWhere([
@@ -138,6 +141,11 @@ class UserDropSearch extends UserDrop
             } else {
                 $query->andWhere('1=0'); // Нет результатов
             }
+        }
+
+        // При JOIN только строки user_drop — иначе SELECT * смешивает колонки (id и т.д.) и ломает гидратацию.
+        if ($hasExtraJoin) {
+            $query->select(['ud.*']);
         }
 
         $tableName = 'ud';
