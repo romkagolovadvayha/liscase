@@ -145,7 +145,13 @@ if ($moder) {
         'label' => Yii::t('common', 'Предметы'),
         'icon' => 'fa-solid fa-table-cells',
         'url' => ['/drop/index'],
-        'active' => _checkActive('/drop/'),
+        'active' => _checkActive('/drop/') && !_checkActive('/user-drop'),
+    ];
+    $moderationItems[] = [
+        'label' => Yii::t('common', 'Предметы пользователей'),
+        'icon' => 'fa-solid fa-box-open',
+        'url' => ['/user-drop/index'],
+        'active' => _checkActive('/user-drop'),
     ];
     $moderationItems[] = [
         'label' => Yii::t('common', 'Блог'),

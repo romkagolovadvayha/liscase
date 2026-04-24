@@ -1,15 +1,17 @@
 <?php
 
+use common\models\box\Drop;
 use common\models\user\UserDrop;
-use common\models\servers\Servers;
 use kartik\grid\GridView;
-use yii\helpers\Html;
+use yii\widgets\ActiveForm;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 use yii\helpers\Url;
-use yii\grid\ActionColumn;
+use yii\grid\CheckboxColumn;
 
-/** @var $dataProvider */
-/** @var $searchModel \common\models\user\UserDropSearch */
+/** @var yii\web\View $this */
+/** @var \common\models\user\UserDropSearch $searchModel */
+/** @var yii\data\ActiveDataProvider $dataProvider */
 
 $this->title = Yii::t('common', 'Предметы пользователей');
 $this->params['contentClass'] = 'content-no-padding';
@@ -17,306 +19,202 @@ $this->params['searchModel'] = $searchModel;
 
 $headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
 $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
-$serversList = ArrayHelper::map(Servers::find()->orderBy(['name' => SORT_ASC])->all(), 'id', 'name');
+
+$statusList = UserDrop::getStatusList();
 ?>
-<div class="user-drop-index-page w-full">
-    <div class="w-full">
-        <?= GridView::widget([
-            'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
-            'tableOptions' => ['class' => 'table-auto w-full text-sm'],
-            'options' => ['class' => 'admin-grid-view-dark'],
-            'layout' => "{items}\n{pager}",
-            'filterRowOptions' => ['style' => 'display: none;'],
-            'bordered' => false,
-            'striped' => false,
-            'hover' => true,
-            'columns' => [
+
+<div class="user-drop-index-page w-full p-4 md:p-6">
+    <?= \frontend\widgets\Alert::widget() ?>
+
+    <form id="user-drop-single-status-form" method="post" action="<?= Html::encode(Url::to(['set-status'])) ?>" class="hidden" aria-hidden="true">
+        <?= Html::hiddenInput(Yii::$app->request->csrfParam, Yii::$app->request->csrfToken) ?>
+        <input type="hidden" name="id" id="user-drop-single-id" value="">
+        <input type="hidden" name="status" id="user-drop-single-status" value="">
+    </form>
+
+    <?php $bulkForm = ActiveForm::begin([
+        'action' => ['bulk-status'],
+        'method' => 'post',
+        'options' => ['class' => 'user-drop-bulk-form'],
+    ]); ?>
+
+    <div class="flex flex-wrap items-end gap-3 mb-4 p-3 rounded-lg bg-[hsl(0_0%_16%_/_1)] border border-[hsl(0_0%_15.3%_/_1)]">
+        <div class="flex flex-col gap-1 min-w-[200px]">
+            <label class="text-xs text-gray-400"><?= Yii::t('common', 'Массовая смена статуса') ?></label>
+            <?= Html::dropDownList(
+                'bulk_status',
+                '',
+                $statusList,
                 [
-                    'class' => 'yii\grid\CheckboxColumn',
-                    'options' => ['width' => '30'],
-                    'headerOptions' => ['class' => $headerCellClass],
-                    'contentOptions' => ['class' => $bodyCellClass],
-                ],
-                    [
-                        'attribute' => 'id',
-                        'format' => 'raw',
-                        'options' => ['width' => '70'],
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                    ],
-                    [
-                        'attribute' => 'user_username',
-                        'label' => Yii::t('common', 'Пользователь'),
-                        'format' => 'raw',
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                        'value' => function (UserDrop $model) {
-                            if (empty($model->user)) {
-                                return $model->user_id ? 'ID: ' . $model->user_id : null;
-                            }
-                            return Html::a(
-                                Html::encode($model->user->username),
-                                '/profile/' . $model->user_id,
-                                ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']
-                            );
-                        },
-                    ],
-                    [
-                        'attribute' => 'server_id',
-                        'label' => Yii::t('common', 'Сервер'),
-                        'filterType' => GridView::FILTER_SELECT2,
-                        'filter' => ArrayHelper::merge(['' => 'Все'], $serversList),
-                        'options' => ['width' => '150'],
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                        'value' => function (UserDrop $model) {
-                            if (empty($model->user) || empty($model->user->server)) {
-                                return null;
-                            }
-                            return Html::encode($model->user->server->name);
-                        },
-                    ],
-                    [
-                        'attribute' => 'drop_name',
-                        'label' => Yii::t('common', 'Предмет'),
-                        'format' => 'raw',
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                        'value' => function (UserDrop $model) {
-                            $drop = $model->dropOne;
-                            if (empty($drop)) {
-                                return $model->drop_id ? 'ID: ' . $model->drop_id : null;
-                            }
-                            $image = '';
-                            if ($drop->imageOrig) {
-                                $image = Html::img($drop->imageOrig->getImagePubUrl(false), [
-                                    'width' => '32px',
-                                    'height' => '32px',
-                                    'style' => 'border-radius: 4px; object-fit: cover; margin-right: 8px;',
-                                    'alt' => Html::encode($drop->name ?? ''),
-                                ]);
-                            }
-                            return $image . Html::encode($drop->name);
-                        },
-                    ],
-                    [
-                        'attribute' => 'count',
-                        'label' => Yii::t('common', 'Количество'),
-                        'options' => ['width' => '100'],
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                    ],
-                    [
-                        'attribute' => 'status',
-                        'filterType' => GridView::FILTER_SELECT2,
-                        'filter' => ArrayHelper::merge(['' => 'Все'], UserDrop::getStatusList()),
-                        'options' => ['width' => '150'],
-                        'format' => 'raw',
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                        'value' => function (UserDrop $model) {
-                            $statusList = UserDrop::getStatusList();
-                            $status = ArrayHelper::getValue($statusList, $model->status);
-                            $badgeClasses = [
-                                UserDrop::STATUS_TEMP_BLOCKED => 'ds-badge--danger',
-                                UserDrop::STATUS_ACTIVE => 'ds-badge--success',
-                                UserDrop::STATUS_SENDED => 'ds-badge--info',
-                                UserDrop::STATUS_SELL => 'ds-badge--warning',
-                                UserDrop::STATUS_WAIT => 'ds-badge--primary',
-                            ];
-                            $badgeClass = $badgeClasses[$model->status] ?? 'ds-badge--secondary';
-                            return Html::tag('span', Html::encode($status), ['class' => 'ds-badge ' . $badgeClass]);
-                        },
-                    ],
-                    [
-                        'attribute' => 'sended_at',
-                        'label' => Yii::t('common', 'Дата отправки'),
-                        'options' => ['width' => '180'],
-                        'class' => \common\components\grid\DateColumn::class,
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                    ],
-                    [
-                        'attribute' => 'created_at',
-                        'label' => Yii::t('common', 'Дата создания'),
-                        'options' => ['width' => '180'],
-                        'class' => \common\components\grid\DateColumn::class,
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                    ],
-                    [
-                        'class' => ActionColumn::class,
-                        'template' => '{update-status}',
-                        'options' => ['width' => '100'],
-                        'headerOptions' => ['class' => $headerCellClass],
-                        'contentOptions' => ['class' => $bodyCellClass],
-                        'buttons' => [
-                            'update-status' => function ($url, $model) {
-                                $statusList = UserDrop::getStatusList();
-                                $items = [];
-                                foreach ($statusList as $statusId => $statusName) {
-                                    if ($statusId != $model->status) {
-                                        $items[] = [
-                                            'label' => $statusName,
-                                            'url' => Url::to(['update-status', 'id' => $model->id]),
-                                            'linkOptions' => [
-                                                'data-method' => 'post',
-                                                'data-params' => ['status' => $statusId],
-                                                'class' => 'change-status-link',
-                                            ],
-                                        ];
-                                    }
-                                }
-                                if (empty($items)) {
-                                    return null;
-                                }
-                                return Html::dropDownList(
-                                    'status_' . $model->id,
-                                    $model->status,
-                                    $statusList,
-                                    [
-                                        'class' => 'form-control ds-select status-select',
-                                        'data-id' => $model->id,
-                                        'style' => 'width: 120px;',
-                                    ]
-                                );
-                            },
-                        ],
-                    ],
-                ],
-            ]); ?>
+                    'class' => 'ds-select text-sm max-w-xs',
+                    'prompt' => Yii::t('common', 'Выберите статус…'),
+                ]
+            ) ?>
+        </div>
+        <button type="submit" class="ds-btn ds-btn--primary ds-btn--sm inline-flex items-center gap-2">
+            <i class="fas fa-check-double"></i>
+            <?= Yii::t('common', 'Применить к выбранным') ?>
+        </button>
     </div>
+
+    <?= GridView::widget([
+        'dataProvider' => $dataProvider,
+        'filterModel' => $searchModel,
+        'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+        'options' => ['class' => 'admin-grid-view-dark'],
+        'layout' => "{items}\n{pager}",
+        'filterRowOptions' => ['style' => 'display: none;'],
+        'bordered' => false,
+        'striped' => false,
+        'hover' => true,
+        'columns' => [
+            [
+                'class' => CheckboxColumn::class,
+                'checkboxOptions' => static function (UserDrop $model) {
+                    return ['value' => (string) $model->id, 'class' => 'user-drop-row-check'];
+                },
+                'headerOptions' => ['class' => $headerCellClass, 'style' => 'width:44px'],
+                'contentOptions' => ['class' => $bodyCellClass],
+            ],
+            [
+                'label' => '',
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass, 'style' => 'width:64px'],
+                'contentOptions' => ['class' => $bodyCellClass],
+                'value' => static function (UserDrop $model) {
+                    $drop = $model->dropOne;
+                    $url = $drop ? $drop->image() : null;
+                    if (!$url) {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+                    return Html::tag('div', Html::img($url, [
+                        'width' => 48,
+                        'height' => 48,
+                        'loading' => 'lazy',
+                        'alt' => '',
+                        'class' => 'rounded object-cover bg-[hsl(0_0%_18%_/_1)]',
+                    ]), ['class' => 'flex items-center']);
+                },
+            ],
+            [
+                'label' => Yii::t('common', 'Предмет'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass],
+                'value' => static function (UserDrop $model) {
+                    $drop = $model->dropOne;
+                    if (!$drop) {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+                    return Html::encode(Yii::t('database', $drop->name));
+                },
+            ],
+            [
+                'label' => Yii::t('common', 'Пользователь'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass],
+                'value' => static function (UserDrop $model) {
+                    $u = $model->user;
+                    if (!$u) {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+                    $profileUrl = Url::to(['/user/profile', 'userId' => $u->id]);
+                    return Html::a(Html::encode($u->username), $profileUrl, [
+                        'class' => 'text-blue-400 hover:underline',
+                    ]);
+                },
+            ],
+            [
+                'label' => Yii::t('common', 'Steam ID'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass . ' font-mono text-xs'],
+                'value' => static function (UserDrop $model) {
+                    $sid = $model->user ? (string) $model->user->steam_id : '';
+                    return $sid !== '' ? Html::encode($sid) : '<span class="text-gray-500">—</span>';
+                },
+            ],
+            [
+                'attribute' => 'created_at',
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap'],
+                'value' => static function (UserDrop $model) {
+                    return Html::encode(Yii::$app->formatter->asDatetime($model->created_at, 'php:d.m.Y H:i'));
+                },
+            ],
+            [
+                'attribute' => 'sended_at',
+                'label' => Yii::t('common', 'Дата вывода'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap'],
+                'value' => static function (UserDrop $model) {
+                    $raw = $model->sended_at;
+                    if ($raw === null || $raw === '' || $raw === '0000-00-00 00:00:00') {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+                    $ts = strtotime((string) $raw);
+                    if ($ts === false || $ts <= 0) {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+
+                    return Html::encode(Yii::$app->formatter->asDatetime($raw, 'php:d.m.Y H:i'));
+                },
+            ],
+            [
+                'label' => Yii::t('common', 'В магазине (предмет)'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass],
+                'value' => static function (UserDrop $model) {
+                    $drop = $model->dropOne;
+                    if (!$drop) {
+                        return '<span class="text-gray-500">—</span>';
+                    }
+                    $marketOk = (int) $drop->market_status === Drop::MARKET_STATUS_ACTIVE;
+                    $catalogOk = (int) $drop->status === Drop::STATUS_ACTIVE;
+                    $marketLabel = Drop::getMarketStatusList()[$drop->market_status] ?? (string) $drop->market_status;
+                    $catalogLabel = Drop::getStatusList()[$drop->status] ?? (string) $drop->status;
+                    $badgeClass = ($marketOk && $catalogOk)
+                        ? 'bg-green-600/90 text-white'
+                        : 'bg-[hsl(0_0%_30%_/_1)] text-gray-200';
+                    $short = ($marketOk && $catalogOk)
+                        ? Yii::t('common', 'Продаётся')
+                        : Yii::t('common', 'Не продаётся');
+                    $detail = Html::encode($marketLabel) . ' · ' . Html::encode($catalogLabel);
+                    return '<span class="inline-flex flex-col gap-0.5">'
+                        . '<span class="inline-flex px-2 py-0.5 rounded text-xs font-medium ' . $badgeClass . '">' . Html::encode($short) . '</span>'
+                        . '<span class="text-xs text-gray-400">' . $detail . '</span>'
+                        . '</span>';
+                },
+            ],
+            [
+                'label' => Yii::t('common', 'Статус (инвентарь)'),
+                'format' => 'raw',
+                'headerOptions' => ['class' => $headerCellClass],
+                'contentOptions' => ['class' => $bodyCellClass],
+                'value' => static function (UserDrop $model) use ($statusList) {
+                    $opts = [];
+                    foreach ($statusList as $val => $label) {
+                        $opts[$val] = Html::encode($label);
+                    }
+                    return Html::dropDownList(
+                        'ud_status_' . $model->id,
+                        (string) $model->status,
+                        $opts,
+                        [
+                            'class' => 'ds-select text-sm min-w-[160px]',
+                            'data-id' => (string) $model->id,
+                            'onchange' => 'var f=document.getElementById("user-drop-single-status-form");document.getElementById("user-drop-single-id").value='
+                                . (int) $model->id . ';document.getElementById("user-drop-single-status").value=this.value;f.submit();',
+                        ]
+                    );
+                },
+            ],
+        ],
+    ]); ?>
+
+    <?php ActiveForm::end(); ?>
 </div>
-
-<?php
-$bulkUpdateUrl = Url::to(['bulk-update-status']);
-$updateStatusUrl = Url::to(['update-status']);
-$csrfParam = Yii::$app->request->csrfParam;
-$csrfToken = Yii::$app->request->getCsrfToken();
-$js = <<<JS
-// Изменение статуса для одного элемента
-$(document).on('change', '.status-select', function() {
-    var select = $(this);
-    var id = select.data('id');
-    var status = select.val();
-
-    if (confirm('Изменить статус?')) {
-        var form = $('<form>', {
-            'method': 'POST',
-            'action': '{$updateStatusUrl}?id=' + id
-        });
-
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': 'status',
-            'value': status
-        }));
-
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': '{$csrfParam}',
-            'value': '{$csrfToken}'
-        }));
-
-        $('body').append(form);
-        form.submit();
-    } else {
-        select.val(select.data('prev-value') || select.find('option:first').val());
-    }
-});
-
-// Сохранение предыдущего значения при фокусе
-$(document).on('focus', '.status-select', function() {
-    $(this).data('prev-value', $(this).val());
-});
-
-// Массовое изменение статуса
-function bulkUpdateStatus() {
-    var selectedIds = [];
-    $('input[name="selection[]"]:checked').each(function() {
-        selectedIds.push($(this).val());
-    });
-
-    if (selectedIds.length === 0) {
-        alert('Выберите элементы для изменения');
-        return;
-    }
-
-    var statusList = {
-        0: 'Временно блокирован',
-        1: 'Доступен',
-        2: 'Отправлен',
-        3: 'Продан',
-        4: 'Отправляется'
-    };
-
-    var statusSelect = $('<select>', {
-        id: 'bulk-status-select',
-        style: 'width: 100%; margin: 10px 0; padding: 5px;',
-        html: '<option value="">Выберите статус</option>'
-    });
-
-    for (var key in statusList) {
-        statusSelect.append($('<option>', {
-            value: key,
-            text: statusList[key]
-        }));
-    }
-
-    var dialog = $('<div>', {
-        title: 'Изменение статуса',
-        html: '<p>Выберите новый статус для ' + selectedIds.length + ' элементов:</p>'
-    }).append(statusSelect);
-
-    if (confirm('Изменить статус для ' + selectedIds.length + ' элементов?')) {
-        var status = prompt('Введите номер статуса (0-4):\\n0 - Временно блокирован\\n1 - Доступен\\n2 - Отправлен\\n3 - Продан\\n4 - Отправляется');
-
-        if (status === null || status === '') {
-            return;
-        }
-
-        if (!statusList[status]) {
-            alert('Неверный статус');
-            return;
-        }
-
-        var form = $('<form>', {
-            'method': 'POST',
-            'action': '{$bulkUpdateUrl}'
-        });
-
-        selectedIds.forEach(function(id) {
-            form.append($('<input>', {
-                'type': 'hidden',
-                'name': 'ids[]',
-                'value': id
-            }));
-        });
-
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': 'status',
-            'value': status
-        }));
-
-        form.append($('<input>', {
-            'type': 'hidden',
-            'name': '{$csrfParam}',
-            'value': '{$csrfToken}'
-        }));
-
-        $('body').append(form);
-        form.submit();
-    }
-}
-
-// Добавляем кнопку массового изменения статуса
-if ($('.grid-view').length) {
-    $('.grid-view').before('<div style="margin-bottom: 10px;"><button type="button" class="ds-btn ds-btn--primary" onclick="bulkUpdateStatus()">Изменить статус выбранных</button></div>');
-}
-JS;
-
-$this->registerJs($js);
-?>
-

@@ -5,6 +5,7 @@ namespace common\models\user;
 use common\models\box\Drop;
 use yii\data\ActiveDataProvider;
 use Yii;
+use yii\db\ActiveQuery;
 
 class UserDropSearch extends UserDrop
 {
@@ -14,11 +15,20 @@ class UserDropSearch extends UserDrop
     public $drop_name;
     public $drop_id;
 
+    /** @var string|null Steam ID (частичное совпадение) */
+    public $steam_id;
+
+    /**
+     * Фильтр «товар активен в магазине»: '' — все, 1 — да (market + каталог), 0 — нет.
+     * @var string|int|null
+     */
+    public $drop_in_store;
+
     public function rules(): array
     {
         return [
             [['id', 'user_id', 'drop_id', 'status', 'server_id'], 'integer'],
-            [['user_username', 'drop_name'], 'safe'],
+            [['user_username', 'drop_name', 'steam_id', 'drop_in_store'], 'safe'],
         ];
     }
 
@@ -32,6 +42,8 @@ class UserDropSearch extends UserDrop
             'drop_id' => Yii::t('common', 'ID предмета'),
             'status' => Yii::t('common', 'Статус'),
             'sended_at' => Yii::t('common', 'Дата отправки'),
+            'steam_id' => Yii::t('common', 'Steam ID'),
+            'drop_in_store' => Yii::t('common', 'Активен в магазине'),
         ]);
     }
 
@@ -44,8 +56,10 @@ class UserDropSearch extends UserDrop
     {
         $this->load($params);
 
+        /** @var ActiveQuery $query */
         $query = self::find()
-            ->with(['user', 'user.server', 'dropOne']);
+            ->alias('ud')
+            ->with(['user', 'user.server', 'dropOne.dropImages']);
 
         if (is_callable($filter)) {
             call_user_func($filter, $query);
@@ -53,11 +67,39 @@ class UserDropSearch extends UserDrop
 
         $query
             ->andFilterWhere([
-                'id' => $this->id,
-                'user_id' => $this->user_id,
-                'drop_id' => $this->drop_id,
-                'status' => $this->status,
+                'ud.id' => $this->id,
+                'ud.user_id' => $this->user_id,
+                'ud.drop_id' => $this->drop_id,
+                'ud.status' => $this->status,
             ]);
+
+        if ($this->steam_id !== null && $this->steam_id !== '') {
+            $query->innerJoin(['uf' => User::tableName()], 'uf.id = ud.user_id');
+            $query->andWhere(['like', 'uf.steam_id', trim((string) $this->steam_id)]);
+        }
+
+        if ($this->drop_in_store !== null && $this->drop_in_store !== '') {
+            $query->leftJoin(['ds' => Drop::tableName()], 'ds.id = ud.drop_id');
+            if ((string) $this->drop_in_store === '1') {
+                $query->andWhere([
+                    'ds.market_status' => Drop::MARKET_STATUS_ACTIVE,
+                    'ds.status' => Drop::STATUS_ACTIVE,
+                ]);
+            } elseif ((string) $this->drop_in_store === '0') {
+                $query->andWhere([
+                    'or',
+                    ['ds.id' => null],
+                    [
+                        'not',
+                        [
+                            'and',
+                            ['ds.market_status' => Drop::MARKET_STATUS_ACTIVE],
+                            ['ds.status' => Drop::STATUS_ACTIVE],
+                        ],
+                    ],
+                ]);
+            }
+        }
         
         // Фильтр по username через подзапрос
         if (!empty($this->user_username)) {
@@ -66,7 +108,7 @@ class UserDropSearch extends UserDrop
                 ->where(['LIKE', 'username', $this->user_username])
                 ->column();
             if (!empty($userIds)) {
-                $query->andWhere(['user_id' => $userIds]);
+                $query->andWhere(['ud.user_id' => $userIds]);
             } else {
                 $query->andWhere('1=0'); // Нет результатов
             }
@@ -79,7 +121,7 @@ class UserDropSearch extends UserDrop
                 ->where(['server_id' => $this->server_id])
                 ->column();
             if (!empty($userIds)) {
-                $query->andWhere(['user_id' => $userIds]);
+                $query->andWhere(['ud.user_id' => $userIds]);
             } else {
                 $query->andWhere('1=0'); // Нет результатов
             }
@@ -92,19 +134,18 @@ class UserDropSearch extends UserDrop
                 ->where(['LIKE', 'name', $this->drop_name])
                 ->column();
             if (!empty($dropIds)) {
-                $query->andWhere(['drop_id' => $dropIds]);
+                $query->andWhere(['ud.drop_id' => $dropIds]);
             } else {
                 $query->andWhere('1=0'); // Нет результатов
             }
         }
 
-        $tableName = self::tableName();
+        $tableName = 'ud';
         
         return new ActiveDataProvider([
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'sended_at' => SORT_DESC,
                     'created_at' => SORT_DESC,
                 ],
                 'attributes' => [
@@ -113,24 +154,24 @@ class UserDropSearch extends UserDrop
                         'desc' => [$tableName . '.id' => SORT_DESC],
                     ],
                     'sended_at' => [
-                        'asc' => [$tableName . '.sended_at' => SORT_ASC],
-                        'desc' => [$tableName . '.sended_at' => SORT_DESC],
+                        'asc' => ['ud.sended_at' => SORT_ASC],
+                        'desc' => ['ud.sended_at' => SORT_DESC],
                     ],
                     'created_at' => [
-                        'asc' => [$tableName . '.created_at' => SORT_ASC],
-                        'desc' => [$tableName . '.created_at' => SORT_DESC],
+                        'asc' => ['ud.created_at' => SORT_ASC],
+                        'desc' => ['ud.created_at' => SORT_DESC],
                     ],
                     'status' => [
-                        'asc' => [$tableName . '.status' => SORT_ASC],
-                        'desc' => [$tableName . '.status' => SORT_DESC],
+                        'asc' => ['ud.status' => SORT_ASC],
+                        'desc' => ['ud.status' => SORT_DESC],
                     ],
                     'user_username' => [
-                        'asc' => [$tableName . '.user_id' => SORT_ASC],
-                        'desc' => [$tableName . '.user_id' => SORT_DESC],
+                        'asc' => ['ud.user_id' => SORT_ASC],
+                        'desc' => ['ud.user_id' => SORT_DESC],
                     ],
                     'drop_name' => [
-                        'asc' => [$tableName . '.drop_id' => SORT_ASC],
-                        'desc' => [$tableName . '.drop_id' => SORT_DESC],
+                        'asc' => ['ud.drop_id' => SORT_ASC],
+                        'desc' => ['ud.drop_id' => SORT_DESC],
                     ],
                 ],
             ],

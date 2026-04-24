@@ -2,29 +2,21 @@
 
 namespace backend\controllers;
 
-use backend\components\CrudController;
 use common\components\helpers\Role;
 use common\models\user\UserDrop;
 use common\models\user\UserDropSearch;
-use common\models\user\User;
-use common\models\user\UserBalance;
-use common\models\profit\Profit;
-use common\models\servers\Servers;
-use common\models\statistics\Statistics;
 use Yii;
 use yii\filters\AccessControl;
-use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
+use yii\helpers\Url;
+use yii\web\Controller;
 use yii\web\Response;
-use yii\helpers\ArrayHelper;
 
-class UserDropController extends CrudController
+class UserDropController extends Controller
 {
-    /**
-     * @return array
-     */
-    public function behaviors()
+    public function behaviors(): array
     {
-        return array_merge(parent::behaviors(), [
+        return [
             'access' => [
                 'class' => AccessControl::class,
                 'rules' => [
@@ -34,578 +26,93 @@ class UserDropController extends CrudController
                     ],
                 ],
             ],
-        ]);
-    }
-
-    protected function _getSearchClassName()
-    {
-        return UserDropSearch::class;
-    }
-
-    protected function getIndexHeaderActions()
-    {
-        return [
-            [
-                'label' => '<i class="fas fa-edit"></i> Массовое изменение по серверу',
-                'url' => ['bulk-change-by-server'],
-                'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
-            ],
-            [
-                'label' => '<i class="fas fa-gift"></i> Начислить бонус',
-                'url' => ['bonus-by-server'],
-                'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'bulk-status' => ['POST'],
+                    'set-status' => ['POST'],
+                ],
             ],
         ];
     }
 
-    /**
-     * Изменение статуса одного предмета
-     * @param int $id
-     * @return Response
-     * @throws NotFoundHttpException
-     */
-    public function actionUpdateStatus($id)
+    public function actionIndex(): string
     {
-        $model = $this->findModel($id);
-        
-        if (Yii::$app->request->isPost) {
-            $status = Yii::$app->request->post('status');
-            
-            if ($status !== null && array_key_exists($status, UserDrop::getStatusList())) {
-                $model->status = (int)$status;
-                if ($model->save()) {
-                    Yii::$app->session->setFlash('success', 'Статус успешно изменен!');
-                } else {
-                    Yii::$app->session->setFlash('error', 'Ошибка при изменении статуса: ' . implode(', ', $model->getFirstErrors()));
-                }
-            } else {
-                Yii::$app->session->setFlash('error', 'Неверный статус!');
-            }
-        }
-        
-        return $this->redirect($this->getIndexUrl());
-    }
-
-    /**
-     * Массовое изменение статусов
-     * @return Response
-     */
-    public function actionBulkUpdateStatus()
-    {
-        if (Yii::$app->request->isPost) {
-            $ids = Yii::$app->request->post('ids', []);
-            $status = Yii::$app->request->post('status');
-            
-            if (empty($ids) || !is_array($ids)) {
-                Yii::$app->session->setFlash('error', 'Не выбраны элементы для изменения!');
-                return $this->redirect($this->getIndexUrl());
-            }
-            
-            if ($status === null || !array_key_exists($status, UserDrop::getStatusList())) {
-                Yii::$app->session->setFlash('error', 'Неверный статус!');
-                return $this->redirect($this->getIndexUrl());
-            }
-            
-            $count = UserDrop::updateAll(
-                ['status' => (int)$status],
-                ['id' => $ids]
-            );
-            
-            if ($count > 0) {
-                Yii::$app->session->setFlash('success', "Статус успешно изменен для {$count} элементов!");
-            } else {
-                Yii::$app->session->setFlash('error', 'Не удалось изменить статус!');
-            }
-        }
-        
-        return $this->redirect($this->getIndexUrl());
-    }
-
-    /**
-     * Форма для массового изменения статусов по серверу и датам
-     * @return string|Response
-     */
-    public function actionBulkChangeByServer()
-    {
-        $serverId = Yii::$app->request->get('server_id');
-        $dateFrom = Yii::$app->request->get('date_from');
-        $dateTo = Yii::$app->request->get('date_to');
-        
-        if (Yii::$app->request->isPost) {
-            $serverId = Yii::$app->request->post('server_id');
-            $dateFrom = Yii::$app->request->post('date_from');
-            $dateTo = Yii::$app->request->post('date_to');
-            
-            if (empty($serverId) || empty($dateFrom) || empty($dateTo)) {
-                Yii::$app->session->setFlash('error', 'Заполните все поля!');
-            } else {
-                return $this->redirect(['preview-bulk-change', 'server_id' => $serverId, 'date_from' => $dateFrom, 'date_to' => $dateTo]);
-            }
-        }
-        
-        $serversList = ArrayHelper::map(
-            Servers::find()->orderBy(['name' => SORT_ASC])->all(),
-            'id',
-            'name'
-        );
+        $searchModel = new UserDropSearch();
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         $this->view->params['contentClass'] = 'content-no-padding';
-        $this->view->params['showFilters'] = false;
-        $this->view->params['headerActions'] = [
-            [
-                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
-                'url' => ['index'],
-                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
-            ],
-        ];
-        
-        return $this->render('bulk-change-by-server', [
-            'serversList' => $serversList,
-            'serverId' => $serverId,
-            'dateFrom' => $dateFrom,
-            'dateTo' => $dateTo,
+        $this->view->params['showFilters'] = true;
+        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['headerActions'] = [];
+
+        return $this->render('index', [
+            'searchModel' => $searchModel,
+            'dataProvider' => $dataProvider,
         ]);
     }
-    
-    /**
-     * Предпросмотр списка записей для изменения
-     * @return string
-     */
-    public function actionPreviewBulkChange()
+
+    public function actionBulkStatus(): Response
     {
-        $serverId = Yii::$app->request->get('server_id');
-        $dateFrom = Yii::$app->request->get('date_from');
-        $dateTo = Yii::$app->request->get('date_to');
-        
-        if (empty($serverId) || empty($dateFrom) || empty($dateTo)) {
-            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
-            return $this->redirect(['bulk-change-by-server']);
+        $ids = Yii::$app->request->post('selection', []);
+        if (!is_array($ids)) {
+            $ids = [];
         }
-        
-        $server = Servers::findOne($serverId);
-        if (!$server) {
-            Yii::$app->session->setFlash('error', 'Сервер не найден!');
-            return $this->redirect(['bulk-change-by-server']);
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        $ids = array_filter($ids, static fn (int $id) => $id > 0);
+
+        $statusRaw = Yii::$app->request->post('bulk_status');
+        $status = is_numeric($statusRaw) ? (int) $statusRaw : null;
+        $allowed = array_keys(UserDrop::getStatusList());
+
+        if ($ids === []) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Отметьте хотя бы одну запись.'));
+            return $this->redirectBackToIndex();
         }
-        
-        // Получаем wipe сервера
-        $serverWipe = $server->currentWipe();
-        
-        // Находим пользователей, которые играли на этом сервере с таким wipe
-        $userTable = User::tableName();
-        $userIds = Statistics::find()
-            ->select("{$userTable}.id")
-            ->distinct()
-            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
-            ->where([
-                'statistics.server_tag' => $server->tag,
-                'statistics.wipe' => $serverWipe,
-            ])
-            ->andWhere(['IS NOT', "{$userTable}.id", null])
-            ->column();
-        
-        if (empty($userIds)) {
-            return $this->render('preview-bulk-change', [
-                'server' => $server,
-                'dateFrom' => $dateFrom,
-                'dateTo' => $dateTo,
-                'items' => [],
-                'count' => 0,
-            ]);
+        if ($status === null || !in_array($status, $allowed, true)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Выберите статус для массового применения.'));
+            return $this->redirectBackToIndex();
         }
-        
-        // Преобразуем даты в формат для БД
-        $dateFromFormatted = date('Y-m-d H:i:s', strtotime($dateFrom));
-        $dateToFormatted = date('Y-m-d H:i:s', strtotime($dateTo));
-        
-        // Находим UserDrop записи со статусом 2 (STATUS_SENDED) в указанном диапазоне
-        $items = UserDrop::find()
-            ->where([
-                'status' => UserDrop::STATUS_SENDED,
-                'user_id' => $userIds,
-            ])
-            ->andWhere(['>=', 'sended_at', $dateFromFormatted])
-            ->andWhere(['<=', 'sended_at', $dateToFormatted])
-            ->with(['user', 'user.server', 'dropOne'])
-            ->orderBy(['sended_at' => SORT_DESC])
-            ->all();
-        
-        return $this->render('preview-bulk-change', [
-            'server' => $server,
-            'dateFrom' => $dateFrom,
-            'dateTo' => $dateTo,
-            'items' => $items,
-            'count' => count($items),
-        ]);
-    }
-    
-    /**
-     * Подтверждение и выполнение массового изменения статусов
-     * @return Response
-     */
-    public function actionConfirmBulkChange()
-    {
-        if (!Yii::$app->request->isPost) {
-            Yii::$app->session->setFlash('error', 'Некорректный запрос!');
-            return $this->redirect(['bulk-change-by-server']);
-        }
-        
-        $serverId = Yii::$app->request->post('server_id');
-        $dateFrom = Yii::$app->request->post('date_from');
-        $dateTo = Yii::$app->request->post('date_to');
-        
-        if (empty($serverId) || empty($dateFrom) || empty($dateTo)) {
-            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
-            return $this->redirect(['bulk-change-by-server']);
-        }
-        
-        $server = Servers::findOne($serverId);
-        if (!$server) {
-            Yii::$app->session->setFlash('error', 'Сервер не найден!');
-            return $this->redirect(['bulk-change-by-server']);
-        }
-        
-        // Получаем wipe сервера
-        $serverWipe = $server->currentWipe();
-        
-        // Находим пользователей, которые играли на этом сервере с таким wipe
-        $userTable = User::tableName();
-        $userIds = Statistics::find()
-            ->select("{$userTable}.id")
-            ->distinct()
-            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
-            ->where([
-                'statistics.server_tag' => $server->tag,
-                'statistics.wipe' => $serverWipe,
-            ])
-            ->andWhere(['IS NOT', "{$userTable}.id", null])
-            ->column();
-        
-        if (empty($userIds)) {
-            Yii::$app->session->setFlash('error', 'Не найдено пользователей, игравших на этом сервере!');
-            return $this->redirect(['bulk-change-by-server']);
-        }
-        
-        // Преобразуем даты в формат для БД
-        $dateFromFormatted = date('Y-m-d H:i:s', strtotime($dateFrom));
-        $dateToFormatted = date('Y-m-d H:i:s', strtotime($dateTo));
-        
-        // Изменяем статус с 2 (STATUS_SENDED) на 1 (STATUS_ACTIVE)
-        $count = UserDrop::updateAll(
-            ['status' => UserDrop::STATUS_ACTIVE],
-            [
-                'and',
-                ['status' => UserDrop::STATUS_SENDED],
-                ['user_id' => $userIds],
-                ['>=', 'sended_at', $dateFromFormatted],
-                ['<=', 'sended_at', $dateToFormatted],
-            ]
+
+        $updated = UserDrop::updateAll(['status' => $status], ['id' => $ids]);
+        Yii::$app->session->setFlash(
+            'success',
+            Yii::t('common', 'Обновлено записей: {n}', ['n' => $updated])
         );
-        
-        if ($count > 0) {
-            Yii::$app->session->setFlash('success', "Статус успешно изменен для {$count} записей!");
+
+        return $this->redirectBackToIndex();
+    }
+
+    public function actionSetStatus(): Response
+    {
+        $id = (int) Yii::$app->request->post('id');
+        $statusRaw = Yii::$app->request->post('status');
+        $status = is_numeric($statusRaw) ? (int) $statusRaw : null;
+        $allowed = array_keys(UserDrop::getStatusList());
+
+        $model = $id > 0 ? UserDrop::findOne($id) : null;
+        if ($model === null || !in_array($status, $allowed, true)) {
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Не удалось изменить статус.'));
+            return $this->redirectBackToIndex();
+        }
+
+        $model->status = $status;
+        if ($model->save(false)) {
+            Yii::$app->session->setFlash('success', Yii::t('common', 'Статус обновлён.'));
         } else {
-            Yii::$app->session->setFlash('warning', 'Не найдено записей для изменения!');
+            Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка сохранения.'));
         }
-        
-        return $this->redirect(['index']);
+
+        return $this->redirectBackToIndex();
     }
 
-    /**
-     * @param int $id
-     * @return UserDrop
-     * @throws NotFoundHttpException
-     */
-    protected function findModel($id)
+    private function redirectBackToIndex(): Response
     {
-        $model = UserDrop::findOne($id);
-        if ($model === null) {
-            throw new NotFoundHttpException('Запись не найдена.');
+        $ref = Yii::$app->request->getReferrer();
+        if (is_string($ref) && $ref !== '' && str_contains($ref, (string) Yii::$app->request->hostName)) {
+            return $this->redirect($ref);
         }
-        return $model;
-    }
-    
-    /**
-     * Форма для начисления бонуса игрокам сервера
-     * @return string|Response
-     */
-    public function actionBonusByServer()
-    {
-        $serverId = Yii::$app->request->get('server_id');
-        $amount = Yii::$app->request->get('amount');
-        $comment = Yii::$app->request->get('comment');
-        
-        if (Yii::$app->request->isPost) {
-            $serverId = Yii::$app->request->post('server_id');
-            $amount = Yii::$app->request->post('amount');
-            $comment = Yii::$app->request->post('comment');
-            
-            if (empty($serverId) || empty($amount) || $amount <= 0) {
-                Yii::$app->session->setFlash('error', 'Заполните все обязательные поля!');
-            } else {
-                return $this->redirect(['preview-bonus', 'server_id' => $serverId, 'amount' => $amount, 'comment' => $comment]);
-            }
-        }
-        
-        $serversList = ArrayHelper::map(
-            Servers::find()->orderBy(['name' => SORT_ASC])->all(),
-            'id',
-            'name'
-        );
 
-        $this->view->params['contentClass'] = 'content-no-padding';
-        $this->view->params['showFilters'] = false;
-        $this->view->params['headerActions'] = [
-            [
-                'label' => '<i class="fas fa-arrow-left"></i> ' . Yii::t('common', 'Назад'),
-                'url' => ['index'],
-                'class' => 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
-            ],
-        ];
-        
-        return $this->render('bonus-by-server', [
-            'serversList' => $serversList,
-            'serverId' => $serverId,
-            'amount' => $amount,
-            'comment' => $comment ?? 'Бонус за игру на сервере',
-        ]);
-    }
-    
-    /**
-     * Предпросмотр списка пользователей для начисления бонуса
-     * @return string
-     */
-    public function actionPreviewBonus()
-    {
-        $serverId = Yii::$app->request->get('server_id');
-        $amount = Yii::$app->request->get('amount');
-        $comment = Yii::$app->request->get('comment');
-        
-        if (empty($serverId) || empty($amount) || $amount <= 0) {
-            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        $server = Servers::findOne($serverId);
-        if (!$server) {
-            Yii::$app->session->setFlash('error', 'Сервер не найден!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        // Получаем wipe сервера
-        $serverWipe = $server->currentWipe();
-        
-        // Находим пользователей, которые играли на этом сервере с таким wipe
-        $userTable = User::tableName();
-        $userIds = Statistics::find()
-            ->select("{$userTable}.id")
-            ->distinct()
-            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
-            ->where([
-                'statistics.server_tag' => $server->tag,
-                'statistics.wipe' => $serverWipe,
-            ])
-            ->andWhere(['IS NOT', "{$userTable}.id", null])
-            ->column();
-        
-        if (empty($userIds)) {
-            return $this->render('preview-bonus', [
-                'server' => $server,
-                'amount' => $amount,
-                'comment' => $comment,
-                'users' => [],
-                'skippedUsers' => [],
-                'count' => 0,
-                'skippedCount' => 0,
-                'totalAmount' => 0,
-            ]);
-        }
-        
-        // Получаем пользователей
-        $allUsers = User::find()
-            ->where(['id' => $userIds])
-            ->orderBy(['username' => SORT_ASC])
-            ->all();
-        
-        // Исключаем пользователей, которым уже был начислен бонус сегодня на эту сумму
-        $todayStart = date('Y-m-d 00:00:00');
-        $todayEnd = date('Y-m-d 23:59:59');
-        
-        $users = [];
-        $skippedUsers = [];
-        
-        foreach ($allUsers as $user) {
-            // Проверяем, не был ли уже начислен бонус сегодня на эту сумму
-            $existingProfit = Profit::find()
-                ->innerJoin('user_balance ub', 'profit.user_balance_id = ub.id')
-                ->where([
-                    'ub.user_id' => $user->id,
-                    'profit.type' => Profit::TYPE_BONUS,
-                    'profit.amount' => $amount,
-                ])
-                ->andWhere(['>=', 'profit.created_at', $todayStart])
-                ->andWhere(['<=', 'profit.created_at', $todayEnd])
-                ->one();
-            
-            if ($existingProfit) {
-                $skippedUsers[] = $user;
-            } else {
-                $users[] = $user;
-            }
-        }
-        
-        $totalAmount = $amount * count($users);
-        
-        return $this->render('preview-bonus', [
-            'server' => $server,
-            'amount' => $amount,
-            'comment' => $comment,
-            'users' => $users,
-            'skippedUsers' => $skippedUsers,
-            'count' => count($users),
-            'skippedCount' => count($skippedUsers),
-            'totalAmount' => $totalAmount,
-        ]);
-    }
-    
-    /**
-     * Подтверждение и выполнение начисления бонуса
-     * @return Response
-     */
-    public function actionConfirmBonus()
-    {
-        if (!Yii::$app->request->isPost) {
-            Yii::$app->session->setFlash('error', 'Некорректный запрос!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        $serverId = Yii::$app->request->post('server_id');
-        $amount = Yii::$app->request->post('amount');
-        $comment = Yii::$app->request->post('comment');
-        
-        if (empty($serverId) || empty($amount) || $amount <= 0) {
-            Yii::$app->session->setFlash('error', 'Не указаны параметры!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        $server = Servers::findOne($serverId);
-        if (!$server) {
-            Yii::$app->session->setFlash('error', 'Сервер не найден!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        // Получаем wipe сервера
-        $serverWipe = $server->currentWipe();
-        
-        // Находим пользователей, которые играли на этом сервере с таким wipe
-        $userTable = User::tableName();
-        $userIds = Statistics::find()
-            ->select("{$userTable}.id")
-            ->distinct()
-            ->innerJoin($userTable, "statistics.steam_id = {$userTable}.steam_id")
-            ->where([
-                'statistics.server_tag' => $server->tag,
-                'statistics.wipe' => $serverWipe,
-            ])
-            ->andWhere(['IS NOT', "{$userTable}.id", null])
-            ->column();
-        
-        if (empty($userIds)) {
-            Yii::$app->session->setFlash('error', 'Не найдено пользователей, игравших на этом сервере!');
-            return $this->redirect(['bonus-by-server']);
-        }
-        
-        // Получаем пользователей
-        $users = User::find()
-            ->where(['id' => $userIds])
-            ->all();
-        
-        $successCount = 0;
-        $errorCount = 0;
-        $skippedCount = 0;
-        
-        // Дата начала сегодняшнего дня
-        $todayStart = date('Y-m-d 00:00:00');
-        $todayEnd = date('Y-m-d 23:59:59');
-        
-        foreach ($users as $user) {
-            try {
-                // Проверяем, не был ли уже начислен бонус сегодня на эту сумму
-                $existingProfit = Profit::find()
-                    ->innerJoin('user_balance ub', 'profit.user_balance_id = ub.id')
-                    ->where([
-                        'ub.user_id' => $user->id,
-                        'profit.type' => Profit::TYPE_BONUS,
-                        'profit.amount' => $amount,
-                    ])
-                    ->andWhere(['>=', 'profit.created_at', $todayStart])
-                    ->andWhere(['<=', 'profit.created_at', $todayEnd])
-                    ->one();
-                
-                if ($existingProfit) {
-                    $skippedCount++;
-                    continue;
-                }
-                
-                // Получаем или создаем баланс пользователя
-                $personalBalance = $user->getPersonalBalance();
-                if (empty($personalBalance) || empty($personalBalance->id)) {
-                    Yii::warning("Personal balance not found for user ID: {$user->id}", __METHOD__);
-                    $errorCount++;
-                    continue;
-                }
-                
-                // Создаем запись о начислении
-                $profit = new Profit();
-                $profit->status = 1;
-                $profit->type = Profit::TYPE_BONUS;
-                $profit->amount = $amount;
-                $profit->user_balance_id = $personalBalance->id;
-                // Комментарий: введенный пользователем текст + название сервера
-                $profit->comment = trim($comment) . ' (' . $server->name . ')';
-                
-                if ($profit->save()) {
-                    // Баланс пересчитывается автоматически через afterSave() в модели Profit
-                    // Но для надежности можно явно вызвать пересчет
-                    $personalBalance->recalculateBalance();
-                    
-                    // Отправляем уведомление в телеграм
-                    if (!empty($user->telegram_chat_id)) {
-                        $message = "🎁 Вам начислен бонус: <b>{$amount} РУБ</b>" . PHP_EOL . PHP_EOL;
-                        $message .= "📦 Все покупки на вайп возвращены в корзину" . PHP_EOL . PHP_EOL;
-                        $message .= "⚠️ Завтра 08.02 будет перевайп из-за бага на сервере #6 в 11:00 МСК" . PHP_EOL;
-                        $message .= "🗺️ Карта останется прежней" . PHP_EOL;
-                        $message .= "📚 Изучения стираются";
-                        
-                        try {
-                            Yii::$app->personalBotTelegram->sendMessage($user->telegram_chat_id, $message);
-                        } catch (\Exception $e) {
-                            Yii::warning("Failed to send telegram message to user ID: {$user->id}, error: " . $e->getMessage(), __METHOD__);
-                        }
-                    }
-                    
-                    $successCount++;
-                } else {
-                    Yii::warning("Failed to save profit for user ID: {$user->id}, errors: " . json_encode($profit->getErrors()), __METHOD__);
-                    $errorCount++;
-                }
-            } catch (\Exception $e) {
-                Yii::error("Error adding bonus for user ID: {$user->id}, error: " . $e->getMessage(), __METHOD__);
-                $errorCount++;
-            }
-        }
-        
-        if ($successCount > 0) {
-            Yii::$app->session->setFlash('success', "Бонус успешно начислен {$successCount} пользователям на общую сумму " . ($amount * $successCount) . " руб.");
-        }
-        if ($skippedCount > 0) {
-            Yii::$app->session->setFlash('info', "Пропущено {$skippedCount} пользователей, которым уже был начислен бонус сегодня.");
-        }
-        if ($errorCount > 0) {
-            Yii::$app->session->setFlash('warning', "Не удалось начислить бонус {$errorCount} пользователям.");
-        }
-        
-        return $this->redirect(['index']);
+        return $this->redirect(Url::to(array_merge(['index'], Yii::$app->request->getQueryParams())));
     }
 }
-
