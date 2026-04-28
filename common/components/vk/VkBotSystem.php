@@ -897,19 +897,19 @@ class VkBotSystem extends BaseObject
             ->all();
 
         foreach ($servers as $k => $server) {
-            $date0 = new \DateTime($server->wipe);
-            $date = new \DateTime($server->next_wipe);
-            $date2 = new \DateTime($server->global_wipe);
-            
+            $lastAt = $server->getFactWipe() ?: $server->wipe;
+            $nextAt = $server->getFactNextWipe() ?: $server->next_wipe;
+            $globalAt = $server->getFactGlobalWipe() ?: $server->global_wipe;
+
             if ($k > 0) {
                 $text .= PHP_EOL;
             }
-            
+
             $name = $this->getServerName($server);
             $text .= PHP_EOL . "🖥️ {$name}";
-            $text .= PHP_EOL . "   ⏮️ Последний: {$date0->format('d.m.Y в H:i')} МСК";
-            $text .= PHP_EOL . "   ⏭️ Следующий: {$date->format('d.m.Y в H:i')} МСК";
-            $text .= PHP_EOL . "   🌍 Глобал: {$date2->format('d.m.Y в H:i')} МСК";
+            $text .= PHP_EOL . '   ⏮️ Последний: ' . $this->formatVkWipeDateTime($lastAt);
+            $text .= PHP_EOL . '   ⏭️ Следующий: ' . $this->formatVkWipeDateTime($nextAt);
+            $text .= PHP_EOL . '   🌍 Глобал: ' . $this->formatVkWipeDateTime($globalAt);
         }
 
         Yii::$app->cache->set($cacheKey, $text, 60);
@@ -996,6 +996,25 @@ class VkBotSystem extends BaseObject
 
         Yii::$app->cache->set($cacheKey, $text, 60);
         return $text;
+    }
+
+    /**
+     * Дата/время вайпа для текста VK (календарь или поле сервера).
+     *
+     * @param string|null $raw Y-m-d H:i:s или совместимое значение
+     */
+    private function formatVkWipeDateTime($raw): string
+    {
+        if ($raw === null || $raw === '') {
+            return '—';
+        }
+        try {
+            $date = new \DateTime((string) $raw);
+
+            return $date->format('d.m.Y в H:i') . ' МСК';
+        } catch (\Throwable $e) {
+            return '—';
+        }
     }
 
     /**
