@@ -49,6 +49,30 @@ class TelegramController extends Controller
         ];
     }
 
+    private function isTelegramTooManyRequests(array $r): bool
+    {
+        if (($r['http'] ?? 0) === 429) {
+            return true;
+        }
+        if (($r['code'] ?? 0) == 429) {
+            return true;
+        }
+        $desc = $r['desc'] ?? '';
+
+        return is_string($desc) && stripos($desc, 'Too Many Requests') !== false;
+    }
+
+    private function sleepForTelegramRetry(array $r): void
+    {
+        $sec = 1;
+        $p = $r['params'] ?? [];
+        if (is_array($p) && isset($p['retry_after']) && is_numeric($p['retry_after'])) {
+            $sec = (int) $p['retry_after'];
+        }
+        $sec = max(1, min($sec, 60));
+        sleep($sec);
+    }
+
     private function call(string $method, array $params): array
     {
         $token = (string) Yii::$app->settings->get('tgbot_botToken');
@@ -85,7 +109,7 @@ class TelegramController extends Controller
             ],
         ];
 
-        foreach ($bots as $bot) {
+        foreach ($bots as $idx => $bot) {
             if ($bot['token'] === '') {
                 $this->stderr("Пропуск {$bot['label']}: пустой токен.\n");
                 continue;
@@ -96,11 +120,32 @@ class TelegramController extends Controller
                 continue;
             }
 
+            // Несколько вызовов подряд к api.telegram.org дают 429; разносим боты.
+            if ($idx > 0) {
+                sleep(2);
+            }
+
             $info = $this->telegramApiCall($bot['token'], 'getWebhookInfo', []);
             $prevUrl = is_array($info['result']) ? ($info['result']['url'] ?? '') : '';
             $this->stdout("{$bot['label']} — было: " . ($prevUrl !== '' ? $prevUrl : '(нет)') . "\n");
 
-            $r = $this->telegramApiCall($bot['token'], 'setWebhook', ['url' => $hookUrl]);
+            $maxAttempts = 5;
+            $r = ['ok' => false, 'desc' => 'unknown'];
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                $r = $this->telegramApiCall($bot['token'], 'setWebhook', ['url' => $hookUrl]);
+                if ($r['ok']) {
+                    break;
+                }
+                if ($this->isTelegramTooManyRequests($r) && $attempt < $maxAttempts) {
+                    $this->stderr("setWebhook 429 ({$bot['label']}), повтор через retry_after… ({$attempt}/{$maxAttempts})\n");
+                    $this->sleepForTelegramRetry($r);
+
+                    continue;
+                }
+                $this->stderr("setWebhook ошибка ({$bot['label']}): " . ($r['desc'] ?? 'unknown') . "\n");
+
+                return ExitCode::UNSPECIFIED_ERROR;
+            }
             if (!$r['ok']) {
                 $this->stderr("setWebhook ошибка ({$bot['label']}): " . ($r['desc'] ?? 'unknown') . "\n");
 
