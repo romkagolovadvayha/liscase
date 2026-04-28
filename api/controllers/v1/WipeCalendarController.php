@@ -89,8 +89,9 @@ class WipeCalendarController extends BaseApiController
     /**
      * События календаря для виджета на странице сервера (по дням), из таблицы {@see WipeCalendarEvent::tableName()}.
      *
-     * Учитываются строки с {@see WipeCalendarEvent::server_id} = запрошенному серверу и строки без сервера
-     * (`server_id` IS NULL) — например общее «Обновление игры» на все сервера.
+     * Только события, относящиеся к этому серверу: {@see WipeCalendarEvent::server_id} = запрошенному id
+     * либо общее «Обновление игры» без привязки к серверу (`server_id` IS NULL и тип {@see WipeCalendarEvent::TYPE_GAME_UPDATE}).
+     * Плюс подсветка выходных и праздников РФ за тот же период ({@see RfCalendarHighlightHelper::highlightsBetween}).
      *
      * @OA\Get(
      *     path="/v1/wipe-calendar/server",
@@ -139,7 +140,7 @@ class WipeCalendarController extends BaseApiController
         $endStr = $dtEnd->format('Y-m-d H:i:s');
 
         $cacheKey = 'api_wipe_calendar_server_' . md5(
-            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language
+            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language . '|v2hl'
         );
         $cached = Yii::$app->cache->get($cacheKey);
         if ($cached !== false) {
@@ -153,8 +154,11 @@ class WipeCalendarController extends BaseApiController
             ->andWhere([
                 'or',
                 ['server_id' => $serverId],
-                ['server_id' => null],
-                ['event_type' => WipeCalendarEvent::TYPE_GLOBAL_WIPE],
+                [
+                    'and',
+                    ['server_id' => null],
+                    ['event_type' => WipeCalendarEvent::TYPE_GAME_UPDATE],
+                ],
             ])
             ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
@@ -169,8 +173,12 @@ class WipeCalendarController extends BaseApiController
             $byDay[$day][] = self::serializeServerWidgetEvent($m);
         }
 
+        $startDay = $dtStart->format('Y-m-d');
+        $endDay = $dtEnd->format('Y-m-d');
+
         $payload = [
             'events' => $byDay,
+            'highlights' => RfCalendarHighlightHelper::highlightsBetween($startDay, $endDay),
         ];
 
         Yii::$app->cache->set($cacheKey, $payload, ApiPublicCacheTtl::SECONDS);
