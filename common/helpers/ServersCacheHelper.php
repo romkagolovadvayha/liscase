@@ -84,6 +84,8 @@ class ServersCacheHelper
             'wipe_weekday' => (int) ($server->wipe_weekday ?? 5),
             'clans_enabled' => (bool) $server->getClansEnabledValue(),
             'current_wipe' => $server->wipe ?? null,
+            /** Порядок в списках/табах (как в админке); нужен и без detailed */
+            'sort' => (int) ($server->sort ?? 0),
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,
                 'percentJoined' => $monitoring['percentJoined'] ?? 0,
@@ -126,10 +128,6 @@ class ServersCacheHelper
                     'icon' => $tag->icon,
                 ];
             }
-        }
-
-        if ($detailed) {
-            $data['sort'] = $server->sort ?? null;
         }
 
         return $data;
