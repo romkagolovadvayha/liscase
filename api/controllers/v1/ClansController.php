@@ -23,6 +23,7 @@ use common\models\servers\Servers;
 use common\models\statistics\Kills as KillsStats;
 use common\models\statistics\Statistics;
 use common\models\user\UserRaid;
+use common\models\user\UserRaidOwner;
 use common\models\user\User;
 use Yii;
 use yii\data\ActiveDataProvider;
@@ -966,9 +967,20 @@ class ClansController extends BaseApiController
             $relatedOr[] = ['user_id' => $attackerIds];
         }
         foreach (array_keys($thisClanSteamIdSet) as $steamId) {
-            if ($steamId !== '') {
-                $relatedOr[] = ['like', 'owners', $steamId];
+            if ($steamId === '') {
+                continue;
             }
+            $ns = UserRaidOwner::normalizeSteamId((string)$steamId);
+            if ($ns === null) {
+                continue;
+            }
+            $relatedOr[] = [
+                'exists',
+                UserRaidOwner::find()
+                    ->alias('uo')
+                    ->where('[[uo]].[[user_raid_id]] = [[user_raid]].[[id]]')
+                    ->andWhere(['[[uo]].[[steam_id]]' => $ns]),
+            ];
         }
         if (count($relatedOr) > 1) {
             $raidsQuery->andWhere($relatedOr);

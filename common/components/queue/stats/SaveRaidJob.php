@@ -8,6 +8,7 @@ use common\models\clan\ClanPluginCupboard;
 use common\models\servers\Servers;
 use common\models\user\User;
 use common\models\user\UserRaid;
+use common\models\user\UserRaidOwner;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -119,13 +120,22 @@ class SaveRaidJob extends BaseObject implements JobInterface
                             }
                             $model->notify = 1;
                             foreach ($owners as $owner) {
-                                $exists = UserRaid::find()
-                                                  ->andWhere(['LIKE', 'owners', '%' . $owner . '%', false])
-                                                  ->andWhere(['notify' => 1])
-                                                  ->andWhere(['location' => $location])
-                                                  ->andWhere(['>=', 'created_at', $startDate])
-                                                  ->andWhere(['<=', 'created_at', $endDate])
-                                                  ->exists();
+                                $steamNorm = UserRaidOwner::normalizeSteamId((string)$owner);
+                                $exists = false;
+                                if ($steamNorm !== null) {
+                                    $exists = UserRaid::find()
+                                        ->alias('ur')
+                                        ->innerJoin(
+                                            ['uo' => UserRaidOwner::tableName()],
+                                            '[[uo]].[[user_raid_id]] = [[ur]].[[id]] AND [[uo]].[[steam_id]] = :existsSteam',
+                                            [':existsSteam' => $steamNorm]
+                                        )
+                                        ->where(['ur.notify' => 1])
+                                        ->andWhere(['ur.location' => $location])
+                                        ->andWhere(['>=', 'ur.created_at', $startDate])
+                                        ->andWhere(['<=', 'ur.created_at', $endDate])
+                                        ->exists();
+                                }
                                 if ($exists) {
                                     continue;
                                 }
@@ -144,7 +154,9 @@ class SaveRaidJob extends BaseObject implements JobInterface
                                 }
                             }
                         }
-                        $model->save(false);
+                        if ($model->save(false)) {
+                            UserRaidOwner::replaceForRaid((int)$model->id, $ownersList);
+                        }
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage($this->data);
                         Yii::$app->telegramChats->sendMessage("SaveRaidJob foreach: " . $e->getLine() . ":" . $e->getMessage());

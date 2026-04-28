@@ -34,6 +34,8 @@ use Yii;
  * @property Clan|null $raiderClan
  * @property Servers $server
  * @property User $user
+ *
+ * @property-read UserRaidOwner[] $raidOwners нормализованные Steam ID (см. также JSON [[owners]])
  */
 class UserRaid extends \yii\db\ActiveRecord
 {
@@ -145,6 +147,16 @@ class UserRaid extends \yii\db\ActiveRecord
     public function getUser()
     {
         return $this->hasOne(User::class, ['id' => 'user_id']);
+    }
+
+    /**
+     * Нормализованные Steam ID жертв рейда (быстрый поиск по индексу).
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRaidOwners()
+    {
+        return $this->hasMany(UserRaidOwner::class, ['user_raid_id' => 'id']);
     }
 
     public static function getTypeName($type) {
