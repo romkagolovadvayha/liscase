@@ -50,13 +50,19 @@ if ($moderOrSupport) {
         'label' => 'Сервера',
         'icon' => 'fas fa-gamepad',
         'url' => [''],
-        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-tags') || _checkActive('/servers-radio-station') || _checkActive('/ftp-manager'),
+        'active' => _checkActive('/servers') || _checkActive('/map-list') || _checkActive('/rust-plugin-config') || _checkActive('/servers-rules') || _checkActive('/servers-tags') || _checkActive('/servers-radio-station') || _checkActive('/ftp-manager') || _checkActive('/wipe-calendar'),
         'items' => [
             [
                 'label' => 'Список серверов',
                 'icon' => 'fas fa-list',
                 'url' => ['/servers/index'],
                 'active' => _checkActive('/servers/index') || _checkActive('/servers/create') || _checkActive('/servers/update'),
+            ],
+            [
+                'label' => 'Календарь вайпов',
+                'icon' => 'fas fa-calendar-days',
+                'url' => ['/wipe-calendar/index'],
+                'active' => _checkActive('/wipe-calendar'),
             ],
             [
                 'label' => 'Правила серверов',
