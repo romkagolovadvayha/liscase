@@ -131,7 +131,11 @@ class OpenAiSupport extends \yii\base\Component
 
             if (!empty($ticketId)) {
                 $context[] = "Ссылка для закрытия тикета: https://prostoj.store/support/ticket-close?id={$ticketId}";
+                $context[] = "Публичный номер этого тикета: {$ticketId}. Открыть тикет на сайте: https://prostoj.store/support/ticket?id={$ticketId}";
             }
+
+            // Статические пути разделов сайта (Next.js prostoj-frontend) — чтобы ответы ссылались на актуальные URL
+            $context[] = 'Разделы сайта https://prostoj.store (пути): магазин /store; профиль /profile; история /profile/history; рефералка /profile/referral и страница /referral; скины и trade /skindrops; поддержка /support; кланы /clans; карты /maps/<тег_сервера>; кастомные скины /custom-skins; задания /tasks; статистика /stats; серверы /servers; рейды /raid-table; банлист /banlist; правила /rules; новости /posts; календарь вайпов /wipe-calendar.';
 
             // Если нужно логировать контекст — делай это осознанно
             // Yii::$app->telegramChats->sendMessage(implode("\n", $context));
@@ -149,7 +153,7 @@ class OpenAiSupport extends \yii\base\Component
                 $systemInstructions = Yii::$app->settings->get('openAi_instructions');
             }
             
-            $systemInstructions .= "\n\nВажно: отвечай простым, человеческим комментарием на текст статьи. Без формата JSON, без метаданных, без обращений к разработчикам. Коротко и по делу.";
+            $systemInstructions .= "\n\nВажно: отвечай игроку по сути обращения в тикете поддержки естественным языком. Без JSON и техничных форматов, без обращений к разработчикам. Коротко и по делу.";
 
             $messages[] = ['role' => 'system', 'content' => $systemInstructions];
 
