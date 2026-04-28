@@ -90,7 +90,7 @@ class TelegramController extends Controller
                 $this->stderr("Пропуск {$bot['label']}: пустой токен.\n");
                 continue;
             }
-            $hookUrl = $base . '/v1/webhook/telegram/' . $bot['path'] . '/' . rawurlencode($bot['token']);
+            $hookUrl = $base . '/v1/webhook/telegram/' . $bot['path'] . '/' . $bot['token'];
             if ($this->dryRun) {
                 $this->stdout("[dry-run] {$bot['label']}\n  URL: {$hookUrl}\n");
                 continue;
