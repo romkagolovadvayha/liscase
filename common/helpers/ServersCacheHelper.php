@@ -77,13 +77,14 @@ class ServersCacheHelper
             'port' => (int) $server->port,
             'minMapSize' => (int) $server->min_map_size,
             'maxMapSize' => (int) $server->max_map_size,
-            'nextWipe' => $server->next_wipe,
-            'nextWipeTimestamp' => $server->next_wipe ? (($ts = strtotime($server->next_wipe)) !== false ? $ts : null) : null,
+            'nextWipe' => ($nw = $server->getFactNextWipe() ?? $server->next_wipe),
+            'nextWipeTimestamp' => $nw ? (($ts = strtotime($nw)) !== false ? $ts : null) : null,
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
             'wipe_type' => (int) ($server->wipe_type ?? 0),
             'wipe_weekday' => (int) ($server->wipe_weekday ?? 5),
             'clans_enabled' => (bool) $server->getClansEnabledValue(),
-            'current_wipe' => $server->wipe ?? null,
+            'current_wipe' => $server->getFactWipe() ?? $server->wipe ?? null,
+            'global_wipe' => $server->getFactGlobalWipe() ?? $server->global_wipe ?? null,
             /** Порядок в списках/табах (как в админке); нужен и без detailed */
             'sort' => (int) ($server->sort ?? 0),
             'monitoring' => [

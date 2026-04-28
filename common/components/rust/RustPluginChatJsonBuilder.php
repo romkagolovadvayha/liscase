@@ -10,6 +10,21 @@ use Yii;
  */
 final class RustPluginChatJsonBuilder
 {
+    /**
+     * Дата для текста плагина: Y-m-d H:i:s или иное, распознаваемое DateTime → d.m.Y H:i.
+     */
+    private static function formatPluginWipeDisplay(?string $raw): ?string
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        try {
+            return (new \DateTime($raw))->format('d.m.Y H:i');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public static function wipeInfo(string $serverTag): string
     {
         $color = Yii::$app->settings->get('colors_server-command');
@@ -23,10 +38,18 @@ final class RustPluginChatJsonBuilder
             $result['code'] = 104;
             return json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         }
-        $lastWipe = (new \DateTime($server->wipe))->format('d.m.Y H:i');
-        $nextWipe = (new \DateTime($server->next_wipe))->format('d.m.Y H:i');
+
+        $lastWipe = self::formatPluginWipeDisplay($server->getFactWipe() ?? $server->wipe) ?? '—';
+        $nextWipe = self::formatPluginWipeDisplay($server->getFactNextWipe() ?? $server->next_wipe) ?? '—';
+        $globalRaw = $server->getFactGlobalWipe() ?? $server->global_wipe ?? null;
+        $globalWipe = self::formatPluginWipeDisplay($globalRaw !== null && $globalRaw !== '' ? (string) $globalRaw : null);
+
         $result['ru'] = "Последний вайп: <color={$color}>{$lastWipe} МСК</color>\nСледующий вайп: <color={$color}>{$nextWipe} МСК</color>";
         $result['en'] = "Last WIPE: <color={$color}>{$lastWipe} MSK</color>\nNext WIPE: <color={$color}>{$nextWipe} MSK</color>";
+        if ($globalWipe !== null && ($nextWipe === '—' || $globalWipe !== $nextWipe)) {
+            $result['ru'] .= "\nГлобальный вайп: <color={$color}>{$globalWipe} МСК</color>";
+            $result['en'] .= "\nGlobal WIPE: <color={$color}>{$globalWipe} MSK</color>";
+        }
         $result['code'] = 200;
         return json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }

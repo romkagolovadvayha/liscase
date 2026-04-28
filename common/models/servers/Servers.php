@@ -14,6 +14,7 @@ use common\models\statistics\Statistics;
 use common\models\user\User;
 use common\models\user\UserRaid;
 use common\models\user\UserTop;
+use common\components\wipe_calendar\WipeCalendarFactsProvider;
 use WebSocket\Client;
 use Yii;
 use yii\base\BaseObject;
@@ -1536,6 +1537,39 @@ class Servers extends \common\components\base\ActiveRecord
         }
         
         return $result;
+    }
+
+    /**
+     * Последний вайп карты или глобальный по календарю до текущего момента (включительно).
+     * Формат: Y-m-d H:i:s или null, если в календаре нет подходящих событий.
+     */
+    public function getFactWipe(): ?string
+    {
+        $v = WipeCalendarFactsProvider::getForServerId((int) $this->id)['fact_wipe'];
+
+        return $v !== null && $v !== '' ? $v : null;
+    }
+
+    /**
+     * Следующий вайп карты или глобальный строго после текущего момента.
+     * Формат: Y-m-d H:i:s или null.
+     */
+    public function getFactNextWipe(): ?string
+    {
+        $v = WipeCalendarFactsProvider::getForServerId((int) $this->id)['fact_next_wipe'];
+
+        return $v !== null && $v !== '' ? $v : null;
+    }
+
+    /**
+     * Следующий глобальный вайп строго после текущего момента.
+     * Формат: Y-m-d H:i:s или null.
+     */
+    public function getFactGlobalWipe(): ?string
+    {
+        $v = WipeCalendarFactsProvider::getForServerId((int) $this->id)['fact_global_wipe'];
+
+        return $v !== null && $v !== '' ? $v : null;
     }
 
 }

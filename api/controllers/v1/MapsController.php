@@ -141,11 +141,19 @@ class MapsController extends BaseApiController
             $cache->set($cacheKey, $fixedMapIds, ApiPublicCacheTtl::SECONDS);
         }
 
-        // Вычисляем дату через 3 суток от текущего момента
+        // Вычисляем дату через 3 суток от текущего момента (следующий вайп — из календаря, иначе колонка сервера)
         $threeDaysFromNow = new \DateTime();
         $threeDaysFromNow->modify('+3 days');
-        $serverNextWipe = new \DateTime($server->next_wipe);
-        $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
+        $nextWipeForWindow = $server->getFactNextWipe() ?? $server->next_wipe;
+        $shouldShowUnfixedMaps = false;
+        if ($nextWipeForWindow) {
+            try {
+                $serverNextWipe = new \DateTime($nextWipeForWindow);
+                $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
+            } catch (\Throwable $e) {
+                $shouldShowUnfixedMaps = false;
+            }
+        }
 
         $mapQuery = MapList::find()
             ->alias('ml')
@@ -159,9 +167,8 @@ class MapsController extends BaseApiController
             $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
         }
         
-        // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
+        // Не зафиксированные карты показываем только если следующий вайп (календарь/колонка) <= now + 3 дня
         if (!$shouldShowUnfixedMaps) {
-            // Если next_wipe > now + 3 дня, не показываем ничего
             $mapQuery->andWhere(['=', 'ml.id', 0]); // Несуществующий ID, чтобы вернуть пустой результат
         }
 
@@ -323,12 +330,13 @@ class MapsController extends BaseApiController
             'queued' => (int)($server->queued ?? 0),
             'ip' => $server->ip,
             'port' => (int)$server->port,
-            'minMapSize' => $server->min_map_size,
-            'maxMapSize' => $server->max_map_size,
-            'nextWipe' => $server->next_wipe,
-            'nextWipeTimestamp' => $server->next_wipe ? (($timestamp = strtotime($server->next_wipe)) !== false ? $timestamp : null) : null,
+            'minMapSize' => (int) ($server->min_map_size ?? 0),
+            'maxMapSize' => (int) ($server->max_map_size ?? 0),
+            'nextWipe' => ($nextWipeOut = $server->getFactNextWipe() ?? $server->next_wipe),
+            'nextWipeTimestamp' => $nextWipeOut ? (($timestamp = strtotime($nextWipeOut)) !== false ? $timestamp : null) : null,
             'wipeType' => $server->wipeTypeText() ?? 'Вайп',
-            'currentWipe' => $server->wipe ?? null,
+            'currentWipe' => $server->getFactWipe() ?? $server->wipe ?? null,
+            'globalWipe' => $server->getFactGlobalWipe() ?? $server->global_wipe ?? null,
             'monitoring' => [
                 'percentPlayers' => $monitoring['percentPlayers'] ?? 0,
                 'percentJoined' => $monitoring['percentJoined'] ?? 0,
