@@ -7,9 +7,12 @@ use common\components\servers\ServerDisplayNameParts;
 use common\helpers\ApiPublicCacheTtl;
 use common\models\servers\Servers;
 use common\models\wipe_calendar\WipeCalendarEvent;
+use DateTimeImmutable;
+use DateTimeZone;
 use OpenApi\Annotations as OA;
 use Yii;
 use yii\web\BadRequestHttpException;
+use yii\web\NotFoundHttpException;
 
 /**
  * Публичный календарь вайпов для сайта (Next.js).
@@ -81,6 +84,121 @@ class WipeCalendarController extends BaseApiController
         Yii::$app->cache->set($cacheKey, $payload, ApiPublicCacheTtl::SECONDS);
 
         return $this->successResponse($payload);
+    }
+
+    /**
+     * События календаря для виджета на странице сервера (по дням), из таблицы {@see WipeCalendarEvent::tableName()}.
+     *
+     * Учитываются строки с {@see WipeCalendarEvent::server_id} = запрошенному серверу и строки без сервера
+     * (`server_id` IS NULL) — например общее «Обновление игры» на все сервера.
+     *
+     * @OA\Get(
+     *     path="/v1/wipe-calendar/server",
+     *     operationId="getWipeCalendarServer",
+     *     tags={"WipeCalendar"},
+     *     summary="Календарь вайпов по одному серверу",
+     *     @OA\Parameter(name="server_id", in="query", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="year", in="query", required=true, @OA\Schema(type="integer", example=2026)),
+     *     @OA\Parameter(name="month", in="query", required=true, @OA\Schema(type="integer", example=4)),
+     *     @OA\Parameter(name="months", in="query", required=false, @OA\Schema(type="integer", default=1)),
+     *     @OA\Response(response=200, description="OK")
+     * )
+     */
+    public function actionServer()
+    {
+        $req = Yii::$app->request;
+        $serverId = (int) $req->get('server_id', 0);
+        $year = (int) $req->get('year', 0);
+        $month = (int) $req->get('month', 0);
+        $months = (int) $req->get('months', 1);
+
+        if ($serverId <= 0 || $year < 1970 || $month < 1 || $month > 12) {
+            throw new BadRequestHttpException('Query parameters server_id, year (>= 1970), and month (1–12) are required.');
+        }
+        $months = max(1, min(24, $months));
+
+        $server = Servers::findOne($serverId);
+        if ($server === null) {
+            throw new NotFoundHttpException('Server not found.');
+        }
+
+        $tz = new DateTimeZone(Yii::$app->timeZone ?: 'Europe/Moscow');
+        $dtStart = DateTimeImmutable::createFromFormat('Y-n-j', $year . '-' . $month . '-1', $tz);
+        if ($dtStart === false) {
+            throw new BadRequestHttpException('Invalid year/month.');
+        }
+        $dtEndMonth = $dtStart->modify('+' . ($months - 1) . ' months');
+        $lastDay = (int) $dtEndMonth->format('t');
+        $dtEnd = $dtEndMonth->setDate(
+            (int) $dtEndMonth->format('Y'),
+            (int) $dtEndMonth->format('n'),
+            $lastDay
+        )->setTime(23, 59, 59);
+
+        $startStr = $dtStart->format('Y-m-d') . ' 00:00:00';
+        $endStr = $dtEnd->format('Y-m-d H:i:s');
+
+        $cacheKey = 'api_wipe_calendar_server_' . md5(
+            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language
+        );
+        $cached = Yii::$app->cache->get($cacheKey);
+        if ($cached !== false) {
+            return $this->successResponse($cached);
+        }
+
+        $models = WipeCalendarEvent::find()
+            ->with('server')
+            ->andWhere(['>=', 'event_at', $startStr])
+            ->andWhere(['<=', 'event_at', $endStr])
+            ->andWhere([
+                'or',
+                ['server_id' => $serverId],
+                ['server_id' => null],
+            ])
+            ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
+            ->all();
+
+        /** @var array<string, list<array{id: int, date: string, is_global: bool, server_id?: int}>> $byDay */
+        $byDay = [];
+        foreach ($models as $m) {
+            $day = substr((string) $m->event_at, 0, 10);
+            if (!isset($byDay[$day])) {
+                $byDay[$day] = [];
+            }
+            $byDay[$day][] = self::serializeServerWidgetEvent($m);
+        }
+
+        $payload = [
+            'events' => $byDay,
+        ];
+
+        Yii::$app->cache->set($cacheKey, $payload, ApiPublicCacheTtl::SECONDS);
+
+        return $this->successResponse($payload);
+    }
+
+    /**
+     * @return array{id: int, date: string, is_global: bool, server_id?: int}
+     */
+    private static function serializeServerWidgetEvent(WipeCalendarEvent $m): array
+    {
+        $day = substr((string) $m->event_at, 0, 10);
+        $row = [
+            'id' => (int) $m->id,
+            'date' => $day,
+            'is_global' => self::isServerWidgetGlobal($m->event_type),
+        ];
+        if ($m->server_id !== null) {
+            $row['server_id'] = (int) $m->server_id;
+        }
+
+        return $row;
+    }
+
+    private static function isServerWidgetGlobal(string $eventType): bool
+    {
+        return $eventType === WipeCalendarEvent::TYPE_GLOBAL_WIPE
+            || $eventType === WipeCalendarEvent::TYPE_GAME_UPDATE;
     }
 
     /**
