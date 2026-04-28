@@ -140,7 +140,7 @@ class WipeCalendarController extends BaseApiController
         $endStr = $dtEnd->format('Y-m-d H:i:s');
 
         $cacheKey = 'api_wipe_calendar_server_' . md5(
-            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language . '|v2hl'
+            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language . '|v3et'
         );
         $cached = Yii::$app->cache->get($cacheKey);
         if ($cached !== false) {
@@ -163,7 +163,7 @@ class WipeCalendarController extends BaseApiController
             ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
 
-        /** @var array<string, list<array{id: int, date: string, is_global: bool, server_id?: int}>> $byDay */
+        /** @var array<string, list<array{id: int, date: string, event_type: string, is_global: bool, server_id?: int}>> $byDay */
         $byDay = [];
         foreach ($models as $m) {
             $day = substr((string) $m->event_at, 0, 10);
@@ -187,27 +187,24 @@ class WipeCalendarController extends BaseApiController
     }
 
     /**
-     * @return array{id: int, date: string, is_global: bool, server_id?: int}
+     * @return array{id: int, date: string, event_type: string, is_global: bool, server_id?: int}
      */
     private static function serializeServerWidgetEvent(WipeCalendarEvent $m): array
     {
         $day = substr((string) $m->event_at, 0, 10);
+        $t = $m->event_type;
         $row = [
             'id' => (int) $m->id,
             'date' => $day,
-            'is_global' => self::isServerWidgetGlobal($m->event_type),
+            'event_type' => $t,
+            /** Только глобальный вайп; «обновление игры» — отдельный тип и стиль на фронте */
+            'is_global' => $t === WipeCalendarEvent::TYPE_GLOBAL_WIPE,
         ];
         if ($m->server_id !== null) {
             $row['server_id'] = (int) $m->server_id;
         }
 
         return $row;
-    }
-
-    private static function isServerWidgetGlobal(string $eventType): bool
-    {
-        return $eventType === WipeCalendarEvent::TYPE_GLOBAL_WIPE
-            || $eventType === WipeCalendarEvent::TYPE_GAME_UPDATE;
     }
 
     /**
