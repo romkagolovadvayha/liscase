@@ -124,6 +124,21 @@ class PersonalBotSystem extends AbstractSystem
         return '[' . Yii::t('database', $server->monitoring_name) . '] | ' . $wipeTypeLabel;
     }
 
+    /**
+     * Дата для текста бота (календарь вайпов / колонки сервера) → d.m.Y в H:i или «—».
+     */
+    private function formatTelegramWipeDisplay(?string $raw): string
+    {
+        if ($raw === null || $raw === '') {
+            return '—';
+        }
+        try {
+            return (new \DateTime($raw))->format('d.m.Y в H:i');
+        } catch (\Throwable $e) {
+            return '—';
+        }
+    }
+
     public function getWipe() {
         $cacheKey = 'PersonalBotSystem_getWipe';
         if (Yii::$app->cache->get($cacheKey)) {
@@ -137,17 +152,25 @@ class PersonalBotSystem extends AbstractSystem
                           ->all();
 
         foreach ($servers as $k => $server) {
-            $date0 = new \DateTime($server->wipe);
-            $date = new \DateTime($server->next_wipe);
-            $date2 = new \DateTime($server->global_wipe);
+            $lastFmt = $this->formatTelegramWipeDisplay(
+                (string) ($server->getFactWipe() ?? $server->wipe ?? '')
+            );
+            $nextFmt = $this->formatTelegramWipeDisplay(
+                (string) ($server->getFactNextWipe() ?? $server->next_wipe ?? '')
+            );
+            $globalFmt = $this->formatTelegramWipeDisplay(
+                (string) ($server->getFactGlobalWipe() ?? $server->global_wipe ?? '')
+            );
             if ($k > 0) {
                 $text .= PHP_EOL;
             }
             $name = $this->getServerName($server);
             $text .= PHP_EOL . "🖥️ <b>{$name}</b>";
-            $text .= PHP_EOL . "   ⏮️ Последний: <code>{$date0->format('d.m.Y в H:i')} МСК</code>";
-            $text .= PHP_EOL . "   ⏭️ Следующий: <code>{$date->format('d.m.Y в H:i')} МСК</code>";
-            $text .= PHP_EOL . "   🌍 Глобал: <code>{$date2->format('d.m.Y в H:i')} МСК</code>";
+            $text .= PHP_EOL . "   ⏮️ Последний: <code>{$lastFmt} МСК</code>";
+            $text .= PHP_EOL . "   ⏭️ Следующий: <code>{$nextFmt} МСК</code>";
+            if ($globalFmt !== '—' && ($nextFmt === '—' || $globalFmt !== $nextFmt)) {
+                $text .= PHP_EOL . "   🌍 Глобал: <code>{$globalFmt} МСК</code>";
+            }
         }
 
         Yii::$app->cache->set($cacheKey, $text, 60);

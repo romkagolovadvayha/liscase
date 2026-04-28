@@ -199,6 +199,8 @@ class RustPluginConfigController extends Controller
             $wipeTypeText = 'Месячный';
         }
         
+        $siteDomain = (string) (Yii::$app->settings->get('site_domain') ?? '');
+
         // Словарь замены тегов
         $replacements = [
             '{SERVER_NAME}' => $server->name,
@@ -214,6 +216,7 @@ class RustPluginConfigController extends Controller
             '{SERVER_TEAM_LIMIT}' => (string)($server->team_limit ?? 0),
             '{TEXT_IP}' => $server->text_ip ?? $server->ip,
             '{WIPE_TYPE}' => $wipeTypeText,
+            '{DOMAIN}' => $siteDomain,
         ];
         
         // Заменяем теги (регистронезависимо)
