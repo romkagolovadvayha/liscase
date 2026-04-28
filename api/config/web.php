@@ -193,6 +193,9 @@ $config = [
                 'v1/servers/<serverTag:[\w-]+>/wipe-info' => 'v1/servers/wipe-info',
                 'v1/servers/stats' => 'v1/stats/stats', // публичный, без обязательной авторизации
 
+                // Wipe calendar (публичный виджет для фронта)
+                'v1/wipe-calendar' => 'v1/wipe-calendar/index',
+
                 // Stats
                 'v1/stats' => 'v1/stats/stats',
                 'v1/stats/players' => 'v1/stats/players',
