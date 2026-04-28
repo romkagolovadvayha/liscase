@@ -2,7 +2,6 @@
 
 namespace console\controllers;
 
-use common\components\telegram\foreignSystem\RustotekaBotSystem;
 use common\components\telegram\TelegramCurlProxy;
 use common\models\user\User;
 use Yii;
@@ -58,7 +57,7 @@ class TelegramController extends Controller
     }
 
     /**
-     * Зарегистрировать вебхуки персонального бота и Rustoteka-бота на URL API (params.apiPublicUrl).
+     * Зарегистрировать вебхуки ботов на URL API (params.apiPublicUrl).
      *
      * Пример: php yii telegram/set-webhooks
      * Проверка без запросов к Telegram: php yii telegram/set-webhooks --dryRun=1
@@ -78,11 +77,6 @@ class TelegramController extends Controller
                 'label' => 'personal (tgbot_botToken)',
                 'token' => (string) Yii::$app->settings->get('tgbot_botToken'),
                 'path' => 'personal',
-            ],
-            [
-                'label' => 'rustoteka',
-                'token' => (new RustotekaBotSystem())->getTelegramToken(),
-                'path' => 'rustoteka',
             ],
             [
                 'label' => 'support alert / модерация (tgbotSupportAlert_token)',
