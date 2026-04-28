@@ -154,6 +154,7 @@ class WipeCalendarController extends BaseApiController
                 'or',
                 ['server_id' => $serverId],
                 ['server_id' => null],
+                ['event_type' => WipeCalendarEvent::TYPE_GLOBAL_WIPE],
             ])
             ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
