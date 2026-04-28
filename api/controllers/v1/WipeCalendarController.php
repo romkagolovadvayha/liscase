@@ -140,7 +140,7 @@ class WipeCalendarController extends BaseApiController
         $endStr = $dtEnd->format('Y-m-d H:i:s');
 
         $cacheKey = 'api_wipe_calendar_server_' . md5(
-            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language . '|v3et'
+            (string) $serverId . '|' . $startStr . '|' . $endStr . '|' . Yii::$app->language . '|v4etype'
         );
         $cached = Yii::$app->cache->get($cacheKey);
         if ($cached !== false) {
@@ -163,7 +163,7 @@ class WipeCalendarController extends BaseApiController
             ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
             ->all();
 
-        /** @var array<string, list<array{id: int, date: string, event_type: string, is_global: bool, server_id?: int}>> $byDay */
+        /** @var array<string, list<array{id: int, date: string, is_global: bool, server_id?: int}>> $byDay */
         $byDay = [];
         foreach ($models as $m) {
             $day = substr((string) $m->event_at, 0, 10);
@@ -173,12 +173,25 @@ class WipeCalendarController extends BaseApiController
             $byDay[$day][] = self::serializeServerWidgetEvent($m);
         }
 
-        $startDay = $dtStart->format('Y-m-d');
-        $endDay = $dtEnd->format('Y-m-d');
+        // Подсветка сб/вс и праздников — на весь видимый грид (Пн–Вс, 6 недель), как на фронте getCalendarDays
+        $firstOfVisibleMonth = $dtStart;
+        $dowFirst = (int) $firstOfVisibleMonth->format('N'); // 1=Пн … 7=Вс
+        $highlightStart = $firstOfVisibleMonth->modify('-' . ($dowFirst - 1) . ' days');
+        $daysInMonth = (int) $firstOfVisibleMonth->format('t');
+        $lastOfVisibleMonth = $firstOfVisibleMonth->setDate(
+            (int) $firstOfVisibleMonth->format('Y'),
+            (int) $firstOfVisibleMonth->format('n'),
+            $daysInMonth
+        );
+        $dowLast = (int) $lastOfVisibleMonth->format('N');
+        $highlightEnd = $lastOfVisibleMonth->modify('+' . (7 - $dowLast) . ' days');
 
         $payload = [
             'events' => $byDay,
-            'highlights' => RfCalendarHighlightHelper::highlightsBetween($startDay, $endDay),
+            'highlights' => RfCalendarHighlightHelper::highlightsBetween(
+                $highlightStart->format('Y-m-d'),
+                $highlightEnd->format('Y-m-d')
+            ),
         ];
 
         Yii::$app->cache->set($cacheKey, $payload, ApiPublicCacheTtl::SECONDS);
@@ -192,12 +205,12 @@ class WipeCalendarController extends BaseApiController
     private static function serializeServerWidgetEvent(WipeCalendarEvent $m): array
     {
         $day = substr((string) $m->event_at, 0, 10);
-        $t = $m->event_type;
+        $t = (string) $m->event_type;
         $row = [
             'id' => (int) $m->id,
             'date' => $day,
             'event_type' => $t,
-            /** Только глобальный вайп; «обновление игры» — отдельный тип и стиль на фронте */
+            /** Только глобальный вайп (не путать с «Обновление игры» — оно общее, но не вайп) */
             'is_global' => $t === WipeCalendarEvent::TYPE_GLOBAL_WIPE,
         ];
         if ($m->server_id !== null) {
