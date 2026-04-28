@@ -341,6 +341,8 @@ $config = [
                 ['pattern' => 'v1/webhook/telegram/personal/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/personal', 'verb' => ['POST']],
                 ['pattern' => 'v1/webhook/telegram/support/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/support', 'verb' => ['POST']],
                 ['pattern' => 'v1/webhook/telegram/rustoteka/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/rustoteka', 'verb' => ['POST']],
+                // Один токен на personal+support — только этот URL (иначе второй setWebhook затирает первый)
+                ['pattern' => 'v1/webhook/telegram/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/unified', 'verb' => ['POST']],
             ],
         ],
         'request' => [

@@ -82,6 +82,7 @@ class TelegramController extends Controller
 
     /**
      * Зарегистрировать вебхуки ботов на URL API (params.apiPublicUrl).
+     * Если tgbot_botToken и tgbotSupportAlert_token совпадают — один вызов setWebhook на …/v1/webhook/telegram/{token}.
      *
      * Пример: php yii telegram/set-webhooks
      * Проверка без запросов к Telegram: php yii telegram/set-webhooks --dryRun=1
@@ -96,25 +97,41 @@ class TelegramController extends Controller
             return ExitCode::CONFIG;
         }
 
-        $bots = [
-            [
-                'label' => 'personal (tgbot_botToken)',
-                'token' => (string) Yii::$app->settings->get('tgbot_botToken'),
-                'path' => 'personal',
-            ],
-            [
-                'label' => 'support alert / модерация (tgbotSupportAlert_token)',
-                'token' => (string) Yii::$app->settings->get('tgbotSupportAlert_token'),
-                'path' => 'support',
-            ],
-        ];
+        $personal = (string) Yii::$app->settings->get('tgbot_botToken');
+        $support = (string) Yii::$app->settings->get('tgbotSupportAlert_token');
+
+        $bots = [];
+        if ($personal !== '' && $support !== '' && $personal === $support) {
+            $bots[] = [
+                'label' => 'personal + support (один токен → один webhook)',
+                'token' => $personal,
+                'path' => null,
+            ];
+        } else {
+            if ($personal !== '') {
+                $bots[] = [
+                    'label' => 'personal (tgbot_botToken)',
+                    'token' => $personal,
+                    'path' => 'personal',
+                ];
+            }
+            if ($support !== '') {
+                $bots[] = [
+                    'label' => 'support alert / модерация (tgbotSupportAlert_token)',
+                    'token' => $support,
+                    'path' => 'support',
+                ];
+            }
+        }
 
         foreach ($bots as $idx => $bot) {
             if ($bot['token'] === '') {
                 $this->stderr("Пропуск {$bot['label']}: пустой токен.\n");
                 continue;
             }
-            $hookUrl = $base . '/v1/webhook/telegram/' . $bot['path'] . '/' . $bot['token'];
+            $hookUrl = ($bot['path'] === null || $bot['path'] === '')
+                ? $base . '/v1/webhook/telegram/' . $bot['token']
+                : $base . '/v1/webhook/telegram/' . $bot['path'] . '/' . $bot['token'];
             if ($this->dryRun) {
                 $this->stdout("[dry-run] {$bot['label']}\n  URL: {$hookUrl}\n");
                 continue;
