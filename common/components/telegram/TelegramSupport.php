@@ -5,6 +5,7 @@ namespace common\components\telegram;
 use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
+use yii\helpers\Json;
 
 class TelegramSupport
 {
@@ -18,6 +19,7 @@ class TelegramSupport
     public function sendHttpRequest($method, $params = null)
     {
         [$url, $params] = $this->_getUrl($method, $params);
+        $postParamsForLog = \is_array($params) ? $params : [];
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -72,6 +74,7 @@ class TelegramSupport
 
         $this->forwardApiResponseToTelegramChats(
             $method,
+            $this->buildRequestSummaryForLog($url, $postParamsForLog),
             $answer !== false ? (string) $answer : '(curl failed) ' . $curlError
         );
 
@@ -81,16 +84,17 @@ class TelegramSupport
     }
 
     /**
-     * Дублирует сырой ответ Bot API в alert-чат (tgbotAlert_*).
+     * Дублирует запрос и сырой ответ Bot API в alert-чат (tgbotAlert_*).
      */
-    private function forwardApiResponseToTelegramChats(string $method, string $responseBody): void
+    private function forwardApiResponseToTelegramChats(string $method, string $requestSummary, string $responseBody): void
     {
         if (!Yii::$app->has('telegramChats')) {
             return;
         }
 
         $prefix = '[TelegramSupport] ' . $method . "\n";
-        $encoded = Html::encode($responseBody);
+        $plain = "— request —\n" . $requestSummary . "\n\n— response —\n" . $responseBody;
+        $encoded = Html::encode($plain);
         $maxContent = 4000 - mb_strlen($prefix, 'UTF-8');
         if ($maxContent < 200) {
             $maxContent = 200;
@@ -104,6 +108,30 @@ class TelegramSupport
         } catch (\Throwable $e) {
             Yii::warning('TelegramSupport telegramChats: ' . $e->getMessage(), __METHOD__);
         }
+    }
+
+    private function buildRequestSummaryForLog(string $url, array $postBodyParams): string
+    {
+        $lines = [$this->redactTelegramApiUrl($url)];
+        if ($postBodyParams !== []) {
+            try {
+                $lines[] = Json::encode(
+                    $postBodyParams,
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE
+                );
+            } catch (\Throwable $e) {
+                $lines[] = print_r($postBodyParams, true);
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function redactTelegramApiUrl(string $url): string
+    {
+        $redacted = preg_replace('#(https://api\.telegram\.org/bot)[^/]+#i', '$1***', $url);
+
+        return $redacted !== null ? $redacted : $url;
     }
 
     /**
