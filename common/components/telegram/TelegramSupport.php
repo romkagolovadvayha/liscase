@@ -4,6 +4,7 @@ namespace common\components\telegram;
 
 use Yii;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 
 class TelegramSupport
 {
@@ -63,13 +64,46 @@ class TelegramSupport
         }
 
         $answer = curl_exec($ch);
+        $curlError = '';
         if ($answer === false) {
-            Yii::error('empty telegram query answer ' . curl_error($ch));
+            $curlError = curl_error($ch);
+            Yii::error('empty telegram query answer ' . $curlError);
         }
+
+        $this->forwardApiResponseToTelegramChats(
+            $method,
+            $answer !== false ? (string) $answer : '(curl failed) ' . $curlError
+        );
 
         curl_close($ch);
 
         return json_decode($answer, true);
+    }
+
+    /**
+     * Дублирует сырой ответ Bot API в alert-чат (tgbotAlert_*).
+     */
+    private function forwardApiResponseToTelegramChats(string $method, string $responseBody): void
+    {
+        if (!Yii::$app->has('telegramChats')) {
+            return;
+        }
+
+        $prefix = '[TelegramSupport] ' . $method . "\n";
+        $encoded = Html::encode($responseBody);
+        $maxContent = 4000 - mb_strlen($prefix, 'UTF-8');
+        if ($maxContent < 200) {
+            $maxContent = 200;
+        }
+        if (mb_strlen($encoded, 'UTF-8') > $maxContent) {
+            $encoded = mb_substr($encoded, 0, $maxContent, 'UTF-8') . "\n… (truncated)";
+        }
+
+        try {
+            Yii::$app->telegramChats->sendMessage('<pre>' . $prefix . $encoded . '</pre>');
+        } catch (\Throwable $e) {
+            Yii::warning('TelegramSupport telegramChats: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     /**
