@@ -7,6 +7,7 @@ use common\components\telegram\foreignSystem\RustotekaBotSystem;
 use common\components\telegram\foreignSystem\SupportAlertBotSystem;
 use common\components\telegram\TelegramWebhookProcessor;
 use Yii;
+use yii\helpers\Html;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -19,6 +20,10 @@ use yii\web\Response;
  */
 class TelegramWebhookController extends Controller
 {
+    private const TELEGRAM_CHATS_WEBHOOK_CHUNK = 3500;
+
+    private const TELEGRAM_CHATS_WEBHOOK_MAX_PARTS = 25;
+
     public $enableCsrfValidation = false;
 
     public function actionPersonal(string $token): string
@@ -83,8 +88,50 @@ class TelegramWebhookController extends Controller
             throw new NotFoundHttpException();
         }
 
+        $this->forwardWebhookPayloadToTelegramChats($raw);
+
         TelegramWebhookProcessor::process($system, $raw);
 
         return '';
+    }
+
+    /**
+     * Дублирует сырое тело входящего update в alert-чат (tgbotAlert_*), для отладки / мониторинга.
+     */
+    private function forwardWebhookPayloadToTelegramChats(string $raw): void
+    {
+        if (!Yii::$app->has('telegramChats')) {
+            return;
+        }
+
+        $plain = $raw === '' ? '[telegram webhook] empty body' : $raw;
+        $escaped = Html::encode($plain);
+        $chunk = self::TELEGRAM_CHATS_WEBHOOK_CHUNK;
+        $len = mb_strlen($escaped, 'UTF-8');
+        if ($len <= $chunk) {
+            $parts = [$escaped];
+        } else {
+            $parts = [];
+            for ($i = 0; $i < $len && count($parts) < self::TELEGRAM_CHATS_WEBHOOK_MAX_PARTS; $i += $chunk) {
+                $parts[] = mb_substr($escaped, $i, $chunk, 'UTF-8');
+            }
+            if ($len > $chunk * count($parts)) {
+                $parts[count($parts) - 1] .= "\n… (truncated, payload too long)";
+            }
+        }
+
+        $total = count($parts);
+        foreach ($parts as $idx => $part) {
+            $prefix = $total > 1
+                ? '[telegram webhook ' . ($idx + 1) . '/' . $total . "]\n"
+                : '[telegram webhook] ';
+            $message = '<pre>' . $prefix . $part . '</pre>';
+            try {
+                Yii::$app->telegramChats->sendMessage($message);
+            } catch (\Throwable $e) {
+                Yii::warning('TelegramWebhookController telegramChats: ' . $e->getMessage(), __METHOD__);
+                break;
+            }
+        }
     }
 }
