@@ -65,6 +65,12 @@ if ($moderOrSupport) {
                 'active' => _checkActive('/wipe-calendar'),
             ],
             [
+                'label' => 'Даты вайпов',
+                'icon' => 'fas fa-calendar-check',
+                'url' => ['/servers/wipe-dates'],
+                'active' => _checkActive('/servers/wipe-dates'),
+            ],
+            [
                 'label' => 'Правила серверов',
                 'icon' => 'fas fa-gavel',
                 'url' => ['/servers-rules/index'],

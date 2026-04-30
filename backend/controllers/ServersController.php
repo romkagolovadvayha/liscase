@@ -6,6 +6,7 @@ use backend\components\BackendController;
 use common\components\helpers\Role;
 use common\models\servers\Servers;
 use common\models\servers\ServersTagsRelation;
+use common\models\wipe_calendar\WipeCalendarEvent;
 use backend\models\ServersSearch;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
@@ -67,6 +68,11 @@ class ServersController extends BackendController
                 'label' => '<i class="bi bi-calendar-event"></i> ' . Yii::t('common', 'Массовое редактирование вайпов'),
                 'url' => ['mass-edit-wipe'],
                 'class' => 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
+            ],
+            [
+                'label' => '<i class="bi bi-calendar3"></i> ' . Yii::t('common', 'Даты вайпов'),
+                'url' => ['wipe-dates'],
+                'class' => 'bg-cyan-600 hover:bg-cyan-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
             ],
             [
                 'label' => '<i class="fas fa-sort"></i> ' . Yii::t('common', 'Сортировать'),
@@ -615,5 +621,183 @@ class ServersController extends BackendController
             'success_count' => $successCount,
             'error_count' => $errorCount,
         ];
+    }
+
+    /**
+     * Построчное редактирование дат вайпов с предзаполнением из календаря вайпов.
+     */
+    public function actionWipeDates()
+    {
+        /** @var Servers[] $servers */
+        $servers = Servers::find()
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+            ->all();
+
+        $serverIds = array_map(static function (Servers $server) {
+            return (int) $server->id;
+        }, $servers);
+
+        $suggestions = $this->buildWipeDateSuggestions($serverIds);
+
+        return $this->render('wipe-dates', [
+            'servers' => $servers,
+            'suggestions' => $suggestions,
+        ]);
+    }
+
+    /**
+     * Сохранение дат вайпа для одного сервера.
+     */
+    public function actionSaveWipeDatesRow()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $serverId = (int) Yii::$app->request->post('server_id', 0);
+        if ($serverId <= 0) {
+            return ['success' => false, 'message' => 'Не передан сервер'];
+        }
+
+        /** @var Servers|null $server */
+        $server = Servers::find()
+            ->andWhere(['id' => $serverId])
+            ->andWhere(['IN', 'status', [Servers::STATUS_NOACTIVE, Servers::STATUS_ACTIVE]])
+            ->one();
+
+        if (!$server) {
+            return ['success' => false, 'message' => 'Сервер не найден'];
+        }
+
+        $wipe = trim((string) Yii::$app->request->post('wipe', ''));
+        $nextWipe = trim((string) Yii::$app->request->post('next_wipe', ''));
+        $globalWipe = trim((string) Yii::$app->request->post('global_wipe', ''));
+
+        foreach (['wipe' => $wipe, 'next_wipe' => $nextWipe, 'global_wipe' => $globalWipe] as $field => $value) {
+            if ($value === '') {
+                return ['success' => false, 'message' => "Поле {$field} не заполнено"];
+            }
+            $date = \DateTime::createFromFormat('Y-m-d H:i:s', $value);
+            if ($date === false || $date->format('Y-m-d H:i:s') !== $value) {
+                return [
+                    'success' => false,
+                    'message' => "Поле {$field}: неверный формат даты. Ожидается YYYY-MM-DD HH:MM:SS",
+                ];
+            }
+        }
+
+        $server->wipe = $wipe;
+        $server->next_wipe = $nextWipe;
+        $server->global_wipe = $globalWipe;
+
+        if (!$server->save()) {
+            $errors = $server->getFirstErrors();
+            return [
+                'success' => false,
+                'message' => !empty($errors) ? implode(', ', $errors) : 'Ошибка сохранения',
+            ];
+        }
+
+        $this->clearServersCache($server->tag);
+        $this->clearWipeCalendarCache();
+
+        return [
+            'success' => true,
+            'message' => 'Сохранено',
+            'current' => [
+                'wipe' => (string) $server->wipe,
+                'next_wipe' => (string) $server->next_wipe,
+                'global_wipe' => (string) $server->global_wipe,
+            ],
+        ];
+    }
+
+    /**
+     * Подбор рекомендуемых дат для формы по событиям wipe_calendar_event.
+     *
+     * @param int[] $serverIds
+     * @return array<int, array{wipe: string, next_wipe: string, global_wipe: string}>
+     */
+    private function buildWipeDateSuggestions(array $serverIds): array
+    {
+        if (empty($serverIds)) {
+            return [];
+        }
+
+        $rows = WipeCalendarEvent::find()
+            ->select(['server_id', 'event_type', 'event_at'])
+            ->andWhere(['IN', 'server_id', $serverIds])
+            ->andWhere([
+                'event_type' => [
+                    WipeCalendarEvent::TYPE_MAP_WIPE,
+                    WipeCalendarEvent::TYPE_GLOBAL_WIPE,
+                ],
+            ])
+            ->orderBy(['event_at' => SORT_ASC, 'id' => SORT_ASC])
+            ->asArray()
+            ->all();
+
+        $byServer = [];
+        foreach ($rows as $row) {
+            $sid = (int) ($row['server_id'] ?? 0);
+            $rawAt = (string) ($row['event_at'] ?? '');
+            if ($sid <= 0 || $rawAt === '') {
+                continue;
+            }
+            $ts = strtotime($rawAt);
+            if ($ts === false) {
+                continue;
+            }
+            $byServer[$sid][] = [
+                'ts' => $ts,
+                'date' => date('Y-m-d H:i:s', $ts),
+                'type' => (string) $row['event_type'],
+            ];
+        }
+
+        $now = time();
+        $result = [];
+        foreach ($serverIds as $serverId) {
+            $events = $byServer[$serverId] ?? [];
+            $wipe = '';
+            $nextWipe = '';
+            $globalWipe = '';
+            $wipeTs = null;
+
+            foreach ($events as $event) {
+                if ($event['ts'] > $now) {
+                    $wipe = $event['date'];
+                    $wipeTs = $event['ts'];
+                    break;
+                }
+            }
+
+            if ($wipeTs !== null) {
+                foreach ($events as $event) {
+                    if ($event['ts'] > $wipeTs) {
+                        $nextWipe = $event['date'];
+                        break;
+                    }
+                }
+            }
+
+            foreach ($events as $event) {
+                if (
+                    $event['type'] === WipeCalendarEvent::TYPE_GLOBAL_WIPE
+                    && $event['ts'] > $now
+                    && ($wipeTs === null || $event['ts'] !== $wipeTs)
+                ) {
+                    $globalWipe = $event['date'];
+                    break;
+                }
+            }
+
+            $result[$serverId] = [
+                'wipe' => $wipe,
+                'next_wipe' => $nextWipe,
+                'global_wipe' => $globalWipe,
+            ];
+        }
+
+        return $result;
     }
 }
