@@ -143,6 +143,11 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
         if (preg_match('#^https?://#i', $imageLink)) {
             return $imageLink;
         }
+
+        // S3-ключ храним в БД как uploads/telegram/...
+        if (strpos($imageLink, 'uploads/') === 0 && Yii::$app->has('s3Api')) {
+            return Yii::$app->s3Api->getPublicUrl($imageLink);
+        }
         
         // Пытаемся извлечь относительный путь из полного пути к файлу
         $possiblePaths = [
@@ -193,7 +198,7 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
             $relativePath = basename($relativePath);
         }
         
-        // Формируем публичный URL
+        // Формируем публичный URL для старого локального формата
         return rtrim($baseUrl, '/') . '/uploads/telegram/' . $relativePath;
     }
 

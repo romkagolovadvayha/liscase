@@ -4,12 +4,14 @@ namespace backend\forms;
 
 use backend\models\TelegramConstructorButtons;
 use backend\models\TelegramConstructorMessage;
+use common\components\storage\S3Api;
 use Yii;
 use yii\base\BaseObject;
 use yii\web\UploadedFile;
 
 class TelegramConstructorMessageForm extends TelegramConstructorMessage
 {
+    private const S3_PREFIX = 'uploads/telegram/';
 
     /**
      * @var UploadedFile
@@ -54,7 +56,6 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         }
 
         $updated = [];
-        $viewPath = Yii::getAlias('@app/web/uploads') . '/telegram';
 
         // message/image_url не входят в атрибуты таблицы — берём из POST по formName()
         $formName = $this->formName();
@@ -100,33 +101,21 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             // Если ссылка не указана, проверяем загрузку файла
             $imageFile = UploadedFile::getInstance($this, "image_file[$language]");
             if($imageFile) {
-                $fileName = $this->id . '_' . uniqid() . '.' . $imageFile->extension;
-                if (file_exists($viewPath) && is_dir($viewPath)) {
-                    try {
-                        // если поменяем файл, то сохраним с другим названием, а прежний удалим
-                        $fileLink = $viewPath . '/' . $fileName;
-                        $oldImageLink = $this->getImageLink($language);
-                        if(!empty($oldImageLink) && strpos($oldImageLink, '@') !== 0) {
-                            // Удаляем старый файл только если это был файл, а не ссылка
-                            if (file_exists($oldImageLink)) {
-                                unlink($oldImageLink);
-                            }
-                        }
-                        $imageFile->saveAs($fileLink);
-                        if(!file_exists($fileLink)) {
-                            \Yii::info("image file $fileLink was not created, maybe check sever configuration ", 'problem');
-                        }
-                    } catch (\Exception $e) {
-                        \Yii::info("image file $fileLink was not created " . print_r($e->getMessage(), 1), 'problem');
-                    }
+                $fileName = $this->id . '_' . uniqid('', true) . '.' . strtolower($imageFile->extension);
+                $s3Key = self::S3_PREFIX . $fileName;
+                $contentType = $imageFile->type ?: ('image/' . strtolower($imageFile->extension));
+                $uploadedS3Key = $this->uploadImageToS3($s3Key, $imageFile->tempName, $contentType);
+                if ($uploadedS3Key !== false) {
+                    $oldImageLink = $this->getImageLink($language);
+                    $this->deleteImageFromS3IfNeeded($oldImageLink);
                     $updated[$language] = true;
-                    $this->updateLanguage($language, $messageText, $fileLink);
+                    $this->updateLanguage($language, $messageText, $uploadedS3Key);
+                } else {
+                    Yii::warning("Telegram message image upload failed for language={$language}, messageId={$this->id}", __METHOD__);
                 }
             } else if (!empty($this->getImageLink($language)) && !empty($isDeleteByLang[$language])) {
                 $oldImageLink = $this->getImageLink($language);
-                if (strpos($oldImageLink, '@') !== 0 && file_exists($oldImageLink)) {
-                    unlink($oldImageLink);
-                }
+                $this->deleteImageFromS3IfNeeded($oldImageLink);
                 $updated[$language] = true;
                 $this->updateLanguage($language, $messageText, null);
             } else {
@@ -157,5 +146,65 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         }
 
         return $result;
+    }
+
+    /**
+     * @param string $s3Key
+     * @param string $tempPath
+     * @param string|null $contentType
+     * @return string|false
+     */
+    private function uploadImageToS3(string $s3Key, string $tempPath, ?string $contentType = null)
+    {
+        if (!Yii::$app->has('s3Api')) {
+            Yii::warning('s3Api component is not configured', __METHOD__);
+            return false;
+        }
+
+        /** @var S3Api $s3Api */
+        $s3Api = Yii::$app->s3Api;
+        return $s3Api->putFile($s3Key, $tempPath, $contentType);
+    }
+
+    /**
+     * @param string|null $imageLink
+     * @return void
+     */
+    private function deleteImageFromS3IfNeeded(?string $imageLink): void
+    {
+        if (empty($imageLink) || strpos($imageLink, '@') === 0 || !Yii::$app->has('s3Api')) {
+            return;
+        }
+
+        $s3Key = $this->extractS3Key($imageLink);
+        if ($s3Key === null) {
+            return;
+        }
+
+        /** @var S3Api $s3Api */
+        $s3Api = Yii::$app->s3Api;
+        $s3Api->deleteFile($s3Key);
+    }
+
+    /**
+     * @param string $imageLink
+     * @return string|null
+     */
+    private function extractS3Key(string $imageLink): ?string
+    {
+        $imageLink = trim($imageLink);
+        if ($imageLink === '') {
+            return null;
+        }
+
+        if (strpos($imageLink, self::S3_PREFIX) === 0) {
+            return $imageLink;
+        }
+
+        if (preg_match('#/uploads/telegram/(.+)$#i', $imageLink, $matches)) {
+            return self::S3_PREFIX . ltrim($matches[1], '/');
+        }
+
+        return null;
     }
 }
