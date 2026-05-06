@@ -61,7 +61,7 @@ class TelegramChatsController extends Controller
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT
         );
 
-        Yii::$app->telegramChats->sendMessage($message);
+        Yii::$app->telegramReports->sendMessage($message);
 
         return [
             'success' => true,
