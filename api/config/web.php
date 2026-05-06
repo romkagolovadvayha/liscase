@@ -343,6 +343,8 @@ $config = [
                 ['pattern' => 'v1/webhook/telegram/rustoteka/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/rustoteka', 'verb' => ['POST']],
                 // Один токен на personal+support — только этот URL (иначе второй setWebhook затирает первый)
                 ['pattern' => 'v1/webhook/telegram/<token:[0-9]+:[^/]+>', 'route' => 'telegram-webhook/unified', 'verb' => ['POST']],
+                // Отправка в telegramChats всех входящих данных запроса без бизнес-обработки
+                'v1/telegram-chats/ingest' => 'telegram-chats/ingest',
             ],
         ],
         'request' => [
