@@ -21,6 +21,41 @@ use yii\db\Query;
 class ClanController extends Controller
 {
     /**
+     * --server-id=ID для actionNotifyMissingAccess (альтернатива позиционному аргументу,
+     * чтобы обойти выкидывание PowerShell пустых "" из argv).
+     */
+    public $serverId;
+
+    /**
+     * --dry-run=1 для actionNotifyMissingAccess.
+     */
+    public $dryRun;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function options($actionID)
+    {
+        $opts = parent::options($actionID);
+        if ($actionID === 'notify-missing-access') {
+            $opts = array_merge($opts, ['serverId', 'dryRun']);
+        }
+
+        return $opts;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function optionAliases()
+    {
+        return array_merge(parent::optionAliases(), [
+            's' => 'serverId',
+            'd' => 'dryRun',
+        ]);
+    }
+
+    /**
      * Обновить кэш steam_id участников кланов (онлайн за последние N дней) по всем серверам.
      * Рекомендуется cron: каждые 5 минут.
      *
@@ -90,23 +125,40 @@ class ClanController extends Controller
      * Отправить онлайн-участникам кланов чат-сообщение со списком их прав авторизации
      * (кодлоки/ПВО/шкафы/турели), если хотя бы одно право отсутствует.
      *
-     * Запуск вручную: `yii clan/notify-missing-access [serverId] [dryRun]`.
+     * Запуск вручную:
+     *   ./yii clan/notify-missing-access                       — все сервера
+     *   ./yii clan/notify-missing-access 3                     — только сервер id=3
+     *   ./yii clan/notify-missing-access --dry-run=1           — все, без RCON
+     *   ./yii clan/notify-missing-access --server-id=3 --dry-run=1
+     *
+     * Позиционные `serverId`=0/`""` означают «все сервера» (PowerShell съедает "" из argv,
+     * поэтому для «все + dry-run» используйте именные флаги).
+     *
      * Лидеры пропускаются (у них все права автоматически).
      *
-     * @param int|null $serverId фильтр по серверу (опционально)
-     * @param int      $dryRun   1 — только вывести план, без RCON-запросов
+     * @param int|string|null $serverId фильтр по серверу: 0 или пусто → все
+     * @param int             $dryRun   1 — только вывести план, без RCON-запросов
      */
     public function actionNotifyMissingAccess($serverId = null, $dryRun = 0)
     {
+        if ($this->serverId !== null && $this->serverId !== '') {
+            $serverId = $this->serverId;
+        }
+        if ($this->dryRun !== null && $this->dryRun !== '') {
+            $dryRun = $this->dryRun;
+        }
         $dryRun = filter_var($dryRun, FILTER_VALIDATE_BOOLEAN);
+        $serverFilterId = ($serverId === null || $serverId === '' || (int)$serverId <= 0)
+            ? null
+            : (int)$serverId;
 
         $serversQuery = Servers::find()
             ->where(['status' => Servers::STATUS_ACTIVE]);
         if (Servers::hasClansEnabledColumn()) {
             $serversQuery->andWhere(['clans_enabled' => 1]);
         }
-        if ($serverId !== null && $serverId !== '') {
-            $serversQuery->andWhere(['id' => (int)$serverId]);
+        if ($serverFilterId !== null) {
+            $serversQuery->andWhere(['id' => $serverFilterId]);
         }
 
         /** @var Servers[] $servers */
@@ -266,28 +318,31 @@ class ClanController extends Controller
 
         $tag = "<color={$clanColor}>[{$clanTag}]</color>";
 
-        $messageRu  = "Вы состоите в клане {$tag}\n\n";
-        $messageRu .= "Ваши доступы:\n";
-        $messageRu .= "Кодлоки: " . ($flags['auth_lock']     ? $okRu : $badRu) . "\n";
-        $messageRu .= "ПВО: "      . ($flags['auth_sam']      ? $okRu : $badRu) . "\n";
-        $messageRu .= "Шкафы: "    . ($flags['auth_cupboard'] ? $okRu : $badRu) . "\n";
-        $messageRu .= "Турели: "   . ($flags['auth_turret']   ? $okRu : $badRu) . "\n\n";
+        // Плагин Helper сам раскрывает литерал "\n" в перевод строки, поэтому собираем строку через '\n'.
+        $nl = '\n';
+
+        $messageRu  = "Вы состоите в клане {$tag} {$nl}{$nl}";
+        $messageRu .= "Ваши доступы: {$nl}";
+        $messageRu .= "Кодлоки: " . ($flags['auth_lock']     ? $okRu : $badRu) . $nl;
+        $messageRu .= "ПВО: "      . ($flags['auth_sam']      ? $okRu : $badRu) . $nl;
+        $messageRu .= "Шкафы: "    . ($flags['auth_cupboard'] ? $okRu : $badRu) . $nl;
+        $messageRu .= "Турели: "   . ($flags['auth_turret']   ? $okRu : $badRu) . $nl . $nl;
         $messageRu .= "Попросите лидера клана выдать вам доступ на сайте, иначе вы не будете авторизованы.";
 
-        $messageEn  = "You are in clan {$tag}\n\n";
-        $messageEn .= "Your access:\n";
-        $messageEn .= "Codelocks: " . ($flags['auth_lock']     ? $okEn : $badEn) . "\n";
-        $messageEn .= "SAM sites: " . ($flags['auth_sam']      ? $okEn : $badEn) . "\n";
-        $messageEn .= "Cupboards: " . ($flags['auth_cupboard'] ? $okEn : $badEn) . "\n";
-        $messageEn .= "Turrets: "   . ($flags['auth_turret']   ? $okEn : $badEn) . "\n\n";
+        $messageEn  = "You are in clan {$tag} {$nl}{$nl}";
+        $messageEn .= "Your access: {$nl}";
+        $messageEn .= "Codelocks: " . ($flags['auth_lock']     ? $okEn : $badEn) . $nl;
+        $messageEn .= "SAM sites: " . ($flags['auth_sam']      ? $okEn : $badEn) . $nl;
+        $messageEn .= "Cupboards: " . ($flags['auth_cupboard'] ? $okEn : $badEn) . $nl;
+        $messageEn .= "Turrets: "   . ($flags['auth_turret']   ? $okEn : $badEn) . $nl . $nl;
         $messageEn .= "Ask your clan leader to grant you access on the site, otherwise you will not be authorized.";
 
         $command = "helper message \"{$messageRu}\" \"{$messageEn}\" \"\" \"{$steamId}\"";
 
         if ($dryRun) {
-            $this->stdout("[DRY] server={$server->tag} steam={$steamId} clan=[{$clanTag}] missing="
-                . implode(',', array_keys(array_filter($flags, static function ($v) { return !$v; })))
-                . "\n");
+            $missing = implode(',', array_keys(array_filter($flags, static function ($v) { return !$v; })));
+            $this->stdout("[DRY] server={$server->tag} steam={$steamId} clan=[{$clanTag}] missing={$missing}\n");
+            $this->stdout("[DRY] cmd: {$command}\n");
             return true;
         }
 
