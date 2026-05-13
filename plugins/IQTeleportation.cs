@@ -521,6 +521,13 @@ namespace Oxide.Plugins
                 return;
             }
 
+            if (IsTeleportDestinationInForeignBuilding(player, position))
+            {
+                SendChat(GetLang("CAN_TELEPORT_TITILE_OTHER", player.UserIDString,
+                    GetLang("CAN_TELEPORT_IN_BUILDING_BLOCKED", player.UserIDString)), player, true);
+                return;
+            }
+
             localUsersRepository[player].SetupCooldown(player, UserRepository.TeleportType.Warp); 
             MovePlayer(player, position);
             SendChat(GetLang("WARP_TELEPORTATION_PLAYER", player.UserIDString), player);
@@ -553,6 +560,23 @@ namespace Oxide.Plugins
             MonumentInfo monument = GetMonumentWherePlayerStand(player);
             return monument && config.generalController.monumentBlockedTeleportation.Contains(monument.name);
         }
+
+        /// <summary>
+        /// Точка назначения — постройка в зоне шкафа, где игрок не авторизован (при noTeleportBuildingBlock).
+        /// Для домов на теплоходе/лодке не используется — там своя проверка IsAuthedForBuilding.
+        /// </summary>
+        private Boolean IsTeleportDestinationInForeignBuilding(BasePlayer player, Vector3 destination)
+        {
+            if (!config.teleportationController.teleportSetting.noTeleportBuildingBlock || !player || !player.IsValid())
+                return false;
+
+            BuildingBlock buildingBlock = GetBuildingBlock(destination);
+            if (!buildingBlock)
+                return false;
+
+            BuildingPrivlidge privilege = buildingBlock.GetBuildingPrivilege();
+            return privilege != null && !privilege.IsAuthed(player);
+        }
         
         
         private void TeleportationHome(BasePlayer player, Vector3 position, BaseEntity pEntity)
@@ -564,6 +588,13 @@ namespace Oxide.Plugins
             if (!String.IsNullOrWhiteSpace(canTeleport))
             {
                 SendChat(canTeleport, player, true);
+                return;
+            }
+
+            if (pEntity is not Tugboat && pEntity is not PlayerBoat && IsTeleportDestinationInForeignBuilding(player, position))
+            {
+                SendChat(GetLang("CAN_TELEPORT_TITILE_OTHER", player.UserIDString,
+                    GetLang("CAN_TELEPORT_IN_BUILDING_BLOCKED", player.UserIDString)), player, true);
                 return;
             }
             
@@ -3069,8 +3100,13 @@ namespace Oxide.Plugins
             }
 
             if (config.teleportationController.teleportSetting.noTeleportBuildingBlock && player.IsBuildingBlocked())
-                return GetLang("CAN_TELEPORT_TITILE_OTHER", player.UserIDString,
-                    GetLang("CAN_TELEPORT_IN_BUILDING_BLOCKED", player.UserIDString));
+            {
+                BuildingPrivlidge buildingPrivilege = player.GetBuildingPrivilege();
+                Boolean inForeignCupboardZoneWithoutAuth = buildingPrivilege != null && !player.IsBuildingAuthed();
+                if (!inForeignCupboardZoneWithoutAuth)
+                    return GetLang("CAN_TELEPORT_TITILE_OTHER", player.UserIDString,
+                        GetLang("CAN_TELEPORT_IN_BUILDING_BLOCKED", player.UserIDString));
+            }
 
             if (IsPlayerWithinBlockedMonument(player))
                 return GetLang("CAN_TELEPORT_MONUMENT_BLOCKED", player.UserIDString);
@@ -3670,6 +3706,17 @@ namespace Oxide.Plugins
                 return;
             }
 
+            if (teleportationPosition == default)
+                teleportationPosition = targetPlayer.transform.position;
+
+            if (IsTeleportDestinationInForeignBuilding(player, teleportationPosition))
+            {
+                SendChat(GetLang("CAN_TELEPORT_TITILE_OTHER", player.UserIDString,
+                    GetLang("CAN_TELEPORT_IN_BUILDING_BLOCKED", player.UserIDString)), player, true);
+                Interface.Call("OnTeleportInterrupted", player);
+                return;
+            }
+
             if (config.teleportationController.teleportSetting.onlyTeleportationFriends)
             {
                 if (!IsFriends(player, targetPlayer.userID))
@@ -3680,9 +3727,6 @@ namespace Oxide.Plugins
                 }
             }
             
-            if (teleportationPosition == default)
-                teleportationPosition = targetPlayer.transform.position;
-
             localUsersRepository[player].SetupCooldown(player, UserRepository.TeleportType.Teleportation);
             
             MovePlayer(player, teleportationPosition, vehicle ? vehicle : targetPlayer.GetParentEntity());
