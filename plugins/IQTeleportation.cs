@@ -20,7 +20,7 @@ using Physics = UnityEngine.Physics;
 
 namespace Oxide.Plugins
 {
-    [Info("IQTeleportation", "Mercury", "1.28.38")]
+    [Info("IQTeleportation", "Mercury", "1.28.39")]
     [Description("IQTeleportation")]
     class IQTeleportation : RustPlugin
     {
