@@ -705,9 +705,23 @@ class SkinsController extends BaseApiController
                 $tradeLinkCompleted = true;
             }
             
-            // Проверка префикса в нике (как в старой версии)
-            if (!empty($prefix) && strpos(mb_strtolower($user->username), strtolower($prefix)) !== false) {
-                $usernameCompleted = true;
+            // Приписка: в любом месте ника, регистр не важен; учитываем и логин, и имя в профиле (часто совпадает с Steam)
+            $prefixTrim = trim((string) $prefix);
+            if ($prefixTrim !== '') {
+                $candidates = [trim((string) ($user->username ?? ''))];
+                if ($user->userProfile !== null) {
+                    $candidates[] = trim((string) ($user->userProfile->name ?? ''));
+                }
+                $prefixNorm = mb_strtolower($prefixTrim, 'UTF-8');
+                foreach ($candidates as $nick) {
+                    if ($nick === '') {
+                        continue;
+                    }
+                    if (mb_strpos(mb_strtolower($nick, 'UTF-8'), $prefixNorm, 0, 'UTF-8') !== false) {
+                        $usernameCompleted = true;
+                        break;
+                    }
+                }
             }
             
             $allCompleted = $usernameCompleted && $tradeLinkCompleted && $authCompleted;
