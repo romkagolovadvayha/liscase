@@ -12,12 +12,19 @@ namespace Oxide.Plugins
     [Description("Находит и удаляет МВК двери с определенными скинами")]
     public class DoorSkinFinder : RustPlugin
     {
+        private const ulong ReplacementSkinId = 3555697170UL;
+
         // Список скинов для поиска
         private readonly HashSet<ulong> targetSkins = new HashSet<ulong>
         {
             2396716738,
             2271001808,
-            2286118971
+            2286118971,
+            3296054224,
+            2382859749,
+            2382919890,
+            2389255294,
+            2512243604
         };
 
         // Shortname дверей для проверки
@@ -46,6 +53,7 @@ namespace Oxide.Plugins
         {
             cmd.AddConsoleCommand("doorskin.find", this, nameof(FindDoorsCommand));
             cmd.AddConsoleCommand("doorskin.remove", this, nameof(RemoveDoorsCommand));
+            cmd.AddConsoleCommand("doorskin.repaint", this, nameof(RepaintDoorsCommand));
         }
 
         protected override void LoadDefaultMessages()
@@ -56,6 +64,7 @@ namespace Oxide.Plugins
                 ["DoorsFound"] = "Найдено дверей: {0}",
                 ["DoorInfo"] = "[{0}] Скин: {1}, Позиция: {2}, Владелец: {3}, Расположение: {4}",
                 ["DoorsRemoved"] = "Удалено дверей/предметов: {0}",
+                ["DoorsRepainted"] = "Перекрашено дверей/предметов: {0}",
                 ["Searching"] = "Поиск дверей (развернутые, в инвентарях, контейнерах, выброшенные)...",
                 ["NoPermission"] = "У вас нет прав для использования этой команды."
             }, this, "ru");
@@ -66,6 +75,7 @@ namespace Oxide.Plugins
                 ["DoorsFound"] = "Found doors: {0}",
                 ["DoorInfo"] = "[{0}] Skin: {1}, Position: {2}, Owner: {3}, Location: {4}",
                 ["DoorsRemoved"] = "Removed doors/items: {0}",
+                ["DoorsRepainted"] = "Repainted doors/items: {0}",
                 ["Searching"] = "Searching doors (deployed, in inventories, containers, dropped)...",
                 ["NoPermission"] = "You don't have permission to use this command."
             }, this, "en");
@@ -76,7 +86,7 @@ namespace Oxide.Plugins
         {
             if (item == null || item.info == null)
                 return false;
-            
+
             return doorShortnames.Contains(item.info.shortname);
         }
 
@@ -98,8 +108,8 @@ namespace Oxide.Plugins
                 if (door.skinID != 0 && targetSkins.Contains(door.skinID))
                 {
                     var ownerId = door.OwnerID;
-                    var ownerName = ownerId.IsSteamId() 
-                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown" 
+                    var ownerName = ownerId.IsSteamId()
+                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown"
                         : "Unknown";
 
                     foundDoors.Add(new DoorInfo
@@ -146,13 +156,13 @@ namespace Oxide.Plugins
                 if (droppedItem == null || droppedItem.item == null)
                     continue;
 
-                if (IsDoorItem(droppedItem.item) && 
-                    droppedItem.item.skin != 0 && 
+                if (IsDoorItem(droppedItem.item) &&
+                    droppedItem.item.skin != 0 &&
                     targetSkins.Contains(droppedItem.item.skin))
                 {
                     var ownerId = droppedItem.DroppedBy;
-                    var ownerName = ownerId.IsSteamId() 
-                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown" 
+                    var ownerName = ownerId.IsSteamId()
+                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown"
                         : "Unknown";
 
                     foundDoors.Add(new DoorInfo
@@ -177,8 +187,8 @@ namespace Oxide.Plugins
             if (player.inventory == null)
                 return;
 
-            var containers = new[] 
-            { 
+            var containers = new[]
+            {
                 player.inventory.containerBelt,
                 player.inventory.containerMain,
                 player.inventory.containerWear
@@ -220,8 +230,8 @@ namespace Oxide.Plugins
                 if (IsDoorItem(item) && item.skin != 0 && targetSkins.Contains(item.skin))
                 {
                     var ownerId = container.OwnerID;
-                    var ownerName = ownerId.IsSteamId() 
-                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown" 
+                    var ownerName = ownerId.IsSteamId()
+                        ? covalence.Players.FindPlayerById(ownerId.ToString())?.Name ?? "Unknown"
                         : "Unknown";
 
                     var containerName = container.ShortPrefabName ?? "Unknown";
@@ -266,7 +276,7 @@ namespace Oxide.Plugins
             }
 
             SendReply(arg, lang.GetMessage("Searching", this, arg.Player()?.UserIDString ?? ""));
-            
+
             var doors = FindAllDoorsWithTargetSkins();
 
             if (doors.Count == 0)
@@ -280,14 +290,14 @@ namespace Oxide.Plugins
 
             foreach (var doorInfo in doors)
             {
-                var positionStr = doorInfo.Position != Vector3.zero 
+                var positionStr = doorInfo.Position != Vector3.zero
                     ? $"X:{doorInfo.Position.x:F1} Y:{doorInfo.Position.y:F1} Z:{doorInfo.Position.z:F1}"
                     : "N/A";
-                
-                var idStr = doorInfo.DeployedDoor != null 
-                    ? $"Door ID: {doorInfo.DeployedDoor.net.ID}" 
+
+                var idStr = doorInfo.DeployedDoor != null
+                    ? $"Door ID: {doorInfo.DeployedDoor.net.ID}"
                     : $"Item ID: {(doorInfo.DoorItem != null ? doorInfo.DoorItem.uid.ToString() : "0")}";
-                
+
                 var info = string.Format(
                     lang.GetMessage("DoorInfo", this, arg.Player()?.UserIDString ?? ""),
                     idStr,
@@ -296,7 +306,7 @@ namespace Oxide.Plugins
                     $"{doorInfo.OwnerName} ({doorInfo.OwnerId})",
                     doorInfo.Location
                 );
-                
+
                 SendReply(arg, info);
                 if (!string.IsNullOrEmpty(doorInfo.ContainerInfo))
                 {
@@ -317,7 +327,7 @@ namespace Oxide.Plugins
             }
 
             SendReply(arg, lang.GetMessage("Searching", this, arg.Player()?.UserIDString ?? ""));
-            
+
             var doors = FindAllDoorsWithTargetSkins();
 
             if (doors.Count == 0)
@@ -332,14 +342,14 @@ namespace Oxide.Plugins
             int removedCount = 0;
             foreach (var doorInfo in doors)
             {
-                var positionStr = doorInfo.Position != Vector3.zero 
+                var positionStr = doorInfo.Position != Vector3.zero
                     ? $"X:{doorInfo.Position.x:F1} Y:{doorInfo.Position.y:F1} Z:{doorInfo.Position.z:F1}"
                     : "N/A";
-                
-                var idStr = doorInfo.DeployedDoor != null 
-                    ? $"Door ID: {doorInfo.DeployedDoor.net.ID}" 
+
+                var idStr = doorInfo.DeployedDoor != null
+                    ? $"Door ID: {doorInfo.DeployedDoor.net.ID}"
                     : $"Item ID: {(doorInfo.DoorItem != null ? doorInfo.DoorItem.uid.ToString() : "0")}";
-                
+
                 var info = string.Format(
                     lang.GetMessage("DoorInfo", this, arg.Player()?.UserIDString ?? ""),
                     idStr,
@@ -348,9 +358,9 @@ namespace Oxide.Plugins
                     $"{doorInfo.OwnerName} ({doorInfo.OwnerId})",
                     doorInfo.Location
                 );
-                
+
                 SendReply(arg, info + " - УДАЛЕНО");
-                
+
                 // Удаляем дверь или предмет
                 if (doorInfo.DeployedDoor != null && !doorInfo.DeployedDoor.IsDestroyed)
                 {
@@ -369,6 +379,68 @@ namespace Oxide.Plugins
             SendReply(arg, "---");
             SendReply(arg, string.Format(lang.GetMessage("DoorsRemoved", this, arg.Player()?.UserIDString ?? ""), removedCount));
             Puts($"[DoorSkinFinder] Removed {removedCount} doors/items with target skins");
+        }
+
+        private void RepaintDoorsCommand(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null && !arg.Player().IsAdmin)
+            {
+                SendReply(arg, lang.GetMessage("NoPermission", this, arg.Player()?.UserIDString ?? ""));
+                return;
+            }
+
+            SendReply(arg, lang.GetMessage("Searching", this, arg.Player()?.UserIDString ?? ""));
+
+            var doors = FindAllDoorsWithTargetSkins();
+
+            if (doors.Count == 0)
+            {
+                SendReply(arg, lang.GetMessage("NoDoorsFound", this, arg.Player()?.UserIDString ?? ""));
+                return;
+            }
+
+            SendReply(arg, string.Format(lang.GetMessage("DoorsFound", this, arg.Player()?.UserIDString ?? ""), doors.Count));
+            SendReply(arg, "---");
+
+            int repaintedCount = 0;
+            foreach (var doorInfo in doors)
+            {
+                var positionStr = doorInfo.Position != Vector3.zero
+                    ? $"X:{doorInfo.Position.x:F1} Y:{doorInfo.Position.y:F1} Z:{doorInfo.Position.z:F1}"
+                    : "N/A";
+
+                var idStr = doorInfo.DeployedDoor != null
+                    ? $"Door ID: {doorInfo.DeployedDoor.net.ID}"
+                    : $"Item ID: {(doorInfo.DoorItem != null ? doorInfo.DoorItem.uid.ToString() : "0")}";
+
+                var info = string.Format(
+                    lang.GetMessage("DoorInfo", this, arg.Player()?.UserIDString ?? ""),
+                    idStr,
+                    doorInfo.SkinId,
+                    positionStr,
+                    $"{doorInfo.OwnerName} ({doorInfo.OwnerId})",
+                    doorInfo.Location
+                );
+
+                SendReply(arg, info + $" - ПЕРЕКРАШЕНО В {ReplacementSkinId}");
+
+                if (doorInfo.DeployedDoor != null && !doorInfo.DeployedDoor.IsDestroyed)
+                {
+                    doorInfo.DeployedDoor.skinID = ReplacementSkinId;
+                    doorInfo.DeployedDoor.SendNetworkUpdateImmediate();
+                    repaintedCount++;
+                }
+                else if (doorInfo.DoorItem != null)
+                {
+                    doorInfo.DoorItem.skin = ReplacementSkinId;
+                    doorInfo.DoorItem.MarkDirty();
+                    repaintedCount++;
+                }
+            }
+
+            SendReply(arg, "---");
+            SendReply(arg, string.Format(lang.GetMessage("DoorsRepainted", this, arg.Player()?.UserIDString ?? ""), repaintedCount));
+            Puts($"[DoorSkinFinder] Repainted {repaintedCount} doors/items with target skins to {ReplacementSkinId}");
         }
     }
 }
