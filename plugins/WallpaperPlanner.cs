@@ -13,7 +13,7 @@ using System.IO;
 
 namespace Oxide.Plugins
 {
-    [Info("Wallpaper Planner", "RobJ/Razor", "2.2.7")]
+    [Info("Wallpaper Planner", "RobJ/Razor", "2.2.8")]
     [Description("Intercepts third-click on the Wallpaper Tool and shows a custom skin selector.")]
     public class WallpaperPlanner : RustPlugin
     {
@@ -827,6 +827,8 @@ namespace Oxide.Plugins
             public int elementat;
         }
 
+        private static string ArgStr(ConsoleSystem.Arg arg, int index) => arg.Args[index].ToString();
+
         [ChatCommand("wallpaperplanner")]
         private void OpenWallpaperPlannerCommand(BasePlayer player, string command, string[] args)
         {
@@ -903,7 +905,7 @@ namespace Oxide.Plugins
                         else
                             SaveTrack[player.UserIDString] = new configTrack();
 
-                        BuildAdminUI(player, arg.Args[2]);
+                        BuildAdminUI(player, ArgStr(arg, 2));
                         break;
                     }
 
@@ -1090,7 +1092,7 @@ namespace Oxide.Plugins
                         if (int.TryParse(arg.Args[3], out var page))
                             ShowCustomUI(player, page);
 
-                        SendGameTip(player, string.Format(lang.GetMessage("saved", this, player.UserIDString), arg.Args[2]));
+                        SendGameTip(player, string.Format(lang.GetMessage("saved", this, player.UserIDString), ArgStr(arg, 2)));
                         break;
                     }
 
@@ -1099,7 +1101,7 @@ namespace Oxide.Plugins
                         if (!SaveTrack.TryGetValue(player.UserIDString, out var trackInfo))
                             return;
 
-                        string values = string.Join(" ", arg.Args.Skip(2)).Trim();
+                        string values = string.Join(" ", arg.Args.Skip(2).Select(a => a.ToString())).Trim();
 
                         if (string.IsNullOrEmpty(values))
                             trackInfo.name = "";
@@ -1123,7 +1125,7 @@ namespace Oxide.Plugins
                             trackInfo.skin = values;
                         }
 
-                        trackInfo.lastSkin = arg.Args[2];
+                        trackInfo.lastSkin = ArgStr(arg, 2);
 
                         break;
                     }

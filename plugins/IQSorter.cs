@@ -13,7 +13,7 @@ using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("IQSorter", "Mercury", "1.13.14")]
+    [Info("IQSorter", "Mercury", "1.13.15")]
     [Description("Easy sorting with the UI menu")]
     public class IQSorter : RustPlugin
     {
@@ -648,7 +648,7 @@ namespace Oxide.Plugins
                         _.PrintError(LanguageEn
                             ? $"Failed to load the following images: {images}. Perhaps you did not upload them to the '{_printPath}' folder. You can download it here - https://drive.google.com/drive/folders/1p5aaswjBOjbd8el9gXzh0baI291Ekali?usp=sharing"
                             : $"Не удалось загрузить следующие изображения: {images}. Возможно, вы не загрузили их в папку '{_printPath}'. Скачать можно тут - https://drive.google.com/drive/folders/1p5aaswjBOjbd8el9gXzh0baI291Ekali?usp=sharing");
-                        Interface.Oxide.UnloadPlugin(_.Name);
+                        Interface.Oxide.UnloadPlugin(_.Name.ToString());
                     }
                     else
                     {
@@ -779,8 +779,10 @@ namespace Oxide.Plugins
             if (player == null) return;
             if (!permission.UserHasPermission(player.UserIDString, permissionUse)) return;
 
-            String action = arg.Args[0];
-            if (!Boolean.TryParse(arg.Args[1], out Boolean isContainer)) return;
+            if (!arg.HasArgs(2)) return;
+
+            String action = arg.Args[0].ToString();
+            if (!Boolean.TryParse(arg.Args[1].ToString(), out Boolean isContainer)) return;
 
             switch (action)
             {

@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins;
 
-[Info("Player DLC API", "k1lly0u", "1.6.2")]
+[Info("Player DLC API", "k1lly0u", "1.6.3")]
 [Description("Provides an API for checking player ownership of DLC items and skins by workshop ID.")]
 class PlayerDLCAPI : RustPlugin
 {
@@ -167,7 +167,7 @@ class PlayerDLCAPI : RustPlugin
     
     private bool HasUnlocked(BasePlayer player, SteamInventoryItem item)
     {
-        if (item.DlcItem && item.DlcItem.HasLicense(player))
+        if (item.DlcItem && PlayerOwnsDownloadableContent(player, item.DlcItem.dlcAppID))
             return true;
 
         if (item.UnlockedViaSteamItem && CheckContentOwnership(player, item.UnlockedViaSteamItem.id))
@@ -177,7 +177,7 @@ class PlayerDLCAPI : RustPlugin
     }
 
     private bool PlayerOwnsDownloadableContent(BasePlayer player, int dlcAppID) =>
-        PlatformService.Instance.IsValid && PlatformService.Instance.PlayerOwnsDownloadableContent(player.userID, dlcAppID);
+        PlatformService.Instance.IsValid && PlatformService.Instance.PlayerOwnsDownloadableContent(player, dlcAppID);
     
     #region API
 

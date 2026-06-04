@@ -24,7 +24,7 @@ using UIAnchor = Oxide.Ext.Chaos.UIFramework.Anchor;
 
 namespace Oxide.Plugins
 {
-    [Info("SkinBox", "k1lly0u", "2.2.30")]
+    [Info("SkinBox", "k1lly0u", "2.2.31")]
     [Description("Allows you to reskin item's by placing it in the SkinBox and selecting a new skin")]
     class SkinBox : ChaosPlugin
     {
@@ -2607,7 +2607,7 @@ namespace Oxide.Plugins
                                 .WithStyle(m_InputStyle)
                                 .InHudMenu()
                                 .WithCallback(m_CallbackHandler, (arg) =>
-                                        SetSearchParameters(arg.Args.Length > 1 ? string.Join(" ", arg.Args.Skip(1)) : string.Empty), $"{Looter.userID}.search");
+                                        SetSearchParameters(arg.Args.Length > 1 ? string.Join(" ", ToStringArgs(arg).Skip(1)) : string.Empty), $"{Looter.userID}.search");
 
                             ImageContainer.Create(search, UIAnchor.CenterLeft, new Offset(-20, -10, 0, 10))
                                 .WithStyle(m_PanelStyle);
@@ -3702,13 +3702,24 @@ namespace Oxide.Plugins
         #region Skin Requests
         private static DiscordWebhook _requestWebhook;
 
+        private static string[] ToStringArgs(ConsoleSystem.Arg arg)
+        {
+            if (arg?.Args == null || arg.Args.Length == 0)
+                return Array.Empty<string>();
+
+            string[] result = new string[arg.Args.Length];
+            for (int i = 0; i < arg.Args.Length; i++)
+                result[i] = arg.Args[i].ToString();
+            return result;
+        }
+
         [ConsoleCommand("skinbox.request")]
         private void ccmdRequestSkin(ConsoleSystem.Arg arg)
         {
             BasePlayer p = arg.Player();
             if (p)
             {
-                cmdRequestSkin(p, "", arg.Args);
+                cmdRequestSkin(p, "", ToStringArgs(arg));
                 return;
             }
             
@@ -3740,7 +3751,7 @@ namespace Oxide.Plugins
 
             for (int i = 1; i < arg.Args.Length; i++)
             {
-                string v = arg.Args[i];
+                string v = arg.Args[i].ToString();
 
                 if (!ulong.TryParse(v, out ulong skinId))
                 {
@@ -4229,7 +4240,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0];
+            string perm = arg.Args[0].ToString();
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
@@ -4283,7 +4294,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0];
+            string perm = arg.Args[0].ToString();
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
@@ -4440,7 +4451,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0];
+            string perm = arg.Args[0].ToString();
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
@@ -4477,7 +4488,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0];
+            string perm = arg.Args[0].ToString();
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
