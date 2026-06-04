@@ -153,6 +153,15 @@ $config = [
                 ['pattern' => 'v1/clans/<serverTag:[\w-]+>/<id:\d+>', 'route' => 'v1/clans/update', 'verb' => ['PATCH', 'PUT', 'OPTIONS']],
                 'v1/clans/<serverTag:[\w-]+>/<id:\d+>' => 'v1/clans/view',
 
+                // Tournaments
+                'v1/tournaments/<slug:[\w-]+>/leaderboard' => 'v1/tournaments/leaderboard',
+                'v1/tournaments/<slug:[\w-]+>/raids' => 'v1/tournaments/raids',
+                'v1/tournaments/<slug:[\w-]+>/participants' => 'v1/tournaments/participants',
+                ['pattern' => 'v1/tournaments/<slug:[\w-]+>/register', 'route' => 'v1/tournaments/register', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/tournaments/<slug:[\w-]+>/participants', 'route' => 'v1/tournaments/add-participants', 'verb' => ['POST', 'OPTIONS']],
+                'v1/tournaments/<slug:[\w-]+>' => 'v1/tournaments/view',
+                'v1/tournaments' => 'v1/tournaments/index',
+
                 // Settings (site-definitions — до index, иначе перехватит общий v1/settings)
                 'v1/settings/site-definitions' => 'v1/settings/site-definitions',
                 'v1/settings' => 'v1/settings/index',

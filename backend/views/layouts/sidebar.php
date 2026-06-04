@@ -128,6 +128,12 @@ if ($moder) {
         'url' => ['/clan/index'],
         'active' => _checkActive('/clan'),
     ];
+    $moderationItems[] = [
+        'label' => Yii::t('common', 'Турниры'),
+        'icon' => 'fas fa-trophy',
+        'url' => ['/tournament/index'],
+        'active' => _checkActive('/tournament'),
+    ];
 }
 if ($moder) {
     $moderationItems[] = [

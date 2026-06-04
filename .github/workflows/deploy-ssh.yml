@@ -13,6 +13,7 @@
 #
 #   DEPLOY_CRONTAB — опционально: полное содержимое crontab для пользователя SSH (или root).
 #     Полностью заменяет crontab этого пользователя — укажите все нужные строки (расписание + команда).
+#     Турниры (рейтинг активных): */5 * * * * cd DEPLOY_PATH && YII_ENV=prod ./yii tournament/recalculate-rankings
 #   DEPLOY_CRONTAB_ROOT — если 1 / true / yes: ставить через «sudo crontab» (crontab пользователя root).
 #     Иначе: crontab текущего SSH_USER. Для root-варианта в sudoers нужен NOPASSWD на /usr/bin/crontab.
 #   После установки crontab шлётся SIGHUP сервису cron/crond (systemctl kill), чтобы задания подхватились сразу.
