@@ -13,7 +13,7 @@ using System.IO;
 
 namespace Oxide.Plugins
 {
-    [Info("Wallpaper Planner", "RobJ/Razor", "2.2.6")]
+    [Info("Wallpaper Planner", "RobJ/Razor", "2.2.7")]
     [Description("Intercepts third-click on the Wallpaper Tool and shows a custom skin selector.")]
     public class WallpaperPlanner : RustPlugin
     {
@@ -856,7 +856,7 @@ namespace Oxide.Plugins
                 playerData = new PlayerData();
                 _playerData[player.userID] = playerData;
             }
-            switch (arg.Args[1])
+            switch (arg.Args[1].ToString())
             {
                 case "close":
                     {
@@ -917,7 +917,7 @@ namespace Oxide.Plugins
 
                         SkinInfo info = null;
 
-                        switch (arg.Args[3])
+                        switch (arg.Args[3].ToString())
                         {
                             case "wall":
                                 info = configData.settingsW.info.ElementAt(position);
@@ -960,7 +960,7 @@ namespace Oxide.Plugins
 
                         SkinInfo info = null;
 
-                        switch (arg.Args[2])
+                        switch (arg.Args[2].ToString())
                         {
                             case "wall":
                                 info = configData.settingsW.info.ElementAt(trackInfo.elementat);
@@ -998,7 +998,7 @@ namespace Oxide.Plugins
                         if (!SaveTrack.TryGetValue(player.UserIDString, out var trackInfo))
                             return;
 
-                        switch (arg.Args[2])
+                        switch (arg.Args[2].ToString())
                         {
                             case "wall":
                                 configData.settingsW.info.RemoveAt(trackInfo.elementat);
@@ -1047,7 +1047,7 @@ namespace Oxide.Plugins
                             return;
                         }
 
-                        switch (arg.Args[2])
+                        switch (arg.Args[2].ToString())
                         {
                             case "wall":
                                 foreach (var skins in configData.settingsW.info)

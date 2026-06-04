@@ -13,7 +13,7 @@ using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("IQSorter", "Mercury", "1.13.13")]
+    [Info("IQSorter", "Mercury", "1.13.14")]
     [Description("Easy sorting with the UI menu")]
     public class IQSorter : RustPlugin
     {
@@ -673,7 +673,7 @@ namespace Oxide.Plugins
 
             private IEnumerator ProcessDownloadImage(KeyValuePair<string, ImageData> image)
             {
-                String url = "file://" + Interface.Oxide.DataDirectory + "/" + _path + image.Key + ".png";
+                String url = "file://" + Interface.Oxide.DataDirectory.ToString() + "/" + _path + image.Key + ".png";
 
                 using UnityWebRequest www = UnityWebRequestTexture.GetTexture(url);
                 yield return www.SendWebRequest();

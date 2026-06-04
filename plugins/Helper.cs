@@ -23,7 +23,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Helper Prostoj", "moscow77.store", "1.0.0")]
+    [Info("Helper Prostoj", "moscow77.store", "1.0.1")]
     [Description("Плагин, для помощи работы сайта.")]
     public class Helper : RustPlugin
     {
@@ -31,7 +31,7 @@ namespace Oxide.Plugins
 
         public class Configuration
         {
-            [JsonProperty(PropertyName = "Sender Steam ID")]
+            [JsonProperty("Sender Steam ID")]
             public ulong SenderSteamId { get; set; } = 76561198394504608;
         }
 
@@ -67,9 +67,9 @@ namespace Oxide.Plugins
             try
             {
                 // Получаем IP и порт сервера
-                String serverIp = ConVar.Server.ip;
+                String serverIp = ConVar.Server.ip.ToString();
                 Int32 serverPort = ConVar.Server.port;
-                String pluginName = Name; // "Helper"
+                String pluginName = Name.ToString(); // "Helper"
 
                 String apiUrl = $"https://api.prostoj.store/rust-plugin-config/get?ip={serverIp}&port={serverPort}&name={pluginName}";
 
