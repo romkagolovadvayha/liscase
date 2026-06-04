@@ -14,7 +14,7 @@ using WebSocketSharp;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.4.3")]
+    [Info("ProstojRUST", "prostoj.store", "0.4.4")]
     public class ProstojRUST : RustPlugin
     {
         #region References
@@ -837,22 +837,29 @@ namespace Oxide.Plugins
             var player = args.Player();
             if (player == null || !args.HasArgs()) return;
 
-            var action = args.Args[0];
-            switch (action)
+            switch (args.Args[0].ToLower())
             {
                 case "page":
+                {
                     ShowStoreUI(player, args.GetInt(1), false);
-                    return;
+                    break;
+                }
                 case "help":
+                {
                     ShowHelpUI(player);
-                    return;
+                    break;
+                }
                 case "take":
+                {
                     RequestTakeFromBasket(player, args.GetInt(1), args.GetInt(2));
-                    return;
+                    break;
+                }
                 case "close":
+                {
                     CuiHelper.DestroyUi(player, StoreLayer);
                     CuiHelper.DestroyUi(player, HelpLayer);
-                    return;
+                    break;
+                }
             }
         }
 
