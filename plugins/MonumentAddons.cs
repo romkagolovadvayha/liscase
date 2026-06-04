@@ -47,7 +47,7 @@ using Vector3 = UnityEngine.Vector3;
 
 namespace Oxide.Plugins
 {
-    [Info("Monument Addons", "WhiteThunder", "0.20.1")]
+    [Info("Monument Addons", "WhiteThunder", "0.21.1")]
     [Description("Allows adding entities, spawn points and more to monuments.")]
     internal class MonumentAddons : CovalencePlugin
     {
@@ -59,6 +59,7 @@ namespace Oxide.Plugins
         private Configuration _config;
         private StoredData _data;
         private ProfileStateData _profileStateData;
+        private SpawnedVehicleData _spawnedVehicleData;
 
         private const float MaxRaycastDistance = 100;
         private const float TerrainProximityTolerance = 0.001f;
@@ -115,6 +116,7 @@ namespace Oxide.Plugins
         private readonly WireToolManager _wireToolManager;
         private readonly IOManager _ioManager = new IOManager();
         private readonly UndoManager _undoManager = new UndoManager();
+        private readonly SpawnGroupLimitManager _spawnGroupLimitManager;
 
         private readonly ValueRotator<Color> _colorRotator = new(
             Color.HSVToRGB(0, 1, 1),
@@ -132,6 +134,7 @@ namespace Oxide.Plugins
         private ItemDefinition _waterDefinition;
         private ProtectionProperties _immortalProtection;
         private ActionDebounced _saveProfileStateDebounced;
+        private ActionDebounced _saveSpawnedVehicleDataDebounced;
         private StringBuilder _sb = new StringBuilder();
         private HashSet<string> _deployablePrefabs = new();
         private BaseEntity[] _entityBuffer = new BaseEntity[32];
@@ -150,6 +153,7 @@ namespace Oxide.Plugins
             _controllerFactory = new ControllerFactory(this);
             _monumentHelper = new MonumentHelper(this);
             _wireToolManager = new WireToolManager(this, _profileStore);
+            _spawnGroupLimitManager = new SpawnGroupLimitManager(this);
 
             _saveProfileStateDebounced = new ActionDebounced(timer, 1, () =>
             {
@@ -157,6 +161,14 @@ namespace Oxide.Plugins
                     return;
 
                 _profileStateData.Save();
+            });
+
+            _saveSpawnedVehicleDataDebounced = new ActionDebounced(timer, 1, () =>
+            {
+                if (!_isLoaded)
+                    return;
+
+                _spawnedVehicleData.SaveIfDirty();
             });
 
             _dynamicMonumentHooks = new HookCollection(
@@ -174,6 +186,7 @@ namespace Oxide.Plugins
         {
             _data = StoredData.Load(_profileStore);
             _profileStateData = ProfileStateData.Load(_data);
+            _spawnedVehicleData = SpawnedVehicleData.Load();
 
             _config.Init();
 
@@ -200,6 +213,7 @@ namespace Oxide.Plugins
             _adapterListenerManager.OnServerInitialized();
             _monumentHelper.OnServerInitialized();
             _ioManager.OnServerInitialized();
+            _spawnGroupLimitManager.OnServerInitialized();
 
             var entitiesToKill = _profileStateData.CleanDisabledProfileState();
             if (entitiesToKill.Count > 0)
@@ -223,7 +237,9 @@ namespace Oxide.Plugins
             _coroutineManager.Destroy();
             _profileManager.UnloadAllProfiles();
             _saveProfileStateDebounced.Flush();
+            _saveSpawnedVehicleDataDebounced.Flush();
             _wireToolManager.Unload();
+            SpawnedVehicleComponent.DestroyAll();
 
             UnityEngine.Object.Destroy(_immortalProtection);
 
@@ -233,6 +249,7 @@ namespace Oxide.Plugins
         private void OnNewSave()
         {
             _profileStateData.Reset();
+            _spawnedVehicleData.Reset();
         }
 
         private void OnPluginLoaded(Plugin plugin)
@@ -262,6 +279,9 @@ namespace Oxide.Plugins
             var entityForClosure = entity;
             NextTick(() =>
             {
+                if (entityForClosure == null || entityForClosure.IsDestroyed)
+                    return;
+
                 if (ExposedHooks.OnDynamicMonument(entityForClosure) is false)
                     return;
 
@@ -1269,8 +1289,7 @@ namespace Oxide.Plugins
                 || !VerifyLookingAtAdapter(player, out EntityAdapter adapter, out EntityController controller, LangEntry.ErrorNoSuitableAddonFound))
                 return;
 
-            var cardReader = adapter.Entity as CardReader;
-            if ((object)cardReader == null)
+            if (adapter.Entity is not CardReader cardReader)
             {
                 ReplyToPlayer(player, LangEntry.ErrorNoSuitableAddonFound);
                 return;
@@ -2332,6 +2351,37 @@ namespace Oxide.Plugins
                     break;
                 }
 
+                case "kill":
+                case "delete":
+                {
+                    if (!VerifyLookingAtAdapter(player, out SpawnGroupController spawnGroupController, LangEntry.ErrorNoSpawnPointFound))
+                        return;
+
+                    var spawnGroupData = spawnGroupController.SpawnGroupData;
+                    var spawnGroupName = spawnGroupData.Name;
+
+                    // Capture adapter count before killing the controller.
+                    var numAdapters = spawnGroupController.Adapters.Count;
+
+                    spawnGroupController.Profile.RemoveData(spawnGroupData, out var monumentIdentifier);
+                    _dynamicMonumentHooks.Refresh();
+                    var profile = spawnGroupController.Profile;
+                    _profileStore.Save(profile);
+
+                    var profileController = spawnGroupController.ProfileController;
+                    var killRoutine = spawnGroupController.Kill();
+                    if (killRoutine != null)
+                    {
+                        profileController.StartCallbackRoutine(killRoutine, profileController.SetupIO);
+                    }
+
+                    _undoManager.AddUndo(basePlayer, new UndoKill(this, profileController, monumentIdentifier, spawnGroupData));
+
+                    ReplyToPlayer(player, LangEntry.SpawnGroupDeleteSuccess, spawnGroupName, numAdapters, profile.Name);
+                    _adapterDisplayManager.ShowAllRepeatedly(basePlayer);
+                    break;
+                }
+
                 default:
                 {
                     SubCommandSpawnGroupHelp(player, cmd);
@@ -2350,6 +2400,7 @@ namespace Oxide.Plugins
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnGroupHelpRemove, cmd));
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnGroupHelpSpawn, cmd));
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnGroupHelpRespawn, cmd));
+            _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnGroupHelpDelete, cmd));
             player.Reply(_sb.ToString());
         }
 
@@ -2513,6 +2564,34 @@ namespace Oxide.Plugins
                     break;
                 }
 
+                case "kill":
+                case "delete":
+                {
+                    if (!VerifyLookingAtAdapter(player, out SpawnPointAdapter spawnPointAdapter, out SpawnGroupController spawnGroupController, LangEntry.ErrorNoSpawnPointFound))
+                        return;
+
+                    var spawnPointData = spawnPointAdapter.SpawnPointData;
+                    var spawnGroupData = spawnGroupController.SpawnGroupData;
+
+                    spawnGroupController.Profile.RemoveData(spawnPointData, out var monumentIdentifier);
+                    _dynamicMonumentHooks.Refresh();
+                    var profile = spawnGroupController.Profile;
+                    _profileStore.Save(profile);
+
+                    var profileController = spawnGroupController.ProfileController;
+                    var killRoutine = spawnGroupController.Kill(spawnPointData);
+                    if (killRoutine != null)
+                    {
+                        profileController.StartCallbackRoutine(killRoutine, profileController.SetupIO);
+                    }
+
+                    _undoManager.AddUndo(basePlayer, new UndoKillSpawnPoint(this, profileController, monumentIdentifier, spawnGroupData, spawnPointData));
+
+                    ReplyToPlayer(player, LangEntry.SpawnPointDeleteSuccess, spawnGroupData.Name);
+                    _adapterDisplayManager.ShowAllRepeatedly(basePlayer);
+                    break;
+                }
+
                 default:
                 {
                     SubCommandSpawnPointHelp(player, cmd);
@@ -2527,6 +2606,7 @@ namespace Oxide.Plugins
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnPointHelpHeader));
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnPointHelpCreate, cmd));
             _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnPointHelpSet, cmd));
+            _sb.AppendLine(GetMessage(player.Id, LangEntry.SpawnPointHelpDelete, cmd));
             player.Reply(_sb.ToString());
         }
 
@@ -3725,6 +3805,25 @@ namespace Oxide.Plugins
             return false;
         }
 
+        private static Dictionary<uint, T> RemapPrefabPathToId<T>(Dictionary<string, T> original)
+        {
+            var result = new Dictionary<uint, T>();
+
+            foreach (var (prefabPath, value) in original)
+            {
+                var baseEntity = FindPrefabBaseEntity(prefabPath);
+                if (baseEntity == null)
+                {
+                    LogError($"Invalid entity prefab in config: {prefabPath}");
+                    continue;
+                }
+
+                result[baseEntity.prefabID] = value;
+            }
+
+            return result;
+        }
+
         private static HashSet<string> DetermineAllDeployablePrefabs()
         {
             var prefabList = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
@@ -4032,6 +4131,11 @@ namespace Oxide.Plugins
         private static bool IsSpawnPointEntity(BaseEntity entity)
         {
             return IsSpawnPointEntity(entity, out _);
+        }
+
+        private static bool IsVehicle(BaseEntity entity)
+        {
+            return entity is HotAirBalloon or BaseVehicle;
         }
 
         private bool IsTransformAddon(Component component, out TransformAdapter adapter, out BaseController controller)
@@ -4387,7 +4491,7 @@ namespace Oxide.Plugins
 
             public static void Text(BasePlayer player, float duration, Color color, Vector3 origin, string text)
             {
-                player.SendConsoleCommand("ddraw.text", duration, color, origin, text);
+                player.SendConsoleCommand("ddraw.text", duration, color, origin, $"<size=15>{text}</size>");
             }
 
             public static void Box(BasePlayer player, float duration, Color color, Vector3 center, Quaternion rotation, Vector3 extents, float sphereRadius = 0.5f)
@@ -4482,6 +4586,32 @@ namespace Oxide.Plugins
 
         private static class EntityUtils
         {
+            public static T SpawnEntity<T>(string prefabPath, Vector3 position, Quaternion rotation) where T : BaseEntity
+            {
+                var entity = CreateEntity<T>(prefabPath, position, rotation);
+                entity?.Spawn();
+                return entity;
+            }
+
+            public static T CreateEntity<T>(string prefabPath, Vector3 position, Quaternion rotation) where T : BaseEntity
+            {
+                var entity = GameManager.server.CreateEntity(prefabPath, position, rotation);
+                if (entity == null)
+                    return null;
+
+                if (entity is T entityOfType)
+                    return entityOfType;
+
+                LogWarning($"Entity '{prefabPath}' is not of expected type '{typeof(T).Name}'. Destroying it to prevent issues.");
+                UnityEngine.Object.Destroy(entity.gameObject);
+                return null;
+            }
+
+            public static BaseEntity CreateEntity(string prefabPath, Vector3 position, Quaternion rotation)
+            {
+                return CreateEntity<BaseEntity>(prefabPath, position, rotation);
+            }
+
             public static T GetNearbyEntity<T>(BaseEntity originEntity, float maxDistance, int layerMask = -1, string filterShortPrefabName = null) where T : BaseEntity
             {
                 var entityList = new List<T>();
@@ -6535,7 +6665,9 @@ namespace Oxide.Plugins
 
             public virtual bool TryRecordUpdates(Transform moveTransform = null, Transform rotateTransform = null, bool dryRun = false)
             {
-                if (IsAtIntendedPosition)
+                // HACK: For dry-run case, we don't want to display a rotated NPC as having "unsaved changes".
+                if (Position == IntendedPosition
+                    && (Rotation == IntendedRotation || (dryRun && Component is BasePlayer)))
                     return false;
 
                 if (!dryRun)
@@ -6779,8 +6911,7 @@ namespace Oxide.Plugins
             {
                 foreach (var adapter in Adapters.ToList())
                 {
-                    var prefabAdapter = adapter as PrefabAdapter;
-                    if (prefabAdapter is not { IsValid: true })
+                    if (adapter is not PrefabAdapter { IsValid: true } prefabAdapter)
                         continue;
 
                     prefabAdapter.HandleChanges();
@@ -7157,6 +7288,16 @@ namespace Oxide.Plugins
                     hasChanged = true;
                 }
 
+                if (Entity is NPCPlayer npc && (EntityData.NPCOutfit == null || !EntityData.NPCOutfit.MatchesNPC(npc)))
+                {
+                    if (!dryRun)
+                    {
+                        EntityData.NPCOutfit = NPCOutfitData.FromNPC(npc);
+                    }
+
+                    hasChanged = true;
+                }
+
                 if (Entity is IRFObject rfObject && EntityData.IOEntityData?.Frequency != rfObject.GetFrequency())
                 {
                     if (!dryRun)
@@ -7181,6 +7322,7 @@ namespace Oxide.Plugins
                 UpdateSkullName();
                 UpdateHuntingTrophy();
                 UpdateMannequin();
+                UpdateNPCOutfit();
                 UpdatePuzzle();
                 UpdateCardReaderLevel();
                 UpdateIOStateAndConnections();
@@ -7194,8 +7336,7 @@ namespace Oxide.Plugins
                 if (skullName == null)
                     return;
 
-                var skullTrophy = Entity as SkullTrophyGlobal;
-                if (skullTrophy == null)
+                if (Entity is not SkullTrophyGlobal skullTrophy)
                     return;
 
                 if (skullTrophy.inventory == null)
@@ -7225,8 +7366,7 @@ namespace Oxide.Plugins
                 if (headData == null)
                     return;
 
-                var huntingTrophy = Entity as HuntingTrophy;
-                if (huntingTrophy == null)
+                if (Entity is not HuntingTrophy huntingTrophy)
                     return;
 
                 headData.ApplyToHuntingTrophy(huntingTrophy);
@@ -7254,8 +7394,7 @@ namespace Oxide.Plugins
                 if (mannequinData == null)
                     return;
 
-                var mannequin = Entity as Mannequin;
-                if (mannequin == null)
+                if (Entity is not Mannequin mannequin)
                     return;
 
                 mannequinData.ApplyToMannequin(mannequin);
@@ -7270,6 +7409,21 @@ namespace Oxide.Plugins
                 {
                     _mannequinPoseCoroutine = ProfileController.StartCoroutine(MannequinPoseRoutine(mannequin, mannequinData.PoseFrames));
                 }
+            }
+
+            public void UpdateNPCOutfit()
+            {
+                var npcOutfit = EntityData.NPCOutfit;
+                if (npcOutfit == null || npcOutfit.IsEmpty())
+                    return;
+
+                if (Entity is not NPCPlayer npc)
+                    return;
+
+                if (npcOutfit.MatchesNPC(npc))
+                    return;
+
+                npcOutfit.ApplyToNPC(npc);
             }
 
             private void UpdateFrequency(IOEntity ioEntity, IRFObject rfObject, int frequency)
@@ -7300,8 +7454,7 @@ namespace Oxide.Plugins
                 if (ioEntityData == null)
                     return;
 
-                var ioEntity = Entity as IOEntity;
-                if (ioEntity == null)
+                if (Entity is not IOEntity ioEntity)
                     return;
 
                 if (ioEntity is IRFObject rfObject)
@@ -7399,8 +7552,7 @@ namespace Oxide.Plugins
 
             public void MaybeProvidePower()
             {
-                var ioEntity = Entity as IOEntity;
-                if ((object)ioEntity == null)
+                if (Entity is not IOEntity ioEntity)
                     return;
 
                 _ioManager.MaybeProvidePower(ioEntity);
@@ -7439,8 +7591,7 @@ namespace Oxide.Plugins
 
                 EntitySetupUtils.PreSpawnShared(Entity);
 
-                var buildingBlock = Entity as BuildingBlock;
-                if (buildingBlock != null)
+                if (Entity is BuildingBlock buildingBlock)
                 {
                     buildingBlock.blockDefinition = PrefabAttribute.server.Find<Construction>(buildingBlock.prefabID);
                     if (buildingBlock.blockDefinition != null)
@@ -7453,8 +7604,7 @@ namespace Oxide.Plugins
                     }
                 }
 
-                var ioEntity = Entity as IOEntity;
-                if (ioEntity != null)
+                if (Entity is IOEntity ioEntity)
                 {
                     UpdateIOEntitySlotPositions(ioEntity);
                 }
@@ -7470,8 +7620,7 @@ namespace Oxide.Plugins
                 // NPCVendingMachine needs its skin updated after spawn because vanilla sets it to 861142659.
                 UpdateSkin();
 
-                var computerStation = Entity as ComputerStation;
-                if (computerStation != null && computerStation.isStatic)
+                if (Entity is ComputerStation { isStatic: true } computerStation)
                 {
                     var computerStation2 = computerStation;
                     computerStation.CancelInvoke(computerStation.GatherStaticCameras);
@@ -7483,8 +7632,7 @@ namespace Oxide.Plugins
                     }, 1);
                 }
 
-                var paddlingPool = Entity as PaddlingPool;
-                if (paddlingPool != null)
+                if (Entity is PaddlingPool paddlingPool)
                 {
                     paddlingPool.inventory.AddItem(Plugin._waterDefinition, paddlingPool.inventory.maxStackSize);
 
@@ -7492,8 +7640,7 @@ namespace Oxide.Plugins
                     paddlingPool.SetFlag(BaseEntity.Flags.Busy, true);
                 }
 
-                var vehicleSpawner = Entity as VehicleSpawner;
-                if (vehicleSpawner != null)
+                if (Entity is VehicleSpawner vehicleSpawner)
                 {
                     var vehicleSpawner2 = vehicleSpawner;
                     vehicleSpawner.Invoke(() =>
@@ -7504,8 +7651,7 @@ namespace Oxide.Plugins
                     }, 1);
                 }
 
-                var vehicleVendor = Entity as VehicleVendor;
-                if (vehicleVendor != null)
+                if (Entity is VehicleVendor vehicleVendor)
                 {
                     // Use a slightly longer delay than the vendor check since this can short-circuit as an optimization.
                     var vehicleVendor2 = vehicleVendor;
@@ -7517,8 +7663,7 @@ namespace Oxide.Plugins
                     }, 2);
                 }
 
-                var candle = Entity as Candle;
-                if (candle != null)
+                if (Entity is Candle candle)
                 {
                     candle.SetFlag(BaseEntity.Flags.On, true);
                     candle.CancelInvoke(candle.Burn);
@@ -7527,8 +7672,7 @@ namespace Oxide.Plugins
                     candle.SetFlag(BaseEntity.Flags.Busy, true);
                 }
 
-                var fogMachine = Entity as FogMachine;
-                if (fogMachine != null)
+                if (Entity is FogMachine fogMachine)
                 {
                     var fogMachine2 = fogMachine;
                     fogMachine.SetFlag(BaseEntity.Flags.On, true);
@@ -7546,8 +7690,7 @@ namespace Oxide.Plugins
                     fogMachine.SetFlag(BaseEntity.Flags.Busy, true);
                 }
 
-                var oven = Entity as BaseOven;
-                if (oven != null)
+                if (Entity is BaseOven oven)
                 {
                     // Lanterns
                     if (oven is BaseFuelLightSource)
@@ -7564,8 +7707,7 @@ namespace Oxide.Plugins
                     }
                 }
 
-                var spooker = Entity as SpookySpeaker;
-                if (spooker != null)
+                if (Entity is SpookySpeaker spooker)
                 {
                     spooker.SetFlag(BaseEntity.Flags.On, true);
                     spooker.InvokeRandomized(
@@ -7577,14 +7719,12 @@ namespace Oxide.Plugins
                     spooker.SetFlag(BaseEntity.Flags.Busy, true);
                 }
 
-                var door = Entity as Door;
-                if (door != null)
+                if (Entity is Door door)
                 {
                     door.canTakeLock = false;
                 }
 
-                var doorManipulator = Entity as DoorManipulator;
-                if (doorManipulator != null)
+                if (Entity is DoorManipulator doorManipulator)
                 {
                     if (doorManipulator.targetDoor != null)
                     {
@@ -7602,8 +7742,7 @@ namespace Oxide.Plugins
                     }
                 }
 
-                var spray = Entity as SprayCanSpray;
-                if (spray != null)
+                if (Entity is SprayCanSpray spray)
                 {
                     spray.CancelInvoke(spray.RainCheck);
                     #if !CARBON
@@ -7611,14 +7750,12 @@ namespace Oxide.Plugins
                     #endif
                 }
 
-                var telephone = Entity as Telephone;
-                if (telephone != null && telephone.prefabID == 1009655496)
+                if (Entity is Telephone { prefabID: 1009655496 } telephone)
                 {
                     PhoneUtils.NameTelephone(telephone, Monument, Position, Plugin._monumentHelper);
                 }
 
-                var microphoneStand = Entity as MicrophoneStand;
-                if ((object)microphoneStand != null)
+                if (Entity is MicrophoneStand microphoneStand)
                 {
                     var microphoneStand2 = microphoneStand;
                     microphoneStand.Invoke(() =>
@@ -7629,15 +7766,13 @@ namespace Oxide.Plugins
                     }, 1);
                 }
 
-                var storageContainer = Entity as StorageContainer;
-                if ((object)storageContainer != null)
+                if (Entity is StorageContainer storageContainer)
                 {
                     storageContainer.isLockable = false;
                     storageContainer.isMonitorable = false;
                 }
 
-                var christmasTree = Entity as ChristmasTree;
-                if ((object)christmasTree != null)
+                if (Entity is ChristmasTree christmasTree)
                 {
                     foreach (var itemShortName in _config.XmasTreeDecorations)
                     {
@@ -7659,22 +7794,24 @@ namespace Oxide.Plugins
                     UpdateScale();
                 }
 
-                var skullTrophy = Entity as SkullTrophyGlobal;
-                if (skullTrophy != null)
+                if (Entity is SkullTrophyGlobal)
                 {
                     UpdateSkullName();
                 }
 
-                var huntingTrophy = Entity as HuntingTrophy;
-                if (huntingTrophy != null)
+                if (Entity is HuntingTrophy)
                 {
                     UpdateHuntingTrophy();
                 }
 
-                var mannequin = Entity as Mannequin;
-                if (mannequin != null)
+                if (Entity is Mannequin)
                 {
                     UpdateMannequin();
+                }
+
+                if (Entity is NPCPlayer)
+                {
+                    UpdateNPCOutfit();
                 }
 
                 EnableFlags();
@@ -7698,7 +7835,7 @@ namespace Oxide.Plugins
 
                 // Don't unregister the entity if it's not tracked in the profile state.
                 // Entity should be killed along with the adapter.
-                if (!_profileStateData.HasEntity(Profile.Name, Monument, Data.Id, Entity.net.ID))
+                if (!_profileStateData.HasEntity(Profile.Name, Monument, Data.Id, Entity.net.ID.Value))
                     return;
 
                 // Unregister the adapter to prevent the entity from being killed when the adapter is killed.
@@ -7708,7 +7845,7 @@ namespace Oxide.Plugins
 
             protected BaseEntity CreateEntity(Vector3 position, Quaternion rotation)
             {
-                var entity = GameManager.server.CreateEntity(EntityData.PrefabName, position, rotation);
+                var entity = EntityUtils.CreateEntity(EntityData.PrefabName, position, rotation);
                 if (entity == null)
                     return null;
 
@@ -7734,7 +7871,7 @@ namespace Oxide.Plugins
                 return entity;
             }
 
-            private bool ShouldEnableSaving(BaseEntity entity)
+            protected bool ShouldEnableSaving(BaseEntity entity)
             {
                 return _config.EntitySaveSettings.ShouldEnableSaving(entity);
             }
@@ -7911,8 +8048,7 @@ namespace Oxide.Plugins
 
             private void UpdateCardReaderLevel()
             {
-                var cardReader = Entity as CardReader;
-                if ((object)cardReader == null)
+                if (Entity is not CardReader cardReader)
                     return;
 
                 var accessLevel = EntityData.CardReaderLevel;
@@ -8399,6 +8535,144 @@ namespace Oxide.Plugins
 
         #endregion
 
+        #region Entity Adapter/Controller - NPCShopKeeper
+
+        // Specific shopkeeper prefabs need an associated vending machine.
+        // Otherwise, they have no function or some dialogue choices are broken.
+        // CustomVendingSetup data is saved under the vendor addon definition.
+        private class NPCShopKeeperAdapter : EntityAdapter
+        {
+            private const string ShopkeeperVMInvisPrefab = "assets/prefabs/deployable/vendingmachine/npcvendingmachines/shopkeeper_vm_invis.prefab";
+            private const string ShopkeeperVMInvisWaterwellPrefab = "assets/prefabs/deployable/vendingmachine/npcvendingmachines/shopkeeper_vm_invis_waterwell.prefab";
+
+            public InvisibleVendingMachine VendingMachine { get; private set; }
+
+            public NPCShopKeeperAdapter(BaseController controller, EntityData entityData, BaseMonument monument)
+                : base(controller, entityData, monument) {}
+
+            protected override void PostEntitySpawn()
+            {
+                base.PostEntitySpawn();
+
+                if (Entity is not NPCShopKeeper shopKeeper)
+                    return;
+
+                var vendingMachine = shopKeeper.GetVendingMachine();
+                if (vendingMachine != null)
+                {
+                    // If the vending machine is a standalone addon, don't track it as part of the shopkeeper adapter.
+                    // It was probably placed before the plugin supported automatically spawning shopkeeper vending machines.
+                    // We want to keep any CustomVendingSetup customizations associated with the vending machine addon.
+                    if (Plugin._componentTracker.IsAddonComponent(vendingMachine, out EntityAdapter adapter, out EntityController _) && adapter.Entity == vendingMachine)
+                    {
+                        if (_config.Debug)
+                        {
+                            LogWarning("Found vending machine that is alrady tracked as a standalone addon, allowing partial vendor association.");
+                        }
+
+                        return;
+                    }
+
+                    // If the vending machine has saving enabled, assume it was spawned by a previous instance of this
+                    // plugin, allowing association with the vendor. This is otherwise tricky to figure out because
+                    // secondary vending machines aren't tracked in ProfileState data.
+                    if (vendingMachine.enableSaving)
+                    {
+                        if (_config.Debug)
+                        {
+                            LogWarning("Found vending machine with saving enabled, allowing full vendor association.");
+                        }
+
+                        // Ensure enableSaving is up-to-date because the previous instance of the plugin may have had a different configuration.
+                        vendingMachine.EnableSaving(ShouldEnableSaving(vendingMachine));
+                        TrackAndRefreshVendingMachine(vendingMachine);
+                        return;
+                    }
+
+                    // If the vending machine has saving disabled, assume it was spawned by a previous instance of this
+                    // plugin that is in the process of being unloaded.
+                    if (_config.Debug)
+                    {
+                        LogWarning("Found vending machine with saving disabled, ignoring it and spawning a new one.");
+                    }
+                }
+
+                // No vending machine found, so spawn a new one.
+                vendingMachine = SpawnVendingMachine(shopKeeper);
+                if (vendingMachine == null)
+                {
+                    LogError($"Failed to spawn invisible vending machine for shopkeeper [{Entity.ShortPrefabName}] at {IntendedPosition}");
+                }
+            }
+
+            protected override void PreEntityKill()
+            {
+                base.PreEntityKill();
+
+                // When the vendor is killed, only kill the vending machine if it doesn't have saving enabled.
+                // This is important because saving of shopkeepers and vendors can be configured separately.
+                if (VendingMachine != null && !VendingMachine.IsDestroyed && !VendingMachine.enableSaving)
+                {
+                    VendingMachine.Kill();
+                }
+            }
+
+            private InvisibleVendingMachine SpawnVendingMachine(NPCShopKeeper shopKeeper)
+            {
+                var vendingMachinePrefab = Entity.ShortPrefabName switch
+                {
+                    "waterwell_shopkeeper" => ShopkeeperVMInvisWaterwellPrefab,
+                    _ => ShopkeeperVMInvisPrefab
+                };
+
+                var position = shopKeeper.transform.TransformPoint(new Vector3(0, 0, -0.5f));
+                var vendingMachine = EntityUtils.SpawnEntity<InvisibleVendingMachine>(vendingMachinePrefab, position, IntendedRotation);
+                if (vendingMachine == null)
+                    return null;
+
+                EnableSavingRecursive(vendingMachine, enableSaving: ShouldEnableSaving(vendingMachine));
+
+                if (Monument is IEntityMonument entityMonument)
+                {
+                    vendingMachine.SetParent(entityMonument.RootEntity, worldPositionStays: true);
+                }
+
+                // Must associate the vending machine with the vendor before refreshing the vending profile, so that the
+                // resolved data provider will correspond to the vendor's data.
+                AssociateVendingMachine(shopKeeper, vendingMachine);
+                TrackAndRefreshVendingMachine(vendingMachine);
+
+                return vendingMachine;
+            }
+
+            private void AssociateVendingMachine(NPCShopKeeper shopKeeper, InvisibleVendingMachine vendingMachine)
+            {
+                shopKeeper.machine = vendingMachine;
+                shopKeeper.invisibleVendingMachineRef.Set(vendingMachine);
+                vendingMachine.SetAttachedNPC(shopKeeper);
+            }
+
+            private void TrackAndRefreshVendingMachine(InvisibleVendingMachine vendingMachine)
+            {
+                VendingMachine = vendingMachine;
+                AddonComponent.AddToComponent(Plugin._componentTracker, vendingMachine, this);
+                Plugin.RefreshVendingProfile(vendingMachine);
+            }
+        }
+
+        private class NPCShopKeeperController : EntityController
+        {
+            public NPCShopKeeperController(ProfileController profileController, EntityData data)
+                : base(profileController, data) {}
+
+            public override BaseAdapter CreateAdapter(BaseMonument monument)
+            {
+                return new NPCShopKeeperAdapter(this, EntityData, monument);
+            }
+        }
+
+        #endregion
+
         #region Entity Listeners
 
         private abstract class AdapterListenerBase
@@ -8629,21 +8903,45 @@ namespace Oxide.Plugins
             }
         }
 
-        private class SpawnedVehicleComponent : FacepunchBehaviour
+        private class SpawnedVehicleComponent : ListComponent<SpawnedVehicleComponent>
         {
-            public static void AddToVehicle(MonumentAddons plugin, GameObject gameObject)
+            public static SpawnedVehicleComponent AddToVehicle(MonumentAddons plugin, BaseEntity entity, bool trackPosition)
             {
-                var newComponent = gameObject.AddComponent<SpawnedVehicleComponent>();
-                newComponent._plugin = plugin;
+                var component = entity.gameObject.AddComponent<SpawnedVehicleComponent>();
+                component._plugin = plugin;
+                component._entity = entity;
+                component._prefabId = entity.prefabID;
+                component._entityId = entity.net.ID.Value;
+                plugin._spawnGroupLimitManager.TrackEntity(entity);
+
+                if (trackPosition)
+                {
+                    component.StartTrackingPosition();
+                }
+
+                return component;
+            }
+
+            public static void DestroyAll()
+            {
+                foreach (var component in InstanceList.ToList())
+                {
+                    Destroy(component);
+                }
+
+                InstanceList.Clear();
             }
 
             private const float MaxDistanceSquared = 1;
 
             private MonumentAddons _plugin;
+            private BaseEntity _entity;
+            private uint _prefabId;
+            private ulong _entityId;
             private Vector3 _originalPosition;
             private Transform _transform;
 
-            public void Awake()
+            public void StartTrackingPosition()
             {
                 _transform = transform;
                 _originalPosition = _transform.position;
@@ -8660,24 +8958,35 @@ namespace Oxide.Plugins
 
             private void CheckPosition()
             {
+                if (_entity == null || _entity.IsDestroyed)
+                    return;
+
                 if ((_transform.position - _originalPosition).sqrMagnitude < MaxDistanceSquared)
                     return;
 
                 // Vehicle has moved from its spawn point, so unregister it and re-enable saving.
-                var vehicle = GetComponent<BaseEntity>();
-                if (vehicle != null && !vehicle.IsDestroyed)
-                {
-                    EnableSavingRecursive(vehicle, true);
+                EnableSavingRecursive(_entity, true);
 
-                    var workcart = vehicle as TrainEngine;
-                    if (workcart != null && !workcart.IsInvoking(workcart.DecayTick))
-                    {
-                        workcart.InvokeRandomized(workcart.DecayTick, UnityEngine.Random.Range(20f, 40f), workcart.decayTickSpacing, workcart.decayTickSpacing * 0.1f);
-                    }
+                if (_entity is TrainEngine trainEngine && !trainEngine.IsInvoking(trainEngine.DecayTick))
+                {
+                    trainEngine.InvokeRandomized(trainEngine.DecayTick, UnityEngine.Random.Range(20f, 40f), trainEngine.decayTickSpacing, trainEngine.decayTickSpacing * 0.1f);
                 }
 
+                // Remove SpawnPointInstance since vehicle has detached.
                 Destroy(GetComponent<SpawnPointInstance>());
-                Destroy(this);
+
+                // Stop checking position since vehicle is now detached
+                CancelInvoke(CheckPositionTracked);
+            }
+
+            private void OnDestroy()
+            {
+                // Only unregister if the entity was destroyed.
+                // Otherwise, we are probably just removing the component (during unload).
+                if (_entity == null || _entity.IsDestroyed)
+                {
+                    _plugin._spawnGroupLimitManager.UntrackEntity(_prefabId, _entityId);
+                }
             }
         }
 
@@ -8703,10 +9012,44 @@ namespace Oxide.Plugins
                 CustomAddonDefinition.Kill(_hostComponent);
             }
 
-            public new void OnDestroy()
+            private new void OnDestroy()
             {
                 _componentTracker.UnregisterComponent(_hostComponent);
                 CustomAddonDefinition.SpawnPointInstances.Remove(this);
+
+                if (!Rust.Application.isQuitting)
+                {
+                    Retire();
+                }
+            }
+        }
+
+        private class CustomSpawnPointInstance : SpawnPointInstance
+        {
+            public static CustomSpawnPointInstance AddToEntity(MonumentAddons plugin, BaseEntity entity)
+            {
+                var component = entity.gameObject.AddComponent<CustomSpawnPointInstance>();
+                component._plugin = plugin;
+                component._entity = entity;
+                component._prefabId = entity.prefabID;
+                component._entityId = entity.net.ID.Value;
+                plugin._spawnGroupLimitManager.TrackEntity(entity);
+                return component;
+            }
+
+            private MonumentAddons _plugin;
+            private BaseEntity _entity;
+            private uint _prefabId;
+            private ulong _entityId;
+
+            private new void OnDestroy()
+            {
+                // Only unregister if the entity was destroyed.
+                // Otherwise, we are probably detaching a vehicle from a spawn point after it moved.
+                if (_entity == null || _entity.IsDestroyed)
+                {
+                    _plugin._spawnGroupLimitManager.UntrackEntity(_prefabId, _entityId);
+                }
 
                 if (!Rust.Application.isQuitting)
                 {
@@ -8813,12 +9156,11 @@ namespace Oxide.Plugins
 
                 if (IsVehicle(entity))
                 {
-                    SpawnedVehicleComponent.AddToVehicle(Adapter.Plugin, instance.gameObject);
+                    SpawnedVehicleComponent.AddToVehicle(Adapter.Plugin, entity, trackPosition: true);
                     entity.Invoke(() => DisableVehicleDecay(entity), 5);
                 }
 
-                var hackableCrate = entity as HackableLockedCrate;
-                if ((object)hackableCrate != null && hackableCrate.shouldDecay)
+                if (entity is HackableLockedCrate { shouldDecay: true } hackableCrate)
                 {
                     hackableCrate.shouldDecay = false;
                     hackableCrate.CancelInvoke(hackableCrate.DelayedDestroy);
@@ -8918,11 +9260,6 @@ namespace Oxide.Plugins
                 return SingletonComponent<SpawnHandler>.Instance.CheckBounds(prefab, SpaceCheckPosition, _transform.rotation, Vector3.one);
             }
 
-            private bool IsVehicle(BaseEntity entity)
-            {
-                return entity is HotAirBalloon || entity is BaseVehicle;
-            }
-
             private void DisableVehicleDecay(BaseEntity vehicle)
             {
                 switch (vehicle)
@@ -8983,7 +9320,7 @@ namespace Oxide.Plugins
                                 spawnedVehicleComponent.CancelInvoke(spawnedVehicleComponent.CheckPositionTracked);
                             }
 
-                            Adapter.Plugin.NextTick(() => spawnedVehicleComponent.Awake());
+                            Adapter.Plugin.NextTick(spawnedVehicleComponent.StartTrackingPosition);
                         }
 
                         entity.transform.SetPositionAndRotation(position, rotation);
@@ -9038,6 +9375,13 @@ namespace Oxide.Plugins
             public List<SpawnEntry> SpawnEntries { get; } = new();
             private AIInformationZone _cachedInfoZone;
             private bool _didLookForInfoZone;
+            private Func<SpawnEntry, float> _determineSpawnEntryWeight;
+            private List<SpawnEntry> _reusableSpawnEntryList = new();
+
+            private CustomSpawnGroup()
+            {
+                _determineSpawnEntryWeight = DetermineSpawnEntryWeight;
+            }
 
             private SpawnGroupData SpawnGroupData => SpawnGroupAdapter.SpawnGroupData;
 
@@ -9126,8 +9470,8 @@ namespace Oxide.Plugins
 
                 for (int i = 0; i < numToSpawn; i++)
                 {
-                    var spawnEntry = GetRandomSpawnEntry();
-                    if (spawnEntry is not { IsValid: true })
+                    var spawnEntry = GetRandomValidSpawnEntry();
+                    if (spawnEntry == null)
                         continue;
 
                     var spawnPoint = GetRandomSpawnPoint(spawnEntry, out var position, out var rotation);
@@ -9153,7 +9497,7 @@ namespace Oxide.Plugins
                             entity.gameObject.AwakeFromInstantiate();
                             entity.Spawn();
                             PostSpawnProcess(entity, spawnPoint);
-                            spawnPointInstance = entity.gameObject.AddComponent<SpawnPointInstance>();
+                            spawnPointInstance = CustomSpawnPointInstance.AddToEntity(SpawnGroupAdapter.Plugin, entity);
                         }
                     }
 
@@ -9193,8 +9537,8 @@ namespace Oxide.Plugins
                         var agent = npcPlayer.NavAgent;
                         agent.agentTypeID = -1372625422;
                         agent.areaMask = 1;
-                        agent.autoTraverseOffMeshLink = true;
-                        agent.autoRepath = true;
+                        agent._agent.autoTraverseOffMeshLink = true;
+                        agent._agent.autoRepath = true;
 
                         var brain = humanNpc.Brain;
                         humanNpc.Invoke(() =>
@@ -9267,22 +9611,50 @@ namespace Oxide.Plugins
                 return preventDuplicates && HasSpawned(spawnEntry) ? 0 : spawnEntry.Weight;
             }
 
-            private SpawnEntry GetRandomSpawnEntry()
+            private List<SpawnEntry> GetValidSpawnEntries()
             {
-                var totalWeight = SpawnEntries.Sum(DetermineSpawnEntryWeight);
+                _reusableSpawnEntryList.Clear();
+
+                foreach (var spawnEntry in SpawnEntries)
+                {
+                    if (!spawnEntry.IsValid || !IsSpawnEntryWithinLimit(spawnEntry))
+                        continue;
+
+                    _reusableSpawnEntryList.Add(spawnEntry);
+                }
+
+                return _reusableSpawnEntryList;
+            }
+
+            private SpawnEntry GetRandomValidSpawnEntry()
+            {
+                var spawnEntries = GetValidSpawnEntries();
+                if (spawnEntries.Count == 0)
+                    return null;
+
+                var totalWeight = spawnEntries.Sum(_determineSpawnEntryWeight);
                 if (totalWeight == 0)
                     return null;
 
                 var randomWeight = UnityEngine.Random.Range(0f, totalWeight);
 
-                foreach (var spawnEntry in SpawnEntries)
+                foreach (var spawnEntry in spawnEntries)
                 {
                     var weight = DetermineSpawnEntryWeight(spawnEntry);
                     if ((randomWeight -= weight) <= 0f)
                         return spawnEntry;
                 }
 
-                return SpawnEntries[^1];
+                return spawnEntries[^1];
+            }
+
+            private bool IsSpawnEntryWithinLimit(SpawnEntry spawnEntry)
+            {
+                // Custom addons are not subject to limits (for now).
+                if (spawnEntry.CustomAddonDefinition != null)
+                    return true;
+
+                return SpawnGroupAdapter.Plugin._spawnGroupLimitManager.IsWithinLimit(spawnEntry.Prefab.resourceID);
             }
 
             private AIInformationZone GetVirtualInfoZone()
@@ -9447,7 +9819,10 @@ namespace Oxide.Plugins
 
             public override void Kill()
             {
-                UnityEngine.Object.Destroy(SpawnGroup?.gameObject);
+                if (SpawnGroup == null)
+                    return;
+
+                UnityEngine.Object.Destroy(SpawnGroup.gameObject);
             }
 
             public override void OnComponentDestroyed(Component component)
@@ -10049,8 +10424,7 @@ namespace Oxide.Plugins
             {
                 foreach (var adapter in Adapters.ToList())
                 {
-                    var pasteAdapter = adapter as PasteAdapter;
-                    if (pasteAdapter is not { IsValid: true })
+                    if (adapter is not PasteAdapter { IsValid: true } pasteAdapter)
                         continue;
 
                     pasteAdapter.HandleChanges();
@@ -10529,8 +10903,7 @@ namespace Oxide.Plugins
                     if (!_addonDefinition.IsValid)
                         yield break;
 
-                    var customAddonAdapter = adapter as CustomAddonAdapter;
-                    if (customAddonAdapter is not { IsValid: true })
+                    if (adapter is not CustomAddonAdapter { IsValid: true } customAddonAdapter)
                         continue;
 
                     customAddonAdapter.HandleChanges();
@@ -10545,6 +10918,13 @@ namespace Oxide.Plugins
 
         private class EntityControllerFactory
         {
+            protected readonly MonumentAddons _plugin;
+
+            public EntityControllerFactory(MonumentAddons plugin)
+            {
+                _plugin = plugin;
+            }
+
             public virtual bool AppliesToEntity(BaseEntity entity)
             {
                 return true;
@@ -10558,6 +10938,8 @@ namespace Oxide.Plugins
 
         private class SignControllerFactory : EntityControllerFactory
         {
+            public SignControllerFactory(MonumentAddons plugin) : base(plugin) {}
+
             public override bool AppliesToEntity(BaseEntity entity)
             {
                 return entity is ISignage;
@@ -10571,6 +10953,8 @@ namespace Oxide.Plugins
 
         private class CCTVControllerFactory : EntityControllerFactory
         {
+            public CCTVControllerFactory(MonumentAddons plugin) : base(plugin) {}
+
             public override bool AppliesToEntity(BaseEntity entity)
             {
                 return entity is CCTV_RC;
@@ -10582,22 +10966,39 @@ namespace Oxide.Plugins
             }
         }
 
+        private class NPCShopKeeperControllerFactory : EntityControllerFactory
+        {
+            public NPCShopKeeperControllerFactory(MonumentAddons plugin) : base(plugin) {}
+
+            public override bool AppliesToEntity(BaseEntity entity)
+            {
+                return entity is NPCShopKeeper
+                    && _plugin._config.NPCShopkeeperPrefabsThatNeedVendingMachines?.Contains(entity.PrefabName) == true;
+            }
+
+            public override EntityController CreateController(ProfileController controller, EntityData entityData)
+            {
+                return new NPCShopKeeperController(controller, entityData);
+            }
+        }
+
         private class ControllerFactory
         {
             private MonumentAddons _plugin;
+            private EntityControllerFactory[] _entityFactories;
 
             public ControllerFactory(MonumentAddons plugin)
             {
                 _plugin = plugin;
+                _entityFactories = new[]
+                {
+                    // The first that matches will be used.
+                    new NPCShopKeeperControllerFactory(_plugin),
+                    new CCTVControllerFactory(_plugin),
+                    new SignControllerFactory(_plugin),
+                    new EntityControllerFactory(_plugin),
+                };
             }
-
-            private EntityControllerFactory[] _entityFactories =
-            {
-                // The first that matches will be used.
-                new CCTVControllerFactory(),
-                new SignControllerFactory(),
-                new EntityControllerFactory(),
-            };
 
             public BaseController CreateController(ProfileController profileController, BaseData data)
             {
@@ -10641,6 +11042,123 @@ namespace Oxide.Plugins
         }
 
         #endregion
+
+        #endregion
+
+        #region Spawn Group Limit Manager
+
+        private class SpawnGroupLimitManager
+        {
+            private readonly MonumentAddons _plugin;
+            private readonly Dictionary<uint, HashSet<ulong>> _trackedEntitiesByPrefabId = new();
+
+            private SpawnedVehicleData _spawnedVehicleData => _plugin._spawnedVehicleData;
+            private ActionDebounced _saveSpawnedVehicleDataDebounced => _plugin._saveSpawnedVehicleDataDebounced;
+            private Dictionary<uint, int> _spawnGroupEntityLimitsByPrefabId => _plugin._config.SpawnGroupEntityLimitsByPrefabId;
+
+            public SpawnGroupLimitManager(MonumentAddons plugin)
+            {
+                _plugin = plugin;
+            }
+
+            public void OnServerInitialized()
+            {
+                var removedAny = false;
+
+                foreach (var (prefabId, entityIds) in _spawnedVehicleData.GetAllTrackedEntities())
+                {
+                    foreach (var entityId in entityIds)
+                    {
+                        var entity = FindValidEntity(entityId);
+
+                        // Vehicles are currently the only type of entity managed by spawn points that are allowed to
+                        // persist after unload, and only if they were detached from the spawn point.
+                        if (entity is null || !IsVehicle(entity))
+                        {
+                            _spawnedVehicleData.UntrackEntity(prefabId, entityId);
+                            removedAny = true;
+                            continue;
+                        }
+
+                        if (!_trackedEntitiesByPrefabId.TryGetValue(prefabId, out var entitySet))
+                        {
+                            entitySet = new HashSet<ulong>();
+                            _trackedEntitiesByPrefabId[prefabId] = entitySet;
+                        }
+
+                        entitySet.Add(entityId);
+                        SpawnedVehicleComponent.AddToVehicle(_plugin, entity, trackPosition: false);
+                    }
+                }
+
+                if (removedAny)
+                {
+                    _saveSpawnedVehicleDataDebounced.Schedule();
+                }
+            }
+
+            public void TrackEntity(BaseEntity entity)
+            {
+                var prefabId = entity.prefabID;
+                var entityId = entity.net.ID.Value;
+
+                if (!_trackedEntitiesByPrefabId.TryGetValue(prefabId, out var entitySet))
+                {
+                    entitySet = new HashSet<ulong>();
+                    _trackedEntitiesByPrefabId[prefabId] = entitySet;
+                }
+
+                if (!entitySet.Add(entityId))
+                    return;
+
+                if (IsVehicle(entity) && _spawnedVehicleData.TrackEntity(prefabId, entityId))
+                {
+                    _saveSpawnedVehicleDataDebounced.Schedule();
+                }
+            }
+
+            public void UntrackEntity(uint prefabId, ulong entityId)
+            {
+                if (!_trackedEntitiesByPrefabId.TryGetValue(prefabId, out var entitySet))
+                    return;
+
+                if (!entitySet.Remove(entityId))
+                    return;
+
+                if (_spawnedVehicleData.UntrackEntity(prefabId, entityId))
+                {
+                    _saveSpawnedVehicleDataDebounced.Schedule();
+                }
+            }
+
+            public bool HasLimit(uint prefabId, out int current, out int limit)
+            {
+                if (!_spawnGroupEntityLimitsByPrefabId.TryGetValue(prefabId, out limit))
+                {
+                    current = 0;
+                    return false;
+                }
+
+                current = GetSpawnedCount(prefabId);
+                limit = _spawnGroupEntityLimitsByPrefabId[prefabId];
+                return true;
+            }
+
+            public bool IsWithinLimit(uint prefabId)
+            {
+                if (!_spawnGroupEntityLimitsByPrefabId.TryGetValue(prefabId, out var limit))
+                    return true;
+
+                return GetSpawnedCount(prefabId) < limit;
+            }
+
+            private int GetSpawnedCount(uint prefabId)
+            {
+                return _trackedEntitiesByPrefabId.TryGetValue(prefabId, out var entitySet)
+                    ? entitySet.Count
+                    : 0;
+            }
+        }
 
         #endregion
 
@@ -10997,6 +11515,16 @@ namespace Oxide.Plugins
                     }
                 }
 
+                var shopKeeper = adapter.Entity as NPCShopKeeper;
+                if (shopKeeper != null)
+                {
+                    var vendingMachine = shopKeeper.GetVendingMachine();
+                    if (vendingMachine != null)
+                    {
+                        drawer.Box(vendingMachine.WorldSpaceBounds(), 0.05f);
+                    }
+                }
+
                 var doorManipulator = adapter.Entity as DoorManipulator;
                 if (doorManipulator != null && doorManipulator.targetDoor != null)
                 {
@@ -11185,6 +11713,15 @@ namespace Oxide.Plugins
                                 entityMessage += $" | {_plugin.GetMessage(player.UserIDString, LangEntry.ShowLabelEntityNoSpace)}";
                             }
 
+                            if (prefabEntry.CustomAddonName == null)
+                            {
+                                var prefabId = StringPool.Get(prefabEntry.PrefabName);
+                                if (prefabId != 0 && _plugin._spawnGroupLimitManager.HasLimit(prefabId, out var current, out var limit))
+                                {
+                                    entityMessage += $" | {_plugin.GetMessage(player.UserIDString, LangEntry.ShowLabelEntityGlobalPopulation, current, limit)}";
+                                }
+                            }
+
                             _sb.AppendLine(entityMessage);
                         }
                     }
@@ -11298,9 +11835,9 @@ namespace Oxide.Plugins
                     return transformAdapter.Position;
                 }
 
-                if (adapter is SpawnGroupAdapter spawnGroupAdapter)
+                if (adapter is SpawnGroupAdapter spawnGroupAdapter
+                    && FindClosestSpawnPointAdapterToRay(spawnGroupAdapter, ray) is {} spawnPointAdapter)
                 {
-                    var spawnPointAdapter = FindClosestSpawnPointAdapterToRay(spawnGroupAdapter, ray);
                     closestAdapter = spawnPointAdapter;
                     return spawnPointAdapter.Position;
                 }
@@ -11482,14 +12019,13 @@ namespace Oxide.Plugins
 
                 playerInfo.RealTimeSinceShown = 0;
 
-                var isAdmin = player.IsAdmin;
-                if (!isAdmin)
-                {
-                    player.SetPlayerFlag(BasePlayer.PlayerFlags.IsAdmin, true);
-                    player.SendNetworkUpdateImmediate();
-                }
-
                 ShowNearbyCustomMonuments(player, playerPosition, playerInfo);
+
+                var lookAdapter = _plugin.FindAdapter(player).Adapter;
+                if (lookAdapter != null)
+                {
+                    DisplayAdapter(player, playerPosition, playerInfo, lookAdapter, lookAdapter, 0, ref remainingToShow);
+                }
 
                 var headRay = player.eyes.HeadRay();
 
@@ -11513,16 +12049,10 @@ namespace Oxide.Plugins
                              })
                          )
                 {
-                    if (adapter == playerInfo.MovingAdapter)
+                    if (adapter == playerInfo.MovingAdapter || adapter == lookAdapter)
                         continue;
 
                     DisplayAdapter(player, playerPosition, playerInfo, adapter, closestAdapter, distanceSquared, ref remainingToShow);
-                }
-
-                if (!isAdmin)
-                {
-                    player.SetPlayerFlag(BasePlayer.PlayerFlags.IsAdmin, false);
-                    player.SendNetworkUpdateImmediate();
                 }
             }
 
@@ -12499,17 +13029,17 @@ namespace Oxide.Plugins
             }
         }
 
-        private class ClothingItemData : BasicItemData
+        private class SkinnableItemData : BasicItemData
         {
-            public static ClothingItemData FromItem(Item item)
+            public static SkinnableItemData FromItem(Item item)
             {
-                return new ClothingItemData(item.info.itemid, item.skin);
+                return new SkinnableItemData(item.info.itemid, item.skin);
             }
 
             [JsonProperty("SkinId")]
             public readonly ulong SkinId;
 
-            public ClothingItemData(int itemId, ulong skinId) : base(itemId)
+            public SkinnableItemData(int itemId, ulong skinId) : base(itemId)
             {
                 SkinId = skinId;
             }
@@ -12604,7 +13134,7 @@ namespace Oxide.Plugins
             {
                 return new MannequinData
                 {
-                    Clothing = player.inventory.containerWear.itemList.Select(ClothingItemData.FromItem).ToArray(),
+                    Clothing = player.inventory.containerWear.itemList.Select(SkinnableItemData.FromItem).ToArray(),
                 };
             }
 
@@ -12612,7 +13142,7 @@ namespace Oxide.Plugins
             public int PoseIndex;
 
             [JsonProperty("Clothing", DefaultValueHandling = DefaultValueHandling.Ignore)]
-            public ClothingItemData[] Clothing;
+            public SkinnableItemData[] Clothing;
 
             [JsonProperty("PoseFrames", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public PoseFrame[] PoseFrames;
@@ -12629,7 +13159,7 @@ namespace Oxide.Plugins
 
                 if (mannequin.inventory.itemList.Count > 0)
                 {
-                    Clothing = mannequin.inventory.itemList.Select(ClothingItemData.FromItem).ToArray();
+                    Clothing = mannequin.inventory.itemList.Select(SkinnableItemData.FromItem).ToArray();
                 }
             }
 
@@ -12679,6 +13209,9 @@ namespace Oxide.Plugins
 
             private bool MatchesInventory(ItemContainer inventory)
             {
+                if (inventory.itemList.Count == 0 && Clothing == null)
+                    return true;
+
                 if (inventory.itemList.Count != Clothing?.Length)
                     return false;
 
@@ -12689,6 +13222,109 @@ namespace Oxide.Plugins
                 }
 
                 return true;
+            }
+        }
+
+        private class NPCOutfitData
+        {
+            public static NPCOutfitData FromNPC(NPCPlayer npc)
+            {
+                var wearItems = npc.inventory.containerWear.itemList;
+                var beltItems = npc.inventory.containerBelt.itemList;
+
+                if (wearItems.Count == 0 && beltItems.Count == 0)
+                    return null;
+
+                return new NPCOutfitData
+                {
+                    Clothing = wearItems.Count > 0 ? wearItems.Select(SkinnableItemData.FromItem).ToArray() : null,
+                    Belt = beltItems.Count > 0 ? beltItems.Select(SkinnableItemData.FromItem).ToArray() : null,
+                };
+            }
+
+            [JsonProperty("Clothing", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public SkinnableItemData[] Clothing;
+
+            [JsonProperty("Belt", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public SkinnableItemData[] Belt;
+
+            public bool IsEmpty()
+            {
+                return Clothing is not { Length: > 0 } && Belt is not { Length: > 0 };
+            }
+
+            public bool MatchesNPC(NPCPlayer npc)
+            {
+                return MatchesInventory(npc.inventory.containerWear, Clothing)
+                    && MatchesInventory(npc.inventory.containerBelt, Belt);
+            }
+
+            private bool MatchesInventory(ItemContainer inventory, SkinnableItemData[] items)
+            {
+                if (inventory.itemList.Count == 0 && items == null)
+                    return true;
+
+                if (inventory.itemList.Count != items?.Length)
+                    return false;
+
+                for (var i = 0; i < items.Length; i++)
+                {
+                    if (!items[i].Matches(inventory.itemList[i]))
+                        return false;
+                }
+
+                return true;
+            }
+
+            public void ApplyToNPC(NPCPlayer npc)
+            {
+                if (!MatchesInventory(npc.inventory.containerWear, Clothing))
+                {
+                    npc.inventory.containerWear.Clear();
+
+                    if (Clothing is { Length: > 0 })
+                    {
+                        foreach (var itemData in Clothing)
+                        {
+                            CreateAndMoveItem(itemData, npc.inventory.containerWear, npc);
+                        }
+                    }
+                }
+
+                if (!MatchesInventory(npc.inventory.containerBelt, Belt))
+                {
+                    npc.inventory.containerBelt.Clear();
+
+                    if (Belt is { Length: > 0 })
+                    {
+                        foreach (var itemData in Belt)
+                        {
+                            CreateAndMoveItem(itemData, npc.inventory.containerBelt, npc);
+                        }
+                    }
+                }
+
+                npc.SendNetworkUpdate();
+            }
+
+            private void CreateAndMoveItem(SkinnableItemData itemData, ItemContainer container, NPCPlayer npc)
+            {
+                var itemDefinition = ItemManager.FindItemDefinition(itemData.ItemId);
+                if (itemDefinition == null)
+                    return;
+
+                var item = ItemManager.Create(itemDefinition, 1, itemData.SkinId);
+                if (item == null)
+                {
+                    LogError($"Failed to create item {itemData.ItemId} for NPC {npc.displayName} at {npc.transform.position.ToString("f1")}.");
+                    return;
+                }
+
+                if (!item.MoveToContainer(container))
+                {
+                    item.Remove();
+                    LogError($"Failed to move item {itemData.ItemId} to NPC {npc.displayName} at {npc.transform.position.ToString("f1")}.");
+                }
             }
         }
 
@@ -12741,6 +13377,9 @@ namespace Oxide.Plugins
 
             [JsonProperty("MannequinData", DefaultValueHandling = DefaultValueHandling.Ignore)]
             public MannequinData MannequinData;
+
+            [JsonProperty("NPCOutfit", DefaultValueHandling = DefaultValueHandling.Ignore)]
+            public NPCOutfitData NPCOutfit;
 
             public Vector3 GetScale()
             {
@@ -13860,9 +14499,9 @@ namespace Oxide.Plugins
                 return Entities.Count > 0;
             }
 
-            public bool HasEntity(Guid guid, NetworkableId entityId)
+            public bool HasEntity(Guid guid, ulong entityId)
             {
-                return Entities.GetValueOrDefault(guid) == entityId.Value;
+                return Entities.GetValueOrDefault(guid) == entityId;
             }
 
             public BaseEntity FindEntity(Guid guid)
@@ -14123,7 +14762,7 @@ namespace Oxide.Plugins
                 return ProfileStateMap.GetValueOrDefault(profileName);
             }
 
-            public bool HasEntity(string profileName, BaseMonument monument, Guid guid, NetworkableId entityId)
+            public bool HasEntity(string profileName, BaseMonument monument, Guid guid, ulong entityId)
             {
                 return GetProfileState(profileName)
                     ?.GetValueOrDefault(monument.UniqueName)
@@ -14218,6 +14857,91 @@ namespace Oxide.Plugins
 
                 ProfileStateMap.Clear();
                 Save();
+            }
+        }
+
+        private class SpawnedVehicleData : BaseDataFile
+        {
+            private static string Filepath => $"{nameof(MonumentAddons)}_SpawnedVehicleData";
+
+            public static SpawnedVehicleData Load()
+            {
+                return DataFileUtils.LoadOrNew<SpawnedVehicleData>(Filepath);
+            }
+
+            private bool _isDirty;
+
+            public SpawnedVehicleData() : base(Filepath) {}
+
+            [JsonProperty("SpawnedEntitiesByPrefabId")]
+            private Dictionary<uint, HashSet<ulong>> SpawnedEntitiesByPrefabId = new();
+
+            public void MarkDirty()
+            {
+                _isDirty = true;
+            }
+
+            public void SaveIfDirty()
+            {
+                if (!_isDirty)
+                    return;
+
+                Save();
+                _isDirty = false;
+            }
+
+            public Dictionary<uint, List<ulong>> GetAllTrackedEntities()
+            {
+                var result = new Dictionary<uint, List<ulong>>();
+
+                foreach (var (prefabId, entityIds) in SpawnedEntitiesByPrefabId)
+                {
+                    result[prefabId] = new(entityIds);
+                }
+
+                return result;
+            }
+
+            public bool TrackEntity(uint prefabId, ulong entityId)
+            {
+                if (!SpawnedEntitiesByPrefabId.TryGetValue(prefabId, out var entityIds))
+                {
+                    entityIds = new HashSet<ulong>();
+                    SpawnedEntitiesByPrefabId[prefabId] = entityIds;
+                }
+
+                if (!entityIds.Add(entityId))
+                    return false;
+
+                MarkDirty();
+                return true;
+            }
+
+            public bool UntrackEntity(uint prefabId, ulong entityId)
+            {
+                if (!SpawnedEntitiesByPrefabId.TryGetValue(prefabId, out var entityIds))
+                    return false;
+
+                if (!entityIds.Remove(entityId))
+                    return false;
+
+                if (entityIds.Count == 0)
+                {
+                    SpawnedEntitiesByPrefabId.Remove(prefabId);
+                }
+
+                MarkDirty();
+                return true;
+            }
+
+            public void Reset()
+            {
+                if (SpawnedEntitiesByPrefabId.Count == 0)
+                    return;
+
+                SpawnedEntitiesByPrefabId.Clear();
+                MarkDirty();
+                SaveIfDirty();
             }
         }
 
@@ -14472,19 +15196,9 @@ namespace Oxide.Plugins
 
             private Dictionary<uint, bool> _overrideEnabledByPrefabId = new();
 
-            public void Init()
+            public void OnServerInitialized()
             {
-                foreach (var (prefabPath, enabled) in OverrideEnabledByPrefab)
-                {
-                    var entity = FindPrefabBaseEntity(prefabPath);
-                    if (entity == null)
-                    {
-                        LogError($"Invalid entity prefab in config: {prefabPath}");
-                        continue;
-                    }
-
-                    _overrideEnabledByPrefabId[entity.prefabID] = enabled;
-                }
+                _overrideEnabledByPrefabId = RemapPrefabPathToId(OverrideEnabledByPrefab);
             }
 
             public bool ShouldEnableSaving(BaseEntity entity)
@@ -14503,7 +15217,14 @@ namespace Oxide.Plugins
         private class DynamicMonumentSettings
         {
             [JsonProperty("Entity prefabs to consider as monuments")]
-            public string[] DynamicMonumentPrefabs = { CargoShipPrefab };
+            public string[] DynamicMonumentPrefabs =
+            {
+                CargoShipPrefab,
+                "assets/bundled/prefabs/deepsea/deepsea_floatingcity1.prefab",
+                "assets/bundled/prefabs/deepsea/deepsea_floatingcity2.prefab",
+                "assets/bundled/prefabs/deepsea/deepsea_floatingcity3.prefab",
+                "assets/bundled/prefabs/deepsea/deepsea_floatingcity4.prefab",
+            };
 
             [JsonIgnore]
             private uint[] _dynamicMonumentPrefabIds;
@@ -14677,8 +15398,20 @@ namespace Oxide.Plugins
                 }
             }
 
+            [JsonProperty("Automatically spawn a vending machine for these NPC shopkeeper prefabs")]
+            public string[] NPCShopkeeperPrefabsThatNeedVendingMachines =
+            {
+                "assets/prefabs/npc/bandit/shopkeepers/bandit_shopkeeper.prefab",
+                "assets/prefabs/npc/bandit/shopkeepers/boat_shopkeeper.prefab",
+                "assets/prefabs/npc/bandit/shopkeepers/stables_shopkeeper.prefab",
+                "assets/prefabs/npc/waterwell/waterwell_shopkeeper.prefab",
+            };
+
             [JsonProperty("Dynamic monuments")]
             public DynamicMonumentSettings DynamicMonuments = new();
+
+            [JsonProperty("Spawn group global population limit by prefab")]
+            private Dictionary<string, int> SpawnGroupPopulationLimitByPrefabName = new();
 
             [JsonProperty("Addon defaults")]
             public AddonDefaults AddonDefaults = new();
@@ -14720,10 +15453,11 @@ namespace Oxide.Plugins
                 "xmas.decoration.tinsel",
             };
 
+            [JsonIgnore]
+            public Dictionary<uint, int> SpawnGroupEntityLimitsByPrefabId = new();
+
             public void Init()
             {
-                EntitySaveSettings.Init();
-
                 if (XmasTreeDecorations != null)
                 {
                     foreach (var itemShortName in XmasTreeDecorations)
@@ -14746,7 +15480,9 @@ namespace Oxide.Plugins
 
             public void OnServerInitialized()
             {
+                EntitySaveSettings.OnServerInitialized();
                 DynamicMonuments.OnServerInitialized();
+                SpawnGroupEntityLimitsByPrefabId = RemapPrefabPathToId(SpawnGroupPopulationLimitByPrefabName);
             }
         }
 
@@ -14937,11 +15673,13 @@ namespace Oxide.Plugins
             public static readonly LangEntry2 SpawnGroupRemoveMultipleMatches = new("SpawnGroup.Remove.MultipleMatches", "Multiple entities in spawn group <color=#fd4>{0}</color> found matching: <color=#fd4>{1}</color>. Please be more specific.");
             public static readonly LangEntry2 SpawnGroupRemoveNoMatch = new("SpawnGroup.Remove.NoMatch", "No entity found in spawn group <color=#fd4>{0}</color> matching <color=#fd4>{1}</color>");
             public static readonly LangEntry2 SpawnGroupRemoveSuccess = new("SpawnGroup.Remove.Success", "Successfully removed entity <color=#fd4>{0}</color> from spawn group <color=#fd4>{1}</color>.");
+            public static readonly LangEntry3 SpawnGroupDeleteSuccess = new("SpawnGroup.Delete.Success", "Deleted spawn group <color=#fd4>{0}</color> at <color=#fd4>{1}</color> matching monument(s) and removed from profile <color=#fd4>{2}</color>. Run <color=#fd4>maundo</color> to restore it.");
 
             public static readonly LangEntry1 SpawnGroupNotFound = new("SpawnGroup.NotFound", "No spawn group found with name: <color=#fd4>{0}</color>");
             public static readonly LangEntry1 SpawnGroupMultipeMatches = new("SpawnGroup.MultipeMatches2", "Multiple spawn groups found matching name: <color=#fd4>{0}</color>");
             public static readonly LangEntry1 SpawnPointCreateSyntax = new("SpawnPoint.Create.Syntax", "Syntax: <color=#fd4>{0} create <group_name></color>");
             public static readonly LangEntry1 SpawnPointCreateSuccess = new("SpawnPoint.Create.Success", "Successfully added spawn point to spawn group <color=#fd4>{0}</color>.");
+            public static readonly LangEntry1 SpawnPointDeleteSuccess = new("SpawnPoint.Delete.Success", "Deleted spawn point from spawn group <color=#fd4>{0}</color>. Run <color=#fd4>maundo</color> to restore it.");
             public static readonly LangEntry2 SpawnPointSetSuccess = new("SpawnPoint.Set.Success", "Successfully updated spawn point with option <color=#fd4>{0}</color>: <color=#fd4>{1}</color>.");
             public static readonly LangEntry2 SpawnPointSetAllSuccess = new("SpawnPoint.SetAll.Success", "Successfully updated all spawn points in that spawn group with option <color=#fd4>{0}</color>: <color=#fd4>{1}</color>.");
 
@@ -14952,10 +15690,12 @@ namespace Oxide.Plugins
             public static readonly LangEntry1 SpawnGroupHelpRemove = new("SpawnGroup.Help.Remove", "<color=#fd4>{0} remove <entity> <weight></color> - Remove an entity prefab from a spawn group");
             public static readonly LangEntry1 SpawnGroupHelpSpawn = new("SpawnGroup.Help.Spawn", "<color=#fd4>{0} spawn</color> - Run one spawn tick for a spawn group");
             public static readonly LangEntry1 SpawnGroupHelpRespawn = new("SpawnGroup.Help.Respawn", "<color=#fd4>{0} respawn</color> - Despawn entities for a spawn group and run one spawn tick");
+            public static readonly LangEntry1 SpawnGroupHelpDelete = new("SpawnGroup.Help.Delete", "<color=#fd4>{0} delete</color> - Delete an entire spawn group");
 
             public static readonly LangEntry0 SpawnPointHelpHeader = new("SpawnPoint.Help.Header", "<size=18>Monument Addons Spawn Point Commands</size>");
             public static readonly LangEntry1 SpawnPointHelpCreate = new("SpawnPoint.Help.Create", "<color=#fd4>{0} create <group_name></color> - Create a spawn point");
             public static readonly LangEntry1 SpawnPointHelpSet = new("SpawnPoint.Help.Set", "<color=#fd4>{0} set <option> <value></color> - Set a property of a spawn point");
+            public static readonly LangEntry1 SpawnPointHelpDelete = new("SpawnPoint.Help.Delete", "<color=#fd4>{0} delete</color> - Delete a spawn point");
 
             public static readonly LangEntry0 SpawnGroupSetHelpName = new("SpawnGroup.Set.Help.Name", "<color=#fd4>Name</color>: string");
             public static readonly LangEntry0 SpawnGroupSetHelpColor = new("SpawnGroup.Set.Help.Color", "<color=#fd4>Color</color>: string");
@@ -15049,6 +15789,7 @@ namespace Oxide.Plugins
             public static readonly LangEntry0 ShowLabelNoEntities = new("Show.Label.NoEntities", "No entities configured. Run /maspawngroup add <entity> <weight>");
             public static readonly LangEntry1 ShowLabelPlayerDetectionRadius = new("Show.Label.PlayerDetectionRadius", "Player detection radius: {0:f1}");
             public static readonly LangEntry0 ShowLabelPlayerDetectedInRadius = new("Show.Label.PlayerDetectedInRadius", "(!) Player detected in radius (!)");
+            public static readonly LangEntry2 ShowLabelEntityGlobalPopulation = new("Show.Label.EntityGlobalPopulation", "Global population: {0} / {1}");
 
             public static readonly LangEntry1 ShowLabelPuzzlePlayersBlockReset = new("Show.Label.Puzzle.PlayersBlockReset", "Players block reset progress: {0}");
             public static readonly LangEntry1 ShowLabelPuzzleTimeBetweenResets = new("Show.Label.Puzzle.TimeBetweenResets", "Time between resets: {0}");
