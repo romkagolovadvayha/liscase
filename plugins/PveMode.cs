@@ -1,40 +1,17 @@
+using Oxide.Core.Plugins;
 using System.Collections.Generic;
 using System;
-using Newtonsoft.Json;
 using Oxide.Core;
+using Facepunch;
 using Oxide.Plugins.PveModeExtensionMethods;
+using Newtonsoft.Json;
 using UnityEngine;
-using Oxide.Core.Plugins;
 
 namespace Oxide.Plugins
 {
-    [Info("PveMode", "KpucTaJl", "1.2.7")]
+    [Info("PveMode", "KpucTaJl", "1.2.8")]
     internal class PveMode : RustPlugin
     {
-
-        private string GetMessage(string langKey, string userId) => lang.GetMessage(langKey, _ins, userId);
-
-        private void OnEntityKill(GunTrap turret)
-        {
-            if (turret == null || turret.net == null || Events.Count == 0) return;
-            OnTurretKill(turret.net.ID.Value);
-        }
-
-        private void UpdateConfigValues()
-        {
-            Puts("Config update detected! Updating config values...");
-            _config.PluginVersion = Version;
-            Puts("Config update completed!");
-            SaveConfig();
-        }
-        private const string StrH = En ? "h." : "ч.";
-        private Dictionary<ulong, ulong> CanLootCrateScientist { get; } = new Dictionary<ulong, ulong>();
-
-        private void OnTurretKill(ulong id)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Turrets.Contains(id));
-            if (controllerEvent != null) controllerEvent.Turrets.Remove(id);
-        }
 
         private void OnEntityKill(SamSite turret)
         {
@@ -42,48 +19,28 @@ namespace Oxide.Plugins
             OnTurretKill(turret.net.ID.Value);
         }
 
-        private static object CanBlockTargetByApi(BaseNetworkable target, BaseNetworkable attacker)
+        private void EventAddCooldown(string shortname, HashSet<ulong> owners, double cooldown)
         {
-            if (Interface.CallHook("CanPveModeBlockTarget", target, attacker) is bool) return null;
-            else return false;
+            foreach (ulong id in owners)
+            {
+                PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
+                if (playerData == null) PlayersData.Add(new PlayerData { SteamId = id, LastTime = new Dictionary<string, double> { [shortname] = CurrentTime } });
+                else
+                {
+                    if (playerData.LastTime.ContainsKey(shortname)) playerData.LastTime[shortname] = CurrentTime;
+                    else playerData.LastTime.Add(shortname, CurrentTime);
+                }
+                BasePlayer player = BasePlayer.FindByID(id);
+                if (player != null) PrintToChat(player, GetMessage("OwnerEndEvent", player.UserIDString, shortname, GetTimeFormat(cooldown)));
+            }
+            SaveData();
         }
 
-        private HashSet<PlayerData> PlayersData { get; set; } = null;
-
-        private void OnCorpsePopulate(ScientistNPC entity, NPCPlayerCorpse corpse)
+        private void EventAddTanks(string shortname, HashSet<ulong> tanks)
         {
-            if (entity == null || entity.net == null || corpse == null || corpse.net == null) return;
-
-            ulong id = entity.net.ID.Value;
-
-            if (Events.Count > 0)
-            {
-                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Npc.Contains(id));
-                if (controllerEvent != null)
-                {
-                    controllerEvent.Npc.Remove(id);
-                    controllerEvent.Backpacks.Add(corpse.playerSteamID);
-                    return;
-                }
-            }
-
-            ControllerScientist controllerScientist = null;
-            if (Scientists.TryGetValue(id, out controllerScientist))
-            {
-                ulong netId = corpse.net.ID.Value;
-                NextTick(() =>
-                {
-                    if (controllerScientist.Players.Count != 0)
-                    {
-                        ulong winner = controllerScientist.GetWinner;
-                        СanLootScientist.Add(netId, winner);
-                        if (controllerScientist.CrateId != 0) CanLootCrateScientist.Add(controllerScientist.CrateId, winner);
-                    }
-                    Scientists.Remove(id);
-                    UnityEngine.Object.Destroy(controllerScientist);
-                });
-                return;
-            }
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            foreach (ulong id in tanks) if (!controllerEvent.Tanks.Contains(id)) controllerEvent.Tanks.Add(id);
         }
 
         private void EventRemovePveMode(string shortname, bool addCooldownOwners = true)
@@ -112,6 +69,284 @@ namespace Oxide.Plugins
             if (Events.Count == 0) Unsubscribes();
         }
 
+        private object CanLootEntity(BasePlayer player, NPCPlayerCorpse corpse)
+        {
+            if (corpse == null || corpse.net == null || !player.IsPlayer()) return null;
+            ulong id = corpse.net.ID.Value;
+            return CanLootScientist(player, id);
+        }
+
+        private object OnPlayerAttack(BasePlayer attacker, HitInfo info) => info == null ? null : OnEventEntityTakeDamage(info.HitEntity as PatrolHelicopter, info);
+
+        private void Unsubscribes() { foreach (string hook in _hooks) Unsubscribe(hook); }
+        
+                private readonly HashSet<string> _hooks = new HashSet<string>()
+        {
+            "CanEntityBeTargeted",
+            "OnHelicopterTarget",
+            "CanHelicopterStrafeTarget",
+            "CanHelicopterTarget",
+            "OnSamSiteTarget",
+            "OnEntityEnter",
+            "CanBradleyApcTarget",
+            "OnCustomAnimalTarget",
+            "OnCustomNpcTarget",
+            "OnNpcTarget",
+            "CanEntityTakeDamage",
+            "OnPlayerAttack",
+            "OnDispenserGather",
+            "CanCustomAnimalSpawnCorpse",
+            "CanHackCrate",
+            "OnRestoreUponDeath",
+            "OnEntityDismounted",
+            "OnPlayerDeath"
+        };
+        
+                private object OnEventEntityTarget(BaseNetworkable attacker, BaseEntity target)
+        {
+            if (attacker == null || attacker.net == null || target == null) return null;
+		   		 		  						  	   		   					  			 		   					  	 		
+            EntityType type = EntityType.Default;
+            ControllerEvent controllerEvent = null;
+
+            switch (attacker)
+            {
+                case ScientistNPC _:
+                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Npc.Contains(attacker.net.ID.Value));
+                    type = EntityType.Npc;
+                    break;
+                case BaseAnimalNPC _:
+                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Npc.Contains(attacker.net.ID.Value));
+                    type = EntityType.Animal;
+                    break;
+                case BradleyAPC _:
+                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Tanks.Contains(attacker.net.ID.Value));
+                    type = EntityType.Bradley;
+                    break;
+                case AutoTurret _:
+                case FlameTurret _:
+                case GunTrap _:
+                case SamSite _:
+                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Turrets.Contains(attacker.net.ID.Value));
+                    type = EntityType.Turret;
+                    break;
+            }
+
+            if (controllerEvent == null) return null;
+
+            switch (type)
+            {
+                case EntityType.Npc:
+                case EntityType.Animal:
+                    {
+                        if (controllerEvent.Config.TargetNpc) return null;
+                        break;
+                    }
+                case EntityType.Bradley when controllerEvent.Config.TargetTank:
+                case EntityType.Turret when controllerEvent.Config.TargetTurret:
+                    return null;
+            }
+
+            if (type == EntityType.Npc)
+            {
+                if (target is ScientistNPC && target.net != null && controllerEvent.Npc.Contains(target.net.ID.Value)) return null;
+                if (target is BasePlayer && target.skinID is 19395142091920 or 8151920175) return null;
+            }
+
+            BasePlayer targetPlayer = target as BasePlayer;
+
+            if (targetPlayer.IsPlayer())
+            {
+                if (IsTeam(targetPlayer, controllerEvent.Owner)) return null;
+                else return true;
+            }
+            else
+            {
+                if (IsTeam(target.OwnerID, controllerEvent.Owner)) return null;
+                else return true;
+            }
+        }
+
+        private object CanCustomAnimalSpawnCorpse(BaseAnimalNPC entity)
+        {
+            if (entity == null || entity.net == null) return null;
+            ulong id = entity.net.ID.Value;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Npc.Contains(id));
+            if (controllerEvent != null) controllerEvent.Npc.Remove(id);
+            return null;
+        }
+
+        private void SetEventOwner(string shortname, BasePlayer player)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            controllerEvent.SetOwner(player);
+        }
+
+        private void OnEntityKill(StorageContainer crate)
+        {
+            if (crate == null || crate.net == null) return;
+            ulong id = crate.net.ID.Value;
+            if (Events.Count > 0)
+            {
+                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Crates.Contains(id));
+                if (controllerEvent != null) controllerEvent.Crates.Remove(id);
+            }
+            if (CanLootCrateScientist.ContainsKey(id)) CanLootCrateScientist.Remove(id);
+        }
+
+        public class CorpseInfo
+        {
+            public Vector3 Position { get; set; }
+            public string PlayerName { get; set; }
+            public ulong PlayerSteamID { get; set; }
+            public ulong NetId { get; set; }
+            public ulong Winner { get; set; }
+
+            public CorpseInfo(NPCPlayerCorpse corpse, ulong netId, ulong winner)
+            {
+                Position = corpse.transform.position;
+                PlayerName = corpse.playerName;
+                PlayerSteamID = corpse.playerSteamID;
+                NetId = netId;
+                Winner = winner;
+            }
+        }
+
+        private const string StrSec = En ? "sec." : "сек.";
+
+        private object CanEntityTakeDamage(AutoTurret turret, HitInfo info)
+        {
+            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
+            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void SaveData() => Interface.Oxide.DataFileSystem.WriteObject(Name, PlayersData);
+        private object OnNpcTarget(BaseAnimalNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void EventAddTurrets(string shortname, HashSet<ulong> turrets)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            foreach (ulong id in turrets) if (!controllerEvent.Turrets.Contains(id)) controllerEvent.Turrets.Add(id);
+        }
+
+        private void OnEntityKill(DroppedItemContainer container)
+        {
+            if (container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return;
+            ulong id = container.net.ID.Value;
+            if (СanLootScientist.ContainsKey(id)) СanLootScientist.Remove(id);
+        }
+
+        private object CanEntityTakeDamage(ScientistNPC npc, HitInfo info) => OnEventEntityTakeDamage(npc, info, false, false) is bool ? CanBlockDamageByApi(npc, info) : null;
+        private object OnCustomAnimalTarget(BaseAnimalNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
+
+        protected override void SaveConfig() => Config.WriteObject(_config);
+        private const string StrMin = En ? "min." : "мин.";
+
+        private object OnLootLockedEntity(BasePlayer player, DroppedItemContainer container)
+        {
+            if (!player.IsPlayer() || container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return null;
+            ulong id = container.net.ID.Value;
+            return CanLootScientist(player, id) == null ? null : (object)false;
+        }
+
+        private void EventAddScientists(string shortname, HashSet<ulong> npc)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            foreach (ulong id in npc) if (!controllerEvent.Npc.Contains(id)) controllerEvent.Npc.Add(id);
+        }
+
+        [ConsoleCommand("ClearTimePveMode")]
+        private void ConsoleClearTimePveMode(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null || arg.Args.IsNullOrEmpty() || arg.Args.Length > 2) return;
+
+            ulong id = arg.Args[0].ToULong();
+
+            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
+            if (playerData == null)
+            {
+                Puts($"Player {id} not found in the plugin database");
+                return;
+            }
+
+            string nameEvent = arg.Args.Length == 2 ? arg.Args[1].ToString() : string.Empty;
+
+            if (string.IsNullOrEmpty(nameEvent))
+            {
+                playerData.LastTime.Clear();
+                Puts($"You have cleared the time data from player {id}");
+                return;
+            }
+
+            if (playerData.LastTime.ContainsKey(nameEvent))
+            {
+                playerData.LastTime.Remove(nameEvent);
+                Puts($"You have cleared the time data for {nameEvent} from player {id}");
+            }
+            else Puts($"Event {nameEvent} not found in the player database");
+        }
+                private const bool En = false;
+
+        private object CanHackCrate(BasePlayer player, HackableLockedCrate crate)
+        {
+            if (crate == null || crate.net == null || !player.IsPlayer()) return null;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Crates.Contains(crate.net.ID.Value));
+            if (controllerEvent == null) return null;
+            if (controllerEvent.Config.HackCrate || IsTeam(player, controllerEvent.Owner)) return null;
+            else
+            {
+                PrintToChat(player, GetMessage("NoHackCrateEvent", player.UserIDString));
+                return true;
+            }
+        }
+
+        private void LoadData() => PlayersData = Interface.Oxide.DataFileSystem.ReadObject<HashSet<PlayerData>>(Name) ?? new HashSet<PlayerData>();
+
+        private object CanActionEvent(string shortname, BasePlayer player)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.ShortName == shortname);
+            if (controllerEvent == null) return null;
+            if (IsTeam(player, controllerEvent.Owner)) return null;
+            else
+            {
+                PrintToChat(player, GetMessage("NoCanActionEvent", player.UserIDString));
+                return false;
+            }
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        protected override void LoadConfig()
+        {
+            base.LoadConfig();
+            _config = Config.ReadObject<PluginConfig>();
+            if (_config.PluginVersion < Version) UpdateConfigValues();
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private object OnLootLockedEntity(BasePlayer player, NPCPlayerCorpse corpse)
+        {
+            if (corpse == null || corpse.net == null || !player.IsPlayer()) return null;
+            ulong id = corpse.net.ID.Value;
+            return CanLootScientist(player, id) == null ? null : (object)false;
+        }
+
+        private Dictionary<ulong, ControllerScientist> Scientists { get; } = new Dictionary<ulong, ControllerScientist>();
+        private object CanEntityTakeDamage(FlameTurret turret, HitInfo info)
+        {
+            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
+            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
+        }
+
+        private Dictionary<string, double> GetTimesPlayer(ulong id)
+        {
+            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
+            if (playerData == null) return null;
+            Dictionary<string, double> result = new Dictionary<string, double>();
+            foreach (KeyValuePair<string, double> dic in playerData.LastTime) result.Add(dic.Key, CurrentTime - dic.Value);
+            return result;
+        }
+
         private bool CanTimeOwner(string nameEvent, ulong steamId, double cooldown)
         {
             PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == steamId);
@@ -120,17 +355,215 @@ namespace Oxide.Plugins
             if (dic.Equals(default(KeyValuePair<string, double>))) return true;
             return dic.Value + cooldown < CurrentTime;
         }
+        
+        private object OnNpcTarget(ScientistNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
 
-        private object CanEntityBeTargeted(BaseEntity target, SamSite attacker)
+        private string GetMessage(string langKey, string userId, params object[] args) => (args.Length == 0) ? GetMessage(langKey, userId) : string.Format(GetMessage(langKey, userId), args);
+
+        private object CanBradleyApcTarget(BradleyAPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
+
+        private void OnEntityKill(FlameTurret turret)
         {
-            if (OnEventEntityTarget(attacker, target) is bool) return CanBlockTargetByApi(target, attacker);
-            else return IsEventTurret(attacker) ? CanAllowTargetByApi(target, attacker) : null;
+            if (turret == null || turret.net == null || Events.Count == 0) return;
+            OnTurretKill(turret.net.ID.Value);
         }
 
-        private Dictionary<ulong, float> GetScientistPlayerDamageMap(ulong netId) => Scientists.TryGetValue(netId, out ControllerScientist controller) ? controller.Players : null;
-        
-                [PluginReference] private readonly Plugin Friends, Clans;
+        private static string GetTimeFormat(double time)
+        {
+            int integer = (int)time;
+            if (time <= 60) return $"{integer} {StrSec}";
+            else if (time <= 3600)
+            {
+                int sec = integer % 60;
+                int min = (integer - sec) / 60;
+                return sec == 0 ? $"{min} {StrMin}" : $"{min} {StrMin} {sec} {StrSec}";
+            }
+            else
+            {
+                int hour = (int)(time / 3600);
+                time -= hour * 3600;
+                integer = (int)time;
+                int sec = integer % 60;
+                int min = (integer - sec) / 60;
+                if (min == 0 && sec == 0) return $"{hour} {StrH}";
+                else if (sec == 0) return $"{hour} {StrH} {min} {StrMin}";
+                else return $"{hour} {StrH} {min} {StrMin} {sec} {StrSec}";
+            }
+        }
 
+        private HashSet<ulong> GetEventOwners(string shortname)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            return controllerEvent == null ? null : controllerEvent.Owners;
+        }
+        
+                internal class PlayerData { public ulong SteamId; public Dictionary<string, double> LastTime; }
+        private const string StrH = En ? "h." : "ч.";
+
+        private static object CanBlockDamageByApi(BaseNetworkable entity, HitInfo info)
+        {
+            if (Interface.CallHook("CanPveModeBlockDamage", entity, info) is bool) return null;
+            else return false;
+        }
+
+        private void OnEntityKill(GunTrap turret)
+        {
+            if (turret == null || turret.net == null || Events.Count == 0) return;
+            OnTurretKill(turret.net.ID.Value);
+        }
+
+        private void EventAddCrates(string shortname, HashSet<ulong> crates)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            foreach (ulong id in crates) if (!controllerEvent.Crates.Contains(id)) controllerEvent.Crates.Add(id);
+        }
+        
+                internal class EventConfig
+        {
+            public float Damage { get; set; }
+            public Dictionary<string, float> ScaleDamage { get; set; }
+            public bool LootCrate { get; set; }
+            public bool HackCrate { get; set; }
+            public bool LootNpc { get; set; }
+            public bool DamageNpc { get; set; }
+            public bool DamageTank { get; set; }
+            public bool DamageHelicopter { get; set; }
+            public bool DamageTurret { get; set; }
+            public bool TargetNpc { get; set; }
+            public bool TargetTank { get; set; }
+            public bool TargetHelicopter { get; set; }
+            public bool TargetTurret { get; set; }
+            public bool CanEnter { get; set; }
+            public bool CanEnterCooldownPlayer { get; set; }
+            public int TimeExitOwner { get; set; }
+            public int AlertTime { get; set; }
+            public bool RestoreUponDeath { get; set; }
+            public double CooldownOwner { get; set; }
+            public int Darkening { get; set; }
+        }
+
+        private void ScientistRemovePveMode(ScientistNPC npc)
+        {
+            if (npc == null || npc.net == null) return;
+            ulong id = npc.net.ID.Value;
+            ControllerScientist controllerScientist = null;
+            if (Scientists.TryGetValue(id, out controllerScientist))
+            {
+                Scientists.Remove(id);
+                UnityEngine.Object.Destroy(controllerScientist);
+            }
+        }
+        private object CanEntityTakeDamage(BaseAnimalNPC animal, HitInfo info) => OnEventEntityTakeDamage(animal, info, false, false) is bool ? CanBlockDamageByApi(animal, info) : null;
+
+        private void Unload()
+        {
+            foreach (KeyValuePair<ulong, ControllerScientist> dic in Scientists) UnityEngine.Object.Destroy(dic.Value);
+            foreach (ControllerEvent controllerEvent in Events) UnityEngine.Object.Destroy(controllerEvent.gameObject);
+            _ins = null;
+        }
+
+        private void Subscribes() { foreach (string hook in _hooks) Subscribe(hook); }
+
+        private void OnEntityDismounted(BaseMountable entity, BasePlayer player)
+        {
+            if (!player.IsPlayer()) return;
+            if (player.IsAdmin && _config.IgnoreAdmin) return;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && Vector3.Distance(x.transform.position, player.transform.position) < x.Radius);
+            if (controllerEvent == null) return;
+            if (!controllerEvent.Config.CanEnterCooldownPlayer && !CanTimeOwner(controllerEvent.ShortName, player.userID, controllerEvent.Config.CooldownOwner)) controllerEvent.KickOutPlayer(player);
+            if (_config.NoEnterAnotherOwner && Events.Any(x => x.ShortName != controllerEvent.ShortName && x.Owners.Contains(player.userID))) controllerEvent.KickOutPlayer(player);
+            if (!controllerEvent.Config.CanEnter && !IsTeam(player, controllerEvent.Owner)) controllerEvent.KickOutPlayer(player);
+        }
+
+        private bool IsEventTurret(BaseEntity entity)
+        {
+            if (entity == null || entity.net == null) return false;
+            if (entity is not (AutoTurret or FlameTurret or GunTrap or SamSite)) return false;
+            return Events.Any(x => x.Turrets.Contains(entity.net.ID.Value));
+        }
+        
+                private bool IsPlayerInEventZone(ulong id) => Events.Any(x => x.InsidePlayers.Any(y => y.userID == id));
+
+        private object CanLootEntity(BasePlayer player, StorageContainer container)
+        {
+            if (container == null || container.net == null || !player.IsPlayer()) return null;
+
+            ulong id = container.net.ID.Value;
+
+            if (Events.Count > 0)
+            {
+                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Crates.Contains(id));
+                if (controllerEvent != null)
+                {
+                    if (controllerEvent.Config.LootCrate || IsTeam(player, controllerEvent.Owner)) return null;
+                    else
+                    {
+                        PrintToChat(player, GetMessage("NoLootCrateEvent", player.UserIDString));
+                        return true;
+                    }
+                }
+            }
+		   		 		  						  	   		   					  			 		   					  	 		
+            ulong ownerId = 0;
+            if (CanLootCrateScientist.TryGetValue(id, out ownerId))
+            {
+                if (IsTeam(player, ownerId)) return null;
+                else
+                {
+                    PrintToChat(player, GetMessage("NoLootScientist", player.UserIDString));
+                    return true;
+                }
+            }
+
+            return null;
+        }
+        
+                private Dictionary<ulong, ulong> СanLootScientist { get; } = new Dictionary<ulong, ulong>();
+        
+        private object OnEntityEnter(TargetTrigger trigger, BasePlayer target)
+        {
+            if (trigger == null || !target.IsPlayer()) return null;
+
+            DecayEntity attacker = trigger.GetComponentInParent<DecayEntity>();
+            if (attacker == null) return null;
+
+            if (!IsEventTurret(attacker)) return null;
+
+            return OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
+        }
+
+        [ConsoleCommand("ClearOwnerPveMode")]
+        private void ConsoleClearOwnerPveMode(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null || arg.Args.IsNullOrEmpty() || arg.Args.Length > 2) return;
+
+            ulong id = Convert.ToUInt64(arg.Args[0]);
+            BasePlayer player = BasePlayer.FindByID(id);
+
+            string nameEvent = arg.Args.Length == 2 ? arg.Args[1].ToString() : string.Empty;
+
+            foreach (ControllerEvent controller in Events)
+            {
+                if (controller.Owner != id) continue;
+                if (string.IsNullOrEmpty(nameEvent) || controller.ShortName == nameEvent)
+                {
+                    controller.ClearOwner(player);
+                    Puts($"You have cleared the owner from event {controller.ShortName}");
+                }
+            }
+        }
+
+        public enum EntityType
+        {
+            Default,
+            Npc,
+            Animal,
+            Bradley,
+            Turret,
+            Helicopter
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
         internal class ControllerEvent : FacepunchBehaviour
         {
             internal string ShortName;
@@ -138,10 +571,10 @@ namespace Oxide.Plugins
             internal EventConfig Config { get; set; } = null;
 
             internal float Radius { get; set; } = 0f;
-		   		 		  						  	   		   					  			 		   					  	 		
+
             internal HashSet<ulong> Crates { get; set; } = null;
             internal HashSet<ulong> Backpacks { get; } = new HashSet<ulong>();
-		   		 		  						  	   		   					  			 		   					  	 		
+
             internal HashSet<ulong> Npc { get; set; } = null;
             internal HashSet<ulong> Tanks { get; set; } = null;
             internal HashSet<ulong> Helicopters { get; set; } = null;
@@ -151,10 +584,10 @@ namespace Oxide.Plugins
             internal ulong Owner { get; set; } = 0;
             private int TimerExitOwner { get; set; } = 0;
             internal HashSet<ulong> Owners { get; set; } = null;
-
+		   		 		  						  	   		   					  			 		   					  	 		
             private SphereCollider SphereCollider { get; set; } = null;
             internal HashSet<BasePlayer> InsidePlayers { get; } = new HashSet<BasePlayer>();
-
+		   		 		  						  	   		   					  			 		   					  	 		
             private HashSet<SphereEntity> Spheres { get; } = new HashSet<SphereEntity>();
 
             private void OnDestroy()
@@ -242,7 +675,7 @@ namespace Oxide.Plugins
                     _ins.PrintToChat(player, _ins.GetMessage("TimerStartEvent", player.UserIDString, GetTimeFormat(TimerExitOwner)));
                 }
             }
-
+		   		 		  						  	   		   					  			 		   					  	 		
             internal void SetOwner(BasePlayer player)
             {
                 if (!player.IsPlayer()) return;
@@ -326,14 +759,14 @@ namespace Oxide.Plugins
                 player.SendNetworkUpdateImmediate();
                 _ins.PrintToChat(player, _ins.GetMessage("NoEnterEvent", player.UserIDString));
             }
-
+		   		 		  						  	   		   					  			 		   					  	 		
             private void CheckJetpack(Collider collider)
             {
                 if (collider == null || collider is CapsuleCollider == false) return;
 
                 DroppedItem droppedItem = collider.GetComponentInParent<DroppedItem>();
                 if (!droppedItem.IsExists()) return;
-
+		   		 		  						  	   		   					  			 		   					  	 		
                 BaseMountable baseMountable = droppedItem.GetComponentInChildren<BaseMountable>();
                 if (!baseMountable.IsExists()) return;
 
@@ -356,15 +789,44 @@ namespace Oxide.Plugins
                 KickOutPlayer(player);
             }
         }
-
-        private void CrateAddScientistPveMode(ulong crateId, ulong scientistId)
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void EventAddHelicopters(string shortname, HashSet<ulong> helicopters)
         {
-            if (crateId == 0 || scientistId == 0) return;
-            ControllerScientist controllerScientist = null;
-            if (Scientists.TryGetValue(scientistId, out controllerScientist)) controllerScientist.CrateId = crateId;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            if (controllerEvent == null) return;
+            foreach (ulong id in helicopters) if (!controllerEvent.Helicopters.Contains(id)) controllerEvent.Helicopters.Add(id);
         }
 
-        private HashSet<CorpseInfo> CorpseBuffer { get; set; } = new HashSet<CorpseInfo>();
+        private ulong GetEventOwner(string shortname)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
+            return controllerEvent == null ? 0 : controllerEvent.Owner;
+        }
+
+        private bool IsTeam(BasePlayer player, ulong targetId)
+        {
+            if (player == null || targetId == 0) return false;
+            if (player.userID == targetId) return true;
+            if (player.currentTeam != 0)
+            {
+                RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
+                if (playerTeam == null) return false;
+                if (playerTeam.members.Contains(targetId)) return true;
+            }
+            if (plugins.Exists("Friends") && (bool)Friends.Call("AreFriends", (ulong)player.userID, targetId)) return true;
+            if (plugins.Exists("Clans") && Clans.Author == "k1lly0u" && (bool)Clans.Call("IsMemberOrAlly", player.UserIDString, targetId.ToString())) return true;
+            return false;
+        }
+        
+                [PluginReference] private readonly Plugin Friends, Clans;
+
+        private object CanActionEventNoMessage(string shortname, BasePlayer player)
+        {
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.ShortName == shortname);
+            if (controllerEvent == null) return null;
+            if (IsTeam(player, controllerEvent.Owner)) return null;
+            else return false;
+        }
 
         private object CanLootEntity(BasePlayer player, DroppedItemContainer container)
         {
@@ -372,13 +834,361 @@ namespace Oxide.Plugins
             ulong id = container.net.ID.Value;
             return CanLootScientist(player, id);
         }
-		   		 		  						  	   		   					  			 		   					  	 		
+
+        private object CanEntityBeTargeted(BaseEntity target, SamSite attacker)
+        {
+            if (OnEventEntityTarget(attacker, target) is bool) return CanBlockTargetByApi(target, attacker);
+            else return IsEventTurret(attacker) ? CanAllowTargetByApi(target, attacker) : null;
+        }
+
+        private HashSet<string> GetEventsPlayer(ulong id)
+        {
+            HashSet<string> result = new HashSet<string>();
+            foreach (ControllerEvent controller in Events) if (controller.InsidePlayers.Any(x => x.userID == id)) result.Add(controller.ShortName);
+            return result;
+        }
+
+        private void OnEntitySpawned(DroppedItemContainer container)
+        {
+            if (container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return;
+            NextTick(() =>
+            {
+                CorpseInfo info = CorpseBuffer.FirstOrDefault(x => x.PlayerName == container.playerName && x.PlayerSteamID == container.playerSteamID && Vector3.Distance(x.Position, container.transform.position) < 1.5f);
+                if (info == null) return;
+
+                CorpseBuffer.Remove(info);
+
+                СanLootScientist.Remove(info.NetId);
+                СanLootScientist.Add(container.net.ID.Value, info.Winner);
+            });
+        }
+
         private void OnPlayerDeath(BasePlayer player, HitInfo info)
         {
             if (!player.IsPlayer()) return;
             ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.InsidePlayers.Contains(player));
             if (controllerEvent != null) controllerEvent.ExitPlayer(player);
         }
+
+        private object CanEntityTakeDamage(BradleyAPC bradley, HitInfo info) => OnEventEntityTakeDamage(bradley, info, false, false) is bool ? CanBlockDamageByApi(bradley, info) : null;
+
+        internal class ControllerScientist : FacepunchBehaviour
+        {
+            private int TimeLastDamage { get; set; } = 0;
+
+            internal ulong CrateId { get; set; } = 0;
+
+            internal Dictionary<ulong, float> Players { get; } = new Dictionary<ulong, float>();
+
+            private void OnDestroy() => CancelInvoke(IncrementTime);
+
+            internal void AddDamage(BasePlayer attacker, float damage)
+            {
+                if (Players.ContainsKey(attacker.userID)) Players[attacker.userID] += damage;
+                else Players.Add(attacker.userID, damage);
+                if (TimeLastDamage == 0) InvokeRepeating(IncrementTime, 1f, 1f);
+                TimeLastDamage = _ins._config.TimeLastDamage;
+            }
+
+            private void IncrementTime()
+            {
+                TimeLastDamage--;
+                if (TimeLastDamage != 0) return;
+                Players.Clear();
+                CancelInvoke(IncrementTime);
+            }
+
+            internal ulong GetWinner => Players.Max(s => s.Value).Key;
+        }
+        
+        private object CanHelicopterTarget(PatrolHelicopterAI heli, BasePlayer player)
+        {
+            if (heli == null || !player.IsPlayer()) return null;
+
+            PatrolHelicopter helicopter = heli.helicopterBase;
+            if (helicopter == null || helicopter.net == null) return null;
+		   		 		  						  	   		   					  			 		   					  	 		
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Helicopters.Contains(helicopter.net.ID.Value));
+            if (controllerEvent == null || controllerEvent.Config.TargetHelicopter) return null;
+
+            if (IsTeam(player, controllerEvent.Owner)) return null;
+            else return CanBlockTargetByApi(player, helicopter);
+        }
+        
+                private static PveMode _ins;
+        
+                private void ScientistAddPveMode(ScientistNPC npc)
+        {
+            if (npc == null || npc.net == null) return;
+            Scientists.Add(npc.net.ID.Value, npc.gameObject.AddComponent<ControllerScientist>());
+        }
+
+        private static readonly DateTime Epoch = new DateTime(2024, 1, 1, 0, 0, 0);
+
+        private ControllerEvent GetControllerEventAtPosition(Vector3 pos) => Events.FirstOrDefault(x => Vector3.Distance(pos, x.transform.position) <= x.Radius);
+
+        private string GetMessage(string langKey, string userId) => lang.GetMessage(langKey, _ins, userId);
+
+        private static object CanAllowTargetByApi(BaseNetworkable target, BaseNetworkable attacker)
+        {
+            if (Interface.CallHook("CanPveModeAllowTarget", target, attacker) is bool) return null;
+            else return true;
+        }
+
+        private static double CurrentTime => DateTime.Now.Subtract(Epoch).TotalSeconds;
+
+        private void OnServerInitialized() => LoadData();
+
+        private HashSet<PlayerData> PlayersData { get; set; } = null;
+
+        private bool IsTeam(ulong playerId, ulong targetId)
+        {
+            if (playerId == 0 || targetId == 0) return false;
+            if (playerId == targetId) return true;
+            RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindPlayersTeam(playerId);
+            if (playerTeam != null && playerTeam.members.Contains(targetId)) return true;
+            if (plugins.Exists("Friends") && (bool)Friends.Call("AreFriends", playerId, targetId)) return true;
+            if (plugins.Exists("Clans") && Clans.Author == "k1lly0u" && (bool)Clans.Call("IsMemberOrAlly", playerId.ToString(), targetId.ToString())) return true;
+            return false;
+        }
+
+        private void OnEntityKill(NPCPlayerCorpse corpse)
+        {
+            if (corpse == null || corpse.net == null) return;
+            ulong netId = corpse.net.ID.Value;
+            if (!СanLootScientist.TryGetValue(netId, out ulong winner)) return;
+            CorpseBuffer.Add(new CorpseInfo(corpse, netId, winner));
+        }
+        private object CanEntityTakeDamage(SamSite turret, HitInfo info)
+        {
+            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
+            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
+        }
+
+        private PluginConfig _config;
+
+        private object CanEntityBeTargeted(BasePlayer target, BaseEntity attacker)
+        {
+            if (OnEventEntityTarget(attacker, target) is bool) return CanBlockTargetByApi(target, attacker);
+            else return IsEventTurret(attacker) ? CanAllowTargetByApi(target, attacker) : null;
+        }
+
+        private HashSet<ControllerEvent> Events { get; } = new HashSet<ControllerEvent>();
+
+        protected override void LoadDefaultConfig()
+        {
+            Puts("Creating a default config...");
+            _config = PluginConfig.DefaultConfig();
+            _config.PluginVersion = Version;
+            SaveConfig();
+            Puts("Creation of the default config completed!");
+        }
+        private object OnCustomNpcTarget(ScientistNPC attacker, BasePlayer target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
+
+        private object OnEntityTakeDamage(BaseCombatEntity entity, HitInfo info)
+        {
+            if (entity == null || entity.net == null || info == null) return null;
+
+            if (Scientists.Count > 0 && entity is ScientistNPC npc)
+            {
+                if (Scientists.TryGetValue(npc.net.ID.Value, out ControllerScientist controllerScientist))
+                {
+                    BasePlayer attacker = info.InitiatorPlayer;
+                    if (attacker.IsPlayer()) controllerScientist.AddDamage(attacker, info.damageTypes.Total());
+                    return null;
+                }
+            }
+
+            if (Events.Count > 0)
+            {
+                if (OnEventEntityTakeDamage(entity, info) is bool || OnEventEntityTarget(info.Initiator, entity) is bool || OnEventInitiatorNullTakeDamage(entity, info) is bool)
+                    return CanBlockDamageByApi(entity, info) is bool ? true : null;
+            }
+
+            return null;
+        }
+        private object CanEntityTakeDamage(GunTrap turret, HitInfo info)
+        {
+            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
+            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
+        }
+
+        private object OnHelicopterTarget(HelicopterTurret turret, BasePlayer player)
+        {
+            if (turret == null || turret._heliAI == null || !player.IsPlayer()) return null;
+
+            PatrolHelicopter helicopter = turret._heliAI.helicopterBase;
+            if (helicopter == null || helicopter.net == null) return null;
+
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Helicopters.Contains(helicopter.net.ID.Value));
+            if (controllerEvent == null || controllerEvent.Config.TargetHelicopter) return null;
+
+            if (IsTeam(player, controllerEvent.Owner)) return null;
+            else return CanBlockTargetByApi(player, helicopter) is bool ? true : null;
+        }
+
+        private Dictionary<ulong, float> GetScientistPlayerDamageMap(ulong netId) => Scientists.TryGetValue(netId, out ControllerScientist controller) ? controller.Players : null;
+
+        private void EventAddPveMode(string shortname, Dictionary<string, object> config, Vector3 position, float radius, HashSet<ulong> crates, HashSet<ulong> npc, HashSet<ulong> tanks, HashSet<ulong> helicopters, HashSet<ulong> turrets, HashSet<ulong> owners, BasePlayer owner = null)
+        {
+            ControllerEvent controllerEvent = new GameObject().AddComponent<ControllerEvent>();
+            controllerEvent.transform.position = position;
+            controllerEvent.ShortName = shortname;
+            controllerEvent.Config = new EventConfig
+            {
+                Damage = (float)config["Damage"],
+                ScaleDamage = (Dictionary<string, float>)config["ScaleDamage"],
+                LootCrate = (bool)config["LootCrate"],
+                HackCrate = (bool)config["HackCrate"],
+                LootNpc = (bool)config["LootNpc"],
+                DamageNpc = (bool)config["DamageNpc"],
+                DamageTank = (bool)config["DamageTank"],
+                DamageHelicopter = (bool)config["DamageHelicopter"],
+                DamageTurret = (bool)config["DamageTurret"],
+                TargetNpc = (bool)config["TargetNpc"],
+                TargetTank = (bool)config["TargetTank"],
+                TargetHelicopter = (bool)config["TargetHelicopter"],
+                TargetTurret = (bool)config["TargetTurret"],
+                CanEnter = (bool)config["CanEnter"],
+                CanEnterCooldownPlayer = (bool)config["CanEnterCooldownPlayer"],
+                TimeExitOwner = (int)config["TimeExitOwner"],
+                AlertTime = (int)config["AlertTime"],
+                RestoreUponDeath = (bool)config["RestoreUponDeath"],
+                CooldownOwner = (double)config["CooldownOwner"],
+                Darkening = (int)config["Darkening"]
+            };
+            controllerEvent.Radius = radius;
+            controllerEvent.Crates = crates;
+            controllerEvent.Npc = npc;
+            controllerEvent.Tanks = tanks;
+            controllerEvent.Helicopters = helicopters;
+            controllerEvent.Turrets = turrets;
+            controllerEvent.Owners = owners;
+            if (owner != null) controllerEvent.SetOwner(owner);
+            controllerEvent.InitSphere();
+            Events.Add(controllerEvent);
+            LogToFile("CreateZone", $"[{DateTime.Now.ToShortTimeString()}] The zone {shortname} has been created at {position}", _ins);
+            if (Events.Count == 1) Subscribes();
+        }
+
+        private object OnRestoreUponDeath(BasePlayer player)
+        {
+            if (!player.IsPlayer()) return null;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => Vector3.Distance(x.transform.position, player.transform.position) < x.Radius);
+            if (controllerEvent == null) return null;
+            if (controllerEvent.Config.RestoreUponDeath) return false;
+            else return null;
+        }
+
+        private static object CanBlockTargetByApi(BaseNetworkable target, BaseNetworkable attacker)
+        {
+            if (Interface.CallHook("CanPveModeBlockTarget", target, attacker) is bool) return null;
+            else return false;
+        }
+
+        private class PluginConfig
+        {
+            [JsonProperty(En ? "Block a player from entering the event area if he is the owner of another event? [true/false]" : "Запрещать игроку входить внутрь зоны ивента, если он является владельцем другого ивента? [true/false]")] public bool NoEnterAnotherOwner { get; set; }
+
+            public static PluginConfig DefaultConfig()
+            {
+                return new PluginConfig
+                {
+                    TimeLastDamage = 300,
+                    NoEnterAnotherOwner = false,
+                    IgnoreAdmin = false,
+                    PluginVersion = new VersionNumber()
+                };
+            }
+            [JsonProperty(En ? "Ignore administrators? [true/false]" : "Игнорировать администраторов? [true/false]")] public bool IgnoreAdmin { get; set; }
+            [JsonProperty(En ? "Configuration version" : "Версия конфигурации")] public VersionNumber PluginVersion { get; set; }
+            [JsonProperty(En ? "The time to clear the information of the players' damage to NPC after NPC has take the last damage [sec.]" : "Время очистки информации о нанесенном уроне от игроков к NPC после нанесения последнего урона по NPC [sec.]")] public int TimeLastDamage { get; set; }
+        }
+
+        private void OnCorpsePopulate(ScientistNPC entity, NPCPlayerCorpse corpse)
+        {
+            if (entity == null || entity.net == null || corpse == null || corpse.net == null) return;
+
+            ulong id = entity.net.ID.Value;
+
+            if (Events.Count > 0)
+            {
+                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Npc.Contains(id));
+                if (controllerEvent != null)
+                {
+                    controllerEvent.Npc.Remove(id);
+                    controllerEvent.Backpacks.Add(corpse.playerSteamID);
+                    return;
+                }
+            }
+
+            ControllerScientist controllerScientist = null;
+            if (Scientists.TryGetValue(id, out controllerScientist))
+            {
+                ulong netId = corpse.net.ID.Value;
+                NextTick(() =>
+                {
+                    if (controllerScientist.Players.Count != 0)
+                    {
+                        ulong winner = controllerScientist.GetWinner;
+                        СanLootScientist.Add(netId, winner);
+                        if (controllerScientist.CrateId != 0) CanLootCrateScientist.Add(controllerScientist.CrateId, winner);
+                    }
+                    Scientists.Remove(id);
+                    UnityEngine.Object.Destroy(controllerScientist);
+                });
+                return;
+            }
+        }
+        
+                protected override void LoadDefaultMessages()
+        {
+            lang.RegisterMessages(new Dictionary<string, string>
+            {
+                ["NoLootScientist"] = "You <color=#ce3f27>are unable</color> to loot this NPC due to another player doing more damage!",
+                ["NoLootCrateEvent"] = "You <color=#ce3f27>cannot</color> loot the crate! You are not the Event Owner and you are not on their team!",
+                ["NoHackCrateEvent"] = "You <color=#ce3f27>cannot</color> hack the locked crate! You are not the Event Owner and you are not on their team!",
+                ["NoLootScientistEvent"] = "You <color=#ce3f27>cannot</color> loot an NPC's corpse! You are not the Event Owner and you are not on their team!",
+                ["NoDamageTankEvent"] = "You <color=#ce3f27>cannot</color> damage Bradley! You are not the Event Owner and you are not on their team!",
+                ["NoDamageHelicopterEvent"] = "You <color=#ce3f27>cannot</color> damage Patrol Helicopter! You are not the Event Owner and you are not on their team!",
+                ["NoDamageTurretEvent"] = "You <color=#ce3f27>cannot</color> damage Turret! You are not the Event Owner and you are not on their team!",
+                ["NoDamageNpcEvent"] = "You <color=#ce3f27>cannot</color> damage NPC! You are not the Event Owner and you are not on their team!",
+                ["NoEnterEvent"] = "You <color=#ce3f27>cannot</color> enter the Event zone! You are not the Event Owner and you are not on their team!",
+                ["YouOwnerEvent"] = "You are now the <color=#738d43>Event Owner</color>!",
+                ["ChangeOwnerEventToFriend"] = "You have exited the <color=#ce3f27>Event Zone</color>. The <color=#738d43>Event owner</color> is now <color=#55aaff>{0}</color>",
+                ["TimerStartEvent"] = "You <color=#ce3f27>have left</color> the Event zone. You have to return to the Event zone in <color=#55aaff>{0}</color> or you will lose Event Owner status",
+                ["AlertTimerEvent"] = "You have <color=#55aaff>{0}</color> to return to the Event Zone and keep Event Owner status",
+                ["YouNonOwnerEvent"] = "You <color=#ce3f27>lost</color> the Event Owner status!",
+                ["NoCanActionEvent"] = "You <color=#ce3f27>cannot</color> perform this action! You are not the Event Owner and you are not on their team!",
+                ["OwnerEndEvent"] = "Event <color=#55aaff>{0}</color> is over. You were the Event Owner. You can play this event no earlier than in <color=#55aaff>{1}</color>",
+                ["PlayerHasCooldownEnter"] = "You have <color=#ce3f27>entered</color> the event area in which you <color=#ce3f27>cannot</color> become the owner (you may <color=#ce3f27>lose loot</color>), you <color=#ce3f27>still have</color> a timer timer for participation in this event. You must wait at least <color=#55aaff>{0}</color> to become owner of this event again",
+                ["EventsTime"] = "List of events:\n(If the event is not in the list, then you can become its owner)\n(If the event is marked with <color=#55aaff>*</color>, it means that it is currently active and the cooldown is indicated to get the status of event owner. Otherwise, it is indicated how long ago you were the owner of the event)"
+            }, this);
+
+            lang.RegisterMessages(new Dictionary<string, string>
+            {
+                ["NoLootScientist"] = "Вы <color=#ce3f27>не можете</color> ограбить этого NPC, потому что другой игрок нанес по нему большее количество урона!",
+                ["NoLootCrateEvent"] = "Вы <color=#ce3f27>не можете</color> ограбить этот ящик, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoHackCrateEvent"] = "Вы <color=#ce3f27>не можете</color> начать взлом этого заблокированного ящика, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoLootScientistEvent"] = "Вы <color=#ce3f27>не можете</color> ограбить этого NPC, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoDamageTankEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому Bradley, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoDamageHelicopterEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому вертолету, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoDamageTurretEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этой турели, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoDamageNpcEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому NPC, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["NoEnterEvent"] = "Вы <color=#ce3f27>не можете</color> войти внутрь зоны ивента, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["YouOwnerEvent"] = "Вы <color=#738d43>стали</color> владельцем ивента!",
+                ["ChangeOwnerEventToFriend"] = "Вы <color=#ce3f27>вышли</color> из зоны ивента. Владелец ивента <color=#738d43>сменился</color> на игрока <color=#55aaff>{0}</color>",
+                ["TimerStartEvent"] = "Вы <color=#ce3f27>вышли</color> из зоны ивента. Чтобы не потерять статус владельца ивента вам необходимо вернуться в зону ивента в течении <color=#55aaff>{0}</color>",
+                ["AlertTimerEvent"] = "У вас осталось <color=#55aaff>{0}</color> чтобы вернуться в зону ивента и не потерять статус владельца ивента",
+                ["YouNonOwnerEvent"] = "Вы <color=#ce3f27>утратили</color> статус владельца ивента!",
+                ["NoCanActionEvent"] = "Вы <color=#ce3f27>не можете</color> выполнить это действие, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
+                ["OwnerEndEvent"] = "Ивент <color=#55aaff>{0}</color> окончен. Вы были владельцем ивента. Участие в данном ивенте возможно не ранее чем через <color=#55aaff>{1}</color>",
+                ["PlayerHasCooldownEnter"] = "Вы <color=#ce3f27>вошли</color> в зону ивента, в которой вы <color=#ce3f27>не можете</color> стать владельцем (есть риск <color=#ce3f27>потерять ресурсы</color>), потому что у вас еще <color=#ce3f27>не закончился</color> таймер на участие в ивенте. Участие возможно не ранее чем через <color=#55aaff>{0}</color>",
+                ["EventsTime"] = "Список ивентов:\n(Если ивента нет в списке, то вы можете стать его владельцем)\n(Если ивент отмечен знаком <color=#55aaff>*</color>, значит сейчас он активен и указано оставшееся время, чтобы получить статус владельца ивента. Иначе указано сколько времени назад вы были владельцем ивента)"
+            }, this, "ru");
+        }
+
+        private const int TargetLayers = ~(1 << 10 | 1 << 18 | 1 << 28 | 1 << 29);
 
         private object OnEventInitiatorNullTakeDamage(BaseCombatEntity entity, HitInfo info)
         {
@@ -429,40 +1239,16 @@ namespace Oxide.Plugins
                 else return true;
             }
         }
-
-        private object CanLootEntity(BasePlayer player, NPCPlayerCorpse corpse)
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void OnEntityKill(PatrolHelicopter heli)
         {
-            if (corpse == null || corpse.net == null || !player.IsPlayer()) return null;
-            ulong id = corpse.net.ID.Value;
-            return CanLootScientist(player, id);
+            if (heli == null || heli.net == null || Events.Count == 0) return;
+            ulong id = heli.net.ID.Value;
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Helicopters.Contains(id));
+            if (controllerEvent != null) controllerEvent.Helicopters.Remove(id);
         }
-        
-                private static PveMode _ins;
-        
-        private object OnNpcTarget(ScientistNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
 
-        private Dictionary<ulong, ControllerScientist> Scientists { get; } = new Dictionary<ulong, ControllerScientist>();
-
-        [ConsoleCommand("ClearOwnerPveMode")]
-        private void ConsoleClearOwnerPveMode(ConsoleSystem.Arg arg)
-        {
-            if (arg.Player() != null || arg.Args == null || arg.Args.Length == 0 || arg.Args.Length > 2) return;
-
-            ulong id = Convert.ToUInt64(arg.Args[0]);
-            BasePlayer player = BasePlayer.FindByID(id);
-
-            string nameEvent = arg.Args.Length == 2 ? arg.Args[1] : string.Empty;
-
-            foreach (ControllerEvent controller in Events)
-            {
-                if (controller.Owner != id) continue;
-                if (string.IsNullOrEmpty(nameEvent) || controller.ShortName == nameEvent)
-                {
-                    controller.ClearOwner(player);
-                    Puts($"You have cleared the owner from event {controller.ShortName}");
-                }
-            }
-        }
+        private object CanHelicopterStrafeTarget(PatrolHelicopterAI heli, BasePlayer player) => CanHelicopterTarget(heli, player);
 
         private void OnEntityKill(BradleyAPC bradley)
         {
@@ -472,388 +1258,11 @@ namespace Oxide.Plugins
             if (controllerEvent != null) controllerEvent.Tanks.Remove(id);
         }
 
-        private bool IsTeam(ulong playerId, ulong targetId)
+        private void CrateAddScientistPveMode(ulong crateId, ulong scientistId)
         {
-            if (playerId == 0 || targetId == 0) return false;
-            if (playerId == targetId) return true;
-            RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindPlayersTeam(playerId);
-            if (playerTeam != null && playerTeam.members.Contains(targetId)) return true;
-            if (plugins.Exists("Friends") && (bool)Friends.Call("AreFriends", playerId, targetId)) return true;
-            if (plugins.Exists("Clans") && Clans.Author == "k1lly0u" && (bool)Clans.Call("IsMemberOrAlly", playerId.ToString(), targetId.ToString())) return true;
-            return false;
-        }
-
-        private void EventAddCrates(string shortname, HashSet<ulong> crates)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            foreach (ulong id in crates) if (!controllerEvent.Crates.Contains(id)) controllerEvent.Crates.Add(id);
-        }
-
-        private object OnLootLockedEntity(BasePlayer player, DroppedItemContainer container)
-        {
-            if (!player.IsPlayer() || container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return null;
-            ulong id = container.net.ID.Value;
-            return CanLootScientist(player, id) == null ? null : (object)false;
-        }
-
-        private void EventAddHelicopters(string shortname, HashSet<ulong> helicopters)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            foreach (ulong id in helicopters) if (!controllerEvent.Helicopters.Contains(id)) controllerEvent.Helicopters.Add(id);
-        }
-
-        private Dictionary<string, double> GetTimesPlayer(ulong id)
-        {
-            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
-            if (playerData == null) return null;
-            Dictionary<string, double> result = new Dictionary<string, double>();
-            foreach (KeyValuePair<string, double> dic in playerData.LastTime) result.Add(dic.Key, CurrentTime - dic.Value);
-            return result;
-        }
-
-        private object OnRestoreUponDeath(BasePlayer player)
-        {
-            if (!player.IsPlayer()) return null;
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => Vector3.Distance(x.transform.position, player.transform.position) < x.Radius);
-            if (controllerEvent == null) return null;
-            if (controllerEvent.Config.RestoreUponDeath) return false;
-            else return null;
-        }
-
-        private void EventAddScientists(string shortname, HashSet<ulong> npc)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            foreach (ulong id in npc) if (!controllerEvent.Npc.Contains(id)) controllerEvent.Npc.Add(id);
-        }
-
-        protected override void LoadConfig()
-        {
-            base.LoadConfig();
-            _config = Config.ReadObject<PluginConfig>();
-            if (_config.PluginVersion < Version) UpdateConfigValues();
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        private void Unload()
-        {
-            foreach (KeyValuePair<ulong, ControllerScientist> dic in Scientists) UnityEngine.Object.Destroy(dic.Value);
-            foreach (ControllerEvent controllerEvent in Events) UnityEngine.Object.Destroy(controllerEvent.gameObject);
-            _ins = null;
-        }
-
-        internal class ControllerScientist : FacepunchBehaviour
-        {
-            private int TimeLastDamage { get; set; } = 0;
-		   		 		  						  	   		   					  			 		   					  	 		
-            internal ulong CrateId { get; set; } = 0;
-
-            internal Dictionary<ulong, float> Players { get; } = new Dictionary<ulong, float>();
-
-            private void OnDestroy() => CancelInvoke(IncrementTime);
-
-            internal void AddDamage(BasePlayer attacker, float damage)
-            {
-                if (Players.ContainsKey(attacker.userID)) Players[attacker.userID] += damage;
-                else Players.Add(attacker.userID, damage);
-                if (TimeLastDamage == 0) InvokeRepeating(IncrementTime, 1f, 1f);
-                TimeLastDamage = _ins._config.TimeLastDamage;
-            }
-
-            private void IncrementTime()
-            {
-                TimeLastDamage--;
-                if (TimeLastDamage != 0) return;
-                Players.Clear();
-                CancelInvoke(IncrementTime);
-            }
-
-            internal ulong GetWinner => Players.Max(s => s.Value).Key;
-        }
-
-        private void OnEntityKill(NPCPlayerCorpse corpse)
-        {
-            if (corpse == null || corpse.net == null) return;
-            ulong netId = corpse.net.ID.Value;
-            if (!СanLootScientist.TryGetValue(netId, out ulong winner)) return;
-            CorpseBuffer.Add(new CorpseInfo(corpse, netId, winner));
-        }
-
-        private void OnEntityKill(DroppedItemContainer container)
-        {
-            if (container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return;
-            ulong id = container.net.ID.Value;
-            if (СanLootScientist.ContainsKey(id)) СanLootScientist.Remove(id);
-        }
-
-        private object CanEntityTakeDamage(ScientistNPC npc, HitInfo info) => OnEventEntityTakeDamage(npc, info, false, false) is bool ? CanBlockDamageByApi(npc, info) : null;
-
-        private void SaveData() => Interface.Oxide.DataFileSystem.WriteObject(Name, PlayersData);
-
-        private void ScientistRemovePveMode(ScientistNPC npc)
-        {
-            if (npc == null || npc.net == null) return;
-            ulong id = npc.net.ID.Value;
+            if (crateId == 0 || scientistId == 0) return;
             ControllerScientist controllerScientist = null;
-            if (Scientists.TryGetValue(id, out controllerScientist))
-            {
-                Scientists.Remove(id);
-                UnityEngine.Object.Destroy(controllerScientist);
-            }
-        }
-
-        private object CanCustomAnimalSpawnCorpse(BaseAnimalNPC entity)
-        {
-            if (entity == null || entity.net == null) return null;
-            ulong id = entity.net.ID.Value;
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Npc.Contains(id));
-            if (controllerEvent != null) controllerEvent.Npc.Remove(id);
-            return null;
-        }
-
-        private void OnServerInitialized() => LoadData();
-		   		 		  						  	   		   					  			 		   					  	 		
-        protected override void LoadDefaultConfig()
-        {
-            Puts("Creating a default config...");
-            _config = PluginConfig.DefaultConfig();
-            _config.PluginVersion = Version;
-            SaveConfig();
-            Puts("Creation of the default config completed!");
-        }
-
-        private void Unsubscribes() { foreach (string hook in _hooks) Unsubscribe(hook); }
-
-        private void OnEntityKill(StorageContainer crate)
-        {
-            if (crate == null || crate.net == null) return;
-            ulong id = crate.net.ID.Value;
-            if (Events.Count > 0)
-            {
-                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Crates.Contains(id));
-                if (controllerEvent != null) controllerEvent.Crates.Remove(id);
-            }
-            if (CanLootCrateScientist.ContainsKey(id)) CanLootCrateScientist.Remove(id);
-        }
-
-        private string GetMessage(string langKey, string userId, params object[] args) => (args.Length == 0) ? GetMessage(langKey, userId) : string.Format(GetMessage(langKey, userId), args);
-
-        private static readonly DateTime Epoch = new DateTime(2024, 1, 1, 0, 0, 0);
-                private const bool En = false;
-		   		 		  						  	   		   					  			 		   					  	 		
-        [ChatCommand("EventsTime")]
-        private void ChaEventsTime(BasePlayer player)
-        {
-            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == player.userID);
-            if (playerData == null || playerData.LastTime.Count == 0) return;
-
-            string message = GetMessage("EventsTime", player.UserIDString);
-
-            foreach (KeyValuePair<string, double> dic in playerData.LastTime)
-            {
-                ControllerEvent controller = Events.FirstOrDefault(x => x.ShortName == dic.Key);
-                if (controller == null) message += $"\n- {dic.Key} = {GetTimeFormat(CurrentTime - dic.Value)}";
-                else
-                {
-                    double time = dic.Value + controller.Config.CooldownOwner - CurrentTime;
-                    if (time > 0) message += $"\n- {dic.Key}* = {GetTimeFormat(time)}";
-                }
-            }
-		   		 		  						  	   		   					  			 		   					  	 		
-            PrintToChat(player, message);
-        }
-
-        private void LoadData() => PlayersData = Interface.Oxide.DataFileSystem.ReadObject<HashSet<PlayerData>>(Name) ?? new HashSet<PlayerData>();
-
-        private const int TargetLayers = ~(1 << 10 | 1 << 18 | 1 << 28 | 1 << 29);
-        
-                internal class EventConfig
-        {
-            public float Damage { get; set; }
-            public Dictionary<string, float> ScaleDamage { get; set; }
-            public bool LootCrate { get; set; }
-            public bool HackCrate { get; set; }
-            public bool LootNpc { get; set; }
-            public bool DamageNpc { get; set; }
-            public bool DamageTank { get; set; }
-            public bool DamageHelicopter { get; set; }
-            public bool DamageTurret { get; set; }
-            public bool TargetNpc { get; set; }
-            public bool TargetTank { get; set; }
-            public bool TargetHelicopter { get; set; }
-            public bool TargetTurret { get; set; }
-            public bool CanEnter { get; set; }
-            public bool CanEnterCooldownPlayer { get; set; }
-            public int TimeExitOwner { get; set; }
-            public int AlertTime { get; set; }
-            public bool RestoreUponDeath { get; set; }
-            public double CooldownOwner { get; set; }
-            public int Darkening { get; set; }
-        }
-
-        private void EventAddPveMode(string shortname, Dictionary<string, object> config, Vector3 position, float radius, HashSet<ulong> crates, HashSet<ulong> npc, HashSet<ulong> tanks, HashSet<ulong> helicopters, HashSet<ulong> turrets, HashSet<ulong> owners, BasePlayer owner = null)
-        {
-            ControllerEvent controllerEvent = new GameObject().AddComponent<ControllerEvent>();
-            controllerEvent.transform.position = position;
-            controllerEvent.ShortName = shortname;
-            controllerEvent.Config = new EventConfig
-            {
-                Damage = (float)config["Damage"],
-                ScaleDamage = (Dictionary<string, float>)config["ScaleDamage"],
-                LootCrate = (bool)config["LootCrate"],
-                HackCrate = (bool)config["HackCrate"],
-                LootNpc = (bool)config["LootNpc"],
-                DamageNpc = (bool)config["DamageNpc"],
-                DamageTank = (bool)config["DamageTank"],
-                DamageHelicopter = (bool)config["DamageHelicopter"],
-                DamageTurret = (bool)config["DamageTurret"],
-                TargetNpc = (bool)config["TargetNpc"],
-                TargetTank = (bool)config["TargetTank"],
-                TargetHelicopter = (bool)config["TargetHelicopter"],
-                TargetTurret = (bool)config["TargetTurret"],
-                CanEnter = (bool)config["CanEnter"],
-                CanEnterCooldownPlayer = (bool)config["CanEnterCooldownPlayer"],
-                TimeExitOwner = (int)config["TimeExitOwner"],
-                AlertTime = (int)config["AlertTime"],
-                RestoreUponDeath = (bool)config["RestoreUponDeath"],
-                CooldownOwner = (double)config["CooldownOwner"],
-                Darkening = (int)config["Darkening"]
-            };
-            controllerEvent.Radius = radius;
-            controllerEvent.Crates = crates;
-            controllerEvent.Npc = npc;
-            controllerEvent.Tanks = tanks;
-            controllerEvent.Helicopters = helicopters;
-            controllerEvent.Turrets = turrets;
-            controllerEvent.Owners = owners;
-            if (owner != null) controllerEvent.SetOwner(owner);
-            controllerEvent.InitSphere();
-            Events.Add(controllerEvent);
-            LogToFile("CreateZone", $"[{DateTime.Now.ToShortTimeString()}] The zone {shortname} has been created at {position}", _ins);
-            if (Events.Count == 1) Subscribes();
-        }
-
-        private object CanHelicopterStrafeTarget(PatrolHelicopterAI heli, BasePlayer player) => CanHelicopterTarget(heli, player);
-
-        private static object CanBlockDamageByApi(BaseNetworkable entity, HitInfo info)
-        {
-            if (Interface.CallHook("CanPveModeBlockDamage", entity, info) is bool) return null;
-            else return false;
-        }
-
-        private bool IsEventTurret(BaseEntity entity)
-        {
-            if (entity == null || entity.net == null) return false;
-            if (entity is not (AutoTurret or FlameTurret or GunTrap or SamSite)) return false;
-            return Events.Any(x => x.Turrets.Contains(entity.net.ID.Value));
-        }
-
-        private object CanEntityTakeDamage(BradleyAPC bradley, HitInfo info) => OnEventEntityTakeDamage(bradley, info, false, false) is bool ? CanBlockDamageByApi(bradley, info) : null;
-
-        private HashSet<ulong> GetEventOwners(string shortname)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            return controllerEvent == null ? null : controllerEvent.Owners;
-        }
-
-        private object CanEntityBeTargeted(BasePlayer target, BaseEntity attacker)
-        {
-            if (OnEventEntityTarget(attacker, target) is bool) return CanBlockTargetByApi(target, attacker);
-            else return IsEventTurret(attacker) ? CanAllowTargetByApi(target, attacker) : null;
-        }
-
-        private object OnHelicopterTarget(HelicopterTurret turret, BasePlayer player)
-        {
-            if (turret == null || turret._heliAI == null || !player.IsPlayer()) return null;
-
-            PatrolHelicopter helicopter = turret._heliAI.helicopterBase;
-            if (helicopter == null || helicopter.net == null) return null;
-
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Helicopters.Contains(helicopter.net.ID.Value));
-            if (controllerEvent == null || controllerEvent.Config.TargetHelicopter) return null;
-
-            if (IsTeam(player, controllerEvent.Owner)) return null;
-            else return CanBlockTargetByApi(player, helicopter) is bool ? true : null;
-        }
-
-        private object CanBradleyApcTarget(BradleyAPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
-        private const string StrMin = En ? "min." : "мин.";
-
-        protected override void SaveConfig() => Config.WriteObject(_config);
-
-        private void OnEntityKill(FlameTurret turret)
-        {
-            if (turret == null || turret.net == null || Events.Count == 0) return;
-            OnTurretKill(turret.net.ID.Value);
-        }
-
-        private PluginConfig _config;
-
-        private void EventAddTurrets(string shortname, HashSet<ulong> turrets)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            foreach (ulong id in turrets) if (!controllerEvent.Turrets.Contains(id)) controllerEvent.Turrets.Add(id);
-        }
-        private object CanEntityTakeDamage(FlameTurret turret, HitInfo info)
-        {
-            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
-            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
-        }
-
-        private object CanEntityTakeDamage(AutoTurret turret, HitInfo info)
-        {
-            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
-            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
-        }
-
-        private object CanHackCrate(BasePlayer player, HackableLockedCrate crate)
-        {
-            if (crate == null || crate.net == null || !player.IsPlayer()) return null;
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Crates.Contains(crate.net.ID.Value));
-            if (controllerEvent == null) return null;
-            if (controllerEvent.Config.HackCrate || IsTeam(player, controllerEvent.Owner)) return null;
-            else
-            {
-                PrintToChat(player, GetMessage("NoHackCrateEvent", player.UserIDString));
-                return true;
-            }
-        }
-
-        private void EventAddTanks(string shortname, HashSet<ulong> tanks)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            foreach (ulong id in tanks) if (!controllerEvent.Tanks.Contains(id)) controllerEvent.Tanks.Add(id);
-        }
-
-        private void Subscribes() { foreach (string hook in _hooks) Subscribe(hook); }
-
-        private void SetEventOwner(string shortname, BasePlayer player)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            if (controllerEvent == null) return;
-            controllerEvent.SetOwner(player);
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        private HashSet<ControllerEvent> Events { get; } = new HashSet<ControllerEvent>();
-
-        private void EventAddCooldown(string shortname, HashSet<ulong> owners, double cooldown)
-        {
-            foreach (ulong id in owners)
-            {
-                PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
-                if (playerData == null) PlayersData.Add(new PlayerData { SteamId = id, LastTime = new Dictionary<string, double> { [shortname] = CurrentTime } });
-                else
-                {
-                    if (playerData.LastTime.ContainsKey(shortname)) playerData.LastTime[shortname] = CurrentTime;
-                    else playerData.LastTime.Add(shortname, CurrentTime);
-                }
-                BasePlayer player = BasePlayer.FindByID(id);
-                if (player != null) PrintToChat(player, GetMessage("OwnerEndEvent", player.UserIDString, shortname, GetTimeFormat(cooldown)));
-            }
-            SaveData();
+            if (Scientists.TryGetValue(scientistId, out controllerScientist)) controllerScientist.CrateId = crateId;
         }
 
         private void Init()
@@ -861,251 +1270,12 @@ namespace Oxide.Plugins
             _ins = this;
             Unsubscribes();
         }
-        
-                private object OnEventEntityTarget(BaseNetworkable attacker, BaseEntity target)
+
+        private void OnTurretKill(ulong id)
         {
-            if (attacker == null || attacker.net == null || target == null) return null;
-
-            EntityType type = EntityType.Default;
-            ControllerEvent controllerEvent = null;
-
-            switch (attacker)
-            {
-                case ScientistNPC _:
-                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Npc.Contains(attacker.net.ID.Value));
-                    type = EntityType.Npc;
-                    break;
-                case BaseAnimalNPC _:
-                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Npc.Contains(attacker.net.ID.Value));
-                    type = EntityType.Animal;
-                    break;
-                case BradleyAPC _:
-                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Tanks.Contains(attacker.net.ID.Value));
-                    type = EntityType.Bradley;
-                    break;
-                case AutoTurret _:
-                case FlameTurret _:
-                case GunTrap _:
-                case SamSite _:
-                    controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Turrets.Contains(attacker.net.ID.Value));
-                    type = EntityType.Turret;
-                    break;
-            }
-
-            if (controllerEvent == null) return null;
-
-            switch (type)
-            {
-                case EntityType.Npc:
-                case EntityType.Animal:
-                    {
-                        if (controllerEvent.Config.TargetNpc) return null;
-                        break;
-                    }
-                case EntityType.Bradley when controllerEvent.Config.TargetTank:
-                case EntityType.Turret when controllerEvent.Config.TargetTurret:
-                    return null;
-            }
-
-            if (type == EntityType.Npc)
-            {
-                if (target is ScientistNPC && target.net != null && controllerEvent.Npc.Contains(target.net.ID.Value)) return null;
-                if (target is BasePlayer && target.skinID is 19395142091920 or 8151920175) return null;
-            }
-
-            BasePlayer targetPlayer = target as BasePlayer;
-
-            if (targetPlayer.IsPlayer())
-            {
-                if (IsTeam(targetPlayer, controllerEvent.Owner)) return null;
-                else return true;
-            }
-            else
-            {
-                if (IsTeam(target.OwnerID, controllerEvent.Owner)) return null;
-                else return true;
-            }
+            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Turrets.Contains(id));
+            if (controllerEvent != null) controllerEvent.Turrets.Remove(id);
         }
-        
-                private readonly HashSet<string> _hooks = new HashSet<string>()
-        {
-            "CanEntityBeTargeted",
-            "OnHelicopterTarget",
-            "CanHelicopterStrafeTarget",
-            "CanHelicopterTarget",
-            "OnSamSiteTarget",
-            "OnEntityEnter",
-            "CanBradleyApcTarget",
-            "OnCustomAnimalTarget",
-            "OnCustomNpcTarget",
-            "OnNpcTarget",
-            "CanEntityTakeDamage",
-            "OnPlayerAttack",
-            "OnDispenserGather",
-            "CanCustomAnimalSpawnCorpse",
-            "CanHackCrate",
-            "OnRestoreUponDeath",
-            "OnEntityDismounted",
-            "OnPlayerDeath"
-        };
-
-        private void OnEntitySpawned(DroppedItemContainer container)
-        {
-            if (container == null || container.net == null || container.ShortPrefabName != "item_drop_backpack") return;
-            NextTick(() =>
-            {
-                CorpseInfo info = CorpseBuffer.FirstOrDefault(x => x.PlayerName == container.playerName && x.PlayerSteamID == container.playerSteamID && Vector3.Distance(x.Position, container.transform.position) < 1.5f);
-                if (info == null) return;
-
-                CorpseBuffer.Remove(info);
-
-                СanLootScientist.Remove(info.NetId);
-                СanLootScientist.Add(container.net.ID.Value, info.Winner);
-            });
-        }
-        
-                private bool IsPlayerInEventZone(ulong id) => Events.Any(x => x.InsidePlayers.Any(y => y.userID == id));
-        
-        private object OnEntityEnter(TargetTrigger trigger, BasePlayer target)
-        {
-            if (trigger == null || !target.IsPlayer()) return null;
-
-            DecayEntity attacker = trigger.GetComponentInParent<DecayEntity>();
-            if (attacker == null) return null;
-		   		 		  						  	   		   					  			 		   					  	 		
-            if (!IsEventTurret(attacker)) return null;
-
-            return OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
-        }
-
-        private const string StrSec = En ? "sec." : "сек.";
-        private object CanEntityTakeDamage(BaseAnimalNPC animal, HitInfo info) => OnEventEntityTakeDamage(animal, info, false, false) is bool ? CanBlockDamageByApi(animal, info) : null;
-        private object CanEntityTakeDamage(GunTrap turret, HitInfo info)
-        {
-            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
-            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
-        }
-
-        public class CorpseInfo
-        {
-            public Vector3 Position { get; set; }
-            public string PlayerName { get; set; }
-            public ulong PlayerSteamID { get; set; }
-            public ulong NetId { get; set; }
-            public ulong Winner { get; set; }
-
-            public CorpseInfo(NPCPlayerCorpse corpse, ulong netId, ulong winner)
-            {
-                Position = corpse.transform.position;
-                PlayerName = corpse.playerName;
-                PlayerSteamID = corpse.playerSteamID;
-                NetId = netId;
-                Winner = winner;
-            }
-        }
-        private object OnCustomNpcTarget(ScientistNPC attacker, BasePlayer target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
-        private object OnCustomAnimalTarget(BaseAnimalNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) : null;
-
-        private object CanLootScientist(BasePlayer player, ulong targetId)
-        {
-            if (Events.Count > 0)
-            {
-                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Backpacks.Contains(targetId));
-                if (controllerEvent != null)
-                {
-                    if (controllerEvent.Config.LootNpc || IsTeam(player, controllerEvent.Owner)) return null;
-                    else
-                    {
-                        PrintToChat(player, GetMessage("NoLootScientistEvent", player.UserIDString));
-                        return true;
-                    }
-                }
-            }
-            if (СanLootScientist.TryGetValue(targetId, out ulong ownerId))
-            {
-                if (IsTeam(player, ownerId)) return null;
-                else
-                {
-                    PrintToChat(player, GetMessage("NoLootScientist", player.UserIDString));
-                    return true;
-                }
-            }
-            return null;
-        }
-
-        private bool IsTeam(BasePlayer player, ulong targetId)
-        {
-            if (player == null || targetId == 0) return false;
-            if (player.userID == targetId) return true;
-            if (player.currentTeam != 0)
-            {
-                RelationshipManager.PlayerTeam playerTeam = RelationshipManager.ServerInstance.FindTeam(player.currentTeam);
-                if (playerTeam == null) return false;
-                if (playerTeam.members.Contains(targetId)) return true;
-            }
-            if (plugins.Exists("Friends") && (bool)Friends.Call("AreFriends", (ulong)player.userID, targetId)) return true;
-            if (plugins.Exists("Clans") && Clans.Author == "k1lly0u" && (bool)Clans.Call("IsMemberOrAlly", player.UserIDString, targetId.ToString())) return true;
-            return false;
-        }
-
-        private ulong GetEventOwner(string shortname)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.ShortName == shortname);
-            return controllerEvent == null ? 0 : controllerEvent.Owner;
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        private object OnSamSiteTarget(SamSite attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
-
-        private class PluginConfig
-        {
-            [JsonProperty(En ? "The time to clear the information of the players' damage to NPC after NPC has take the last damage [sec.]" : "Время очистки информации о нанесенном уроне от игроков к NPC после нанесения последнего урона по NPC [sec.]")] public int TimeLastDamage { get; set; }
-            [JsonProperty(En ? "Ignore administrators? [true/false]" : "Игнорировать администраторов? [true/false]")] public bool IgnoreAdmin { get; set; }
-            [JsonProperty(En ? "Block a player from entering the event area if he is the owner of another event? [true/false]" : "Запрещать игроку входить внутрь зоны ивента, если он является владельцем другого ивента? [true/false]")] public bool NoEnterAnotherOwner { get; set; }
-
-            public static PluginConfig DefaultConfig()
-            {
-                return new PluginConfig
-                {
-                    TimeLastDamage = 300,
-                    NoEnterAnotherOwner = false,
-                    IgnoreAdmin = false,
-                    PluginVersion = new VersionNumber()
-                };
-            }
-            [JsonProperty(En ? "Configuration version" : "Версия конфигурации")] public VersionNumber PluginVersion { get; set; }
-        }
-
-        [ConsoleCommand("ClearTimePveMode")]
-        private void ConsoleClearTimePveMode(ConsoleSystem.Arg arg)
-        {
-            if (arg.Player() != null || arg.Args == null || arg.Args.Length == 0 || arg.Args.Length > 2) return;
-
-            ulong id = Convert.ToUInt64(arg.Args[0]);
-
-            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == id);
-            if (playerData == null)
-            {
-                Puts($"Player {id} not found in the plugin database");
-                return;
-            }
-
-            string nameEvent = arg.Args.Length == 2 ? arg.Args[1] : string.Empty;
-
-            if (string.IsNullOrEmpty(nameEvent))
-            {
-                playerData.LastTime.Clear();
-                Puts($"You have cleared the time data from player {id}");
-                return;
-            }
-		   		 		  						  	   		   					  			 		   					  	 		
-            if (playerData.LastTime.ContainsKey(nameEvent))
-            {
-                playerData.LastTime.Remove(nameEvent);
-                Puts($"You have cleared the time data for {nameEvent} from player {id}");
-            }
-            else Puts($"Event {nameEvent} not found in the player database");
-        }
-        private object OnNpcTarget(BaseAnimalNPC attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
         
                 private object OnEventEntityTakeDamage(BaseCombatEntity entity, HitInfo info, bool addDamage = true, bool sendMessage = true)
         {
@@ -1207,127 +1377,9 @@ namespace Oxide.Plugins
                 }
             }
         }
-        private object CanEntityTakeDamage(SamSite turret, HitInfo info)
-        {
-            if (OnEventEntityTakeDamage(turret, info, false, false) is bool) return CanBlockDamageByApi(turret, info);
-            else return IsEventTurret(turret) ? CanAllowDamageByApi(turret, info) : null;
-        }
-        
-                protected override void LoadDefaultMessages()
-        {
-            lang.RegisterMessages(new Dictionary<string, string>
-            {
-                ["NoLootScientist"] = "You <color=#ce3f27>are unable</color> to loot this NPC due to another player doing more damage!",
-                ["NoLootCrateEvent"] = "You <color=#ce3f27>cannot</color> loot the crate! You are not the Event Owner and you are not on their team!",
-                ["NoHackCrateEvent"] = "You <color=#ce3f27>cannot</color> hack the locked crate! You are not the Event Owner and you are not on their team!",
-                ["NoLootScientistEvent"] = "You <color=#ce3f27>cannot</color> loot an NPC's corpse! You are not the Event Owner and you are not on their team!",
-                ["NoDamageTankEvent"] = "You <color=#ce3f27>cannot</color> damage Bradley! You are not the Event Owner and you are not on their team!",
-                ["NoDamageHelicopterEvent"] = "You <color=#ce3f27>cannot</color> damage Patrol Helicopter! You are not the Event Owner and you are not on their team!",
-                ["NoDamageTurretEvent"] = "You <color=#ce3f27>cannot</color> damage Turret! You are not the Event Owner and you are not on their team!",
-                ["NoDamageNpcEvent"] = "You <color=#ce3f27>cannot</color> damage NPC! You are not the Event Owner and you are not on their team!",
-                ["NoEnterEvent"] = "You <color=#ce3f27>cannot</color> enter the Event zone! You are not the Event Owner and you are not on their team!",
-                ["YouOwnerEvent"] = "You are now the <color=#738d43>Event Owner</color>!",
-                ["ChangeOwnerEventToFriend"] = "You have exited the <color=#ce3f27>Event Zone</color>. The <color=#738d43>Event owner</color> is now <color=#55aaff>{0}</color>",
-                ["TimerStartEvent"] = "You <color=#ce3f27>have left</color> the Event zone. You have to return to the Event zone in <color=#55aaff>{0}</color> or you will lose Event Owner status",
-                ["AlertTimerEvent"] = "You have <color=#55aaff>{0}</color> to return to the Event Zone and keep Event Owner status",
-                ["YouNonOwnerEvent"] = "You <color=#ce3f27>lost</color> the Event Owner status!",
-                ["NoCanActionEvent"] = "You <color=#ce3f27>cannot</color> perform this action! You are not the Event Owner and you are not on their team!",
-                ["OwnerEndEvent"] = "Event <color=#55aaff>{0}</color> is over. You were the Event Owner. You can play this event no earlier than in <color=#55aaff>{1}</color>",
-                ["PlayerHasCooldownEnter"] = "You have <color=#ce3f27>entered</color> the event area in which you <color=#ce3f27>cannot</color> become the owner (you may <color=#ce3f27>lose loot</color>), you <color=#ce3f27>still have</color> a timer timer for participation in this event. You must wait at least <color=#55aaff>{0}</color> to become owner of this event again",
-                ["EventsTime"] = "List of events:\n(If the event is not in the list, then you can become its owner)\n(If the event is marked with <color=#55aaff>*</color>, it means that it is currently active and the cooldown is indicated to get the status of event owner. Otherwise, it is indicated how long ago you were the owner of the event)"
-            }, this);
 
-            lang.RegisterMessages(new Dictionary<string, string>
-            {
-                ["NoLootScientist"] = "Вы <color=#ce3f27>не можете</color> ограбить этого NPC, потому что другой игрок нанес по нему большее количество урона!",
-                ["NoLootCrateEvent"] = "Вы <color=#ce3f27>не можете</color> ограбить этот ящик, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoHackCrateEvent"] = "Вы <color=#ce3f27>не можете</color> начать взлом этого заблокированного ящика, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoLootScientistEvent"] = "Вы <color=#ce3f27>не можете</color> ограбить этого NPC, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoDamageTankEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому Bradley, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoDamageHelicopterEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому вертолету, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoDamageTurretEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этой турели, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoDamageNpcEvent"] = "Вы <color=#ce3f27>не можете</color> нанести урон этому NPC, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["NoEnterEvent"] = "Вы <color=#ce3f27>не можете</color> войти внутрь зоны ивента, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["YouOwnerEvent"] = "Вы <color=#738d43>стали</color> владельцем ивента!",
-                ["ChangeOwnerEventToFriend"] = "Вы <color=#ce3f27>вышли</color> из зоны ивента. Владелец ивента <color=#738d43>сменился</color> на игрока <color=#55aaff>{0}</color>",
-                ["TimerStartEvent"] = "Вы <color=#ce3f27>вышли</color> из зоны ивента. Чтобы не потерять статус владельца ивента вам необходимо вернуться в зону ивента в течении <color=#55aaff>{0}</color>",
-                ["AlertTimerEvent"] = "У вас осталось <color=#55aaff>{0}</color> чтобы вернуться в зону ивента и не потерять статус владельца ивента",
-                ["YouNonOwnerEvent"] = "Вы <color=#ce3f27>утратили</color> статус владельца ивента!",
-                ["NoCanActionEvent"] = "Вы <color=#ce3f27>не можете</color> выполнить это действие, потому что не являетесь владельцем ивента и не состоите в команде с владельцем ивента!",
-                ["OwnerEndEvent"] = "Ивент <color=#55aaff>{0}</color> окончен. Вы были владельцем ивента. Участие в данном ивенте возможно не ранее чем через <color=#55aaff>{1}</color>",
-                ["PlayerHasCooldownEnter"] = "Вы <color=#ce3f27>вошли</color> в зону ивента, в которой вы <color=#ce3f27>не можете</color> стать владельцем (есть риск <color=#ce3f27>потерять ресурсы</color>), потому что у вас еще <color=#ce3f27>не закончился</color> таймер на участие в ивенте. Участие возможно не ранее чем через <color=#55aaff>{0}</color>",
-                ["EventsTime"] = "Список ивентов:\n(Если ивента нет в списке, то вы можете стать его владельцем)\n(Если ивент отмечен знаком <color=#55aaff>*</color>, значит сейчас он активен и указано оставшееся время, чтобы получить статус владельца ивента. Иначе указано сколько времени назад вы были владельцем ивента)"
-            }, this, "ru");
-        }
-
-        private object CanLootEntity(BasePlayer player, StorageContainer container)
-        {
-            if (container == null || container.net == null || !player.IsPlayer()) return null;
+        private object OnSamSiteTarget(SamSite attacker, BaseEntity target) => OnEventEntityTarget(attacker, target) is bool ? CanBlockTargetByApi(target, attacker) is bool ? true : null : null;
 		   		 		  						  	   		   					  			 		   					  	 		
-            ulong id = container.net.ID.Value;
-
-            if (Events.Count > 0)
-            {
-                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Crates.Contains(id));
-                if (controllerEvent != null)
-                {
-                    if (controllerEvent.Config.LootCrate || IsTeam(player, controllerEvent.Owner)) return null;
-                    else
-                    {
-                        PrintToChat(player, GetMessage("NoLootCrateEvent", player.UserIDString));
-                        return true;
-                    }
-                }
-            }
-		   		 		  						  	   		   					  			 		   					  	 		
-            ulong ownerId = 0;
-            if (CanLootCrateScientist.TryGetValue(id, out ownerId))
-            {
-                if (IsTeam(player, ownerId)) return null;
-                else
-                {
-                    PrintToChat(player, GetMessage("NoLootScientist", player.UserIDString));
-                    return true;
-                }
-            }
-
-            return null;
-        }
-
-        private void OnEntityKill(AutoTurret turret)
-        {
-            if (turret == null || turret.net == null || Events.Count == 0) return;
-            OnTurretKill(turret.net.ID.Value);
-        }
-
-        private static object CanAllowTargetByApi(BaseNetworkable target, BaseNetworkable attacker)
-        {
-            if (Interface.CallHook("CanPveModeAllowTarget", target, attacker) is bool) return null;
-            else return true;
-        }
-
-        private object OnPlayerAttack(BasePlayer attacker, HitInfo info) => info == null ? null : OnEventEntityTakeDamage(info.HitEntity as PatrolHelicopter, info);
-        
-                private void ScientistAddPveMode(ScientistNPC npc)
-        {
-            if (npc == null || npc.net == null) return;
-            Scientists.Add(npc.net.ID.Value, npc.gameObject.AddComponent<ControllerScientist>());
-        }
-        
-        private object CanHelicopterTarget(PatrolHelicopterAI heli, BasePlayer player)
-        {
-            if (heli == null || !player.IsPlayer()) return null;
-
-            PatrolHelicopter helicopter = heli.helicopterBase;
-            if (helicopter == null || helicopter.net == null) return null;
-
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Helicopters.Contains(helicopter.net.ID.Value));
-            if (controllerEvent == null || controllerEvent.Config.TargetHelicopter) return null;
-
-            if (IsTeam(player, controllerEvent.Owner)) return null;
-            else return CanBlockTargetByApi(player, helicopter);
-        }
-
         private object OnDispenserGather(ResourceDispenser dispenser, BasePlayer player, Item item)
         {
             if (dispenser == null || !player.IsPlayer() || Events.Count == 0) return null;
@@ -1338,128 +1390,77 @@ namespace Oxide.Plugins
             else return true;
         }
 
-        private ControllerEvent GetControllerEventAtPosition(Vector3 pos) => Events.FirstOrDefault(x => Vector3.Distance(pos, x.transform.position) <= x.Radius);
-        
-                internal class PlayerData { public ulong SteamId; public Dictionary<string, double> LastTime; }
+        private void OnEntityKill(AutoTurret turret)
+        {
+            if (turret == null || turret.net == null || Events.Count == 0) return;
+            OnTurretKill(turret.net.ID.Value);
+        }
+
+        private HashSet<CorpseInfo> CorpseBuffer { get; set; } = new HashSet<CorpseInfo>();
+
+        private object CanLootScientist(BasePlayer player, ulong targetId)
+        {
+            if (Events.Count > 0)
+            {
+                ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.Backpacks.Contains(targetId));
+                if (controllerEvent != null)
+                {
+                    if (controllerEvent.Config.LootNpc || IsTeam(player, controllerEvent.Owner)) return null;
+                    else
+                    {
+                        PrintToChat(player, GetMessage("NoLootScientistEvent", player.UserIDString));
+                        return true;
+                    }
+                }
+            }
+            if (СanLootScientist.TryGetValue(targetId, out ulong ownerId))
+            {
+                if (IsTeam(player, ownerId)) return null;
+                else
+                {
+                    PrintToChat(player, GetMessage("NoLootScientist", player.UserIDString));
+                    return true;
+                }
+            }
+            return null;
+        }
+
+        [ChatCommand("EventsTime")]
+        private void ChaEventsTime(BasePlayer player)
+        {
+            PlayerData playerData = PlayersData.FirstOrDefault(x => x.SteamId == player.userID);
+            if (playerData == null || playerData.LastTime.Count == 0) return;
+
+            string message = GetMessage("EventsTime", player.UserIDString);
+
+            foreach (KeyValuePair<string, double> dic in playerData.LastTime)
+            {
+                ControllerEvent controller = Events.FirstOrDefault(x => x.ShortName == dic.Key);
+                if (controller == null) message += $"\n- {dic.Key} = {GetTimeFormat(CurrentTime - dic.Value)}";
+                else
+                {
+                    double time = dic.Value + controller.Config.CooldownOwner - CurrentTime;
+                    if (time > 0) message += $"\n- {dic.Key}* = {GetTimeFormat(time)}";
+                }
+            }
+
+            PrintToChat(player, message);
+        }
 
         private static object CanAllowDamageByApi(BaseNetworkable entity, HitInfo info)
         {
             if (Interface.CallHook("CanPveModeAllowDamage", entity, info) is bool) return null;
             else return true;
         }
-        
-                private Dictionary<ulong, ulong> СanLootScientist { get; } = new Dictionary<ulong, ulong>();
 
-        private object CanActionEventNoMessage(string shortname, BasePlayer player)
+        private void UpdateConfigValues()
         {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.ShortName == shortname);
-            if (controllerEvent == null) return null;
-            if (IsTeam(player, controllerEvent.Owner)) return null;
-            else return false;
+            Puts("Config update detected! Updating config values...");
+            _config.PluginVersion = Version;
+            Puts("Config update completed!");
+            SaveConfig();
         }
-
-        private object CanActionEvent(string shortname, BasePlayer player)
-        {
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && x.ShortName == shortname);
-            if (controllerEvent == null) return null;
-            if (IsTeam(player, controllerEvent.Owner)) return null;
-            else
-            {
-                PrintToChat(player, GetMessage("NoCanActionEvent", player.UserIDString));
-                return false;
-            }
-        }
-
-        public enum EntityType
-        {
-            Default,
-            Npc,
-            Animal,
-            Bradley,
-            Turret,
-            Helicopter
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        private HashSet<string> GetEventsPlayer(ulong id)
-        {
-            HashSet<string> result = new HashSet<string>();
-            foreach (ControllerEvent controller in Events) if (controller.InsidePlayers.Any(x => x.userID == id)) result.Add(controller.ShortName);
-            return result;
-        }
-
-        private void OnEntityKill(PatrolHelicopter heli)
-        {
-            if (heli == null || heli.net == null || Events.Count == 0) return;
-            ulong id = heli.net.ID.Value;
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Helicopters.Contains(id));
-            if (controllerEvent != null) controllerEvent.Helicopters.Remove(id);
-        }
-
-        private object OnEntityTakeDamage(BaseCombatEntity entity, HitInfo info)
-        {
-            if (entity == null || entity.net == null || info == null) return null;
-
-            if (Scientists.Count > 0 && entity is ScientistNPC npc)
-            {
-                if (Scientists.TryGetValue(npc.net.ID.Value, out ControllerScientist controllerScientist))
-                {
-                    BasePlayer attacker = info.InitiatorPlayer;
-                    if (attacker.IsPlayer()) controllerScientist.AddDamage(attacker, info.damageTypes.Total());
-                    return null;
-                }
-            }
-
-            if (Events.Count > 0)
-            {
-                if (OnEventEntityTakeDamage(entity, info) is bool || OnEventEntityTarget(info.Initiator, entity) is bool || OnEventInitiatorNullTakeDamage(entity, info) is bool)
-                    return CanBlockDamageByApi(entity, info) is bool ? true : null;
-            }
-
-            return null;
-        }
-
-        private static double CurrentTime => DateTime.Now.Subtract(Epoch).TotalSeconds;
-
-        private static string GetTimeFormat(double time)
-        {
-            int integer = (int)time;
-            if (time <= 60) return $"{integer} {StrSec}";
-            else if (time <= 3600)
-            {
-                int sec = integer % 60;
-                int min = (integer - sec) / 60;
-                return sec == 0 ? $"{min} {StrMin}" : $"{min} {StrMin} {sec} {StrSec}";
-            }
-            else
-            {
-                int hour = (int)(time / 3600);
-                time -= hour * 3600;
-                integer = (int)time;
-                int sec = integer % 60;
-                int min = (integer - sec) / 60;
-                if (min == 0 && sec == 0) return $"{hour} {StrH}";
-                else if (sec == 0) return $"{hour} {StrH} {min} {StrMin}";
-                else return $"{hour} {StrH} {min} {StrMin} {sec} {StrSec}";
-            }
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        private object OnLootLockedEntity(BasePlayer player, NPCPlayerCorpse corpse)
-        {
-            if (corpse == null || corpse.net == null || !player.IsPlayer()) return null;
-            ulong id = corpse.net.ID.Value;
-            return CanLootScientist(player, id) == null ? null : (object)false;
-        }
-
-        private void OnEntityDismounted(BaseMountable entity, BasePlayer player)
-        {
-            if (!player.IsPlayer()) return;
-            if (player.IsAdmin && _config.IgnoreAdmin) return;
-            ControllerEvent controllerEvent = Events.FirstOrDefault(x => x.Owner != 0 && Vector3.Distance(x.transform.position, player.transform.position) < x.Radius);
-            if (controllerEvent == null) return;
-            if (!controllerEvent.Config.CanEnterCooldownPlayer && !CanTimeOwner(controllerEvent.ShortName, player.userID, controllerEvent.Config.CooldownOwner)) controllerEvent.KickOutPlayer(player);
-            if (_config.NoEnterAnotherOwner && Events.Any(x => x.ShortName != controllerEvent.ShortName && x.Owners.Contains(player.userID))) controllerEvent.KickOutPlayer(player);
-            if (!controllerEvent.Config.CanEnter && !IsTeam(player, controllerEvent.Owner)) controllerEvent.KickOutPlayer(player);
-        }
+        private Dictionary<ulong, ulong> CanLootCrateScientist { get; } = new Dictionary<ulong, ulong>();
             }
 }
 
@@ -1509,5 +1510,7 @@ namespace Oxide.Plugins.PveModeExtensionMethods
         public static bool IsPlayer(this BasePlayer player) => player != null && player.userID.IsSteamId();
 
         public static bool IsExists(this BaseNetworkable entity) => entity != null && !entity.IsDestroyed;
+
+        public static ulong ToULong(this StringView value) => ulong.Parse((ReadOnlySpan<char>)value);
     }
 }
