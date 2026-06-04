@@ -78,11 +78,11 @@ class TournamentsController extends BaseApiController
                 $stats['active']++;
             } elseif ($p === Tournament::PHASE_UPCOMING) {
                 $stats['upcoming']++;
-                if ($t->isRegistrationOpen()) {
-                    $stats['registration_open']++;
-                }
             } else {
                 $stats['past']++;
+            }
+            if ($p !== Tournament::PHASE_PAST && $t->isRegistrationOpen()) {
+                $stats['registration_open']++;
             }
         }
 
@@ -382,6 +382,7 @@ class TournamentsController extends BaseApiController
         ];
         if (!$user) {
             $out['can_register'] = $tournament->getPublicPhase() !== Tournament::PHASE_PAST
+                && $tournament->isRegistrationOpen()
                 && $tournament->canAcceptMoreClans();
             return $out;
         }
@@ -414,14 +415,9 @@ class TournamentsController extends BaseApiController
                         && ($max === null || $count < (int)$max);
                 }
             } elseif ($isOfficer) {
-                $phase = $tournament->getPublicPhase();
-                if ($phase === Tournament::PHASE_PAST) {
-                    $out['can_register'] = false;
-                } elseif ($phase === Tournament::PHASE_UPCOMING) {
-                    $out['can_register'] = $tournament->canAcceptMoreClans() && $tournament->isRegistrationOpen();
-                } else {
-                    $out['can_register'] = $tournament->canAcceptMoreClans();
-                }
+                $out['can_register'] = $tournament->getPublicPhase() !== Tournament::PHASE_PAST
+                    && $tournament->isRegistrationOpen()
+                    && $tournament->canAcceptMoreClans();
             }
         }
 

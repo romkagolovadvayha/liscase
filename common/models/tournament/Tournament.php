@@ -174,6 +174,10 @@ class Tournament extends ActiveRecord
         return self::PHASE_UPCOMING;
     }
 
+    /**
+     * Регистрация доступна до окончания турнира (включая активную фазу).
+     * Поле registration_ends_at в админке не ограничивает публичную регистрацию.
+     */
     public function isRegistrationOpen(): bool
     {
         if (!$this->isPubliclyVisible()) {
@@ -182,11 +186,11 @@ class Tournament extends ActiveRecord
         if ($this->getPublicPhase() === self::PHASE_PAST) {
             return false;
         }
-        $now = time();
-        if ($this->registration_ends_at !== null && $this->registration_ends_at !== '') {
-            return $now < strtotime((string)$this->registration_ends_at);
+        $end = strtotime((string)$this->ends_at);
+        if ($end > 0) {
+            return time() < $end;
         }
-        return $now < strtotime((string)$this->starts_at);
+        return true;
     }
 
     public function canAcceptMoreClans(): bool
@@ -205,6 +209,40 @@ class Tournament extends ActiveRecord
         return (int)TournamentRegistration::find()
             ->where(['tournament_id' => (int)$this->id])
             ->count();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getStatusList(): array
+    {
+        return [
+            self::STATUS_DRAFT => Yii::t('common', 'Черновик'),
+            self::STATUS_PUBLISHED => Yii::t('common', 'Опубликован'),
+            self::STATUS_ARCHIVED => Yii::t('common', 'В архиве'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function getPhaseList(): array
+    {
+        return [
+            self::PHASE_UPCOMING => Yii::t('common', 'Намечается'),
+            self::PHASE_ACTIVE => Yii::t('common', 'Идёт'),
+            self::PHASE_PAST => Yii::t('common', 'Прошёл'),
+        ];
+    }
+
+    public function getPhaseLabel(): string
+    {
+        return static::getPhaseList()[$this->getPublicPhase()] ?? $this->getPublicPhase();
+    }
+
+    public function getStatusLabel(): string
+    {
+        return static::getStatusList()[$this->status] ?? $this->status;
     }
 
     /**

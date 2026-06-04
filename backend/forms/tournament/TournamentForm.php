@@ -46,6 +46,12 @@ class TournamentForm extends Tournament
     public function afterFind(): void
     {
         parent::afterFind();
+        foreach (['starts_at', 'ends_at', 'registration_ends_at'] as $attr) {
+            $val = $this->$attr;
+            if (is_string($val) && $val !== '' && str_contains($val, ' ')) {
+                $this->$attr = str_replace(' ', 'T', substr($val, 0, 16));
+            }
+        }
         $rewards = TournamentReward::find()
             ->where(['tournament_id' => (int)$this->id])
             ->indexBy('place')

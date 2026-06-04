@@ -98,6 +98,8 @@ class TournamentController extends BackendController
             ? $frontendBase . '/tournaments/' . rawurlencode($model->slug)
             : null;
 
+        $this->view->params['contentClass'] = 'content-no-padding';
+
         return $this->render('view', [
             'model' => $model,
             'publicUrl' => $publicUrl,

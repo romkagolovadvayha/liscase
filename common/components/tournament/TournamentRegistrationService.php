@@ -40,7 +40,7 @@ class TournamentRegistrationService
         if ($phase === Tournament::PHASE_PAST) {
             throw new ForbiddenHttpException('Tournament has ended');
         }
-        if (!$tournament->isRegistrationOpen() && $phase === Tournament::PHASE_UPCOMING) {
+        if (!$tournament->isRegistrationOpen()) {
             throw new ForbiddenHttpException('Registration is closed');
         }
 
