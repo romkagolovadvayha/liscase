@@ -14,7 +14,7 @@ using WebSocketSharp;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.4.4")]
+    [Info("ProstojRUST", "prostoj.store", "0.4.5")]
     public class ProstojRUST : RustPlugin
     {
         #region References
@@ -837,7 +837,7 @@ namespace Oxide.Plugins
             var player = args.Player();
             if (player == null || !args.HasArgs()) return;
 
-            switch (args.Args[0].ToLower())
+            switch (args.Args[0].ToString().ToLower())
             {
                 case "page":
                 {

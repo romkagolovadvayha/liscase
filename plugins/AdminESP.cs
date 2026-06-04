@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEngine;
 namespace Oxide.Plugins
 {
-    [Info("AdminESP", "OxideBro", "1.0.22")]
+    [Info("AdminESP", "OxideBro", "1.0.23")]
     public class AdminESP : RustPlugin
     {
 
@@ -149,7 +149,7 @@ namespace Oxide.Plugins
             if (PlayerSettings.ContainsKey(player.userID))
             {
                 var data = PlayerSettings[player.userID];
-                switch (args.Args[0].ToLower())
+                switch (args.Args[0].ToString().ToLower())
                 {
                     case "updatetime":
                     {
@@ -258,7 +258,7 @@ namespace Oxide.Plugins
 
             if (args.Length == 3 && args[0] == "settings")
             {
-                switch (args[1].ToLower())
+                switch (args[1].ToString().ToLower())
                 {
                     case "updatetime":
                         data.UpdateTime = float.Parse(args[2]);

@@ -23,7 +23,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Helper Prostoj", "moscow77.store", "1.0.1")]
+    [Info("Helper Prostoj", "moscow77.store", "1.0.2")]
     [Description("Плагин, для помощи работы сайта.")]
     public class Helper : RustPlugin
     {
@@ -137,40 +137,42 @@ namespace Oxide.Plugins
         [ConsoleCommand("helper")]
         private void ConsoleCommandHelper(ConsoleSystem.Arg arg)
         {
-	        String Actions = arg.Args[0];
+            if (!arg.HasArgs(1)) return;
+
+	        string actions = arg.Args[0].ToString();
 	        BasePlayer player = arg.Player();
             if (player != null && !player.IsAdmin)
             {
                 return;
             }
-	        if (Actions.Contains("ban"))
+	        if (actions.Contains("ban"))
 	        {
 				if (!arg.HasArgs(2)) return;
-                Puts(string.Format("User {0} banned", arg.Args[1]));
-                ServerUsers.Set(Convert.ToUInt64(arg.Args[1]), global::ServerUsers.UserGroup.Banned, "asd", arg.Args[2]);
-                BasePlayer user = BasePlayer.FindAwakeOrSleeping(arg.Args[1]);
+                Puts(string.Format("User {0} banned", arg.Args[1].ToString()));
+                ServerUsers.Set(Convert.ToUInt64(arg.Args[1].ToString()), global::ServerUsers.UserGroup.Banned, "asd", arg.Args[2].ToString());
+                BasePlayer user = BasePlayer.FindAwakeOrSleeping(arg.Args[1].ToString());
 				if (user && user != null) {
-					Net.sv.Kick(user.net.connection, arg.Args[2], false);
+					Net.sv.Kick(user.net.connection, arg.Args[2].ToString(), false);
 				}
 				ServerUsers.Save();
 			}
 			// helper giveto "76561199160689130" "-148794216" "1" "3310903792"
-	        if (Actions.Contains("giveto"))
+	        if (actions.Contains("giveto"))
 	        {
 				if (!arg.HasArgs(4)) return;
-                BasePlayer user = BasePlayer.FindAwakeOrSleeping(arg.Args[1]);
-				Item newItem = ItemManager.CreateByItemID(int.Parse(arg.Args[2]), int.Parse(arg.Args[3]), ulong.Parse(arg.Args[4]));
+                BasePlayer user = BasePlayer.FindAwakeOrSleeping(arg.Args[1].ToString());
+				Item newItem = ItemManager.CreateByItemID(int.Parse(arg.Args[2].ToString()), int.Parse(arg.Args[3].ToString()), ulong.Parse(arg.Args[4].ToString()));
 				user.GiveItem(newItem);
 			}
 			// helper message "ру" "en" "sound" "76561198394504608"
-	        if (Actions.Contains("message"))
+	        if (actions.Contains("message"))
 	        {
 				if (!arg.HasArgs(5)) return;
-                BasePlayer recepient = BasePlayer.FindAwakeOrSleeping(arg.Args[4]);
+                BasePlayer recepient = BasePlayer.FindAwakeOrSleeping(arg.Args[4].ToString());
                 if (recepient == null) return;
-				string messageRu = arg.Args[1].Replace("\\n", "\r\n");
-				string messageEn = arg.Args[2].Replace("\\n", "\r\n");
-				string sound_prefab = arg.Args[3];
+				string messageRu = arg.Args[1].ToString().Replace("\\n", "\r\n");
+				string messageEn = arg.Args[2].ToString().Replace("\\n", "\r\n");
+				string sound_prefab = arg.Args[3].ToString();
 				string message = lang.GetLanguage(recepient.UserIDString) == "ru" ? messageRu : messageEn;
 				if (!string.IsNullOrEmpty(sound_prefab)) {
                     SendEffect(recepient, sound_prefab);
@@ -179,12 +181,12 @@ namespace Oxide.Plugins
                 recepient.SendConsoleCommand("chat.add", (object) 0, senderId, message);
 			}
 			// helper globalMessage "ру" "en" "sound"
-	        if (Actions.Contains("globalMessage"))
+	        if (actions.Contains("globalMessage"))
 	        {
 				if (!arg.HasArgs(4)) return;
-				string messageRu = arg.Args[1].Replace("\\n", "\r\n");
-				string messageEn = arg.Args[2].Replace("\\n", "\r\n");
-				string sound_prefab = arg.Args[3];
+				string messageRu = arg.Args[1].ToString().Replace("\\n", "\r\n");
+				string messageEn = arg.Args[2].ToString().Replace("\\n", "\r\n");
+				string sound_prefab = arg.Args[3].ToString();
                 foreach (var recepient in BasePlayer.activePlayerList)
                 {
 					string message = lang.GetLanguage(recepient.UserIDString) == "ru" ? messageRu : messageEn;
@@ -196,13 +198,13 @@ namespace Oxide.Plugins
                 }
 			}
 
-	        if (Actions.Contains("spawn"))
+	        if (actions.Contains("spawn"))
 	        {
 				if (!arg.HasArgs(2)) return;
-                BasePlayer user = BasePlayer.FindByID(ulong.Parse(arg.Args[1]));
+                BasePlayer user = BasePlayer.FindByID(ulong.Parse(arg.Args[1].ToString()));
 				var position = user.eyes.position + user.eyes.HeadRay().direction * 10;
 				position.y = user.transform.position.y + 5;
-				var entity = GameManager.server.CreateEntity(arg.Args[2], position, user.transform.rotation);
+				var entity = GameManager.server.CreateEntity(arg.Args[2].ToString(), position, user.transform.rotation);
 				entity.Spawn();
 			}
         }
