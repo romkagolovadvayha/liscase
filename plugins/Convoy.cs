@@ -21,7 +21,7 @@ using Time = UnityEngine.Time;
 
 namespace Oxide.Plugins
 {
-    [Info("Convoy", "Adem", "2.9.6")]
+    [Info("Convoy", "Adem", "2.9.7")]
     internal class Convoy : RustPlugin
     {
         #region Variables
@@ -1346,37 +1346,11 @@ namespace Oxide.Plugins
             }
         }
 
-        [ConsoleCommand("convoystart")]
-        private void ConsoleStartEventCommand(ConsoleSystem.Arg arg)
-        {
-            if (arg.Player() != null)
-                return;
-
-            if (arg == null || arg.Args == null || arg.Args.Length == 0)
-            {
-                EventLauncher.DelayStartEvent();
-            }
-            else
-            {
-                string eventPresetName = arg.Args[0];
-                EventLauncher.DelayStartEvent(presetName: eventPresetName);
-            }
-        }
-
         [ChatCommand("convoystop")]
         private void ChatStopCommand(BasePlayer player, string command, string[] arg)
         {
             if (player.IsAdmin)
                 EventLauncher.StopEvent();
-        }
-
-        [ConsoleCommand("convoystop")]
-        private void ConsoleStopEventCommand(ConsoleSystem.Arg arg)
-        {
-            if (arg.Player() != null)
-                return;
-
-            EventLauncher.StopEvent();
         }
 
         [ChatCommand("convoyroadblock")]
@@ -1463,6 +1437,33 @@ namespace Oxide.Plugins
                 return;
 
             _ins._eventController.SwitchMoving(false);
+        }
+        
+        
+        [ConsoleCommand("convoystart")]
+        private void ConsoleStartEventCommand(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null)
+                return;
+
+            if (arg == null || arg.Args == null || arg.Args.Length == 0)
+            {
+                EventLauncher.DelayStartEvent();
+            }
+            else
+            {
+                string eventPresetName = arg.Args[0].ToString();
+                EventLauncher.DelayStartEvent(presetName: eventPresetName);
+            }
+        }
+        
+        [ConsoleCommand("convoystop")]
+        private void ConsoleStopEventCommand(ConsoleSystem.Arg arg)
+        {
+            if (arg.Player() != null)
+                return;
+
+            EventLauncher.StopEvent();
         }
         #endregion Commands
 
@@ -8428,7 +8429,7 @@ namespace Oxide.Plugins
             {
                 return new PluginConfig()
                 {
-                    Version = "2.9.6",
+                    Version = "2.9.7",
                     Prefix = "[Convoy]",
                     MainConfig = new MainConfig
                     {
