@@ -332,7 +332,7 @@ class StatsController extends Controller
                     'active-players-cache: MySQL reconnect (queryOne, attempt ' . $attempt . '): ' . $e->getMessage(),
                     __METHOD__
                 );
-                $this->reconnectMysql();
+                $this->reconnectMysql($attempt);
                 $this->ensureMysqlLongRunningSession();
             }
         }
@@ -358,7 +358,7 @@ class StatsController extends Controller
                     'active-players-cache: MySQL reconnect (queryAll, attempt ' . $attempt . '): ' . $e->getMessage(),
                     __METHOD__
                 );
-                $this->reconnectMysql();
+                $this->reconnectMysql($attempt);
                 $this->ensureMysqlLongRunningSession();
             }
         }
@@ -377,10 +377,13 @@ class StatsController extends Controller
         }
     }
 
-    private function reconnectMysql(): void
+    private function reconnectMysql(int $attempt = 1): void
     {
         if (!Yii::$app->has('db')) {
             return;
+        }
+        if ($attempt > 1) {
+            sleep(min($attempt, 5));
         }
         try {
             Yii::$app->db->close();
@@ -391,17 +394,29 @@ class StatsController extends Controller
             Yii::$app->db->open();
         } catch (\Throwable $e) {
             Yii::error('active-players-cache: DB reconnect failed: ' . $e->getMessage(), __METHOD__);
+            throw $e;
         }
     }
 
     private function isMysqlConnectionLost(\Throwable $e): bool
     {
         $msg = $e->getMessage();
-        if (stripos($msg, 'gone away') !== false || strpos($msg, '2006') !== false) {
+        if (
+            stripos($msg, 'gone away') !== false
+            || stripos($msg, 'lost connection') !== false
+            || stripos($msg, 'no such file or directory') !== false
+            || strpos($msg, '2006') !== false
+            || strpos($msg, '2002') !== false
+            || strpos($msg, '2013') !== false
+            || strpos($msg, '2003') !== false
+        ) {
             return true;
         }
-        if ($e instanceof DbException && isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 2006) {
-            return true;
+        if ($e instanceof DbException && isset($e->errorInfo[1])) {
+            $code = (int) $e->errorInfo[1];
+            if (in_array($code, [2002, 2003, 2006, 2013], true)) {
+                return true;
+            }
         }
         $prev = $e->getPrevious();
         if ($prev instanceof \Throwable) {
