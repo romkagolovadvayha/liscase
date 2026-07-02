@@ -4,8 +4,8 @@
 # GitHub → Settings → Environments → **prostoj** и **moscow77** (имена как в матрице `environment:` ниже).
 # У каждого окружения свои secrets/vars (хост, путь, ключи и т.д.).
 #   SSH_HOST, SSH_USER, DEPLOY_PATH
-#   SSH_PRIVATE_KEY или SSH_PRIVATE_KEY_B64
-#   SSH_KEY_PASSPHRASE — только если ключ с паролем
+#   SSH_PRIVATE_KEY или SSH_PRIVATE_KEY_B64 — только Secrets (не Variables)
+#   SSH_KEY_PASSPHRASE — только если ключ с паролем (Secret)
 #   DEPLOY_ENV — опционально: тело .env → заливается в DEPLOY_PATH/.env
 #   DEPLOY_SUPERVISOR_CONF — опционально: содержимое одного .ini для Supervisor
 #     (несколько [program:x] в одном файле). Заливается в /etc/supervisor/conf.d/
@@ -53,13 +53,15 @@ jobs:
       matrix:
         environment: [prostoj, moscow77]
     environment: ${{ matrix.environment }}
+    permissions:
+      contents: read
     env:
       SSH_HOST: ${{ secrets.SSH_HOST || vars.SSH_HOST }}
       SSH_USER: ${{ secrets.SSH_USER || vars.SSH_USER }}
       DEPLOY_PATH_REMOTE: ${{ secrets.DEPLOY_PATH || vars.DEPLOY_PATH }}
-      SSH_KEY_MATERIAL: ${{ secrets.SSH_PRIVATE_KEY || secrets.DEPLOY_SSH_PRIVATE_KEY || secrets.SSH_KEY || vars.SSH_PRIVATE_KEY || vars.DEPLOY_SSH_PRIVATE_KEY || vars.SSH_KEY }}
-      SSH_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 || vars.SSH_PRIVATE_KEY_B64 }}
-      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE || vars.SSH_KEY_PASSPHRASE }}
+      SSH_KEY_MATERIAL: ${{ secrets.SSH_PRIVATE_KEY || secrets.DEPLOY_SSH_PRIVATE_KEY || secrets.SSH_KEY }}
+      SSH_KEY_B64: ${{ secrets.SSH_PRIVATE_KEY_B64 }}
+      SSH_KEY_PASSPHRASE: ${{ secrets.SSH_KEY_PASSPHRASE }}
 
     steps:
       - name: Проверка переменных деплоя
@@ -76,23 +78,31 @@ jobs:
             exit 1
           fi
 
-      - name: Записать SSH-ключ в файл
+      - name: Подготовить SSH-ключ (inline для appleboy)
+        id: sshkey
         run: |
           set -euo pipefail
-          mkdir -p .github-ssh
           if [ -n "${SSH_KEY_B64:-}" ]; then
-            printf '%s' "$SSH_KEY_B64" | tr -d ' \n\r\t' | base64 -d > .github-ssh/id_deploy
+            KEY_CONTENT=$(printf '%s' "$SSH_KEY_B64" | tr -d ' \n\r\t' | base64 -d)
           else
-            printf '%s\n' "$SSH_KEY_MATERIAL" > .github-ssh/id_deploy
+            KEY_CONTENT="$SSH_KEY_MATERIAL"
           fi
-          chmod 644 .github-ssh/id_deploy
-          if ! head -1 .github-ssh/id_deploy | grep -q 'BEGIN'; then
+          if ! printf '%s\n' "$KEY_CONTENT" | head -1 | grep -q 'BEGIN'; then
             echo "::error::В SSH_PRIVATE_KEY должен быть приватный ключ (-----BEGIN … KEY-----)."
             exit 1
           fi
-          if ssh-keygen -y -f .github-ssh/id_deploy -P "" >/dev/null 2>&1; then
+          {
+            echo 'key<<EOF'
+            printf '%s\n' "$KEY_CONTENT"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+          _key_file=$(mktemp)
+          chmod 600 "$_key_file"
+          printf '%s\n' "$KEY_CONTENT" > "$_key_file"
+          if ssh-keygen -y -f "$_key_file" -P "" >/dev/null 2>&1; then
             echo "SSH_KEY_PASSPHRASE=" >> "$GITHUB_ENV"
           fi
+          rm -f "$_key_file"
 
       - name: Собрать .env из DEPLOY_ENV
         id: prepenv
@@ -112,7 +122,7 @@ jobs:
         with:
           host: ${{ env.SSH_HOST }}
           username: ${{ env.SSH_USER }}
-          key_path: .github-ssh/id_deploy
+          key: ${{ steps.sshkey.outputs.key }}
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
           source: .env.deploy
@@ -136,7 +146,7 @@ jobs:
         with:
           host: ${{ env.SSH_HOST }}
           username: ${{ env.SSH_USER }}
-          key_path: .github-ssh/id_deploy
+          key: ${{ steps.sshkey.outputs.key }}
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
           source: supervisor.deploy.conf
@@ -161,7 +171,7 @@ jobs:
         with:
           host: ${{ env.SSH_HOST }}
           username: ${{ env.SSH_USER }}
-          key_path: .github-ssh/id_deploy
+          key: ${{ steps.sshkey.outputs.key }}
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
           source: deploy.crontab
@@ -172,7 +182,7 @@ jobs:
         with:
           host: ${{ env.SSH_HOST }}
           username: ${{ env.SSH_USER }}
-          key_path: .github-ssh/id_deploy
+          key: ${{ steps.sshkey.outputs.key }}
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
           # true: drone-ssh вставляет exit после КАЖДОЙ строки — падает supervisorctl update (код 1) вопреки set +e

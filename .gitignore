@@ -38,6 +38,10 @@ phpunit.phar
 
 node_modules
 
+# local env secrets (never commit)
+.env
+**/.env
+
 package-lock.json
 
 madeline.php

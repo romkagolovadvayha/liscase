@@ -23,6 +23,9 @@
 | Задача | Где смотреть |
 |--------|----------------|
 | Кланы REST | `api/controllers/v1/ClansController.php` |
+| Турниры REST | `api/controllers/v1/TournamentsController.php`, модели `common/models/tournament/` |
+| Турниры админка | `backend/controllers/TournamentController.php` |
+| Рейтинг турниров (cron) | `yii tournament/recalculate-rankings` → `console/controllers/TournamentController.php` |
 | Пользователь / профиль API | `api/controllers/v1/UserController.php` |
 | Модели клана | `common/models/clan/` |
 | Статистика | `common/models/statistics/Statistics.php`, `common/models/clan/ClanStatistics.php` |

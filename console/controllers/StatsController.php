@@ -12,6 +12,7 @@ use common\models\user\UserTop;
 use common\helpers\StatsCacheHelper;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\db\Exception as DbException;
 use yii\db\Query;
 use Yii;
 
@@ -22,6 +23,9 @@ class StatsController extends Controller
 
     /** Размер батча steam_id для агрегирующего запроса (меньше пик памяти в PHP и в драйвере). */
     private const ACTIVE_PLAYERS_STEAM_BATCH = 50;
+
+    /** Диапазон id в statistics на один GROUP BY в шаге 1 (избегаем «gone away» на всей таблице). */
+    private const ACTIVE_PLAYERS_ID_CHUNK = 250000;
 
     /**
      * Собирает пользователей в глобальный кэш: суммарный playtime ≥ {@see StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES}
@@ -36,14 +40,16 @@ class StatsController extends Controller
      * Дополнительно пишет per-server ключи {@see StatsCacheHelper::cacheKeyActivePlayersServer} для серверов
      * со статусом выключен / включён / скоро (0, 1, 2).
      * Пример: `php yii stats/active-players-cache` или `php yii stats/active-players-cache 7200` (свой TTL, сек).
-     * Индекс под шаг 1: покрывающий (key, steam_id, value) — m260402_100000_statistics_covering_index_playtime_agg
-     * (двухколоночный m260401 часто хуже: без value идут lookups в таблицу).
+     * Индекс под шаг 1: покрывающий (key, steam_id, value) — m260702_120000_statistics_covering_index_playtime_agg.
+     * Шаг 1 дополнительно режется по диапазонам id (см. ACTIVE_PLAYERS_ID_CHUNK).
      *
      * @param int|null $ttl время жизни кэша в секундах; null/пусто — 48 ч
      */
     public function actionActivePlayersCache($ttl = null): void
     {
-        ini_set('memory_limit', '512M');
+        ini_set('memory_limit', '1024M');
+        $this->reconnectMysql();
+        $this->ensureMysqlLongRunningSession();
         $minMinutes = StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES;
         if ($ttl === null || $ttl === '') {
             $ttl = StatsCacheHelper::ACTIVE_PLAYERS_GLOBAL_CACHE_TTL;
@@ -104,22 +110,12 @@ class StatsController extends Controller
         $perServerMin = StatsCacheHelper::ACTIVE_PLAYERS_PER_SERVER_PLAYTIME_MINUTES;
         $isPerServerBuild = $serverTag !== null && $serverTag !== '';
 
-        $q1 = (new Query())
-            ->select('steam_id')
-            ->from($tn)
-            ->where(['key' => 'playtime']);
-        if ($isPerServerBuild) {
-            $q1->andWhere(['server_tag' => $serverTag]);
-        }
-        $steamIds = $q1
-            ->groupBy('steam_id')
-            ->having(
-                $isPerServerBuild
-                    ? 'SUM(CAST([[value]] AS SIGNED)) > :min'
-                    : 'SUM(CAST([[value]] AS SIGNED)) >= :min',
-                [':min' => $isPerServerBuild ? $perServerMin : $minMinutes]
-            )
-            ->column();
+        $steamIds = $this->fetchEligibleSteamIds(
+            $serverTag,
+            $minMinutes,
+            $perServerMin,
+            $chunkLog
+        );
 
         if ($steamIds === []) {
             return [];
@@ -235,6 +231,184 @@ class StatsController extends Controller
         }
 
         return $list;
+    }
+
+    /**
+     * Шаг 1: steam_id с подходящим playtime. Глобально — сумма по всем серверам; иначе только server_tag.
+     * Агрегация по чанкам id, чтобы не держать один тяжёлый GROUP BY на всей statistics.
+     *
+     * @param callable(string):void|null $chunkLog
+     * @return string[]
+     */
+    private function fetchEligibleSteamIds(
+        ?string $serverTag,
+        int $minMinutes,
+        int $perServerMin,
+        ?callable $chunkLog
+    ): array {
+        $tn = Statistics::tableName();
+        $isPerServerBuild = $serverTag !== null && $serverTag !== '';
+
+        $boundsQuery = (new Query())
+            ->select(['min_id' => 'MIN([[id]])', 'max_id' => 'MAX([[id]])'])
+            ->from($tn)
+            ->where(['key' => 'playtime']);
+        if ($isPerServerBuild) {
+            $boundsQuery->andWhere(['server_tag' => $serverTag]);
+        }
+
+        $bounds = $this->queryOneWithReconnect($boundsQuery);
+        if ($bounds === null || $bounds['min_id'] === null || $bounds['max_id'] === null) {
+            return [];
+        }
+
+        $minId = (int) $bounds['min_id'];
+        $maxId = (int) $bounds['max_id'];
+        if ($minId > $maxId) {
+            return [];
+        }
+
+        $chunkSize = self::ACTIVE_PLAYERS_ID_CHUNK;
+        $totalChunks = (int) max(1, ceil(($maxId - $minId + 1) / $chunkSize));
+        $totals = [];
+        $chunkNum = 0;
+
+        for ($start = $minId; $start <= $maxId; $start += $chunkSize) {
+            $chunkNum++;
+            $end = min($start + $chunkSize - 1, $maxId);
+
+            $chunkQuery = (new Query())
+                ->select(['steam_id', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
+                ->from($tn)
+                ->where(['key' => 'playtime'])
+                ->andWhere(['between', 'id', $start, $end]);
+            if ($isPerServerBuild) {
+                $chunkQuery->andWhere(['server_tag' => $serverTag]);
+            }
+
+            $rows = $this->queryAllWithReconnect($chunkQuery->groupBy('steam_id'));
+            foreach ($rows as $row) {
+                $sid = (string) $row['steam_id'];
+                $totals[$sid] = ($totals[$sid] ?? 0) + (int) $row['sum'];
+            }
+
+            if ($chunkLog !== null) {
+                $chunkLog("шаг 1 чанк {$chunkNum}/{$totalChunks} (id {$start}-{$end}): промежуточно steam_id " . count($totals));
+            }
+        }
+
+        $threshold = $isPerServerBuild ? $perServerMin : $minMinutes;
+        $result = [];
+        foreach ($totals as $sid => $sum) {
+            if ($isPerServerBuild) {
+                if ($sum > $threshold) {
+                    $result[] = $sid;
+                }
+            } elseif ($sum >= $threshold) {
+                $result[] = $sid;
+            }
+        }
+
+        return $result;
+    }
+
+  /**
+   * @return array<string, mixed>|null
+   */
+    private function queryOneWithReconnect(Query $query, int $maxAttempts = 3): ?array
+    {
+        $attempt = 0;
+        while ($attempt < $maxAttempts) {
+            try {
+                $row = $query->one();
+
+                return $row === false ? null : $row;
+            } catch (\Throwable $e) {
+                if ($attempt + 1 >= $maxAttempts || !$this->isMysqlConnectionLost($e)) {
+                    throw $e;
+                }
+                $attempt++;
+                Yii::warning(
+                    'active-players-cache: MySQL reconnect (queryOne, attempt ' . $attempt . '): ' . $e->getMessage(),
+                    __METHOD__
+                );
+                $this->reconnectMysql();
+                $this->ensureMysqlLongRunningSession();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function queryAllWithReconnect(Query $query, int $maxAttempts = 3): array
+    {
+        $attempt = 0;
+        while ($attempt < $maxAttempts) {
+            try {
+                return $query->all();
+            } catch (\Throwable $e) {
+                if ($attempt + 1 >= $maxAttempts || !$this->isMysqlConnectionLost($e)) {
+                    throw $e;
+                }
+                $attempt++;
+                Yii::warning(
+                    'active-players-cache: MySQL reconnect (queryAll, attempt ' . $attempt . '): ' . $e->getMessage(),
+                    __METHOD__
+                );
+                $this->reconnectMysql();
+                $this->ensureMysqlLongRunningSession();
+            }
+        }
+
+        return [];
+    }
+
+    private function ensureMysqlLongRunningSession(): void
+    {
+        try {
+            Yii::$app->db->createCommand('SET SESSION wait_timeout = 28800')->execute();
+            Yii::$app->db->createCommand('SET SESSION net_read_timeout = 28800')->execute();
+            Yii::$app->db->createCommand('SET SESSION net_write_timeout = 28800')->execute();
+        } catch (\Throwable $e) {
+            Yii::warning('active-players-cache: не удалось увеличить SESSION timeouts: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    private function reconnectMysql(): void
+    {
+        if (!Yii::$app->has('db')) {
+            return;
+        }
+        try {
+            Yii::$app->db->close();
+        } catch (\Throwable $e) {
+            // соединение уже недействительно
+        }
+        try {
+            Yii::$app->db->open();
+        } catch (\Throwable $e) {
+            Yii::error('active-players-cache: DB reconnect failed: ' . $e->getMessage(), __METHOD__);
+        }
+    }
+
+    private function isMysqlConnectionLost(\Throwable $e): bool
+    {
+        $msg = $e->getMessage();
+        if (stripos($msg, 'gone away') !== false || strpos($msg, '2006') !== false) {
+            return true;
+        }
+        if ($e instanceof DbException && isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 2006) {
+            return true;
+        }
+        $prev = $e->getPrevious();
+        if ($prev instanceof \Throwable) {
+            return $this->isMysqlConnectionLost($prev);
+        }
+
+        return false;
     }
 
     /**

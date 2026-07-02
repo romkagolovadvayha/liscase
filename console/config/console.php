@@ -75,6 +75,12 @@ $config['modules']['crontask'] = [
             'command' => 'storage/update-tops',
             'min'     => '*/5',
         ],
+        /** Глобальные рекорды (/records): GET /v1/stats/global-records, TTL 48 ч. */
+        'statsActivePlayersCache' => [
+            'command' => 'stats/active-players-cache',
+            'hour'    => '*/12',
+            'min'     => '20',
+        ],
         'storageUpdateMarket'       => [
             'command' => 'storage/update-market',
             'min'     => '*/20',
