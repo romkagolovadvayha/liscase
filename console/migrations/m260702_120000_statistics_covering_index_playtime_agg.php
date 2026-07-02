@@ -6,8 +6,9 @@ use yii\db\Exception as DbException;
 /**
  * Покрывающие индексы для stats/active-players-cache (шаг 1: SUM(playtime) по steam_id).
  *
- * На большой statistics CREATE INDEX может идти долго — перед DDL увеличиваем SESSION timeouts
- * и используем ALGORITHM=INPLACE LOCK=NONE; при 2006/2002 — reconnect и повтор.
+ * На большой statistics CREATE INDEX может идти долго — перед DDL увеличиваем SESSION timeouts;
+ * при 2006/2002 — reconnect и повтор. Ошибка 2006 в тексте Yii содержит исходный SQL с
+ * ALGORITHM=INPLACE — не путать с «unsupported algorithm».
  *
  * @see \console\controllers\StatsController::actionActivePlayersCache
  */
@@ -40,48 +41,79 @@ class m260702_120000_statistics_covering_index_playtime_agg extends Migration
             return;
         }
 
-        $this->ensureLongRunningDdlSession();
-
+        $sqlVariants = [
+            "CREATE INDEX {$name} ON statistics {$columnsSql} ALGORITHM=INPLACE LOCK=NONE",
+            "CREATE INDEX {$name} ON statistics {$columnsSql}",
+        ];
+        $variantIndex = 0;
         $attempt = 0;
-        $maxAttempts = 3;
+        $maxAttempts = 5;
+
         while ($attempt < $maxAttempts) {
+            if ($this->indexExists($name)) {
+                echo "Index {$name} already exists after reconnect, skip.\n";
+
+                return;
+            }
+
+            $this->ensureLongRunningDdlSession();
+
             try {
-                $this->execute(
-                    "CREATE INDEX {$name} ON statistics {$columnsSql} ALGORITHM=INPLACE LOCK=NONE"
-                );
+                $this->execute($sqlVariants[$variantIndex]);
 
                 return;
             } catch (\Throwable $e) {
-                if ($this->isDdlAlgorithmUnsupported($e)) {
-                    echo "Online DDL hint not supported, fallback CREATE INDEX {$name}…\n";
-                    $this->ensureLongRunningDdlSession();
-                    $this->execute("CREATE INDEX {$name} ON statistics {$columnsSql}");
+                if ($this->indexExists($name)) {
+                    echo "Index {$name} created despite error, skip.\n";
 
                     return;
                 }
 
-                $attempt++;
-                if ($attempt >= $maxAttempts || !$this->isConnectionLost($e)) {
-                    throw $e;
+                if ($this->isConnectionLost($e)) {
+                    $attempt++;
+                    echo "MySQL DDL reconnect ({$name}, attempt {$attempt}): {$e->getMessage()}\n";
+                    sleep(min($attempt, 10));
+                    $this->reconnectDb();
+                    continue;
                 }
 
-                echo "MySQL DDL reconnect ({$name}, attempt {$attempt}): {$e->getMessage()}\n";
-                sleep(min($attempt, 5));
-                $this->reconnectDb();
-                $this->ensureLongRunningDdlSession();
+                if ($variantIndex === 0 && $this->isDdlAlgorithmUnsupported($e)) {
+                    echo "Online DDL hint not supported, fallback CREATE INDEX {$name}…\n";
+                    $variantIndex = 1;
+                    continue;
+                }
+
+                throw $e;
             }
         }
+
+        throw new \RuntimeException("Failed to create index {$name} after {$maxAttempts} attempts");
     }
 
     private function indexExists(string $name): bool
     {
-        return (bool) $this->db->createCommand("
-            SELECT COUNT(*)
-            FROM information_schema.statistics
-            WHERE table_schema = DATABASE()
-            AND table_name = 'statistics'
-            AND index_name = :name
-        ", [':name' => $name])->queryScalar();
+        try {
+            return (bool) $this->db->createCommand("
+                SELECT COUNT(*)
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                AND table_name = 'statistics'
+                AND index_name = :name
+            ", [':name' => $name])->queryScalar();
+        } catch (\Throwable $e) {
+            if (!$this->isConnectionLost($e)) {
+                throw $e;
+            }
+            $this->reconnectDb();
+
+            return (bool) $this->db->createCommand("
+                SELECT COUNT(*)
+                FROM information_schema.statistics
+                WHERE table_schema = DATABASE()
+                AND table_name = 'statistics'
+                AND index_name = :name
+            ", [':name' => $name])->queryScalar();
+        }
     }
 
     private function ensureLongRunningDdlSession(): void
@@ -93,6 +125,19 @@ class m260702_120000_statistics_covering_index_playtime_agg extends Migration
             'SET SESSION net_write_timeout = 28800',
             'SET SESSION innodb_lock_wait_timeout = 3600',
         ] as $sql) {
+            $this->executeSessionSql($sql);
+        }
+    }
+
+    private function executeSessionSql(string $sql): void
+    {
+        try {
+            $this->db->createCommand($sql)->execute();
+        } catch (\Throwable $e) {
+            if (!$this->isConnectionLost($e)) {
+                throw $e;
+            }
+            $this->reconnectDb();
             $this->db->createCommand($sql)->execute();
         }
     }
@@ -133,11 +178,19 @@ class m260702_120000_statistics_covering_index_playtime_agg extends Migration
 
     private function isDdlAlgorithmUnsupported(\Throwable $e): bool
     {
-        $msg = strtolower($e->getMessage());
+        if ($this->isConnectionLost($e)) {
+            return false;
+        }
 
-        return strpos($msg, 'algorithm') !== false
-            || strpos($msg, 'lock=none') !== false
-            || strpos($msg, 'lock none') !== false;
+        $msg = strtolower($e->getMessage());
+        $serverMsg = $msg;
+        if (($pos = strpos($msg, 'the sql being executed was:')) !== false) {
+            $serverMsg = substr($msg, 0, $pos);
+        }
+
+        return strpos($serverMsg, 'algorithm') !== false
+            || strpos($serverMsg, 'lock=none') !== false
+            || strpos($serverMsg, 'lock none') !== false;
     }
 
     protected function dropIndexIfExists($name, $table)

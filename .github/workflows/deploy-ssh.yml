@@ -185,6 +185,8 @@ jobs:
           key: ${{ steps.sshkey.outputs.key }}
           passphrase: ${{ env.SSH_KEY_PASSPHRASE }}
           port: 22
+          # CREATE INDEX на statistics может идти часами; дефолт ssh-action — 10m
+          command_timeout: 4h
           # true: drone-ssh вставляет exit после КАЖДОЙ строки — падает supervisorctl update (код 1) вопреки set +e
           script_stop: false
           script: |
