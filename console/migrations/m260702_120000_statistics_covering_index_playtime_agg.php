@@ -2,7 +2,6 @@
 
 use console\components\migration\Migration;
 use yii\db\Exception as DbException;
-use Yii;
 
 /**
  * Покрывающие индексы для stats/active-players-cache (шаг 1: SUM(playtime) по steam_id).
@@ -101,11 +100,11 @@ class m260702_120000_statistics_covering_index_playtime_agg extends Migration
     private function reconnectDb(): void
     {
         try {
-            Yii::$app->db->close();
+            $this->db->close();
         } catch (\Throwable $e) {
             // ignore
         }
-        Yii::$app->db->open();
+        $this->db->open();
     }
 
     private function isConnectionLost(\Throwable $e): bool
