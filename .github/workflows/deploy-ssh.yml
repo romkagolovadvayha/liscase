@@ -218,7 +218,7 @@ jobs:
             export YII_ENV=prod
             export YII_DEBUG=0
             composer install --no-interaction --no-dev --optimize-autoloader
-            php yii migrate --interactive=0
+            php -d default_socket_timeout=28800 yii migrate --interactive=0
             if [ -f supervisor.deploy.conf ]; then
               SUPERVISOR_FN='${{ secrets.DEPLOY_SUPERVISOR_CONF_FILENAME || vars.DEPLOY_SUPERVISOR_CONF_FILENAME }}'
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
