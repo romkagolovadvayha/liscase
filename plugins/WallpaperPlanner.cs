@@ -1183,7 +1183,7 @@ namespace Oxide.Plugins
                                         break;
                                 }
                                 heldEnt.SendNetworkUpdate();
-                                heldEnt.ClientRPC<ulong, int>(RpcTarget.NetworkGroup("CLIENT_ChangeSkin"), heldEnt.skinID, (int)heldEnt.currentMode);
+                                heldEnt.ClientRPC(RpcTarget.NetworkGroup("CLIENT_ChangeSkin"), heldEnt.skinID, (int)heldEnt.currentMode);
                             }
                         }
                         break;
