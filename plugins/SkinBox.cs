@@ -408,7 +408,7 @@ namespace Oxide.Plugins
                 player.inventory.loot.AddContainer(container.inventory);
                 player.inventory.loot.SendImmediate();
 
-                player.ClientRPCPlayer(null, player, "RPC_OpenLootPanel", LOOT_PANEL);
+                player.ClientRPC(RpcTarget.Player("RPC_OpenLootPanel", player), LOOT_PANEL);
                 container.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
                             
                 if (Configuration.Cost.Enabled && !player.HasPermission(Configuration.Permission.NoCost))
@@ -1625,7 +1625,7 @@ namespace Oxide.Plugins
                 targetEntity.skinID = targetItem.skin;
                 targetEntity.SendNetworkUpdateImmediate();
 
-                targetEntity.ClientRPC<int, NetworkableId>(null, "Client_ReskinResult", 1, targetEntity.net.ID);
+                targetEntity.ClientRPC(RpcTarget.NetworkGroup("Client_ReskinResult"), 1, targetEntity.net.ID);
                 return true;
             }
 
