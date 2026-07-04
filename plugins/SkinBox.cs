@@ -24,7 +24,7 @@ using UIAnchor = Oxide.Ext.Chaos.UIFramework.Anchor;
 
 namespace Oxide.Plugins
 {
-    [Info("SkinBox", "k1lly0u", "2.2.31")]
+    [Info("SkinBox", "k1lly0u", "2.2.32")]
     [Description("Allows you to reskin item's by placing it in the SkinBox and selecting a new skin")]
     class SkinBox : ChaosPlugin
     {
@@ -694,11 +694,8 @@ namespace Oxide.Plugins
                 return;
             }
             
-            if (Configuration.Skins.UseApproved)
-            {
-                PrintWarning("Retrieving approved skin lists...");
-                CollectApprovedSkins();
-            }
+            PrintWarning("Retrieving approved skin lists...");
+            CollectApprovedSkins();
         }
 
         private void CollectApprovedSkins()
@@ -1250,7 +1247,8 @@ namespace Oxide.Plugins
             {"python", "pistol.python" },
             {"m39", "rifle.m39" },
             {"l96", "rifle.l96" },
-            {"woodendoubledoor", "door.double.hinged.wood" }
+            {"woodendoubledoor", "door.double.hinged.wood" },
+            {"woodstoragebox", "box.wooden"}
         };
 
         private void UpdateWorkshopNameConversionList()
@@ -2607,7 +2605,7 @@ namespace Oxide.Plugins
                                 .WithStyle(m_InputStyle)
                                 .InHudMenu()
                                 .WithCallback(m_CallbackHandler, (arg) =>
-                                        SetSearchParameters(arg.Args.Length > 1 ? string.Join(" ", ToStringArgs(arg).Skip(1)) : string.Empty), $"{Looter.userID}.search");
+                                        SetSearchParameters(arg.Args.Length > 1 ? string.Join(" ", arg.Args.Skip(1)) : string.Empty), $"{Looter.userID}.search");
 
                             ImageContainer.Create(search, UIAnchor.CenterLeft, new Offset(-20, -10, 0, 10))
                                 .WithStyle(m_PanelStyle);
@@ -3067,7 +3065,7 @@ namespace Oxide.Plugins
 
             private float m_LastPressTime;
 
-            private const int LAYER_MASK = 1 << (int)Rust.Layer.Reserved1 | 1 << (int) Rust.Layer.Construction | 1 << (int) Rust.Layer.Deployed | 1 << (int)Rust.Layer.Physics_Debris;
+            private const int LAYER_MASK = 1 << (int)Rust.Layer.Reserved1 | 1 << (int) Rust.Layer.Construction | 1 << (int) Rust.Layer.Deployed | 1 << (int)Rust.Layer.Physics_Debris; 
             private void Awake()
             {
                 m_Player = GetComponent<BasePlayer>();
@@ -3702,24 +3700,17 @@ namespace Oxide.Plugins
         #region Skin Requests
         private static DiscordWebhook _requestWebhook;
 
-        private static string[] ToStringArgs(ConsoleSystem.Arg arg)
-        {
-            if (arg?.Args == null || arg.Args.Length == 0)
-                return Array.Empty<string>();
-
-            string[] result = new string[arg.Args.Length];
-            for (int i = 0; i < arg.Args.Length; i++)
-                result[i] = arg.Args[i].ToString();
-            return result;
-        }
-
         [ConsoleCommand("skinbox.request")]
         private void ccmdRequestSkin(ConsoleSystem.Arg arg)
         {
             BasePlayer p = arg.Player();
             if (p)
             {
-                cmdRequestSkin(p, "", ToStringArgs(arg));
+                string[] args = arg.Args.Length == 0 ? Array.Empty<string>() : new string[arg.Args.Length];
+                for (int i = 0; i < arg.Args.Length; i++)
+                    args[i] = arg.GetString(i);
+                
+                cmdRequestSkin(p, "", args);
                 return;
             }
             
@@ -3736,7 +3727,7 @@ namespace Oxide.Plugins
             }
 
             List<ulong> requestedSkins = Pool.Get<List<ulong>>();
-            if (!ulong.TryParse(arg.Args[0], out ulong userId) || !userId.IsSteamId())
+            if (!ulong.TryParse(arg.GetString(0), out ulong userId) || !userId.IsSteamId())
             {
                 SendReply(arg, "You must enter a user ID as the first argument");
                 return;
@@ -4150,7 +4141,7 @@ namespace Oxide.Plugins
 
             for (int i = 0; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong fileId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong fileId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4197,7 +4188,7 @@ namespace Oxide.Plugins
 
             for (int i = 0; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong fileId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong fileId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4240,7 +4231,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0].ToString();
+            string perm = arg.GetString(0);
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
@@ -4251,7 +4242,7 @@ namespace Oxide.Plugins
             
             for (int i = 1; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong fileId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong fileId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4294,7 +4285,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0].ToString();
+            string perm = arg.GetString(0);
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
@@ -4305,7 +4296,7 @@ namespace Oxide.Plugins
 
             for (int i = 1; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong fileId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong fileId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4391,7 +4382,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[0], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(0), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[0]} is an invalid collection ID");
                 return;
@@ -4421,7 +4412,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[0], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(0), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[0]} is an invalid collection ID");
                 return;
@@ -4451,14 +4442,14 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0].ToString();
+            string perm = arg.GetString(0);
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[1], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(1), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[1]} is an invalid collection ID");
                 return;
@@ -4488,14 +4479,14 @@ namespace Oxide.Plugins
                 return;
             }
 
-            string perm = arg.Args[0].ToString();
+            string perm = arg.GetString(0);
             if (!Configuration.Permission.Custom.ContainsKey(perm))
             {
                 SendReply(arg, $"The permission {perm} does not exist in the custom permission section of the config");
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[1], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(1), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[1]} is an invalid collection ID");
                 return;
@@ -4531,7 +4522,7 @@ namespace Oxide.Plugins
 
             for (int i = 0; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong skinId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong skinId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4576,7 +4567,7 @@ namespace Oxide.Plugins
 
             for (int i = 0; i < arg.Args.Length; i++)
             {
-                if (!ulong.TryParse(arg.Args[i], out ulong skinId))
+                if (!ulong.TryParse(arg.Args[i].ToString(), out ulong skinId))
                 {
                     SendReply(arg, $"Ignored '{arg.Args[i]}' as it's not a number");
                     continue;
@@ -4621,7 +4612,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[0], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(0), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[0]} is an invalid collection ID");
                 return;
@@ -4651,7 +4642,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (!ulong.TryParse(arg.Args[0], out ulong collectionId))
+            if (!ulong.TryParse(arg.GetString(0), out ulong collectionId))
             {
                 SendReply(arg, $"{arg.Args[0]} is an invalid collection ID");
                 return;
@@ -4681,7 +4672,7 @@ namespace Oxide.Plugins
                     return;
                 }
 
-                if (!ulong.TryParse(arg.Args[0], out ulong targetUserID) || !Oxide.Core.ExtensionMethods.IsSteamId(targetUserID))
+                if (!ulong.TryParse(arg.GetString(0), out ulong targetUserID) || !Oxide.Core.ExtensionMethods.IsSteamId(targetUserID))
                 {
                     SendReply(arg, "Invalid Steam ID entered");
                     return;

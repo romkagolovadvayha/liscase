@@ -13,7 +13,7 @@ using Oxide.Plugins.AnimalSpawnExtensionMethods;
 
 namespace Oxide.Plugins
 {
-    [Info("AnimalSpawn", "KpucTaJl", "1.0.5")]
+    [Info("AnimalSpawn", "KpucTaJl", "1.1.0")]
     internal class AnimalSpawn : RustPlugin
     {
         #region Config
@@ -114,6 +114,12 @@ namespace Oxide.Plugins
 
         private CustomAnimalNpc CreateCustomAnimal(Vector3 position, AnimalConfig config)
         {
+            if (config.Prefab == "assets/rust.ai/agents/wolf/wolf.prefab")
+            {
+                config.Prefab = "assets/rust.ai/agents/bear/bear.prefab";
+                Puts("Old wolf prefab detected. Rust removed old wolves in the June update, so a bear was spawned instead. AnimalSpawn is being updated for Gen2 animals");
+            }
+
             BaseAnimalNPC animalNpc = GameManager.server.CreateEntity(config.Prefab, position, Quaternion.identity, false) as BaseAnimalNPC;
             AnimalBrain animalBrain = animalNpc.GetComponent<AnimalBrain>();
 
@@ -192,7 +198,7 @@ namespace Oxide.Plugins
 
                 HomePosition = string.IsNullOrEmpty(Config.HomePosition) ? transform.position : Config.HomePosition.ToVector3();
 
-                if (NavAgent == null) NavAgent = GetComponent<NavMeshAgent>();
+                if (NavAgent == null) NavAgent = GetComponent<Rust.Ai.Gen2.RustNavMeshAgent>();
                 if (NavAgent != null)
                 {
                     NavAgent.areaMask = Config.AreaMask;
@@ -227,7 +233,7 @@ namespace Oxide.Plugins
                     {
                         if (UnityEngine.Application.isEditor || ConVar.Server.official)
                         {
-                            initiatorPlayer.ClientRPC<string>(RpcTarget.Player("RecieveAchievement", initiatorPlayer), "KILL_ANIMAL");
+                            initiatorPlayer.ClientRPC(RpcTarget.Player("RecieveAchievement", initiatorPlayer), "KILL_ANIMAL");
                         }
                         if (!string.IsNullOrEmpty(deathStatName))
                         {
@@ -917,7 +923,7 @@ namespace Oxide.Plugins
                     brain.Navigator.SetFacingDirectionEntity(_animal.AttackTarget);
                     _animal.nextAttackTime = Time.realtimeSinceStartup + _animal.AttackRate;
                     _animal.CombatTarget.Hurt(_animal.AttackDamage, _animal.AttackDamageType, _animal, true);
-                    _animal.ClientRPC<Vector3>(null, "Attack", _animal.AttackTarget.transform.position);
+                    _animal.ClientRPC(RpcTarget.NetworkGroup("Attack"), _animal.AttackTarget.transform.position);
                     _animal.SetDestination(_animal.AttackTarget.transform.position, 2f, BaseNavigator.NavigationSpeed.Fast);
                     return StateStatus.Running;
                 }
@@ -941,7 +947,7 @@ namespace Oxide.Plugins
                         if (_animal.AttackReady())
                         {
                             _animal.nextAttackTime = Time.realtimeSinceStartup + _animal.AttackRate;
-                            _animal.ClientRPC<Vector3>(null, "Attack", _animal.HomePosition);
+                            _animal.ClientRPC(RpcTarget.NetworkGroup("Attack"), _animal.HomePosition);
                         }
                     }
                     else if (!_animal.IsMoving) _animal.SetDestination(GetMovePos(), _animal.AttackRange / 2f, BaseNavigator.NavigationSpeed.Fast);

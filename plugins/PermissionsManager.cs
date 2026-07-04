@@ -14,14 +14,13 @@ namespace Oxide.Plugins
 {
     //  To do
     //  Change button colour of permission to indicate that player/group has at least one perm from that plugin.
-    //  Create player UI, behing permission or global true/false, to let players see what permissions they have access to.
+    //  Create player UI, behind permission or global true/false, to let players see what permissions they have access to.
     //  Add button to remove records for 'Unnamed' players (from UI or from perms db?)
 
-    //  Changes in 2.1.0
-    //  Fix for June wipe
+    //  Changes in 2.1.2
+    //  Fix for missing plugins, and for Rust Update July  
 
-
-    [Info("PermissionsManager", "Steenamaroo", "2.1.0", ResourceId = 3)]   
+    [Info("PermissionsManager", "Steenamaroo", "2.1.2", ResourceId = 3)]   
     class PermissionsManager : RustPlugin
     {
         IEnumerable<string> AllPerms;
@@ -54,7 +53,7 @@ namespace Oxide.Plugins
             CloseUIs();
 
             AllPerms = permission.GetPermissions();
-            var name = plugin.ToString().Replace("Oxide.Plugins.", "");
+            var name = plugin.Name;
 
             foreach (var perm in AllPerms)
                 if (perm.Contains(name, CompareOptions.IgnoreCase) && !(config.BlockList.Split(',').Contains(name, StringComparer.OrdinalIgnoreCase)))
@@ -71,7 +70,7 @@ namespace Oxide.Plugins
         {
             if (!init || plugin is PermissionsManager)
                 return;
-            var name = plugin.ToString().Replace("Oxide.Plugins.", "");
+            var name = plugin.Name;
             if (PlugsAndPerms.ContainsKey(name))
                 PlugsAndPerms.Remove(name);
 
@@ -148,9 +147,9 @@ namespace Oxide.Plugins
         }
 
         void GetPlugs()
-        {
+        { 
             AllPerms = permission.GetPermissions();
-            foreach (var entry in plugins.GetAll().Where(x => !x.IsCorePlugin).Select(x => x.ToString().Replace("Oxide.Plugins.", "")))
+            foreach (var entry in plugins.GetAll().Where(x => !x.IsCorePlugin).Select(x => x.Name)) 
             {
                 foreach (var perm in AllPerms)
                     if (perm.Contains(entry, CompareOptions.IgnoreCase) && !(config.BlockList.Split(',').Contains(entry, StringComparer.OrdinalIgnoreCase)))
@@ -199,7 +198,7 @@ namespace Oxide.Plugins
             MenuOpen.Add(player.userID);
             string guiString = String.Format("0.1 0.1 0.1 {0}", config.guitransparency);
             var elements = new CuiElementContainer();
-            var mainName = elements.Add(new CuiPanel { Image = { Color = guiString }, RectTransform = { AnchorMin = "0.3 0.1", AnchorMax = "0.7 0.9" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMBgUI");
+            var mainName = elements.Add(new CuiPanel { Image = { Color = guiString }, RectTransform = { AnchorMin = "0.3 0.1", AnchorMax = "0.7 0.9" }, CursorEnabled = true }, "Overlay", "PMBgUI");
             elements.Add(new CuiPanel { Image = { Color = $"0 0 0 1" }, RectTransform = { AnchorMin = $"0 0.95", AnchorMax = $"0.999 1" }, CursorEnabled = true }, mainName);
             elements.Add(new CuiPanel { Image = { Color = $"0 0 0 1" }, RectTransform = { AnchorMin = $"0 0", AnchorMax = $"0.999 0.05" }, CursorEnabled = true }, mainName);
             elements.Add(new CuiButton { Button = { Command = "ClosePM", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.955 0.96", AnchorMax = "0.99 0.995" }, Text = { Text = "X", FontSize = 11, Align = TextAnchor.MiddleCenter } }, mainName);
@@ -319,8 +318,8 @@ namespace Oxide.Plugins
                     CuiHelper.DestroyUi(player, "PMMsgUI");
             });
             var elements = new CuiElementContainer();
-            var first = elements.Add(new CuiPanel { Image = { FadeIn = 0.3f, Color = $"0.1 0.1 0.1 0.95" }, RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }, CursorEnabled = false, FadeOut = 0.3f }, "Overlay", "PMMsgUI");
-            elements.Add(new CuiLabel { FadeOut = 0.5f, Text = { FadeIn = 0.5f, Text = message, Color = "1 1 1 1", FontSize = 28, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" } }, first);
+            var first = elements.Add(new CuiPanel { Image = { FadeIn = 0.3f, Color = $"0.1 0.1 0.1 0.95" }, RectTransform = { AnchorMin = "0.3 0.4", AnchorMax = "0.7 0.6" }, CursorEnabled = false }, "Overlay", "PMMsgUI");
+            elements.Add(new CuiLabel { Text = { FadeIn = 0.5f, Text = message, Color = "1 1 1 1", FontSize = 28, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" } }, first);
             CuiHelper.AddUi(player, elements);
         }
 
@@ -329,12 +328,12 @@ namespace Oxide.Plugins
         {
             var player = arg?.Connection?.player as BasePlayer;
             var elements = new CuiElementContainer();
-            var mainName = elements.Add(new CuiPanel { Image = { Color = "0.2 0.2 0.2 0.1", Material = "assets/content/ui/uibackgroundblur.mat" }, RectTransform = { AnchorMin = "0.3 0.09", AnchorMax = "0.7 0.91" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMDataConfirm");
+            var mainName = elements.Add(new CuiPanel { Image = { Color = "0.2 0.2 0.2 0.1", Material = "assets/content/ui/uibackgroundblur.mat" }, RectTransform = { AnchorMin = "0.3 0.09", AnchorMax = "0.7 0.91" }, CursorEnabled = true }, "Overlay", "PMDataConfirm");
 
             elements.Add(new CuiButton { Button = { Color = "0 0 0 1" }, RectTransform = { AnchorMin = "0.28 0.46", AnchorMax = $"0.72 0.54" }, Text = { Text = String.Empty } }, mainName);
             elements.Add(new CuiLabel { Text = { Text = "", FontSize = 16, Align = TextAnchor.MiddleCenter }, RectTransform = { AnchorMin = "0.28 0.46", AnchorMax = $"0.72 0.54" }, }, mainName);
-            elements.Add(new CuiButton { Button = { Command = $"ManageData true {arg.Args[0].ToString()}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.3 0.48", AnchorMax = "0.45 0.52" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName);
-            elements.Add(new CuiButton { Button = { Command = $"ManageData false {arg.Args[0].ToString()}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.55 0.48", AnchorMax = "0.7 0.52" }, Text = { Text = lang.GetMessage("cancel", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName);
+            elements.Add(new CuiButton { Button = { Command = $"ManageData true {arg.GetString(0)}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.3 0.48", AnchorMax = "0.45 0.52" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName);
+            elements.Add(new CuiButton { Button = { Command = $"ManageData false {arg.GetString(0)}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.55 0.48", AnchorMax = "0.7 0.52" }, Text = { Text = lang.GetMessage("cancel", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName);
 
             CuiHelper.AddUi(player, elements);
         }
@@ -342,12 +341,12 @@ namespace Oxide.Plugins
         [ConsoleCommand("ManageData")]
         private void ManageData(ConsoleSystem.Arg arg)
         {
-            string confirmation = arg.Args[0].ToString();
+            string confirmation = arg.GetString(0);
             if (confirmation == "false")
                 CuiHelper.DestroyUi(arg.Player(), "PMDataConfirm");
             else
             {
-                int cmd = Convert.ToInt16(arg.Args[1].ToString());
+                int cmd = arg.GetInt(1);
                 if (cmd == 1)
                     MsgUI(arg.Player(), "Local Players Saved"); // Do this message for every option.
 
@@ -446,7 +445,7 @@ namespace Oxide.Plugins
                     {
                         if (path.inheritedcheck == showName)
                         {
-                            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.99" }, RectTransform = { AnchorMin = "0.3 0.1", AnchorMax = "0.7 0.86" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMConfirmUI");
+                            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.99" }, RectTransform = { AnchorMin = "0.3 0.1", AnchorMax = "0.7 0.86" }, CursorEnabled = true }, "Overlay", "PMConfirmUI");
                             elements1.Add(new CuiButton { Button = { Command = $"ShowInherited {plugName} null {showName} {group} null {page} -", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.4 0.01", AnchorMax = "0.6 0.05" }, Text = { Text = lang.GetMessage("GUIBack", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
 
                             float h1 = 0, h2 = 0;
@@ -567,8 +566,8 @@ namespace Oxide.Plugins
             if (player == null || arg.Args == null || arg.Args.Length != 2)
                 return;
 
-            group = !(Convert.ToBoolean(arg.Args[0].ToString()));
-            page = Convert.ToInt16(arg.Args[1].ToString());
+            group = !(arg.GetBool(0));
+            page = arg.GetInt(1);
             if (group)
                 ActiveAdmins[player.userID].GPage = page;
             else
@@ -582,10 +581,10 @@ namespace Oxide.Plugins
         {
             var path = ActiveAdmins[arg.Player().userID];
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 6) return;
-            int pageNo = Convert.ToInt32(arg.Args[5].ToString());
-            path.inheritedcheck = arg.Args[6].ToString();
+            int pageNo = Convert.ToInt32(arg.GetString(5));
+            path.inheritedcheck = arg.GetString(6);
             DestroyMenu(arg.Player(), false);
-            PMPermsUI(arg.Player(), $"{StripSlashes(path.subject.displayName)} - {arg.Args[0].ToString()}", arg.Args[0].ToString(), "false", pageNo);
+            PMPermsUI(arg.Player(), $"{StripSlashes(path.subject.displayName)} - {arg.GetString(0)}", arg.GetString(0), "false", pageNo);
         }
 
         //// ADDED
@@ -595,7 +594,7 @@ namespace Oxide.Plugins
             var player = arg?.Connection?.player as BasePlayer;
 
             var elements1 = new CuiElementContainer();
-            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMConfirmUI");
+            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true }, "Overlay", "PMConfirmUI");
             elements1.Add(new CuiButton { Button = { Command = $"PMRevoke true", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.1 0.2", AnchorMax = "0.4 0.8" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
             elements1.Add(new CuiButton { Button = { Command = $"PMRevoke false", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.6 0.2", AnchorMax = "0.9 0.8" }, Text = { Text = lang.GetMessage("cancel", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
 
@@ -606,7 +605,7 @@ namespace Oxide.Plugins
         private void PMRevoke(ConsoleSystem.Arg arg)
         {
             var path = ActiveAdmins[arg.Player().userID];
-            string confirmation = arg.Args[0].ToString();
+            string confirmation = arg.GetString(0);
             if (confirmation == "true")
             {
                 foreach (var perm in permission.GetUserPermissions(path.subject.UserIDString))
@@ -623,8 +622,8 @@ namespace Oxide.Plugins
             var player = arg?.Connection?.player as BasePlayer;
 
             var elements1 = new CuiElementContainer();
-            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMConfirmUI");
-            elements1.Add(new CuiButton { Button = { Command = $"PMRemove true {arg.Args[0].ToString()}, {arg.Args[1].ToString()}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.1 0.2", AnchorMax = "0.4 0.8" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
+            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true }, "Overlay", "PMConfirmUI");
+            elements1.Add(new CuiButton { Button = { Command = $"PMRemove true {arg.GetString(0)}, {arg.GetString(1)}", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.1 0.2", AnchorMax = "0.4 0.8" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
             elements1.Add(new CuiButton { Button = { Command = $"PMRemove false", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.6 0.2", AnchorMax = "0.9 0.8" }, Text = { Text = lang.GetMessage("cancel", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
 
             CuiHelper.AddUi(player, elements1);
@@ -634,13 +633,13 @@ namespace Oxide.Plugins
         private void PMRemove(ConsoleSystem.Arg arg)
         {
             var path = ActiveAdmins[arg.Player().userID];
-            string confirmation = arg.Args[0].ToString();
+            string confirmation = arg.GetString(0);
             if (confirmation == "true") 
             {
                 foreach (var group in permission.GetUserGroups(path.subject.UserIDString))
                     permission.RemoveUserGroup(path.subject.UserIDString, group);
                 DestroyMenu(arg.Player(), false);
-                ViewGroupsUI(arg.Player(), arg.Args[1].ToString(), Convert.ToInt16(arg.Args[2].ToString()));
+                ViewGroupsUI(arg.Player(), arg.GetString(1), arg.GetInt(2));
             }
             else
                 CuiHelper.DestroyUi(arg.Player(), "PMConfirmUI");
@@ -654,7 +653,7 @@ namespace Oxide.Plugins
             var player = arg?.Connection?.player as BasePlayer;
 
             var elements1 = new CuiElementContainer();
-            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true, FadeOut = 0.1f }, "Overlay", "PMConfirmUI");
+            var mainName1 = elements1.Add(new CuiPanel { Image = { Color = "0.1 0.1 0.1 0.8" }, RectTransform = { AnchorMin = "0.4 0.42", AnchorMax = "0.6 0.48" }, CursorEnabled = true }, "Overlay", "PMConfirmUI");
             elements1.Add(new CuiButton { Button = { Command = $"PMEmpty true", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.1 0.2", AnchorMax = "0.4 0.8" }, Text = { Text = lang.GetMessage("confirm", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
             elements1.Add(new CuiButton { Button = { Command = $"PMEmpty false", Color = config.ButtonColour }, RectTransform = { AnchorMin = "0.6 0.2", AnchorMax = "0.9 0.8" }, Text = { Text = lang.GetMessage("cancel", this), FontSize = 14, Align = TextAnchor.MiddleCenter }, }, mainName1);
 
@@ -665,7 +664,7 @@ namespace Oxide.Plugins
         private void PMEmpty(ConsoleSystem.Arg arg)
         {
             var path = ActiveAdmins[arg.Player().userID];
-            string confirmation = arg.Args[0].ToString();
+            string confirmation = arg.GetString(0);
             if (confirmation == "true")
             {
                 int count = 0;
@@ -696,7 +695,7 @@ namespace Oxide.Plugins
 
             if (arg.Args == null || arg.Args.Length < 1)
                 return;
-            string groupname = arg.Args[0].ToString();
+            string groupname = arg.GetString(0);
             var list = permission.GetUsersInGroup(groupname);
             if (list == null || list.Length == 0)
             {
@@ -720,11 +719,11 @@ namespace Oxide.Plugins
             var path = ActiveAdmins[arg.Player().userID];
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 3) return;
             string Pname = path.subject.userID.ToString();
-            string userGroup = RemoveDashes(arg.Args[1].ToString());
-            int page = Convert.ToInt32(arg.Args[2].ToString());
-            if (arg.Args[0].ToString() == "add")
+            string userGroup = RemoveDashes(arg.GetString(1));
+            int page = Convert.ToInt32(arg.GetString(2));
+            if (arg.GetString(0) == "add")
                 permission.AddUserGroup(Pname, userGroup);
-            if (arg.Args[0].ToString() == "remove")
+            if (arg.GetString(0) == "remove")
                 permission.RemoveUserGroup(Pname, userGroup);
             DestroyMenu(arg.Player(), false);
             ViewGroupsUI(arg.Player(), StripSlashes(path.subject.displayName), page);
@@ -735,7 +734,7 @@ namespace Oxide.Plugins
         {
             var path = ActiveAdmins[arg.Player().userID]; 
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 1) return; 
-            ActiveAdmins[arg.Player().userID].GPage = Convert.ToInt32(arg.Args[0].ToString());
+            ActiveAdmins[arg.Player().userID].GPage = Convert.ToInt32(arg.GetString(0));
             DestroyMenu(arg.Player(), false);
             ViewGroupsUI(arg.Player(), StripSlashes(path.subject.displayName), path.GPage);
         }
@@ -745,7 +744,7 @@ namespace Oxide.Plugins
         {
             var path = ActiveAdmins[arg.Player().userID];
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 1) return;
-            ActiveAdmins[arg.Player().userID].PPage = Convert.ToInt32(arg.Args[0].ToString());
+            ActiveAdmins[arg.Player().userID].PPage = Convert.ToInt32(arg.GetString(0));
             DestroyMenu(arg.Player(), false);
             ViewPlayersUI(arg.Player(), path.subjectGroup, path.PPage);
         }
@@ -763,10 +762,10 @@ namespace Oxide.Plugins
         {
             var path = ActiveAdmins[arg.Player().userID];
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 2) return;
-            ActiveAdmins[arg.Player().userID].pluginPage = Convert.ToInt32(arg.Args[1].ToString());
+            ActiveAdmins[arg.Player().userID].pluginPage = Convert.ToInt32(arg.GetString(1));
             DestroyMenu(arg.Player(), false);
             string[] argsOut;
-            if (arg.Args[0].ToString() == "true")
+            if (arg.GetString(0) == "true")
             {
                 argsOut = new string[] { "group", path.subjectGroup, path.pluginPage.ToString() };
                 CmdPerms(arg.Player(), null, argsOut);
@@ -784,11 +783,11 @@ namespace Oxide.Plugins
         {
             DestroyMenu(arg.Player(), false);
             string[] argsOut;
-            argsOut = new string[] { arg.Args[0].ToString(), arg.Args[1].ToString() };
-            if (arg.Args[0].ToString() == "player")
-                ActiveAdmins[arg.Player().userID].subject = FindPlayer(Convert.ToUInt64(arg.Args[1].ToString()));
+            argsOut = new string[] { arg.GetString(0), arg.GetString(1) };
+            if (arg.GetString(0) == "player")
+                ActiveAdmins[arg.Player().userID].subject = FindPlayer(Convert.ToUInt64(arg.GetString(1)));
             else
-                ActiveAdmins[arg.Player().userID].subjectGroup = arg.Args[1].ToString();
+                ActiveAdmins[arg.Player().userID].subjectGroup = arg.GetString(1);
             CmdPerms(arg.Player(), null, argsOut);
             return;
         }
@@ -798,17 +797,17 @@ namespace Oxide.Plugins
         {
             var path = ActiveAdmins[arg.Player().userID];
             if (arg.Player() == null || arg.Args == null || arg.Args.Length < 6) return;
-            int pageNo = Convert.ToInt32(arg.Args[5].ToString());
+            int pageNo = Convert.ToInt32(arg.GetString(5));
             string Pname;
-            string plugName = arg.Args[0].ToString();
-            string group = arg.Args[3].ToString();
+            string plugName = arg.GetString(0);
+            string group = arg.GetString(3);
 
-            if (arg.Args[4].ToString() == "all")
+            if (arg.GetString(4) == "all")
             {
-                if (arg.Args[2].ToString() != null)
+                if (arg.GetString(2) != null)
                 {
                     Pname = path.subject?.userID.ToString();
-                    string action = arg.Args[1].ToString();
+                    string action = arg.GetString(1);
                     string currentPlug;
 
                     for (int i = 0; i < PlugsAndPerms[plugName].Count; i++)
@@ -843,9 +842,9 @@ namespace Oxide.Plugins
             else
             {
                 Pname = path.subject?.userID.ToString();
-                string action = arg.Args[1].ToString();
-                string PermInHand = arg.Args[2].ToString();
-                if (arg.Args[2].ToString() != null)
+                string action = arg.GetString(1);
+                string PermInHand = arg.GetString(2);
+                if (arg.GetString(2) != null)
                 {
                     if (action == "grant" && group == "false")
                         permission.GrantUserPermission(Pname, PermInHand, null);

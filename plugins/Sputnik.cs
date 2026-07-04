@@ -18,7 +18,7 @@ using Random = UnityEngine.Random;
 
 namespace Oxide.Plugins
 {
-    [Info("Sputnik", "Adem", "1.5.6")]
+    [Info("Sputnik", "Adem", "1.5.8")]
     internal class Sputnik : RustPlugin
     {
         #region Variables
@@ -789,7 +789,7 @@ namespace Oxide.Plugins
                 return;
 
             if (arg.Args != null && arg.Args.Length > 0)
-                EventLauncher.DelayStartEvent(false, null, arg.Args[0]);
+                EventLauncher.DelayStartEvent(false, null, arg.Args[0].ToString());
             else
                 EventLauncher.DelayStartEvent();
         }
@@ -819,7 +819,7 @@ namespace Oxide.Plugins
 
             if (arg.Args.Length >= 1)
             {
-                ulong userId = Convert.ToUInt64(arg.Args[0]);
+                ulong userId =ulong.Parse(arg.Args[0]);
                 target = BasePlayer.FindByID(userId);
             }
 
@@ -5768,7 +5768,7 @@ namespace Oxide.Plugins
             {
                 return new PluginConfig
                 {
-                    Version = new VersionNumber(1, 5, 6),
+                    Version = new VersionNumber(1, 5, 8),
                     Prefix = "[Sputnik]",
                     MainConfig = new MainConfig
                     {

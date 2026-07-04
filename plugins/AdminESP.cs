@@ -9,7 +9,7 @@ using System.Linq;
 using UnityEngine;
 namespace Oxide.Plugins
 {
-    [Info("AdminESP", "OxideBro", "1.0.23")]
+    [Info("AdminESP", "OxideBro", "1.0.22")]
     public class AdminESP : RustPlugin
     {
 
@@ -144,70 +144,55 @@ namespace Oxide.Plugins
                 CrateMainMenu(player);
                 return;
             }
-            var value = args.Args[1];
+            var type = args.GetString(0);
+            var value = args.GetString(1);
 
             if (PlayerSettings.ContainsKey(player.userID))
             {
                 var data = PlayerSettings[player.userID];
-                switch (args.Args[0].ToString().ToLower())
+                switch (type)
                 {
                     case "updatetime":
-                    {
                         if (float.Parse(value) > 0.1f && float.Parse(value) < 15)
                             data.UpdateTime = float.Parse(value);
 
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "playerdistance":
-                    {
                         if (int.Parse(value) >= 50 && int.Parse(value) <= 1000)
                             data.PlayerDistance = int.Parse(value);
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "showadmins":
-                    {
                         data.ShowAdmins = bool.Parse(value);
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "drawnames":
-                    {
                         data.DrawNames = bool.Parse(value);
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "drawboxes":
-                    {
                         data.DrawBoxes = bool.Parse(value);
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "draweyeline":
-                    {
                         data.DrawEyeLine = bool.Parse(value);
                         CrateMainMenu(player);
 
                         break;
-                    }
                     case "sleeping":
-                    {
                         data.Sleepers = bool.Parse(value);
                         CrateMainMenu(player);
                         break;
-                    }
                     case "eyelinedistance":
-                    {
                         data.EyeLineDistance = int.Parse(value);
                         CrateMainMenu(player);
                         break;
-                    }
                 }
             }
         }
@@ -258,7 +243,7 @@ namespace Oxide.Plugins
 
             if (args.Length == 3 && args[0] == "settings")
             {
-                switch (args[1].ToString().ToLower())
+                switch (args[1].ToLower())
                 {
                     case "updatetime":
                         data.UpdateTime = float.Parse(args[2]);
@@ -927,9 +912,9 @@ namespace Oxide.Plugins
                 }
             }
 
-            void DDraw(string drawType, BasePlayer target, Color color, string messages = "‌")
+            void DDraw(string type, BasePlayer target, Color color, string messages = "‌")
             {
-                switch (drawType)
+                switch (type)
                 {
                     case "text":
                         if (player.Connection.authLevel < 2) SetPlayerFlag(player, BasePlayer.PlayerFlags.IsAdmin, true);

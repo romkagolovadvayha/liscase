@@ -22,7 +22,7 @@ using UnityEngine.UI;
 
 namespace Oxide.Plugins
 {
-    [Info("NpcSpawn", "KpucTaJl", "3.3.6")]
+    [Info("NpcSpawn", "KpucTaJl", "3.3.9")]
     internal class NpcSpawn : RustPlugin
     {
         #region Config
@@ -1683,6 +1683,8 @@ namespace Oxide.Plugins
 
                     if (entity == CurrentTarget) score += 0.25f;
 
+                    if (entity is BasePlayer basePlayer && basePlayer.userID.IsSteamId()) score += 2f;
+
                     if (score <= bestScore) continue;
 
                     bestScore = score;
@@ -1718,16 +1720,19 @@ namespace Oxide.Plugins
                 string type = target.GetType().Name;
                 string skin = target.skinID.ToString();
 
+                string preset = target is CustomScientistNpc customNpcTarget ? customNpcTarget.PresetName : string.Empty;
+
                 if (NpcWhitelistTarget is { Count: > 0 })
                 {
                     if (NpcWhitelistTarget.Contains(target.displayName)) goto FinishWhitelist;
                     if (NpcWhitelistTarget.Contains(target.ShortPrefabName)) goto FinishWhitelist;
                     if (NpcWhitelistTarget.Contains(skin)) goto FinishWhitelist;
                     if (NpcWhitelistTarget.Contains(type)) goto FinishWhitelist;
+                    if (!string.IsNullOrEmpty(preset) && NpcWhitelistTarget.Contains(preset)) goto FinishWhitelist;
                     return false;
                 }
 
-            FinishWhitelist:
+                FinishWhitelist:
 
                 if (NpcBlacklistTarget is { Count: > 0 })
                 {
@@ -1735,6 +1740,7 @@ namespace Oxide.Plugins
                     if (NpcBlacklistTarget.Contains(target.ShortPrefabName)) return false;
                     if (NpcBlacklistTarget.Contains(skin)) return false;
                     if (NpcBlacklistTarget.Contains(type)) return false;
+                    if (!string.IsNullOrEmpty(preset) && NpcBlacklistTarget.Contains(preset)) return false;
                 }
 
                 return true;
@@ -1770,7 +1776,7 @@ namespace Oxide.Plugins
                     return false;
                 }
 
-            FinishWhitelist:
+                FinishWhitelist:
 
                 if (AnimalBlacklistTarget is { Count: > 0 })
                 {
@@ -2880,7 +2886,7 @@ namespace Oxide.Plugins
                 BaseMelee weapon = CurrentWeapon as BaseMelee;
                 if (weapon == null || weapon.HasAttackCooldown()) return;
 
-                weapon.StartAttackCooldown(weapon.repeatDelay * 2f);
+                weapon.StartAttackCooldown(weapon.repeatDelay * 1.25f);
                 SignalBroadcast(Signal.Attack, string.Empty);
 
                 if (weapon.swingEffect.isValid) Effect.server.Run(weapon.swingEffect.resourcePath, weapon.transform.position, Vector3.forward, net.connection);
@@ -2888,8 +2894,8 @@ namespace Oxide.Plugins
                 switch (weapon)
                 {
                     case Chainsaw chainsaw:
-                        chainsaw.SetAttackStatus(true);
-                        Invoke(() => chainsaw.SetAttackStatus(false), chainsaw.attackSpacing + 0.5f);
+                        chainsaw.SetAttackStatus(true, FlagsUpdateMode.SendNetworkUpdate_Flags);
+                        Invoke(() => chainsaw.SetAttackStatus(false, FlagsUpdateMode.SendNetworkUpdate_Flags), chainsaw.attackSpacing + 0.5f);
                         break;
                     case Jackhammer jackhammer:
                         jackhammer.SetEngineStatus(true);
@@ -2903,7 +2909,7 @@ namespace Oxide.Plugins
                 for (int i = 0; i < 2; i++)
                 {
                     List<RaycastHit> list = Pool.Get<List<RaycastHit>>();
-                    GamePhysics.TraceAll(new Ray(eyes.position - (vector31 * (i == 0 ? 0f : 0.2f)), vector31), i == 0 ? 0f : weapon.attackRadius, list, weapon.effectiveRange + 0.2f, 1220225809);
+                    GamePhysics.TraceAll(new Ray(eyes.position - (vector31 * (i == 0 ? 0f : 0.2f)), vector31), i == 0 ? 0f : weapon.attackRadius, list, EngagementRange() + 0.2f, 1220225809);
 
                     bool flag = false;
 
@@ -3557,7 +3563,7 @@ namespace Oxide.Plugins
                 if (IsThrownC4 || IsFireRocketLauncher) return false;
                 if (IsReload(WeaponType.FlameThrower) || IsReload(WeaponType.GrenadeLauncher) || IsReload(WeaponType.Equip)) return false;
 
-                float engagementRange = CurrentWeapon is BaseMelee ? CurrentWeapon.effectiveRange : EngagementRange();
+                float engagementRange = EngagementRange();
                 if (DistanceToTarget > engagementRange) return false;
                 if (Vector3.Distance(HomePosition, CurrentTarget.transform.position) > Config.ChaseRange + engagementRange) return false;
 
@@ -5006,6 +5012,9 @@ namespace Oxide.Plugins
                 CustomScientistNpc victimNpc = victim as CustomScientistNpc;
                 if (victimNpc == null) return null;
 
+                object hook = Interface.CallHook("OnCustomNpcTakeDamage", victimNpc, info, attacker);
+                if (hook is bool boolHook) return boolHook ? true : null;
+
                 if (attacker is AutoTurret or GunTrap or FlameTurret)
                 {
                     if (victimNpc.Config.CanTurretTarget)
@@ -5145,6 +5154,9 @@ namespace Oxide.Plugins
             {
                 CustomScientistNpc victimNpc = victim as CustomScientistNpc;
                 if (victimNpc == null) return null;
+
+                object hook = Interface.CallHook("OnCustomNpcTakeDamage", victimNpc, info, attacker);
+                if (hook is bool boolHook) return boolHook ? false : null;
 
                 if (attacker is AutoTurret or GunTrap or FlameTurret) return null;
 
@@ -10582,19 +10594,19 @@ namespace Oxide.Plugins
             parameterName = null;
             newValue = null;
             indexAfterParamValue = 0;
-            
+
             if (args.Length < 2) return false;
-            
+
             string arg0 = args[0].ToString();
             if (IsKeyword(arg0)) return false;
 
             string arg1 = args[1].ToString();
             if (IsKeyword(arg1)) return false;
-            
+
             parameterName = arg0;
             newValue = arg1;
             indexAfterParamValue = 2;
-            
+
             return true;
         }
 
@@ -10616,10 +10628,10 @@ namespace Oxide.Plugins
 
                     string arg = args[i + 1].ToString();
                     if (IsKeyword(arg)) return false;
-                    
+
                     pluginName = arg;
                     i += 2;
-                    
+
                     continue;
                 }
 
@@ -10629,10 +10641,10 @@ namespace Oxide.Plugins
 
                     string arg = args[i + 1].ToString();
                     if (IsKeyword(arg)) return false;
-                    
+
                     categoryName = arg;
                     i += 2;
-                    
+
                     continue;
                 }
 
@@ -10642,10 +10654,10 @@ namespace Oxide.Plugins
 
                     string arg = args[i + 1].ToString();
                     if (IsKeyword(arg)) return false;
-                    
+
                     folderName = arg;
                     i += 2;
-                    
+
                     continue;
                 }
 

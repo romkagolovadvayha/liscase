@@ -1,726 +1,20 @@
-using System.Text;
-using Pool = Facepunch.Pool;
-using System.Collections.Generic;
-using System;
-using Oxide.Core.Plugins;
-using System.Linq;
-using UnityEngine;
-using ConVar;
 using Object = System.Object;
+using System.Linq;
 using Newtonsoft.Json;
+using UnityEngine;
+using System;
+using ConVar;
+using Oxide.Core.Plugins;
+using Pool = Facepunch.Pool;
+using System.Text;
+using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("IQRates", "Mercury", "2.9.24")]
+    [Info("IQRates", "Mercury", "2.11.27")]
     [Description("Настройка рейтинга на сервере")]
     public class IQRates : RustPlugin
     {
-
-        private void OnPlayerDisconnected(BasePlayer player)
-        {
-            _carry.Remove(player.UserIDString);
-            rateDataCache.Remove(player.UserIDString);
-            bonusRatesPlayer.Remove(player.UserIDString);
-        }
-
-        private void ConvertRate(TypeConverted type, String userID, Item item)
-        {
-            Configuration.RateController.ControllerListRate controllerList = config.rateController.controllerList;
-            if (!controllerList.IsConvertedItem(item)) return;
-
-            Configuration.RateController.RateData rateData = config.rateController.GetRateData(userID);
-            if (rateData == null) return;
-
-            Single multiplicer = type switch
-            {
-                TypeConverted.Gather => rateData.gatherRate,
-                TypeConverted.Loot => rateData.lootRate,
-                TypeConverted.PickUP => rateData.pickUpRate,
-                TypeConverted.Quarry => rateData.quarryRate.GetQuarryRate(item.info.itemid),
-                TypeConverted.Excavator => rateData.excavatorRate,
-                TypeConverted.Growable => rateData.growableRate,
-                TypeConverted.Fishing => rateData.fishRate,
-                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
-            };
-
-            Single correctlyRateToPermission = rateData.GetCorrectlyRate(item.info.itemid);
-            if (correctlyRateToPermission != 0)
-                multiplicer = correctlyRateToPermission;
-
-            Single bonusRate = GetBonusRate(userID);
-            multiplicer += bonusRate;
-
-            if (multiplicer < 0f) multiplicer = 0f;
-
-            Int32 itemId = item.info.itemid;
-
-            Double carry = GetCarry(userID, type, itemId);
-            Double expected = item.amount * (Double)multiplicer + carry; 
-            Int32 newAmount = (Int32)Math.Floor(expected);
-            Double newCarry = expected - newAmount; 
-
-            if (newAmount < 1)
-            {
-                Double debt = 1 - newAmount; 
-                newAmount = 1;
-                newCarry -= debt; 
-            }
-            
-            if (newCarry >= 1.0)
-            {
-                Int32 k = (Int32)Math.Floor(newCarry);
-                newAmount += k;
-                newCarry -= k;
-            }
-            else if (newCarry <= -1.0)
-            {
-                Int32 k = (Int32)Math.Floor(-newCarry);
-                newAmount -= k;
-                newCarry += k;
-                if (newAmount < 1)
-                {
-                    newCarry -= (1 - newAmount);
-                    newAmount = 1;
-                }
-            }
-
-            SetCarry(userID, type, itemId, newCarry);
-            item.amount = newAmount;
-        }
-        
-        private void Unload()
-        {
-            if (_ == null) return;
-            
-            WriteData();
-            BackupDefaultEvents();
-
-            if (triggersEvents != null)
-            {
-                foreach (EventController eventController in triggersEvents.Values)
-                {
-                    if (eventController.timerEvent is { Destroyed: false })
-                    {
-                        eventController.timerEvent.Destroy();
-                        eventController.timerEvent = null;
-                    }
-                }
-                triggersEvents.Clear();
-                triggersEvents = null;
-            }
-
-            if (bonusRatesPlayer != null)
-            {
-                bonusRatesPlayer.Clear();
-                bonusRatesPlayer = null;
-            }
-
-            rateDataCache.Clear();
-            rateDataCache = null;
-            
-            rateBonusDay = null;
-            
-            teaModifers?.Clear();
-		   		 		  						  	   		   					  			 		   					  	 		
-            if (excavatorUsePlayer)
-                excavatorUsePlayer = null;
-
-            if (lootedEntity != null)
-            {
-                lootedEntity.Clear();
-                lootedEntity = null;
-            } 
-            
-            if (permissionsWipeBonusSorted != null)
-            {
-                permissionsWipeBonusSorted.Clear();
-                permissionsWipeBonusSorted = null;
-            }
-            
-            if (quarryToggled != null)
-            {
-                quarryToggled.Clear();
-                quarryToggled = null;
-            }
-            
-            if (eventMapping != null)
-            {
-                eventMapping.Clear();
-                eventMapping = null;
-            }
-            
-            if (timerBradley is { Destroyed: false })
-            {
-                timerBradley.Destroy();
-                timerBradley = null;
-            }     
-            
-            if (timerUpdateBonusRate is { Destroyed: false })
-            {
-                timerUpdateBonusRate.Destroy();
-                timerUpdateBonusRate = null;
-            }         
-            
-            if (timerUpdateBonusAllRate is { Destroyed: false })
-            {
-                timerUpdateBonusAllRate.Destroy();
-                timerUpdateBonusAllRate = null;
-            }
-            
-            if (ovenCotrollers != null)
-            {
-                foreach (OvenController ovenController in ovenCotrollers.Values)
-                {
-                    if (ovenController)
-                        UnityEngine.Object.DestroyImmediate(ovenController);
-                }
-            
-                ovenCotrollers.Clear();
-                ovenCotrollers = null;
-            }
-		   		 		  						  	   		   					  			 		   					  	 		
-            if (permissionsOvensSorted != null)
-            {
-                permissionsOvensSorted.Clear();
-                permissionsOvensSorted = null;
-            }    
-            
-            if (permissionsCharacoalChanceSorted != null)
-            {
-                permissionsCharacoalChanceSorted.Clear();
-                permissionsCharacoalChanceSorted = null;
-            }    
-            
-            if (permissionsMixingTablesSorted != null)
-            {
-                permissionsMixingTablesSorted.Clear();
-                permissionsMixingTablesSorted = null;
-            }        
-            
-            if (permissionsSpeedRecyclerSorted != null)
-            {
-                permissionsSpeedRecyclerSorted.Clear();
-                permissionsSpeedRecyclerSorted = null;
-            }
-
-            if (initializeTimeComponentTimer is { Destroyed: false })
-            {
-                initializeTimeComponentTimer.Destroy();
-                initializeTimeComponentTimer = null;
-            }
-
-            if (timeComponent != null)
-            {
-                UnsubscribeFromEvents();
-                timeComponent.ProgressTime = true;
-                timeComponent = null;
-            }
-
-            _ = null;
-        }
-        
-        private void OnGroupPermissionGranted(String name, String perm)
-        {
-            foreach (BasePlayer player in BasePlayer.activePlayerList)
-                RefreshPermissionPlayer(player.UserIDString);
-        }
-
-        private void ReadData()
-        {
-            lootedEntity = Oxide.Core.Interface.Oxide.DataFileSystem.ReadObject<HashSet<UInt64>>("IQSystem/IQRates/LootedContainers");
-            quarryToggled = Oxide.Core.Interface.Oxide.DataFileSystem.ReadObject<Dictionary<UInt64, String>>("IQSystem/IQRates/QuarryToggled");
-        }
-        
-        private void BackupDefaultEvents()
-        {
-            Bradley.enabled = defaultBradleyStatus;
-            if (defaultEvents == null || defaultEvents.Count == 0) return;
-
-            foreach (EventSchedule defaultEvent in defaultEvents)
-            {
-                defaultEvent.InvokeRepeating(defaultEvent.RunSchedule, 1f, 1f);
-                EventSchedule.allEvents.Add(defaultEvent);
-            }
-            
-            defaultEvents.Clear();
-            defaultEvents = null;
-        }
-        
-                
-        
-                
-        private void InitController()
-        {
-            Configuration.OvenController ovenController = config.ovenController;
-            Configuration.MixingTableController mixingTableController = config.mixingTableController;
-            Configuration.RecyclerController recyclerController = config.recyclerController;
-            Configuration.RateBonusController rateBonusWipe = config.rateBonusController;
-            
-            config.rateController.controllerList.GenerationCasheControllerListRate();
-            config.rateController.BuildCacheRate();
-            
-            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek)
-                config.rateBonusController.dayOfWeekBonusRated.BuildCache();
-            
-            if (!ovenController.useSpeedOven)
-            {
-                Unsubscribe(nameof(OnOvenStarted));
-                Unsubscribe(nameof(OnOvenToggle));
-            }
-            else
-            {
-                permissionsOvensSorted.AddRange(ovenController.permissionList.OrderByDescending(p => p.rate));
-                permissionsCharacoalChanceSorted.AddRange(ovenController.characoalChanceRate.characoalChancePermissions.OrderByDescending(c => c.chance));
-            }
-            
-            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek || config.rateBonusController.wipeBonusRated.useWipeBonus)
-                timerUpdateBonusAllRate = timer.Once(300f, AutoUpdateBonusRate); 
-
-            if (!mixingTableController.useSpeedMixingTable)
-                Unsubscribe(nameof(OnMixingTableToggle));
-            else permissionsMixingTablesSorted.AddRange(mixingTableController.permissionList.OrderByDescending(p => p.rate));    
-            
-            if (!recyclerController.speedRecycler.useRecyclerSpeed)
-                Unsubscribe(nameof(OnRecyclerToggle));
-            else permissionsSpeedRecyclerSorted.AddRange(recyclerController.speedRecycler.permissionRate.OrderByDescending(p => p.rate));
-            
-            if(!config.teaController.useTeaController)
-                Unsubscribe(nameof(OnPlayerAddModifiers));
-            
-            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel && !config.fuelTransportController.fuelBuyingShopKeeper.useAutoFillFuel)
-                Unsubscribe(nameof(OnEntitySpawned));
-		   		 		  						  	   		   					  			 		   					  	 		
-            if (rateBonusWipe.wipeBonusRated.useWipeBonus)
-                permissionsWipeBonusSorted.AddRange(rateBonusWipe.wipeBonusRated.permissionRateBonus.OrderByDescending(p => p.rate));
-        }
-        private List<Configuration.PermissionsRateList> permissionsOvensSorted = new();
-        private class EventController
-        {
-            public TriggeredEvent trigger;
-            public Timer timerEvent;
-        }
-        
-        private void OnLootEntity(BasePlayer player, BaseEntity targetEntity)
-        {
-            if (!targetEntity || targetEntity.net == null) return;
-            
-            if (!config.rateController.controllerList.IsConvetedPrefab(targetEntity.ShortPrefabName)) 
-                return;
-            
-            UInt64 netID = targetEntity.net.ID.Value;
-            if (!lootedEntity.Add(netID)) return;
-            
-            switch (targetEntity)
-            {
-                case LootableCorpse corpse:
-                {
-                    if (!corpse) return;
-                    if (corpse.playerSteamID.IsSteamId()) return;
-		   		 		  						  	   		   					  			 		   					  	 		
-                    foreach (ItemContainer corpseContainer in corpse.containers)
-                    {
-                        foreach (Item item in corpseContainer.itemList)
-                            ConvertRate(TypeConverted.Loot, player.UserIDString, item);
-                    }
-
-                    break;
-                }
-                case LootContainer lootContainer:
-                {
-                    if (!lootContainer) return;
-                    foreach (Item item in lootContainer.inventory.itemList)
-                        ConvertRate(TypeConverted.Loot, player.UserIDString, item);
-                    break;
-                }
-            }
-        }
-
-        private void OnEntityKill(LootableCorpse corpse)
-        {
-            if (!corpse) return;
-            if (corpse.net == null) return;
-            if (corpse.playerSteamID.IsSteamId()) return;
-		   		 		  						  	   		   					  			 		   					  	 		
-            lootedEntity.Remove(corpse.net.ID.Value);
-        }
-
-                
-        
-        
-        private class OvenController : FacepunchBehaviour
-        {
-            private BaseOven oven;
-            private String ownerIDOven;
-            private Boolean isElectical;
-            
-            private Single defaultSmeltingSpeed;
-            private Single smeltingSpeed;
-            private Int32 fuelRate; 
-            private Int32 characoalRate;
-            private Single characoalChance;
-            
-                    
-            private void Awake()
-            {
-                oven = (BaseOven)gameObject.ToBaseEntity();
-                defaultSmeltingSpeed = oven.smeltSpeed;
-                smeltingSpeed = defaultSmeltingSpeed;
-                ownerIDOven = oven.OwnerID.ToString();
-                isElectical = oven is ElectricOven;
-            }
-        
-            private void OnDestroy()
-            {
-                Boolean isOnStatus = oven.IsOn();
-                StopCooking();
-                SingletonComponent<NpcFireManager>.Instance.Remove(oven);
-
-                oven.smeltSpeed = (Int32)defaultSmeltingSpeed;
-
-                if (isOnStatus)
-                    oven.StartCooking();
-            }
-            
-                    
-            private void UpdateModifiers()
-            {
-                Single playerRate = config.ovenController.GetOvenRate(ownerIDOven);
-                Int32 cellingRate = (Int32)Math.Ceiling(playerRate);
-                
-                smeltingSpeed = defaultSmeltingSpeed * playerRate;
-                fuelRate = cellingRate;
-                characoalRate = cellingRate;
-                characoalChance = config.ovenController.characoalChanceRate.GetCharacoalChanse(ownerIDOven);
-            }
-        
-            public void Restart()
-            {
-                if (!oven.IsOn()) return;
-                 UpdateModifiers();
-                     
-                 StartCooking();
-            }
-            
-            public void SwitchOven(Boolean isIgnite = false)
-            {
-                Boolean shouldTurnOn = isElectical || isIgnite ? oven.IsOn() : !oven.IsOn();
-		   		 		  						  	   		   					  			 		   					  	 		
-                if (shouldTurnOn)
-                    StartCooking();
-                else StopCooking();
-            }
-            
-            
-            public void Cook()
-            {
-                if (!oven.HasFlag(BaseEntity.Flags.On))
-                {
-                    StopCooking();
-                    return;
-                }
-                
-                Item burnable = oven.FindBurnable();
-                
-                if (burnable == null && !isElectical)
-                {
-                    StopCooking();
-                    return;
-                }
-		   		 		  						  	   		   					  			 		   					  	 		
-                foreach (Item obj in oven.inventory.itemList)
-                {
-                    if (obj.position >= oven._inputSlotIndex && obj.position < oven._inputSlotIndex + oven.inputSlots && !obj.HasFlag(global::Item.Flag.Cooking))
-                    {
-                        obj.SetFlag(global::Item.Flag.Cooking, true);
-                        obj.MarkDirty();
-                    }
-                }
-                
-                oven.IncreaseCookTime(0.5f * smeltingSpeed);
-                
-                BaseEntity slot = oven.GetSlot(BaseEntity.Slot.FireMod);
-                if (slot) slot.SendMessage(nameof (Cook), 0.5f , SendMessageOptions.DontRequireReceiver);
-                
-                if (burnable != null && !isElectical)
-                {
-                    ItemModBurnable itemModBurnable = burnable.info.ItemModBurnable;
-                    burnable.fuel -= (Single) (0.5 * (oven.cookingTemperature / 200.0));
-                    
-                    if (!burnable.HasFlag(global::Item.Flag.OnFire))
-                    {
-                        burnable.SetFlag(global::Item.Flag.OnFire, true);
-                        burnable.MarkDirty();
-                    }
-        
-                    if (burnable.fuel <= 0.0)
-                        ConsumeFuel(burnable, itemModBurnable);
-                }
-            }
-            
-            public void ConsumeFuel(Item fuel, ItemModBurnable burnable)
-            {
-                for (Int32 i = 0; i < characoalRate; i++)
-                {
-                    if (oven.allowByproductCreation && burnable.byproductItem != null &&
-                        UnityEngine.Random.Range(0.0f, 1f) > characoalChance)
-                    {
-                        Item obj = ItemManager.Create(burnable.byproductItem, burnable.byproductAmount);
-                        if (!obj.MoveToContainer(oven.inventory))
-                        {
-                            StopCooking();
-                            obj.Drop(oven.inventory.dropPosition, oven.inventory.dropVelocity);
-                        }
-                    }
-                }
-		   		 		  						  	   		   					  			 		   					  	 		
-                if (fuel.amount <= fuelRate)
-                    fuel.Remove();
-                else
-                {
-                    fuel.UseItem(fuelRate);
-                    fuel.fuel = burnable.fuelAmount;
-                    fuel.MarkDirty();
-                }
-            }
-        
-                        
-            public virtual void StartCooking()
-            {
-                UpdateModifiers();
-                oven.SetFlag(BaseEntity.Flags.Reserved8, true);
-                //oven.CancelInvoke(oven.Cook);
-                oven.smeltSpeed = (Int32)smeltingSpeed;
-                oven.inventory.temperature = oven.cookingTemperature;
-                oven.UpdateAttachmentTemperature();
-                
-                InvokeRepeating(Cook, 0.5f, 0.5f);
-                
-                oven.SetFlag(BaseEntity.Flags.On, true);
-            }
-            
-            public virtual void StopCooking()
-            {
-                CancelInvoke(Cook);
-                oven.UpdateAttachmentTemperature();
-                
-                if (oven.inventory != null)
-                {
-                    oven.inventory.temperature = 15f;
-                    foreach (Item obj in oven.inventory.itemList)
-                    {
-                        if (obj.HasFlag(global::Item.Flag.OnFire))
-                        {
-                            obj.SetFlag(global::Item.Flag.OnFire, false);
-                            obj.MarkDirty();
-                        }
-                        else if (obj.HasFlag(global::Item.Flag.Cooking))
-                        {
-                            obj.SetFlag(global::Item.Flag.Cooking, false);
-                            obj.MarkDirty();
-                        }
-                    }
-                }
-                
-                oven.SetFlag(BaseEntity.Flags.On, false);
-                oven.SetFlag(BaseEntity.Flags.Reserved8, false);
-            }
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        
-                
-        private void OnQuarryToggled(MiningQuarry quarry, BasePlayer player) =>
-            quarryToggled[quarry.net.ID.Value] = player.UserIDString;
-        
-        private void ChangeEventSchedule()
-        {
-            List<EventSchedule> removedEventSchedule = Pool.Get<List<EventSchedule>>();
-            defaultEvents.AddRange(EventSchedule.allEvents);
-            
-            Configuration.EventController eventController = config.eventController;
-            EventMapping(eventController);
-            
-            if (eventController.eventBradley.disableFullEvent)
-            {
-                defaultBradleyStatus = Bradley.enabled;
-                Bradley.enabled = false;
-                if (BradleySpawner.singleton && BradleySpawner.singleton.spawned)
-                    BradleySpawner.singleton.spawned.Kill();
-            }
-            
-            foreach (EventSchedule allEvent in EventSchedule.allEvents)
-            {
-                if (eventMapping.TryGetValue(allEvent.name, out (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig) eventInfo))
-                {
-                    (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig) = eventInfo;
-
-                    if (!eventConfig.disableFullEvent && eventConfig.useEvent)
-                    {
-                        triggersEvents.TryAdd(eventType, new EventController()
-                        {
-                            trigger = allEvent.GetComponent<TriggeredEvent>(),
-                            timerEvent = null,
-                        });
-                    }
-
-                    if (eventConfig.disableFullEvent || eventConfig.useEvent)
-                        removedEventSchedule.Add(allEvent);
-                }
-            }
-
-            foreach (EventSchedule removeEvent in removedEventSchedule)
-            {
-                removeEvent.CancelInvoke(removeEvent.RunSchedule);
-                EventSchedule.allEvents.Remove(removeEvent);
-            }
-            
-            Pool.FreeUnmanaged(ref removedEventSchedule);
-        }
-
-        private void OnEntityKill(LootContainer lootContainer)
-        {
-            if (!lootContainer) return;
-            if (lootContainer.net == null) return;
-            lootedEntity.Remove(lootContainer.net.ID.Value);
-        }
-        
-        
-                
-        private Object OnPlayerAddModifiers(BasePlayer player, Item item, ItemModConsumable consumable)
-        {
-            if (!teaModifers.TryGetValue(item.info.shortname, out ModiferTea teaLocal)) return null;
-            Configuration.RateController.RateData playerRateData = config.rateController.GetRateData(player.UserIDString);
-            if (playerRateData == null) return null;
-
-            Configuration.RateController.RateData defaultRateData = IsDayTime() ? config.rateController.dayRate : config.rateController.nightRate;
-            
-            List<ModifierDefintion> mods = Pool.Get<List<ModifierDefintion>>();
-
-            try
-            {
-                ProcessModifier(player.UserIDString, teaLocal, playerRateData, defaultRateData, mods);
-                player.modifiers.Add(mods);
-            }
-            finally
-            {
-                mods.Clear();
-                Pool.FreeUnmanaged(ref mods);
-            }
-
-            return true;
-        }
-        
-                
-        
-        private static Configuration config = new Configuration();
-        private void OnUserGroupRemoved(String id, String groupName) => RefreshPermissionPlayer(id);
-
-        private void OnHour()
-        {
-            Single hour = TOD_Sky.Instance.Cycle.Hour; 
-            Int32 dayStart = config.timeController.timeStartDay; 
-            Int32 nightStart = config.timeController.timeStartNight; 
-            
-            if (hour >= dayStart && hour < nightStart)
-            {
-                if (!activatedDay) 
-                    OnSunrise();
-                
-                SendDayNightMessages(hour, dayStart, nightStart);
-                return;
-            }
-
-            if (hour < dayStart || hour >= nightStart)
-            {
-                if (activatedDay) 
-                    OnSunset();
-                
-                SendDayNightMessages(hour, dayStart, nightStart);
-            }
-        }
-        
-        private TOD_Time timeComponent = null;
-        private Timer timerUpdateBonusRate;
-        
-        private void Init()
-        {
-            _ = this;
-            
-            ReadData();
-
-            InitController();
-        }
-
-        private void UnsubscribeFromEvents()
-        {
-            timeComponent.OnSunrise -= OnSunrise;
-            timeComponent.OnSunset -= OnSunset;
-            timeComponent.OnHour -= OnHour;
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        
-        
-        private void FuelFillingTransport(BaseVehicle vehicle)
-        {
-            if (!config.fuelTransportController.fuelBuyingShopKeeper.useAutoFillFuel) return;
-            Configuration.FuelTransportController.FuelBuingShopKeeper fuelTransportController = config.fuelTransportController.fuelBuyingShopKeeper;
-
-            IFuelSystem fuelSystem = vehicle.GetFuelSystem();
-            if (fuelSystem is not EntityFuelSystem entityFuelSystem) return;
-
-            Int32 fuelAmount = vehicle switch
-            {
-                ScrapTransportHelicopter => fuelTransportController.fuelScrapTransport,
-                Minicopter => fuelTransportController.fuelMinicopter,
-                AttackHelicopter => fuelTransportController.fuelAttackHelicopter,
-                RHIB or MotorRowboat => fuelTransportController.fuelBoat,
-                BaseSubmarine => fuelTransportController.fuelSubmarine,
-                _ => 0
-            };
-
-            if (fuelAmount == 0) return;
-            NextTick(() =>
-            {
-                Item Fuel = entityFuelSystem.GetFuelItem();
-                if (Fuel == null) return;
-                
-                if (Fuel.amount is 50 or 100)
-                    Fuel.amount = fuelAmount;
-            });
-        }
-        protected override void SaveConfig() => Config.WriteObject(config);
-        
-        
-        private void InitializeTimeComponent()
-        {
-            timeComponent = TOD_Sky.Instance.Components.Time;
-            if (timeComponent == null) return;
-            SpeedTimes();
-            FreezeTimes();
-        }
-        private Timer timerBradley;
-        private readonly List<Int64> itemDlcRemoved = new List<Int64>()
-        {
-            1545779598, -1335497659, -139037392, 139037392, 44605728, -194953424, -1478855279, 110116923, 857465230, -1315992997,
-        };
-        
-        private void OnUserPermissionGranted(String id, String permName) => RefreshPermissionPlayer(id);
-        /// <summary>
-        /// - Теперь новые NPC Gen2 - будут аналогично поддерживать увеличение лута
-        /// - Предотвращение возможного NRE в хуке OnEntityKill
-        /// </summary>
-        
-        private const Boolean LanguageEn = false;
-        private Boolean IsUsedEvents()
-        {
-            Configuration.EventController eventController = config.eventController;
-            
-            return eventController.eventHelicopter.disableFullEvent || eventController.eventHelicopter.useEvent
-                || eventController.eventAirdrop.disableFullEvent || eventController.eventAirdrop.useEvent
-                || eventController.eventCh47.disableFullEvent || eventController.eventCh47.useEvent
-                || eventController.eventBradley.disableFullEvent || eventController.eventBradley.useEvent
-                || eventController.eventCargoShip.disableFullEvent || eventController.eventCargoShip.useEvent;
-        }
-        private List<Configuration.PermissionsRateList> permissionsMixingTablesSorted = new();
 
         private enum TypeList
         {
@@ -729,293 +23,36 @@ namespace Oxide.Plugins
             BlackList,
         }
 
-        private Object OnQuarryGathered(MiningQuarry quarry, Item item)
+        private Single NormalizeHour(Single hour)
         {
-            if (itemDlcRemoved.Contains(item.info.itemid)) return false;
-            return null;
+            hour %= 24f;
+            if (hour < 0f)
+                hour += 24f;
+
+            return hour;
         }
-
-        private void SendChat(String Message, BasePlayer player, Chat.ChatChannel channel = Chat.ChatChannel.Global)
-        {
-            if (IQChat && config.referencePlugins.iqchatReference.useIQChat)
-                IQChat.Call("API_ALERT_PLAYER", player, Message, config.referencePlugins.iqchatReference.prefixChat, config.referencePlugins.iqchatReference.customAvatar);
-            else player.SendConsoleCommand("chat.add", channel, 0, Message);
-        }
-
-                
-                
-        private void OnRecyclerToggle(Recycler recycler, BasePlayer player)
-        {
-            if (recycler.IsOn() || recycler.OwnerID.IsSteamId()) return;
-            Single speedRecycler = config.recyclerController.speedRecycler.GetSpeedRecycler(player);
-            Single recyclerTime = recycler.GetRecycleThinkDuration() / speedRecycler;
-
-            NextTick(() =>
-            {
-                recycler.CancelInvoke(recycler.RecycleThink);
-                recycler.InvokeRepeating(recycler.RecycleThink, recyclerTime, recyclerTime);
-            });
-        }
-
-        
-                
-        private void OnContainerDropItems(ItemContainer container)
-        {
-            LootContainer lootContainer = container.entityOwner as LootContainer;
-            if (!lootContainer) return;
-            UInt64 netID = lootContainer.net.ID.Value;
-            if (lootedEntity.Contains(netID)) return;
-            
-            BasePlayer player = lootContainer.lastAttacker as BasePlayer;
-            if (!player) return;
-            
-            foreach (Item item in container.itemList)
-                ConvertRate(TypeConverted.Loot, player.UserIDString, item);
-        }
-
-        private void OnSunrise()
-        {
-            Single currentHour = TOD_Sky.Instance.Cycle.Hour;
-            Int32 dayStart = config.timeController.timeStartDay; 
-            Int32 nightStart = config.timeController.timeStartNight; 
-
-            if (currentHour < dayStart || currentHour >= nightStart) 
-                return;
-
-            activatedDay = true;
-
-            Single dayLength = config.timeController.passageTime.minutesDay;
-            timeComponent.DayLengthInMinutes = dayLength * (24.0f / (nightStart - dayStart));
-        }
-
-        private Boolean activatedDay;
-        private Dictionary<TypeEvent, EventController> triggersEvents = new Dictionary<TypeEvent, EventController>();
         private Timer timerUpdateBonusAllRate;
-		   		 		  						  	   		   					  			 		   					  	 		
-        protected override void LoadDefaultConfig() => config = Configuration.GetNewConfiguration();
-        private List<Configuration.OvenController.CharacoalSetting.PermissionsChanceList> permissionsCharacoalChanceSorted = new(); 
-        
-        private void UpdateBonusRate(String userID)
+
+        private void SetCarry(String userID, TypeConverted type, Int32 itemId, Double value)
         {
-            Single bonusRate = config.rateBonusController.GetBonusRate(userID);
-            if (!bonusRatesPlayer.TryAdd(userID, bonusRate))
-                bonusRatesPlayer[userID] = bonusRate;
+            if (!_carry.TryGetValue(userID, out var byType))
+                _carry[userID] = byType = new Dictionary<TypeConverted, Dictionary<Int32, Double>>();
+            if (!byType.TryGetValue(type, out var byItem))
+                byType[type] = byItem = new Dictionary<Int32, Double>();
+            byItem[itemId] = value;
         }
+
         
-        private Single GetBonusRate(String userID) => bonusRatesPlayer.GetValueOrDefault(userID, 0);
         
-                
-        private void SpeedTimes()
+        private ModifierDefintion GetDefintionModifer(Modifier.ModifierType type, Single duration, Single value)
         {
-            Configuration.TimeController timeController = config.timeController;
-            if (!timeController.passageTime.useTimeSpeed) return;
-
-            Int32 dayStart = timeController.timeStartDay;
-            Int32 nightStart = timeController.timeStartNight;
-
-            UpdateDayNightState(TOD_Sky.Instance.Cycle.Hour, dayStart, nightStart);
-		   		 		  						  	   		   					  			 		   					  	 		
-            timeComponent.ProgressTime = true;
-            timeComponent.UseTimeCurve = false;
-
-            UnsubscribeFromEvents();
-            SubscribeToEvents();
-
-            if (TOD_Sky.Instance.Cycle.Hour > dayStart && TOD_Sky.Instance.Cycle.Hour < nightStart)
-                OnSunrise();
-            else
-                OnSunset();
-        }
-        private Boolean sendMessageNight;
-        
-                
-        private void FreezeTimes()
-        {
-            Configuration.TimeController timeController = config.timeController;
-            if (!timeController.freezeTime.useTimeFreeze) return;
-            if (timeController.passageTime.useTimeSpeed)
+            return new ModifierDefintion
             {
-                _.PrintWarning(LanguageEn ? "Unable to freeze time, please disable time acceleration in the configuration!" : "Невозможно заморозить время, выключите ускорение времени в конфигурации!");
-                return;
-            }
-                        
-            timeComponent.ProgressTime = false;
-            ConVar.Env.time = timeController.freezeTime.timeFreeze;
-        }
-        
-        private void OnPlayerConnected(BasePlayer player)
-        {
-            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek || config.rateBonusController.wipeBonusRated.useWipeBonus)
-                UpdateBonusRate(player.UserIDString);
-            
-            GenerateCacheRatePlayer(player);
-        }
-        private List<Configuration.PermissionsRateList> permissionsWipeBonusSorted = new();
-        private void OnUserPermissionRevoked(String id, String permName) => RefreshPermissionPlayer(id);
-        
-        private void RefreshPermissionPlayer(String id)
-        {
-            BasePlayer player = BasePlayer.Find(id);
-            if (player == null) return;
-		   		 		  						  	   		   					  			 		   					  	 		
-            GenerateCacheRatePlayer(player);
-        }
-
-        
-        
-        private void OnDispenserGather(ResourceDispenser resource, BasePlayer player, Item item) => ConvertRate(TypeConverted.Gather, player.UserIDString, item);
-
-        
-        
-        private Item OnFishCatch(Item item, BaseFishingRod rod, BasePlayer player)
-        {
-            ConvertRate(TypeConverted.Fishing, player.UserIDString, item);
-            return null;
-        }
-        private void WriteData()
-        {
-            Oxide.Core.Interface.Oxide.DataFileSystem.WriteObject("IQSystem/IQRates/LootedContainers", lootedEntity);
-            Oxide.Core.Interface.Oxide.DataFileSystem.WriteObject("IQSystem/IQRates/QuarryToggled", quarryToggled);
-        }
-        
-        
-                
-        private Double GetCarry(String userID, TypeConverted type, Int32 itemId)
-        {
-            if (_carry.TryGetValue(userID, out Dictionary<TypeConverted, Dictionary<Int32, Double>> byType) &&
-                byType.TryGetValue(type, out Dictionary<Int32, Double> byItem) &&
-                byItem.TryGetValue(itemId, out Double c))
-                return c;
-            return 0d;
-        }
-
-        private void UpdateDayNightState(Single hour, Int32 dayStart, Int32 nightStart)
-        {
-            Boolean isDay = hour >= dayStart && hour < nightStart;
-		   		 		  						  	   		   					  			 		   					  	 		
-            sendMessageDay = isDay;
-            sendMessageNight = !isDay;
-        }
-
-        private void BroadcastRatesAlert(String langKey)
-        {
-            foreach (BasePlayer player in BasePlayer.activePlayerList)
-            {
-                Configuration.RateController.RateData rateData = config.rateController.GetRateData(player.UserIDString);
-                if (rateData == null)
-                    continue;
-
-                Single bonusRate = GetBonusRate(player.UserIDString);
-
-                String messageInfo = GetLang("INFO_MY_RATE", player.UserIDString, rateData.gatherRate, rateData.lootRate,
-                    rateData.pickUpRate, rateData.growableRate, rateData.quarryRate.GetQuarryRate(0),
-                    rateData.excavatorRate, rateData.fishRate);
-
-                if (bonusRate != 0)
-                    messageInfo += GetLang("INFO_MY_RATE_BONUS", player.UserIDString, bonusRate);
-
-                SendChat(GetLang(langKey, player.UserIDString, messageInfo), player);
-            }        
-        }
-
-        private Dictionary<String, PlayerRateCache> rateDataCache = new();
-        
-        private Timer initializeTimeComponentTimer;
-		   		 		  						  	   		   					  			 		   					  	 		
-        
-        
-        private void OnCollectiblePickedup(CollectibleEntity collectible, BasePlayer player, Item item) => ConvertRate(TypeConverted.PickUP, player.UserIDString, item);
-        
-        private class ModiferTea
-        {
-            public Modifier.ModifierType type;
-            public Single value;
-            public Single duration;
-        }
-
-                
-                
-        private void OnOvenToggle(BaseOven oven, BasePlayer player)
-        {
-            if (oven is BaseFuelLightSource)
-                return;
-
-            if (config.ovenController.blackListOvenPrefab.Contains(oven.ShortPrefabName))
-                return;
-            
-            Item burnable = oven.FindBurnable();
-            if (burnable == null) return;
-            
-            OvenController controller = GetOrAddOvenController(oven);
-            controller.SwitchOven();
-        }
-        private Object OnExcavatorGather(ExcavatorArm arm, Item item)
-        {
-            if (!excavatorUsePlayer) return null;
-            ConvertRate(TypeConverted.Excavator, excavatorUsePlayer.UserIDString, item);
-            return null;
-        }
-        private Dictionary<BaseOven, OvenController> ovenCotrollers = new Dictionary<BaseOven, OvenController>();
-        private void OnDispenserBonus(ResourceDispenser resource, BasePlayer player, Item item) => ConvertRate(TypeConverted.Gather, player.UserIDString, item);
-        private Dictionary<UInt64, String> quarryToggled = new Dictionary<UInt64, String>();
-		   		 		  						  	   		   					  			 		   					  	 		
-        
-        
-        private void InitializeEvents()
-        {
-            RunEvent(TypeEvent.Airdrop, true);
-            RunEvent(TypeEvent.Bradley, true);
-            RunEvent(TypeEvent.CargoShip, true);
-            RunEvent(TypeEvent.Ch47, true);
-            RunEvent(TypeEvent.PatrolHelicopter, true);
-        }
-
-                
-                
-        private HashSet<UInt64> lootedEntity = new HashSet<UInt64>();
-        private Boolean sendMessageDay;
-        
-        private void SubscribeToEvents()
-        {
-            timeComponent.OnSunrise += OnSunrise;
-            timeComponent.OnSunset += OnSunset;
-            timeComponent.OnHour += OnHour;
-        }
-
-                
-        
-        
-        private void OnUserGroupAdded(String id, String groupName) => RefreshPermissionPlayer(id);
-
-        private Int32 GetTimeEvent(TypeEvent eventType)
-        {
-            Configuration.EventController eventController = config.eventController;
-            Configuration.EventController.EventTemplate.SpawnController spawnControllerEvent = eventType switch
-            {
-                TypeEvent.Bradley => eventController.eventBradley.spawnController,
-                TypeEvent.Airdrop => eventController.eventAirdrop.spawnController,
-                TypeEvent.CargoShip => eventController.eventCargoShip.spawnController,
-                TypeEvent.Ch47 => eventController.eventCh47.spawnController,
-                TypeEvent.PatrolHelicopter => eventController.eventHelicopter.spawnController,
-                _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, null)
+                source = Modifier.ModifierSource.Tea,
+                type = type,
+                duration = duration,
+                value = value <= 0 ? 1.0f : value
             };
-
-            return spawnControllerEvent.GetSpawnTimeSecods();
-        }
-        
-        
-        
-        private void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player) => ConvertRate(TypeConverted.Growable, player.UserIDString, item);
-        
-        private enum TypeConverted
-        {
-            Gather,
-            Loot,
-            PickUP,
-            Quarry,
-            Excavator,
-            Growable,
-            Fishing
         }
         
         
@@ -1023,10 +60,10 @@ namespace Oxide.Plugins
         private void OnServerInitialized()
         {
             InitializeOvens();
-		   		 		  						  	   		   					  			 		   					  	 		
+
             Configuration.TimeController timeController = config.timeController;
             if (timeController.passageTime.useTimeSpeed || timeController.freezeTime.useTimeFreeze)
-                initializeTimeComponentTimer = timer.Once(5f, InitializeTimeComponent);
+                InitializeTimeComponent();
             
             if (IsUsedEvents())
             {
@@ -1079,320 +116,70 @@ namespace Oxide.Plugins
             foreach (BasePlayer player in BasePlayer.activePlayerList)
                 OnPlayerConnected(player);
         }
-
-        private void EventMapping(Configuration.EventController eventController)
-        {
-            eventMapping.TryAdd("assets/bundled/prefabs/world/event_cargoheli.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.Ch47, eventController.eventCh47));
-            eventMapping.TryAdd("assets/bundled/prefabs/world/event_helicopter.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.PatrolHelicopter, eventController.eventHelicopter));
-            eventMapping.TryAdd("assets/bundled/prefabs/world/event_cargoship.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.CargoShip, eventController.eventCargoShip));
-            eventMapping.TryAdd("assets/bundled/prefabs/world/event_airdrop.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.Airdrop, eventController.eventAirdrop));
-        }
         
-        
-        
-        private void GenerateCacheRatePlayer(BasePlayer player)
-        {
-            Configuration.RateController.RateData dayRate = null;
-            Configuration.RateController.RateData nightRate = null;
-            
-            foreach (KeyValuePair<String, Configuration.RateController.RateData> permissionDays in config.rateController.permissionRateDataDay)
-            {
-                if (!_.permission.UserHasPermission(player.UserIDString, permissionDays.Key)) continue;
-                dayRate = permissionDays.Value;
-                break;
-            }
-
-            dayRate ??= config.rateController.dayRate;
-            
-            foreach (KeyValuePair<String, Configuration.RateController.RateData> permissionNight in config.rateController.permissionRateDataNight)
-            {
-                if (!_.permission.UserHasPermission(player.UserIDString, permissionNight.Key)) continue;
-                nightRate = permissionNight.Value;
-                break;
-            }
-
-            nightRate ??= config.rateController.nightRate;
-
-            rateDataCache[player.UserIDString] = new PlayerRateCache { dayRate = dayRate, nightRate = nightRate };
-        }
-
-        private void ProcessModifier(String userID, ModiferTea tea, Configuration.RateController.RateData playerRateData, Configuration.RateController.RateData defaultRateData, List<ModifierDefintion> mods)
-        {
-            Single defaultRate = tea.type switch
-            {
-                Modifier.ModifierType.Ore_Yield => defaultRateData.gatherRate,
-                Modifier.ModifierType.Wood_Yield => defaultRateData.gatherRate,
-                Modifier.ModifierType.Scrap_Yield => defaultRateData.gatherRate,
-                _ => throw new InvalidOperationException("Unknown modifier type")
-            };
-
-            Single playerRate = tea.type switch
-            {
-                Modifier.ModifierType.Ore_Yield => playerRateData.gatherRate,
-                Modifier.ModifierType.Wood_Yield => playerRateData.gatherRate,
-                Modifier.ModifierType.Scrap_Yield => playerRateData.lootRate,
-                _ => throw new InvalidOperationException("Unknown modifier type")
-            };
-            
-            Single bonusRate = GetBonusRate(userID);
-            playerRate += bonusRate;
-
-            Single modifierDifference = CalculateModifierDifference(defaultRate, playerRate);
-            mods.Add(CreateModifier(tea, modifierDifference));
-        }
-        
-        private void RunEvent(TypeEvent eventType, Boolean isInit = false)
-        {
-            Int32 randomTimeEvent = GetTimeEvent(eventType);
-            if (eventType == TypeEvent.Bradley)
-            {
-                if (config.eventController.eventBradley.disableFullEvent || !config.eventController.eventBradley.useEvent) return;
-                BradleySpawner bradleySpawner = BradleySpawner.singleton;
-                if (!bradleySpawner)
-                {
-                    if (timerBradley is { Destroyed: false })
-                    {
-                        timerBradley.Destroy();
-                        timerBradley = null;
-                    }
-                    return;
-                }
-                
-                if (!isInit)
-                {
-                    if (!bradleySpawner.spawned.isSpawned)
-                    {
-                        Bradley.enabled = true;
-                        bradleySpawner.SpawnBradley();
-                        Bradley.enabled = false;
-                    }
-                }
-                
-                if (timerBradley is { Destroyed: false })
-                {
-                    timerBradley.Destroy();
-                    timerBradley = null;
-                }
-                
-                timerBradley = timer.Once(randomTimeEvent, () => RunEvent(eventType));
-                return;
-            }
-
-            if (!triggersEvents.TryGetValue(eventType, out EventController triggerEvent))
-                return;
-            
-            if (!isInit)
-                triggerEvent.trigger.RunEvent();
-            
-            if (triggerEvent.timerEvent is { Destroyed: false })
-            {
-                triggerEvent.timerEvent.Destroy();
-                triggerEvent.timerEvent = null;
-            }
-		   		 		  						  	   		   					  			 		   					  	 		
-            triggerEvent.timerEvent = timer.Once(randomTimeEvent, () => RunEvent(eventType));
-        }
-
-
-        private void SendDayNightMessages(Single hour, Int32 dayStart, Int32 nightStart)
-        {
-            if (config.timeController.passageTime.skipNight || !config.timeController.passageTime.alertTimeController) return;
-
-            if (!sendMessageDay && sendMessageNight && Mathf.Abs(hour - dayStart) <= 0.1f)
-            {
-                BroadcastRatesAlert("DAY_RATES_ALERT");
-                sendMessageDay = true;
-                sendMessageNight = false;
-            }
-            else if (!sendMessageNight && sendMessageDay && Mathf.Abs(hour - nightStart) <= 0.1f)
-            {
-                BroadcastRatesAlert("NIGHT_RATES_ALERT");
-                sendMessageNight = true;
-                sendMessageDay = false;
-            }
-        }
-        private enum TypeEvent
-        {
-            Bradley,
-            Airdrop,
-            CargoShip,
-            Ch47,
-            PatrolHelicopter,
-        }
-		   		 		  						  	   		   					  			 		   					  	 		
-        
-        
-        private ModifierDefintion GetDefintionModifer(Modifier.ModifierType type, Single duration, Single value)
-        {
-            return new ModifierDefintion
-            {
-                source = Modifier.ModifierSource.Tea,
-                type = type,
-                duration = duration,
-                value = value <= 0 ? 1.0f : value
-            };
-        }
-        
-        private Boolean IsDayTime() => TOD_Sky.Instance.Cycle.Hour >= config.timeController.timeStartDay && TOD_Sky.Instance.Cycle.Hour < config.timeController.timeStartNight;
-
-        
-        
-        private void OnExcavatorResourceSet(ExcavatorArm arm, String resourceName, BasePlayer player) => excavatorUsePlayer = player;
-
-        private void AutoUpdateBonusRate()
-        {
-            foreach (BasePlayer player in BasePlayer.activePlayerList)
-                UpdateBonusRate(player.UserIDString);
-        }
-
-        
-        
-        private void OnEntitySpawned(BaseVehicle vehicle)
-        {
-            FuelFillingTransport(vehicle);
-            FuelPerSecController(vehicle);
-        }
-        private readonly Dictionary<String, ModiferTea> teaModifers = new Dictionary<String, ModiferTea>
-        {
-            { "oretea.advanced", new ModiferTea { duration = 1800f, value = 0.35f, type = Modifier.ModifierType.Ore_Yield } },
-            { "oretea", new ModiferTea { duration = 1800f, value = 0.2f, type = Modifier.ModifierType.Ore_Yield } },
-            { "oretea.pure", new ModiferTea { duration = 1800f, value = 0.5f, type = Modifier.ModifierType.Ore_Yield } },
-            { "woodtea.advanced", new ModiferTea { duration = 1800f, value = 1.0f, type = Modifier.ModifierType.Wood_Yield } },
-            { "woodtea", new ModiferTea { duration = 1800f, value = 0.5f, type = Modifier.ModifierType.Wood_Yield } },
-            { "woodtea.pure", new ModiferTea { duration = 1800f, value = 2.0f, type = Modifier.ModifierType.Wood_Yield } },
-            { "scraptea.advanced", new ModiferTea { duration = 2700f, value = 2.25f, type = Modifier.ModifierType.Scrap_Yield } },
-            { "scraptea", new ModiferTea { duration = 1800f, value = 1.0f, type = Modifier.ModifierType.Scrap_Yield } },
-            { "scraptea.pure", new ModiferTea { duration = 3600f, value = 3.5f, type = Modifier.ModifierType.Scrap_Yield } }
-        };
-        
-        private void OnGroupPermissionRevoked(String name, String perm)
-        {
-            foreach (BasePlayer player in BasePlayer.activePlayerList)
-                RefreshPermissionPlayer(player.UserIDString);
-        }
-        private Dictionary<String, (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig)> eventMapping = new();
         
                 
-                
-        private String GetLang(in String LangKey, in String userID = null, params Object[] args)
+        private Object OnPlayerAddModifiers(BasePlayer player, Item item, ItemModConsumable consumable)
         {
-            if (args == null) 
-                return lang.GetMessage(LangKey, this, userID);
+            if (!teaModifers.TryGetValue(item.info.shortname, out ModiferTea teaLocal)) return null;
+            Configuration.RateController.RateData playerRateData = config.rateController.GetRateData(player.UserIDString);
+            if (playerRateData == null) return null;
 
-            StringBuilder sb = Pool.Get<StringBuilder>();
+            Configuration.RateController.RateData defaultRateData = IsDayTime() ? config.rateController.dayRate : config.rateController.nightRate;
+            
+            List<ModifierDefintion> mods = Pool.Get<List<ModifierDefintion>>();
 
             try
             {
-                sb.AppendFormat(lang.GetMessage(LangKey, this, userID), args);
-                return sb.ToString();
+                ProcessModifier(player.UserIDString, teaLocal, playerRateData, defaultRateData, mods);
+                player.modifiers.Add(mods);
             }
             finally
             {
-                sb.Clear();
-                Pool.FreeUnmanaged(ref sb);
+                mods.Clear();
+                Pool.FreeUnmanaged(ref mods);
             }
+
+            return true;
+        }
+
+        private Boolean activatedDay;
+        
+                
+        
+        private static Configuration config = new Configuration();
+
+        private void UnsubscribeFromEvents()
+        {
+            if (timeComponent == null)
+                return;
+
+            timeComponent.OnSunrise -= OnSunrise;
+            timeComponent.OnSunset -= OnSunset;
+            timeComponent.OnHour -= OnHour;
         }
         
-        private void FuelPerSecController(BaseVehicle vehicle)
-        {
-            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel) return;
-
-            Configuration.FuelTransportController.FuelPerSecTransport fuelPerSecController = config.fuelTransportController.fuelPerSecTransport;
-
-            switch (vehicle)
-            {
-                case ScrapTransportHelicopter scrapTransportHelicopter:
-                    scrapTransportHelicopter.fuelPerSec *= fuelPerSecController.consumedScrapTransport;
-                    break;
-                case Minicopter minicopter:
-                    minicopter.fuelPerSec *= fuelPerSecController.consumedCopter;
-                    break;
-                case AttackHelicopter attackHelicopter:
-                    attackHelicopter.fuelPerSec *= fuelPerSecController.consumedAttackHelicopter;
-                    break;
-                case RHIB rhib:
-                    rhib.fuelPerSec *= fuelPerSecController.consumedBoat;
-                    break;
-                case MotorRowboat boat:
-                    boat.fuelPerSec *= fuelPerSecController.consumedBoat;
-                    break;
-                case BaseSubmarine submarine:
-                    submarine.maxFuelPerSec *= fuelPerSecController.consumedSubmarine;
-                    break;
-                case Snowmobile snowmobile:
-                    snowmobile.maxFuelPerSec *= fuelPerSecController.consumedSnowmobile;
-                    break;
-                case TrainCar trainCar:
-                {
-                    StorageContainer fuelContainer = (trainCar.GetFuelSystem() as EntityFuelSystem)?.GetFuelContainer();
-                    if (!fuelContainer) return;
-                    if (!fuelContainer.TryGetComponent(out TrainEngine trainEngine)) return;
-                    trainEngine.maxFuelPerSec *= fuelPerSecController.consumedTrain;
-                    break;
-                }
-            }
-        }
         
-        private void OnQuarryGather(MiningQuarry quarry, Item item)
+        
+        private void OnGrowableGathered(GrowableEntity plant, Item item, BasePlayer player) => ConvertRate(TypeConverted.Growable, player.UserIDString, item);
+        private AnimationCurve defaultTimeCurve;
+        
+        private Single CalculateModifierDifference(Single defaultRate, Single playerRate) => (playerRate - defaultRate) <= 0 ? 1 : (playerRate - defaultRate);
+        
+        
+                
+        private Double GetCarry(String userID, TypeConverted type, Int32 itemId)
         {
-            if (!quarryToggled.TryGetValue(quarry.net.ID.Value, out String playerUserIDString))
-            {
-                if(quarry.OwnerID.IsSteamId())
-                    playerUserIDString = quarry.OwnerID.ToString();
-                else return;
-            }
-            
-            ConvertRate(TypeConverted.Quarry, playerUserIDString, item);
+            if (_carry.TryGetValue(userID, out Dictionary<TypeConverted, Dictionary<Int32, Double>> byType) &&
+                byType.TryGetValue(type, out Dictionary<Int32, Double> byItem) &&
+                byItem.TryGetValue(itemId, out Double c))
+                return c;
+            return 0d;
         }
 
                 
                 private readonly Dictionary<String, Dictionary<TypeConverted, Dictionary<Int32, Double>>> _carry = new(StringComparer.Ordinal);
-        
-       // private Int32 wipeLeftHourse;
-        
-        private BasePlayer excavatorUsePlayer = null;
-
-        private Configuration.RateBonusController.RateControllerDayOfWeek.RateBonusDays rateBonusDay;
-        private static IQRates _;
-        
-        private void OnEntitySpawned(HotAirBalloon balloon)
-        {
-            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel) return;
-            balloon.fuelPerSec *= config.fuelTransportController.fuelPerSecTransport.consumedHotAirBalloon;
-        }
-        
-        private OvenController GetOrAddOvenController(BaseOven oven)
-        {
-            if (ovenCotrollers.TryGetValue(oven, out OvenController controller)) return controller;
-            controller = oven.gameObject.AddComponent<OvenController>();
-            ovenCotrollers.TryAdd(oven, controller);
-            return controller;
-        
-        }
-        private List<Configuration.PermissionsRateList> permissionsSpeedRecyclerSorted = new();
-
-                
-        
-        private void InitializeOvens()
-        {
-            if (!config.ovenController.useSpeedOven) return;
-            
-            List<BaseNetworkable> networkables = Pool.Get<List<BaseNetworkable>>();
-            networkables.AddRange(BaseNetworkable.serverEntities.entityList.Get().Values);
-            
-            foreach (BaseNetworkable entity in networkables)
-            {
-                if (entity is not BaseOven oven)
-                    continue;
-                
-                if(!oven) continue;
-                
-                OvenController controller = GetOrAddOvenController(oven);
-                controller.Restart();
-            }
-            
-            Pool.FreeUnmanaged(ref networkables);
-        }
+        private Boolean timeStateInitialized;
        
         protected override void LoadConfig()
         {
@@ -1419,7 +206,7 @@ namespace Oxide.Plugins
                         ["shortname2"] = 2.0f,
                     };
                 }
-
+		   		 		  						  	   		   					  			 		   					  	 		
                 foreach (KeyValuePair<String, Configuration.RateController.RateData> pRateDay in config.rateController
                              .permissionRateDataDay)
                 {
@@ -1484,7 +271,7 @@ namespace Oxide.Plugins
                                     chance = 75,
                                 }
                             };
-
+		   		 		  						  	   		   					  			 		   					  	 		
                     if (config.rateController.dayRate.rateCorrectly == null)
                         config.rateController.dayRate.rateCorrectly = new Dictionary<String, Single>()
                         {
@@ -1524,48 +311,154 @@ namespace Oxide.Plugins
             NextTick(SaveConfig);
         }
         
-        private void OnOvenStarted(BaseOven oven)
+        private void BackupDefaultEvents()
         {
-            if (oven is BaseFuelLightSource)
-                return;
-            
-            if (config.ovenController.blackListOvenPrefab.Contains(oven.ShortPrefabName))
-                return;
-            
-            //if(oven is not ElectricOven) return;
-            OvenController controller = GetOrAddOvenController(oven);
-            controller.SwitchOven(true);
-        }
+            Bradley.enabled = defaultBradleyStatus;
+            if (defaultEvents == null || defaultEvents.Count == 0) return;
 
-        private void SetCarry(String userID, TypeConverted type, Int32 itemId, Double value)
-        {
-            if (!_carry.TryGetValue(userID, out var byType))
-                _carry[userID] = byType = new Dictionary<TypeConverted, Dictionary<Int32, Double>>();
-            if (!byType.TryGetValue(type, out var byItem))
-                byType[type] = byItem = new Dictionary<Int32, Double>();
-            byItem[itemId] = value;
-        }
-        private List<EventSchedule> defaultEvents = new List<EventSchedule>();
-
-        private void OnSunset()
-        {
-            Single currentHour = TOD_Sky.Instance.Cycle.Hour;
-            Int32 dayStart = config.timeController.timeStartDay; 
-            Int32 nightStart = config.timeController.timeStartNight; 
-
-            if (currentHour >= dayStart && currentHour < nightStart) 
-                return;
-            
-            activatedDay = false;
-            
-            if (config.timeController.passageTime.skipNight) 
+            foreach (EventSchedule defaultEvent in defaultEvents)
             {
-                TOD_Sky.Instance.Cycle.Hour = dayStart;
+                defaultEvent.InvokeRepeating(defaultEvent.RunSchedule, 1f, 1f);
+                EventSchedule.allEvents.Add(defaultEvent);
+            }
+            
+            defaultEvents.Clear();
+            defaultEvents = null;
+        }
+
+                
+        
+        
+        private void OnUserGroupAdded(String id, String groupName) => RefreshPermissionPlayer(id);
+        
+        private void RunEvent(TypeEvent eventType, Boolean isInit = false)
+        {
+            Int32 randomTimeEvent = GetTimeEvent(eventType);
+            if (eventType == TypeEvent.Bradley)
+            {
+                if (config.eventController.eventBradley.disableFullEvent || !config.eventController.eventBradley.useEvent) return;
+                BradleySpawner bradleySpawner = BradleySpawner.singleton;
+                if (!bradleySpawner)
+                {
+                    if (timerBradley is { Destroyed: false })
+                    {
+                        timerBradley.Destroy();
+                        timerBradley = null;
+                    }
+                    return;
+                }
+                
+                if (!isInit)
+                {
+                    if (!bradleySpawner.spawned.isSpawned)
+                    {
+                        Bradley.enabled = true;
+                        bradleySpawner.SpawnBradley();
+                        Bradley.enabled = false;
+                    }
+                }
+                
+                if (timerBradley is { Destroyed: false })
+                {
+                    timerBradley.Destroy();
+                    timerBradley = null;
+                }
+                
+                timerBradley = timer.Once(randomTimeEvent, () => RunEvent(eventType));
                 return;
             }
 
-            Single nightLength = config.timeController.passageTime.minutesNight;
-            timeComponent.DayLengthInMinutes = nightLength * (24.0f / (24.0f - (nightStart - dayStart)));
+            if (!triggersEvents.TryGetValue(eventType, out EventController triggerEvent))
+                return;
+            
+            if (!isInit)
+                triggerEvent.trigger.RunEvent();
+            
+            if (triggerEvent.timerEvent is { Destroyed: false })
+            {
+                triggerEvent.timerEvent.Destroy();
+                triggerEvent.timerEvent = null;
+            }
+
+            triggerEvent.timerEvent = timer.Once(randomTimeEvent, () => RunEvent(eventType));
+        }
+
+                
+                
+        private Object OnOvenCook(BaseOven oven, Item burnable)
+        {
+            if (!config.ovenController.useSpeedOven)
+                return null;
+
+            if (oven == null)
+                return null;
+
+            if (config.ovenController.blackListOvenPrefab.Contains(oven.ShortPrefabName))
+                return null;
+
+            if (ovenCotrollers.ContainsKey(oven))
+                return true;
+		   		 		  						  	   		   					  			 		   					  	 		
+            return null;
+        }
+        
+        private void UpdateBonusRate(String userID)
+        {
+            Single bonusRate = config.rateBonusController.GetBonusRate(userID);
+            if (!bonusRatesPlayer.TryAdd(userID, bonusRate))
+                bonusRatesPlayer[userID] = bonusRate;
+        }
+
+        
+        private void FreezeTimes()
+        {
+            Configuration.TimeController timeController = config.timeController;
+            if (!timeController.freezeTime.useTimeFreeze)
+                return;
+
+            if (timeController.passageTime.useTimeSpeed)
+            {
+                _.PrintWarning(LanguageEn ? "Unable to freeze time, please disable time acceleration in the configuration!" : "Невозможно заморозить время, выключите ускорение времени в конфигурации!");
+                return;
+            }
+
+            timeComponent.ProgressTime = false;
+            ConVar.Env.time = timeController.freezeTime.timeFreeze;
+        }
+        
+        private void OnLootEntity(BasePlayer player, BaseEntity targetEntity)
+        {
+            if (!targetEntity || targetEntity.net == null) return;
+            
+            if (!config.rateController.controllerList.IsConvetedPrefab(targetEntity.ShortPrefabName)) 
+                return;
+            
+            UInt64 netID = targetEntity.net.ID.Value;
+            if (!lootedEntity.Add(netID)) return;
+            
+            switch (targetEntity)
+            {
+                case LootableCorpse corpse:
+                {
+                    if (!corpse) return;
+                    if (corpse.playerSteamID.IsSteamId()) return;
+
+                    foreach (ItemContainer corpseContainer in corpse.containers)
+                    {
+                        foreach (Item item in corpseContainer.itemList)
+                            ConvertRate(TypeConverted.Loot, player.UserIDString, item);
+                    }
+
+                    break;
+                }
+                case LootContainer lootContainer:
+                {
+                    if (!lootContainer) return;
+                    foreach (Item item in lootContainer.inventory.itemList)
+                        ConvertRate(TypeConverted.Loot, player.UserIDString, item);
+                    break;
+                }
+            }
         }
 
                 
@@ -1589,6 +482,38 @@ namespace Oxide.Plugins
                 messageInfo += GetLang("INFO_MY_RATE_BONUS", player.UserIDString, bonusRate);
                     
             SendChat(messageInfo, player);
+        }
+        private List<Configuration.PermissionsRateList> permissionsSpeedRecyclerSorted = new();
+
+        private Single GetTransitionWeight(Single currentHour, Configuration.TimeController timeController)
+        {
+            Single result = 0f;
+
+            AddSmoothPoint(timeController.timeStartDay);
+            AddSmoothPoint(timeController.timeStartNight);
+		   		 		  						  	   		   					  			 		   					  	 		
+            if (timeSmoothUseVanillaSunrise && TOD_Sky.Instance != null)
+                AddSmoothPoint(TOD_Sky.Instance.SunriseTime);
+
+            for (Int32 i = 0; i < timeSmoothExtraHours.Length; i++)
+                AddSmoothPoint(timeSmoothExtraHours[i]);
+
+            return result;
+
+            void AddSmoothPoint(Single pointHour)
+            {
+                pointHour = NormalizeHour(pointHour);
+
+                Single distance = GetCircularHourDistance(currentHour, pointHour);
+                if (distance > timeSmoothRadiusHours)
+                    return;
+
+                Single raw = 1f - Mathf.Clamp01(distance / timeSmoothRadiusHours);
+                Single eased = SmoothStep01(raw);
+
+                if (eased > result)
+                    result = eased;
+            }
         }
         private class Configuration
         {
@@ -1644,7 +569,7 @@ namespace Oxide.Plugins
                     foreach (RateData pNightRate in permissionRateDataNight.Values)
                         pNightRate.BuildCacheQuarry();
                 }
-
+		   		 		  						  	   		   					  			 		   					  	 		
                 internal class ControllerListRate
                 {
                     [JsonProperty(LanguageEn ? "Blacklist or whitelist settings" : "Настройка черного или белого списка")]
@@ -1669,10 +594,10 @@ namespace Oxide.Plugins
                         [JsonIgnore]
                         public HashSet<Int32> blackListItemIds = new HashSet<Int32>();
                     }
-		   		 		  						  	   		   					  			 		   					  	 		
+
                     [JsonIgnore]
                     public HashSet<ItemCategory> blackListCategoryEnums = new HashSet<ItemCategory>();
-		   		 		  						  	   		   					  			 		   					  	 		
+
                     public void GenerationCasheControllerListRate()
                     {
                         if (blackListCategory != null && blackListCategory.Count != 0)
@@ -1800,7 +725,7 @@ namespace Oxide.Plugins
                                     : $"Некорректный shortname предмета в 'Настройке отдельных рейтов карьера'. Значение: '{rCorrectly.Key}'");
                                 continue;
                             }
-		   		 		  						  	   		   					  			 		   					  	 		
+
                             if (!rateCorrectlyCache.TryAdd(itemInfo.itemid, rCorrectly.Value))
                             {
                                 _.PrintError(LanguageEn
@@ -1908,7 +833,7 @@ namespace Oxide.Plugins
                             {
                                 w.permissionRateBonusSorted = Array.Empty<PermissionsRateList>();
                             }
-
+		   		 		  						  	   		   					  			 		   					  	 		
                             Int32 start = ((Int32)w.startDay) * 24 + w.startHour;
                             Int32 stop  = ((Int32)w.stopDay) * 24 + w.stopHour;
 
@@ -1978,7 +903,7 @@ namespace Oxide.Plugins
                         if (currentRateBonusDay != _.rateBonusDay || isInit)
                         {
                             _.rateBonusDay = currentRateBonusDay;
-		   		 		  						  	   		   					  			 		   					  	 		
+
                             if (currentRateBonusDay != null)
                             {
                                 String startDayOfWeek = currentRateBonusDay.timeStartBonus.dayOfWeek.ToUpper();
@@ -2049,7 +974,7 @@ namespace Oxide.Plugins
                 public PassageTime passageTime = new PassageTime();
                 [JsonProperty(LanguageEn ? "Time freeze settings [Note: Freezing time may prevent standard events from appearing, use custom event settings]" : "Настройка заморозки времени [Учтите, от заморозки времени стандартные ивенты могут не появляться, используйте кастомную настройку ивентов]")]
                 public FreezeTime freezeTime = new FreezeTime();
-		   		 		  						  	   		   					  			 		   					  	 		
+
                 internal class PassageTime
                 {
                     [JsonProperty(LanguageEn ? "Use instant night skip [true - yes/false - no]" : "Использовать моментальный пропуск ночи [true - да/false - нет]")]
@@ -2072,7 +997,7 @@ namespace Oxide.Plugins
                     public Int32 timeFreeze;
                 }
             }
-		   		 		  						  	   		   					  			 		   					  	 		
+
             internal class EventController
             {
                 [JsonProperty(LanguageEn ? "Cargo ship event settings" : "Настройка грузового корабля")]
@@ -2135,7 +1060,7 @@ namespace Oxide.Plugins
                         if (_.permission.UserHasPermission(player.UserIDString, permissionsMixingTable.permission))
                             return 1.0f - (permissionsMixingTable.rate / 100.0f);
                     }
-
+		   		 		  						  	   		   					  			 		   					  	 		
                     return 1.0f - (defaultRate / 100.0f);
                 }
             }
@@ -2168,7 +1093,7 @@ namespace Oxide.Plugins
                     [JsonProperty(LanguageEn ? "Fuel amount in attack helicopter" : "Кол-во топлива в боевом вертолете")]
                     public Int32 fuelAttackHelicopter;
                 }
-		   		 		  						  	   		   					  			 		   					  	 		
+
                 internal class FuelPerSecTransport
                 {
                     [JsonProperty(LanguageEn ? "Use change in standard fuel consumption in transport [true - yes/false - no]" : "Использовать изменениеи стандартного потребления топлива в транспорте [true - да/false - нет]")]
@@ -2812,26 +1737,697 @@ namespace Oxide.Plugins
                 };
             }
         }
-
-                
-        
-        private void OnMixingTableToggle(MixingTable table, BasePlayer player)
+        private readonly Dictionary<String, ModiferTea> teaModifers = new Dictionary<String, ModiferTea>
         {
-            if (table.IsOn())
-                return;
+            { "oretea.advanced", new ModiferTea { duration = 1800f, value = 0.35f, type = Modifier.ModifierType.Ore_Yield } },
+            { "oretea", new ModiferTea { duration = 1800f, value = 0.2f, type = Modifier.ModifierType.Ore_Yield } },
+            { "oretea.pure", new ModiferTea { duration = 1800f, value = 0.5f, type = Modifier.ModifierType.Ore_Yield } },
+            { "woodtea.advanced", new ModiferTea { duration = 1800f, value = 1.0f, type = Modifier.ModifierType.Wood_Yield } },
+            { "woodtea", new ModiferTea { duration = 1800f, value = 0.5f, type = Modifier.ModifierType.Wood_Yield } },
+            { "woodtea.pure", new ModiferTea { duration = 1800f, value = 2.0f, type = Modifier.ModifierType.Wood_Yield } },
+            { "scraptea.advanced", new ModiferTea { duration = 2700f, value = 2.25f, type = Modifier.ModifierType.Scrap_Yield } },
+            { "scraptea", new ModiferTea { duration = 1800f, value = 1.0f, type = Modifier.ModifierType.Scrap_Yield } },
+            { "scraptea.pure", new ModiferTea { duration = 3600f, value = 3.5f, type = Modifier.ModifierType.Scrap_Yield } }
+        };
+        
+        private void OnEntitySpawned(HotAirBalloon balloon)
+        {
+            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel) return;
+            balloon.fuelPerSec *= config.fuelTransportController.fuelPerSecTransport.consumedHotAirBalloon;
+        }
+        protected override void SaveConfig() => Config.WriteObject(config);
 
-            Single speedMixing = config.mixingTableController.GetSpeeedMixingTable(player);
-            
+        private void ReadData()
+        {
+            lootedEntity = Oxide.Core.Interface.Oxide.DataFileSystem.ReadObject<HashSet<UInt64>>("IQSystem/IQRates/LootedContainers");
+            quarryToggled = Oxide.Core.Interface.Oxide.DataFileSystem.ReadObject<Dictionary<UInt64, String>>("IQSystem/IQRates/QuarryToggled");
+        }
+
+        
+        
+        private void FuelFillingTransport(BaseVehicle vehicle)
+        {
+            if (!config.fuelTransportController.fuelBuyingShopKeeper.useAutoFillFuel) return;
+            Configuration.FuelTransportController.FuelBuingShopKeeper fuelTransportController = config.fuelTransportController.fuelBuyingShopKeeper;
+
+            IFuelSystem fuelSystem = vehicle.GetFuelSystem();
+            if (fuelSystem is not EntityFuelSystem entityFuelSystem) return;
+
+            Int32 fuelAmount = vehicle switch
+            {
+                ScrapTransportHelicopter => fuelTransportController.fuelScrapTransport,
+                Minicopter => fuelTransportController.fuelMinicopter,
+                AttackHelicopter => fuelTransportController.fuelAttackHelicopter,
+                RHIB or MotorRowboat => fuelTransportController.fuelBoat,
+                BaseSubmarine => fuelTransportController.fuelSubmarine,
+                _ => 0
+            };
+
+            if (fuelAmount == 0) return;
             NextTick(() =>
             {
-                table.RemainingMixTime *= speedMixing;
-                table.TotalMixTime *= speedMixing;
-                table.SendNetworkUpdateImmediate();
-		   		 		  						  	   		   					  			 		   					  	 		
-                if (!(table.RemainingMixTime < 1f)) return;
-                table.CancelInvoke(table.TickMix);
-                table.Invoke(table.TickMix, table.RemainingMixTime);
+                Item Fuel = entityFuelSystem.GetFuelItem();
+                if (Fuel == null) return;
+                
+                if (Fuel.amount is 50 or 100)
+                    Fuel.amount = fuelAmount;
             });
+        }
+        
+        private void OnGroupPermissionGranted(String name, String perm)
+        {
+            foreach (BasePlayer player in BasePlayer.activePlayerList)
+                RefreshPermissionPlayer(player.UserIDString);
+        }
+
+        
+        
+        private void OnDispenserGather(ResourceDispenser resource, BasePlayer player, Item item) => ConvertRate(TypeConverted.Gather, player.UserIDString, item);
+
+        
+                
+        private void OnQuarryToggled(MiningQuarry quarry, BasePlayer player) =>
+            quarryToggled[quarry.net.ID.Value] = player.UserIDString;
+        private static IQRates _;
+
+        private void OnSunrise() => ApplyConfiguredTimeState(false);
+        
+        private void RefreshPermissionPlayer(String id)
+        {
+            BasePlayer player = BasePlayer.Find(id);
+            if (player == null) return;
+
+            GenerateCacheRatePlayer(player);
+        }
+
+        private void ApplyConfiguredTimeState(Boolean initializeState)
+        {
+            if (!timeComponent || !TOD_Sky.Instance)
+                return;
+
+            Configuration.TimeController timeController = config.timeController;
+            if (!timeController.passageTime.useTimeSpeed)
+                return;
+
+            if (!ValidateTimeController(timeController))
+                return;
+		   		 		  						  	   		   					  			 		   					  	 		
+            Int32 dayStart = timeController.timeStartDay;
+            Int32 nightStart = timeController.timeStartNight;
+
+            Single currentHour = NormalizeHour(TOD_Sky.Instance.Cycle.Hour);
+            Boolean isDay = IsConfiguredDay(currentHour, dayStart, nightStart);
+
+            if (!isDay && timeController.passageTime.skipNight)
+            {
+                TOD_Sky.Instance.Cycle.Hour = dayStart;
+                currentHour = dayStart;
+                isDay = true;
+            }
+
+            if (!timeComponent.ProgressTime)
+                timeComponent.ProgressTime = true;
+
+            if (!timeComponent.UseTimeCurve)
+                timeComponent.UseTimeCurve = true;
+
+            HandleConfiguredTimeState(isDay, initializeState);
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private const Single timeSmoothRadiusHours = 0.8f;
+        private List<EventSchedule> defaultEvents = new List<EventSchedule>();
+        private Dictionary<String, (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig)> eventMapping = new();
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void BroadcastRatesAlert(String langKey)
+        {
+            foreach (BasePlayer player in BasePlayer.activePlayerList)
+            {
+                Configuration.RateController.RateData rateData = config.rateController.GetRateData(player.UserIDString);
+                if (rateData == null)
+                    continue;
+
+                Single bonusRate = GetBonusRate(player.UserIDString);
+
+                String messageInfo = GetLang("INFO_MY_RATE", player.UserIDString, rateData.gatherRate, rateData.lootRate,
+                    rateData.pickUpRate, rateData.growableRate, rateData.quarryRate.GetQuarryRate(0),
+                    rateData.excavatorRate, rateData.fishRate);
+
+                if (bonusRate != 0)
+                    messageInfo += GetLang("INFO_MY_RATE_BONUS", player.UserIDString, bonusRate);
+
+                SendChat(GetLang(langKey, player.UserIDString, messageInfo), player);
+            }
+        }
+
+        private Object OnQuarryGathered(MiningQuarry quarry, Item item)
+        {
+            if (itemDlcRemoved.Contains(item.info.itemid)) return false;
+            return null;
+        }
+        
+        private void OnQuarryGather(MiningQuarry quarry, Item item)
+        {
+            if (!quarryToggled.TryGetValue(quarry.net.ID.Value, out String playerUserIDString))
+            {
+                if(quarry.OwnerID.IsSteamId())
+                    playerUserIDString = quarry.OwnerID.ToString();
+                else return;
+            }
+            
+            ConvertRate(TypeConverted.Quarry, playerUserIDString, item);
+        }
+
+                
+                
+        private void OnRecyclerToggle(Recycler recycler, BasePlayer player)
+        {
+            if (recycler.IsOn() || recycler.OwnerID.IsSteamId()) return;
+            Single speedRecycler = config.recyclerController.speedRecycler.GetSpeedRecycler(player);
+            Single recyclerTime = recycler.GetRecycleThinkDuration() / speedRecycler;
+
+            NextTick(() =>
+            {
+                recycler.CancelInvoke(recycler.RecycleThink);
+                recycler.InvokeRepeating(recycler.RecycleThink, recyclerTime, recyclerTime);
+            });
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void AutoUpdateBonusRate()
+        {
+            foreach (BasePlayer player in BasePlayer.activePlayerList)
+                UpdateBonusRate(player.UserIDString);
+        }
+        private const Single timeSmoothMinutesPerGameHour = 0.55f;
+        
+        private Dictionary<String, Single> bonusRatesPlayer = new Dictionary<String, Single>();
+        
+        private OvenController GetOrAddOvenController(BaseOven oven)
+        {
+            if (ovenCotrollers.TryGetValue(oven, out OvenController controller)) return controller;
+            controller = oven.gameObject.AddComponent<OvenController>();
+            ovenCotrollers.TryAdd(oven, controller);
+            return controller;
+        
+        }
+
+        private Single defaultDayLengthInMinutes;
+        private Timer timerUpdateBonusRate;
+
+        private void OnPlayerDisconnected(BasePlayer player)
+        {
+            _carry.Remove(player.UserIDString);
+            rateDataCache.Remove(player.UserIDString);
+            bonusRatesPlayer.Remove(player.UserIDString);
+        }
+        private List<Configuration.PermissionsRateList> permissionsWipeBonusSorted = new();
+        
+        
+        private void InitializeTimeComponent()
+        {
+            if (TOD_Sky.Instance == null || TOD_Sky.Instance.Components == null || TOD_Sky.Instance.Components.Time == null)
+            {
+                PrintWarning(LanguageEn ? "TOD_Time component was not found. Time controller was not initialized." : "Компонент TOD_Time не найден. Контроллер времени не был инициализирован.");
+                return;
+            }
+
+            timeComponent = TOD_Sky.Instance.Components.Time;
+            CaptureDefaultTimeSettings();
+
+            SpeedTimes();
+            FreezeTimes();
+        }
+        private enum TypeEvent
+        {
+            Bradley,
+            Airdrop,
+            CargoShip,
+            Ch47,
+            PatrolHelicopter,
+        }
+        private Boolean IsUsedEvents()
+        {
+            Configuration.EventController eventController = config.eventController;
+            
+            return eventController.eventHelicopter.disableFullEvent || eventController.eventHelicopter.useEvent
+                || eventController.eventAirdrop.disableFullEvent || eventController.eventAirdrop.useEvent
+                || eventController.eventCh47.disableFullEvent || eventController.eventCh47.useEvent
+                || eventController.eventBradley.disableFullEvent || eventController.eventBradley.useEvent
+                || eventController.eventCargoShip.disableFullEvent || eventController.eventCargoShip.useEvent;
+        }
+        private Dictionary<BaseOven, OvenController> ovenCotrollers = new Dictionary<BaseOven, OvenController>();
+
+        private void OnEntityKill(LootableCorpse corpse)
+        {
+            if (!corpse) return;
+            if (corpse.net == null) return;
+            if (corpse.playerSteamID.IsSteamId()) return;
+		   		 		  						  	   		   					  			 		   					  	 		
+            lootedEntity.Remove(corpse.net.ID.Value);
+        }
+        
+        private void OnPlayerConnected(BasePlayer player)
+        {
+            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek || config.rateBonusController.wipeBonusRated.useWipeBonus)
+                UpdateBonusRate(player.UserIDString);
+            
+            GenerateCacheRatePlayer(player);
+        }
+
+        private Single GetBaseMinutesPerGameHour(Boolean isDay, Configuration.TimeController timeController)
+        {
+            Single dayHours = GetConfiguredDayHours(timeController.timeStartDay, timeController.timeStartNight);
+            Single nightHours = 24f - dayHours;
+
+            if (isDay)
+                return timeController.passageTime.minutesDay / dayHours;
+		   		 		  						  	   		   					  			 		   					  	 		
+            return timeController.passageTime.minutesNight / nightHours;
+        }
+        private readonly List<Int64> itemDlcRemoved = new List<Int64>()
+        {
+            1545779598, -1335497659, -139037392, 139037392, 44605728, -194953424, -1478855279, 110116923, 857465230, -1315992997,
+        };
+
+        private Dictionary<String, PlayerRateCache> rateDataCache = new();
+        private List<Configuration.OvenController.CharacoalSetting.PermissionsChanceList> permissionsCharacoalChanceSorted = new(); 
+        
+        private void Init()
+        {
+            _ = this;
+            
+            ReadData();
+		   		 		  						  	   		   					  			 		   					  	 		
+            InitController();
+        }
+        
+                
+        
+                
+        private void InitController()
+        {
+            Configuration.OvenController ovenController = config.ovenController;
+            Configuration.MixingTableController mixingTableController = config.mixingTableController;
+            Configuration.RecyclerController recyclerController = config.recyclerController;
+            Configuration.RateBonusController rateBonusWipe = config.rateBonusController;
+            
+            config.rateController.controllerList.GenerationCasheControllerListRate();
+            config.rateController.BuildCacheRate();
+            
+            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek)
+                config.rateBonusController.dayOfWeekBonusRated.BuildCache();
+            
+            if (!ovenController.useSpeedOven)
+            {
+                Unsubscribe(nameof(OnOvenStarted));
+                Unsubscribe(nameof(OnOvenToggle));
+                Unsubscribe(nameof(OnOvenCook));
+            }
+            else
+            {
+                permissionsOvensSorted.AddRange(ovenController.permissionList.OrderByDescending(p => p.rate));
+                permissionsCharacoalChanceSorted.AddRange(ovenController.characoalChanceRate.characoalChancePermissions.OrderByDescending(c => c.chance));
+            }
+            
+            if (config.rateBonusController.dayOfWeekBonusRated.useBonusDayOfWeek || config.rateBonusController.wipeBonusRated.useWipeBonus)
+                timerUpdateBonusAllRate = timer.Once(300f, AutoUpdateBonusRate); 
+
+            if (!mixingTableController.useSpeedMixingTable)
+                Unsubscribe(nameof(OnMixingTableToggle));
+            else permissionsMixingTablesSorted.AddRange(mixingTableController.permissionList.OrderByDescending(p => p.rate));    
+            
+            if (!recyclerController.speedRecycler.useRecyclerSpeed)
+                Unsubscribe(nameof(OnRecyclerToggle));
+            else permissionsSpeedRecyclerSorted.AddRange(recyclerController.speedRecycler.permissionRate.OrderByDescending(p => p.rate));
+            
+            if(!config.teaController.useTeaController)
+                Unsubscribe(nameof(OnPlayerAddModifiers));
+            
+            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel && !config.fuelTransportController.fuelBuyingShopKeeper.useAutoFillFuel)
+                Unsubscribe(nameof(OnEntitySpawned));
+
+            if (rateBonusWipe.wipeBonusRated.useWipeBonus)
+                permissionsWipeBonusSorted.AddRange(rateBonusWipe.wipeBonusRated.permissionRateBonus.OrderByDescending(p => p.rate));
+        }
+
+        private void CaptureDefaultTimeSettings()
+        {
+            if (timeDefaultsCaptured || !timeComponent)
+                return;
+
+            defaultDayLengthInMinutes = timeComponent.DayLengthInMinutes;
+            defaultProgressTime = timeComponent.ProgressTime;
+            defaultUseTimeCurve = timeComponent.UseTimeCurve;
+            defaultTimeCurve = CloneAnimationCurve(timeComponent.TimeCurve);
+
+            timeDefaultsCaptured = true;
+        }
+        private Dictionary<UInt64, String> quarryToggled = new Dictionary<UInt64, String>();
+
+        private static readonly Single[] timeSmoothExtraHours =
+        {
+            9f,
+            11f,
+            12f,
+            20f,
+            21f
+        };
+		   		 		  						  	   		   					  			 		   					  	 		
+        
+        
+        private void InitializeEvents()
+        {
+            RunEvent(TypeEvent.Airdrop, true);
+            RunEvent(TypeEvent.Bradley, true);
+            RunEvent(TypeEvent.CargoShip, true);
+            RunEvent(TypeEvent.Ch47, true);
+            RunEvent(TypeEvent.PatrolHelicopter, true);
+        }
+        private void OnDispenserBonus(ResourceDispenser resource, BasePlayer player, Item item) => ConvertRate(TypeConverted.Gather, player.UserIDString, item);
+        private Boolean defaultProgressTime;
+
+        protected override void LoadDefaultConfig() => config = Configuration.GetNewConfiguration();
+        
+        private void FuelPerSecController(BaseVehicle vehicle)
+        {
+            if (!config.fuelTransportController.fuelPerSecTransport.useConsumedFuel) return;
+
+            Configuration.FuelTransportController.FuelPerSecTransport fuelPerSecController = config.fuelTransportController.fuelPerSecTransport;
+
+            switch (vehicle)
+            {
+                case ScrapTransportHelicopter scrapTransportHelicopter:
+                    scrapTransportHelicopter.fuelPerSec *= fuelPerSecController.consumedScrapTransport;
+                    break;
+                case Minicopter minicopter:
+                    minicopter.fuelPerSec *= fuelPerSecController.consumedCopter;
+                    break;
+                case AttackHelicopter attackHelicopter:
+                    attackHelicopter.fuelPerSec *= fuelPerSecController.consumedAttackHelicopter;
+                    break;
+                case RHIB rhib:
+                    rhib.fuelPerSec *= fuelPerSecController.consumedBoat;
+                    break;
+                case MotorRowboat boat:
+                    boat.fuelPerSec *= fuelPerSecController.consumedBoat;
+                    break;
+                case BaseSubmarine submarine:
+                    submarine.maxFuelPerSec *= fuelPerSecController.consumedSubmarine;
+                    break;
+                case Snowmobile snowmobile:
+                    snowmobile.maxFuelPerSec *= fuelPerSecController.consumedSnowmobile;
+                    break;
+                case TrainCar trainCar:
+                {
+                    StorageContainer fuelContainer = (trainCar.GetFuelSystem() as EntityFuelSystem)?.GetFuelContainer();
+                    if (!fuelContainer) return;
+                    if (!fuelContainer.TryGetComponent(out TrainEngine trainEngine)) return;
+                    trainEngine.maxFuelPerSec *= fuelPerSecController.consumedTrain;
+                    break;
+                }
+            }
+        }
+        
+        private class ModiferTea
+        {
+            public Modifier.ModifierType type;
+            public Single value;
+            public Single duration;
+        }
+        
+                
+                
+        private String GetLang(in String LangKey, in String userID = null, params Object[] args)
+        {
+            if (args == null) 
+                return lang.GetMessage(LangKey, this, userID);
+
+            StringBuilder sb = Pool.Get<StringBuilder>();
+
+            try
+            {
+                sb.AppendFormat(lang.GetMessage(LangKey, this, userID), args);
+                return sb.ToString();
+            }
+            finally
+            {
+                sb.Clear();
+                Pool.FreeUnmanaged(ref sb);
+            }
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private void EventMapping(Configuration.EventController eventController)
+        {
+            eventMapping.TryAdd("assets/bundled/prefabs/world/event_cargoheli.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.Ch47, eventController.eventCh47));
+            eventMapping.TryAdd("assets/bundled/prefabs/world/event_helicopter.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.PatrolHelicopter, eventController.eventHelicopter));
+            eventMapping.TryAdd("assets/bundled/prefabs/world/event_cargoship.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.CargoShip, eventController.eventCargoShip));
+            eventMapping.TryAdd("assets/bundled/prefabs/world/event_airdrop.prefab", new ValueTuple<TypeEvent, Configuration.EventController.EventTemplate>(TypeEvent.Airdrop, eventController.eventAirdrop));
+        }
+
+        private Single GetCircularHourDistance(Single a, Single b)
+        {
+            a = NormalizeHour(a);
+            b = NormalizeHour(b);
+
+            Single diff = Mathf.Abs(a - b);
+            return Mathf.Min(diff, 24f - diff);
+        }
+
+        private void OnHour() => ApplyConfiguredTimeState(false);
+
+        
+                
+        private void OnContainerDropItems(ItemContainer container)
+        {
+            LootContainer lootContainer = container.entityOwner as LootContainer;
+            if (!lootContainer) return;
+            UInt64 netID = lootContainer.net.ID.Value;
+            if (lootedEntity.Contains(netID)) return;
+            
+            BasePlayer player = lootContainer.lastAttacker as BasePlayer;
+            if (!player) return;
+            
+            foreach (Item item in container.itemList)
+                ConvertRate(TypeConverted.Loot, player.UserIDString, item);
+        }
+
+        
+        
+        private void OnExcavatorResourceSet(ExcavatorArm arm, String resourceName, BasePlayer player) => excavatorUsePlayer = player;
+
+        private void OnNewSave(String filename)
+        {
+            lootedEntity.Clear();
+            quarryToggled.Clear();
+            
+            WriteData();
+        }
+        
+        private BasePlayer excavatorUsePlayer = null;
+
+        private Single GetConfiguredDayHours(Int32 dayStart, Int32 nightStart)
+        {
+            Int32 hours = nightStart - dayStart;
+            if (hours <= 0)
+                hours += 24;
+
+            return hours;
+        }
+        private void WriteData()
+        {
+            Oxide.Core.Interface.Oxide.DataFileSystem.WriteObject("IQSystem/IQRates/LootedContainers", lootedEntity);
+            Oxide.Core.Interface.Oxide.DataFileSystem.WriteObject("IQSystem/IQRates/QuarryToggled", quarryToggled);
+        }
+
+                
+                
+        private HashSet<UInt64> lootedEntity = new HashSet<UInt64>();
+
+        private void OnSunset() => ApplyConfiguredTimeState(false);
+        private ModifierDefintion CreateModifier(ModiferTea tea, Single difference) => GetDefintionModifer(tea.type, tea.duration, tea.value / difference);
+
+        private void OnEntityKill(LootContainer lootContainer)
+        {
+            if (!lootContainer) return;
+            if (lootContainer.net == null) return;
+            lootedEntity.Remove(lootContainer.net.ID.Value);
+        }
+
+        private void SendChat(String Message, BasePlayer player, Chat.ChatChannel channel = Chat.ChatChannel.Global)
+        {
+            if (IQChat && config.referencePlugins.iqchatReference.useIQChat)
+                IQChat.Call("API_ALERT_PLAYER", player, Message, config.referencePlugins.iqchatReference.prefixChat, config.referencePlugins.iqchatReference.customAvatar);
+            else player.SendConsoleCommand("chat.add", channel, 0, Message);
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        
+        
+        private Item OnFishCatch(Item item, BaseFishingRod rod, BasePlayer player)
+        {
+            ConvertRate(TypeConverted.Fishing, player.UserIDString, item);
+            return null;
+        }
+        
+        private enum TypeConverted
+        {
+            Gather,
+            Loot,
+            PickUP,
+            Quarry,
+            Excavator,
+            Growable,
+            Fishing
+        }
+        
+        private Single GetBonusRate(String userID) => bonusRatesPlayer.GetValueOrDefault(userID, 0);
+        
+        private void Unload()
+        {
+            if (_ == null) return;
+            
+            WriteData();
+            BackupDefaultEvents();
+
+            if (triggersEvents != null)
+            {
+                foreach (EventController eventController in triggersEvents.Values)
+                {
+                    if (eventController.timerEvent is { Destroyed: false })
+                    {
+                        eventController.timerEvent.Destroy();
+                        eventController.timerEvent = null;
+                    }
+                }
+                triggersEvents.Clear();
+                triggersEvents = null;
+            }
+
+            if (bonusRatesPlayer != null)
+            {
+                bonusRatesPlayer.Clear();
+                bonusRatesPlayer = null;
+            }
+
+            rateDataCache.Clear();
+            rateDataCache = null;
+            
+            rateBonusDay = null;
+            
+            teaModifers?.Clear();
+
+            if (excavatorUsePlayer)
+                excavatorUsePlayer = null;
+
+            if (lootedEntity != null)
+            {
+                lootedEntity.Clear();
+                lootedEntity = null;
+            } 
+            
+            if (permissionsWipeBonusSorted != null)
+            {
+                permissionsWipeBonusSorted.Clear();
+                permissionsWipeBonusSorted = null;
+            }
+            
+            if (quarryToggled != null)
+            {
+                quarryToggled.Clear();
+                quarryToggled = null;
+            }
+            
+            if (eventMapping != null)
+            {
+                eventMapping.Clear();
+                eventMapping = null;
+            }
+            
+            if (timerBradley is { Destroyed: false })
+            {
+                timerBradley.Destroy();
+                timerBradley = null;
+            }     
+            
+            if (timerUpdateBonusRate is { Destroyed: false })
+            {
+                timerUpdateBonusRate.Destroy();
+                timerUpdateBonusRate = null;
+            }         
+            
+            if (timerUpdateBonusAllRate is { Destroyed: false })
+            {
+                timerUpdateBonusAllRate.Destroy();
+                timerUpdateBonusAllRate = null;
+            }
+            
+            if (ovenCotrollers != null)
+            {
+                foreach (OvenController ovenController in ovenCotrollers.Values)
+                {
+                    if (ovenController)
+                        UnityEngine.Object.DestroyImmediate(ovenController);
+                }
+            
+                ovenCotrollers.Clear();
+                ovenCotrollers = null;
+            }
+
+            if (permissionsOvensSorted != null)
+            {
+                permissionsOvensSorted.Clear();
+                permissionsOvensSorted = null;
+            }    
+            
+            if (permissionsCharacoalChanceSorted != null)
+            {
+                permissionsCharacoalChanceSorted.Clear();
+                permissionsCharacoalChanceSorted = null;
+            }    
+            
+            if (permissionsMixingTablesSorted != null)
+            {
+                permissionsMixingTablesSorted.Clear();
+                permissionsMixingTablesSorted = null;
+            }        
+            
+            if (permissionsSpeedRecyclerSorted != null)
+            {
+                permissionsSpeedRecyclerSorted.Clear();
+                permissionsSpeedRecyclerSorted = null;
+            }
+            
+            if (timeComponent != null)
+            {
+                UnsubscribeFromEvents();
+
+                if (timeDefaultsCaptured)
+                {
+                    timeComponent.DayLengthInMinutes = defaultDayLengthInMinutes;
+                    timeComponent.ProgressTime = defaultProgressTime;
+                    timeComponent.UseTimeCurve = defaultUseTimeCurve;
+
+                    if (defaultTimeCurve != null)
+                    {
+                        timeComponent.TimeCurve = CloneAnimationCurve(defaultTimeCurve);
+                        timeComponent.RefreshTimeCurve();
+                    }
+                }
+                else
+                {
+                    timeComponent.ProgressTime = true;
+                }
+
+                timeComponent = null;
+            }
+
+            _ = null;
+        }
+        private Boolean defaultBradleyStatus = true;
+        private Boolean defaultUseTimeCurve;
+        private Object OnExcavatorGather(ExcavatorArm arm, Item item)
+        {
+            if (!excavatorUsePlayer) return null;
+            ConvertRate(TypeConverted.Excavator, excavatorUsePlayer.UserIDString, item);
+            return null;
         }
         
         private new void LoadDefaultMessages()
@@ -2905,31 +2501,749 @@ namespace Oxide.Plugins
             
             Puts(LanguageEn ? "Language file loaded successfully" : "Языковой файл загружен успешно");
         }
-        private ModifierDefintion CreateModifier(ModiferTea tea, Single difference) => GetDefintionModifer(tea.type, tea.duration, tea.value / difference);
-        
-        
-        [PluginReference] Plugin IQChat;
-        private Boolean defaultBradleyStatus = true;
 
-        private void OnNewSave(String filename)
+        private Single SmoothStep01(Single value)
         {
-            lootedEntity.Clear();
-            quarryToggled.Clear();
-            
-            WriteData();
+            value = Mathf.Clamp01(value);
+            return value * value * (3f - 2f * value);
+        }
+		   		 		  						  	   		   					  			 		   					  	 		
+        private Boolean ValidateTimeController(Configuration.TimeController timeController)
+        {
+            Int32 dayStart = timeController.timeStartDay;
+            Int32 nightStart = timeController.timeStartNight;
+
+            if (dayStart < 0 || dayStart > 23 || nightStart < 0 || nightStart > 23)
+            {
+                PrintError(LanguageEn ? $"Invalid time settings: day={dayStart}, night={nightStart}. Expected range is 0..23" : $"Некорректная настройка времени: день={dayStart}, ночь={nightStart}. Ожидается диапазон 0..23");
+                return false;
+            }
+
+            if (dayStart == nightStart)
+            {
+                PrintError(LanguageEn ? "Invalid time settings: day start time and night start time must not be the same" : "Некорректная настройка времени: начало дня и начало ночи не должны совпадать");
+                return false;
+            }
+
+            if (timeController.passageTime.minutesDay <= 0)
+            {
+                PrintError(LanguageEn ? "Invalid time settings: 'Number of minutes in a day' must be greater than 0" : "Некорректная настройка времени: 'Сколько минут будет длиться день' должно быть больше 0");
+                return false;
+            }
+		   		 		  						  	   		   					  			 		   					  	 		
+            if (timeController.passageTime.minutesNight <= 0)
+            {
+                PrintError(LanguageEn ? "Invalid time settings: 'Number of minutes in a night' must be greater than 0" : "Некорректная настройка времени: 'Сколько минут будет длиться ночь' должно быть больше 0");
+                return false;
+            }
+
+            return true;
+        }
+        private const Boolean timeSmoothUseVanillaSunrise = true;
+        private Boolean timeDefaultsCaptured;
+        /// <summary>
+        /// - Изменена логика ускорения печей
+        /// - Изменена логика ускорения времени, улучшено сглаживание перехода времени при ускорении
+        /// </summary>
+        
+        private const Boolean LanguageEn = false;
+        private void OnUserGroupRemoved(String id, String groupName) => RefreshPermissionPlayer(id);
+
+        private void HandleConfiguredTimeState(Boolean isDay, Boolean initializeState)
+        {
+            if (initializeState || !timeStateInitialized)
+            {
+                timeStateInitialized = true;
+                activatedDay = isDay;
+                return;
+            }
+
+            if (activatedDay == isDay)
+                return;
+
+            activatedDay = isDay;
+
+            if (config.timeController.passageTime.skipNight || !config.timeController.passageTime.alertTimeController)
+                return;
+		   		 		  						  	   		   					  			 		   					  	 		
+            BroadcastRatesAlert(isDay ? "DAY_RATES_ALERT" : "NIGHT_RATES_ALERT");
         }
         
-        private Dictionary<String, Single> bonusRatesPlayer = new Dictionary<String, Single>();
+        private void OnOvenStarted(BaseOven oven)
+        {
+            if (oven is BaseFuelLightSource)
+                return;
+            
+            if (config.ovenController.blackListOvenPrefab.Contains(oven.ShortPrefabName))
+                return;
+            
+            //if(oven is not ElectricOven) return;
+            OvenController controller = GetOrAddOvenController(oven);
+            controller.SwitchOven(true);
+        }
+        private Dictionary<TypeEvent, EventController> triggersEvents = new Dictionary<TypeEvent, EventController>();
+
+                
+        
+        private void InitializeOvens()
+        {
+            if (!config.ovenController.useSpeedOven) return;
+            
+            List<BaseNetworkable> networkables = Pool.Get<List<BaseNetworkable>>();
+            networkables.AddRange(BaseNetworkable.serverEntities.entityList.Get().Values);
+            
+            foreach (BaseNetworkable entity in networkables)
+            {
+                if (entity is not BaseOven oven)
+                    continue;
+                
+                if(!oven) continue;
+                
+                OvenController controller = GetOrAddOvenController(oven);
+                controller.Restart();
+            }
+            
+            Pool.FreeUnmanaged(ref networkables);
+        }
+
+        private void ConvertRate(TypeConverted type, String userID, Item item)
+        {
+            Configuration.RateController.ControllerListRate controllerList = config.rateController.controllerList;
+            if (!controllerList.IsConvertedItem(item)) return;
+
+            Configuration.RateController.RateData rateData = config.rateController.GetRateData(userID);
+            if (rateData == null) return;
+
+            Single multiplicer = type switch
+            {
+                TypeConverted.Gather => rateData.gatherRate,
+                TypeConverted.Loot => rateData.lootRate,
+                TypeConverted.PickUP => rateData.pickUpRate,
+                TypeConverted.Quarry => rateData.quarryRate.GetQuarryRate(item.info.itemid),
+                TypeConverted.Excavator => rateData.excavatorRate,
+                TypeConverted.Growable => rateData.growableRate,
+                TypeConverted.Fishing => rateData.fishRate,
+                _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
+            };
+
+            Single correctlyRateToPermission = rateData.GetCorrectlyRate(item.info.itemid);
+            if (correctlyRateToPermission != 0)
+                multiplicer = correctlyRateToPermission;
+
+            Single bonusRate = GetBonusRate(userID);
+            multiplicer += bonusRate;
+
+            if (multiplicer < 0f) multiplicer = 0f;
+
+            Int32 itemId = item.info.itemid;
+
+            Double carry = GetCarry(userID, type, itemId);
+            Double expected = item.amount * (Double)multiplicer + carry; 
+            Int32 newAmount = (Int32)Math.Floor(expected);
+            Double newCarry = expected - newAmount; 
+
+            if (newAmount < 1)
+            {
+                Double debt = 1 - newAmount; 
+                newAmount = 1;
+                newCarry -= debt; 
+            }
+            
+            if (newCarry >= 1.0)
+            {
+                Int32 k = (Int32)Math.Floor(newCarry);
+                newAmount += k;
+                newCarry -= k;
+            }
+            else if (newCarry <= -1.0)
+            {
+                Int32 k = (Int32)Math.Floor(-newCarry);
+                newAmount -= k;
+                newCarry += k;
+                if (newAmount < 1)
+                {
+                    newCarry -= (1 - newAmount);
+                    newAmount = 1;
+                }
+            }
+
+            SetCarry(userID, type, itemId, newCarry);
+            item.amount = newAmount;
+        }
+        
+        private void ChangeEventSchedule()
+        {
+            List<EventSchedule> removedEventSchedule = Pool.Get<List<EventSchedule>>();
+            defaultEvents.AddRange(EventSchedule.allEvents);
+            
+            Configuration.EventController eventController = config.eventController;
+            EventMapping(eventController);
+            
+            if (eventController.eventBradley.disableFullEvent)
+            {
+                defaultBradleyStatus = Bradley.enabled;
+                Bradley.enabled = false;
+                if (BradleySpawner.singleton && BradleySpawner.singleton.spawned)
+                    BradleySpawner.singleton.spawned.Kill();
+            }
+            
+            foreach (EventSchedule allEvent in EventSchedule.allEvents)
+            {
+                if (eventMapping.TryGetValue(allEvent.name, out (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig) eventInfo))
+                {
+                    (TypeEvent eventType, Configuration.EventController.EventTemplate eventConfig) = eventInfo;
+
+                    if (!eventConfig.disableFullEvent && eventConfig.useEvent)
+                    {
+                        triggersEvents.TryAdd(eventType, new EventController()
+                        {
+                            trigger = allEvent.GetComponent<TriggeredEvent>(),
+                            timerEvent = null,
+                        });
+                    }
+
+                    if (eventConfig.disableFullEvent || eventConfig.useEvent)
+                        removedEventSchedule.Add(allEvent);
+                }
+            }
+		   		 		  						  	   		   					  			 		   					  	 		
+            foreach (EventSchedule removeEvent in removedEventSchedule)
+            {
+                removeEvent.CancelInvoke(removeEvent.RunSchedule);
+                EventSchedule.allEvents.Remove(removeEvent);
+            }
+            
+            Pool.FreeUnmanaged(ref removedEventSchedule);
+        }
+        
+        
+        
+        private void GenerateCacheRatePlayer(BasePlayer player)
+        {
+            Configuration.RateController.RateData dayRate = null;
+            Configuration.RateController.RateData nightRate = null;
+            
+            foreach (KeyValuePair<String, Configuration.RateController.RateData> permissionDays in config.rateController.permissionRateDataDay)
+            {
+                if (!_.permission.UserHasPermission(player.UserIDString, permissionDays.Key)) continue;
+                dayRate = permissionDays.Value;
+                break;
+            }
+
+            dayRate ??= config.rateController.dayRate;
+            
+            foreach (KeyValuePair<String, Configuration.RateController.RateData> permissionNight in config.rateController.permissionRateDataNight)
+            {
+                if (!_.permission.UserHasPermission(player.UserIDString, permissionNight.Key)) continue;
+                nightRate = permissionNight.Value;
+                break;
+            }
+
+            nightRate ??= config.rateController.nightRate;
+		   		 		  						  	   		   					  			 		   					  	 		
+            rateDataCache[player.UserIDString] = new PlayerRateCache { dayRate = dayRate, nightRate = nightRate };
+        }
+        private class EventController
+        {
+            public TriggeredEvent trigger;
+            public Timer timerEvent;
+        }
+
+                
+        
+        
+        private class OvenController : FacepunchBehaviour
+        {
+            private BaseOven oven;
+            private String ownerIDOven;
+            private Boolean isElectical;
+            
+            private Single defaultSmeltingSpeed;
+            private Single smeltingSpeed;
+            private Int32 fuelRate; 
+            private Int32 characoalRate;
+            private Single characoalChance;
+            private Boolean isCooking;
+            
+                    
+            private void Awake()
+            {
+                oven = (BaseOven)gameObject.ToBaseEntity();
+                defaultSmeltingSpeed = oven.smeltSpeed;
+                smeltingSpeed = defaultSmeltingSpeed;
+                ownerIDOven = oven.OwnerID.ToString();
+                isElectical = oven is ElectricOven;
+            }
+        
+            private void OnDestroy()
+            {
+                Boolean isOnStatus = oven.IsOn();
+                StopCooking();
+                SingletonComponent<NpcFireManager>.Instance.Remove(oven);
+
+                oven.smeltSpeed = (Int32)defaultSmeltingSpeed;
+		   		 		  						  	   		   					  			 		   					  	 		
+                if (isOnStatus)
+                    oven.StartCooking();
+            }
+            
+                    
+            private void UpdateModifiers()
+            {
+                Single playerRate = config.ovenController.GetOvenRate(ownerIDOven);
+                Int32 cellingRate = (Int32)Math.Ceiling(playerRate);
+                
+                smeltingSpeed = defaultSmeltingSpeed * playerRate;
+                fuelRate = cellingRate;
+                characoalRate = cellingRate;
+                characoalChance = config.ovenController.characoalChanceRate.GetCharacoalChanse(ownerIDOven);
+            }
+        
+            public void Restart()
+            {
+                if (!oven.IsOn())
+                    return;
+
+                UpdateModifiers();
+
+                if (!isCooking)
+                    StartCooking();
+            }
+            
+            public void SwitchOven(Boolean isIgnite = false)
+            {
+                Boolean shouldTurnOn = isElectical || isIgnite ? oven.IsOn() : !oven.IsOn();
+
+                if (shouldTurnOn)
+                    StartCooking();
+                else StopCooking();
+            }
+            
+            
+            public void Cook()
+            {
+                if (!oven.HasFlag(BaseEntity.Flags.On))
+                {
+                    StopCooking();
+                    return;
+                }
+                
+                Item burnable = oven.FindBurnable();
+                
+                if (burnable == null && !isElectical)
+                {
+                    StopCooking();
+                    return;
+                }
+
+                foreach (Item obj in oven.inventory.itemList)
+                {
+                    if (obj.position >= oven._inputSlotIndex && obj.position < oven._inputSlotIndex + oven.inputSlots && !obj.HasFlag(global::Item.Flag.Cooking))
+                    {
+                        obj.SetFlag(global::Item.Flag.Cooking, true);
+                        obj.MarkDirty();
+                    }
+                }
+                
+                oven.IncreaseCookTime(0.5f * smeltingSpeed);
+                
+                BaseEntity slot = oven.GetSlot(BaseEntity.Slot.FireMod);
+                if (slot) slot.SendMessage(nameof (Cook), 0.5f , SendMessageOptions.DontRequireReceiver);
+                
+                if (burnable != null && !isElectical)
+                {
+                    ItemModBurnable itemModBurnable = burnable.info.ItemModBurnable;
+                    burnable.fuel -= (Single) (0.5 * (oven.cookingTemperature / 200.0));
+                    
+                    if (!burnable.HasFlag(global::Item.Flag.OnFire))
+                    {
+                        burnable.SetFlag(global::Item.Flag.OnFire, true);
+                        burnable.MarkDirty();
+                    }
+        
+                    if (burnable.fuel <= 0.0)
+                        ConsumeFuel(burnable, itemModBurnable);
+                }
+            }
+            
+            public void ConsumeFuel(Item fuel, ItemModBurnable burnable)
+            {
+                for (Int32 i = 0; i < characoalRate; i++)
+                {
+                    if (oven.allowByproductCreation && burnable.byproductItem != null &&
+                        UnityEngine.Random.Range(0.0f, 1f) > characoalChance)
+                    {
+                        Item obj = ItemManager.Create(burnable.byproductItem, burnable.byproductAmount);
+                        if (!obj.MoveToContainer(oven.inventory))
+                        {
+                            StopCooking();
+                            obj.Drop(oven.inventory.dropPosition, oven.inventory.dropVelocity);
+                        }
+                    }
+                }
+
+                if (fuel.amount <= fuelRate)
+                    fuel.Remove();
+                else
+                {
+                    fuel.UseItem(fuelRate);
+                    fuel.fuel = burnable.fuelAmount;
+                    fuel.MarkDirty();
+                }
+            }
+        
+                        
+            public virtual void StartCooking()
+            {
+                UpdateModifiers();
+		   		 		  						  	   		   					  			 		   					  	 		
+                CancelInvoke(Cook);
+                BaseOven.cookQueue.Remove(oven);
+
+                isCooking = true;
+
+                oven.smeltSpeed = (Int32)smeltingSpeed;
+                oven.inventory.temperature = oven.cookingTemperature;
+                oven.UpdateAttachmentTemperature();
+
+                InvokeRepeating(Cook, 0.5f, 0.5f);
+		   		 		  						  	   		   					  			 		   					  	 		
+                using BaseEntity.FlagsUpdateScope flags = oven.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags);
+                flags.Set(BaseEntity.Flags.Reserved8, true);
+                flags.Set(BaseEntity.Flags.On, true);
+            }
+            
+            public virtual void StopCooking()
+            {
+                isCooking = false;
+
+                CancelInvoke(Cook);
+                BaseOven.cookQueue.Remove(oven);
+
+                oven.UpdateAttachmentTemperature();
+
+                if (oven.inventory != null)
+                {
+                    oven.inventory.temperature = 15f;
+
+                    foreach (Item obj in oven.inventory.itemList)
+                    {
+                        if (obj.HasFlag(global::Item.Flag.OnFire))
+                        {
+                            obj.SetFlag(global::Item.Flag.OnFire, false);
+                            obj.MarkDirty();
+                        }
+                        else if (obj.HasFlag(global::Item.Flag.Cooking))
+                        {
+                            obj.SetFlag(global::Item.Flag.Cooking, false);
+                            obj.MarkDirty();
+                        }
+                    }
+                }
+
+                using BaseEntity.FlagsUpdateScope flags = oven.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags);
+                flags.Set(BaseEntity.Flags.On, false);
+                flags.Set(BaseEntity.Flags.Reserved8, false);
+            }
+        }
+
+        private Boolean IsConfiguredDay(Single hour, Int32 dayStart, Int32 nightStart)
+        {
+            hour = NormalizeHour(hour);
+
+            if (dayStart < nightStart)
+                return hour >= dayStart && hour < nightStart;
+		   		 		  						  	   		   					  			 		   					  	 		
+            return hour >= dayStart || hour < nightStart;
+        }
+
+        private Configuration.RateBonusController.RateControllerDayOfWeek.RateBonusDays rateBonusDay;
+
+        private List<String> npcTriggers = new List<String>();
+
+        private void SubscribeToEvents()
+        {
+            if (timeComponent == null)
+                return;
+		   		 		  						  	   		   					  			 		   					  	 		
+            timeComponent.OnSunrise += OnSunrise;
+            timeComponent.OnSunset += OnSunset;
+            timeComponent.OnHour += OnHour;
+        }
         
         private struct PlayerRateCache
         {
             public Configuration.RateController.RateData dayRate;
             public Configuration.RateController.RateData nightRate;
         }
-
-        private List<String> npcTriggers = new List<String>();
         
-        private Single CalculateModifierDifference(Single defaultRate, Single playerRate) => (playerRate - defaultRate) <= 0 ? 1 : (playerRate - defaultRate);
+        
+        [PluginReference] Plugin IQChat;
+
+        private Int32 GetTimeEvent(TypeEvent eventType)
+        {
+            Configuration.EventController eventController = config.eventController;
+            Configuration.EventController.EventTemplate.SpawnController spawnControllerEvent = eventType switch
+            {
+                TypeEvent.Bradley => eventController.eventBradley.spawnController,
+                TypeEvent.Airdrop => eventController.eventAirdrop.spawnController,
+                TypeEvent.CargoShip => eventController.eventCargoShip.spawnController,
+                TypeEvent.Ch47 => eventController.eventCh47.spawnController,
+                TypeEvent.PatrolHelicopter => eventController.eventHelicopter.spawnController,
+                _ => throw new ArgumentOutOfRangeException(nameof(eventType), eventType, null)
+            };
+
+            return spawnControllerEvent.GetSpawnTimeSecods();
+        }
+
+        private AnimationCurve CloneAnimationCurve(AnimationCurve source)
+        {
+            if (source == null)
+                return null;
+
+            AnimationCurve clone = new AnimationCurve(source.keys)
+            {
+                preWrapMode = source.preWrapMode,
+                postWrapMode = source.postWrapMode
+            };
+
+            return clone;
+        }
+
+        private void BuildConfiguredTimeCurve(Configuration.TimeController timeController)
+        {
+            const Int32 samplesPerHour = 12;
+            const Int32 sampleCount = 24 * samplesPerHour;
+            const Single stepHours = 1f / samplesPerHour;
+
+            Single[] rawMinutesPerHour = new Single[sampleCount];
+            Boolean[] isDaySample = new Boolean[sampleCount];
+
+            Single rawDayMinutes = 0f;
+            Single rawNightMinutes = 0f;
+
+            for (Int32 i = 0; i < sampleCount; i++)
+            {
+                Single hour = (i + 0.5f) * stepHours;
+                Boolean isDay = IsConfiguredDay(hour, timeController.timeStartDay, timeController.timeStartNight);
+
+                isDaySample[i] = isDay;
+		   		 		  						  	   		   					  			 		   					  	 		
+                Single baseMinutesPerHour = GetBaseMinutesPerGameHour(isDay, timeController);
+                Single smoothWeight = GetTransitionWeight(hour, timeController);
+
+                Single targetMinutesPerHour = timeSmoothMinutesPerGameHour;
+                if (targetMinutesPerHour < baseMinutesPerHour)
+                    targetMinutesPerHour = baseMinutesPerHour;
+		   		 		  						  	   		   					  			 		   					  	 		
+                Single minutesPerHour = Mathf.Lerp(baseMinutesPerHour, targetMinutesPerHour, smoothWeight);
+
+                rawMinutesPerHour[i] = minutesPerHour;
+
+                if (isDay)
+                    rawDayMinutes += minutesPerHour * stepHours;
+                else rawNightMinutes += minutesPerHour * stepHours;
+            }
+
+            Single dayScale = rawDayMinutes > 0f ? timeController.passageTime.minutesDay / rawDayMinutes : 1f;
+            Single nightScale = rawNightMinutes > 0f ? timeController.passageTime.minutesNight / rawNightMinutes : 1f;
+
+            Single[] cumulativeMinutes = new Single[sampleCount + 1];
+            cumulativeMinutes[0] = 0f;
+
+            for (Int32 i = 0; i < sampleCount; i++)
+            {
+                Single scaledMinutesPerHour = rawMinutesPerHour[i] * (isDaySample[i] ? dayScale : nightScale);
+                cumulativeMinutes[i + 1] = cumulativeMinutes[i] + scaledMinutesPerHour * stepHours;
+            }
+		   		 		  						  	   		   					  			 		   					  	 		
+            Single totalMinutes = cumulativeMinutes[sampleCount];
+
+            Keyframe[] keys = new Keyframe[25];
+
+            for (Int32 i = 0; i <= 24; i++)
+            {
+                Single targetMinutes = totalMinutes * (i / 24f);
+                Single actualHour = FindHourByCumulativeMinutes(cumulativeMinutes, targetMinutes, stepHours);
+
+                keys[i] = new Keyframe(i, actualHour);
+            }
+
+            CalculateLinearTangents(keys);
+
+            AnimationCurve curve = new AnimationCurve(keys)
+            {
+                preWrapMode = WrapMode.Once,
+                postWrapMode = WrapMode.Once
+            };
+
+            timeComponent.DayLengthInMinutes = totalMinutes;
+            timeComponent.TimeCurve = curve;
+            timeComponent.UseTimeCurve = true;
+            timeComponent.RefreshTimeCurve();
+        }
+
+        
+        private void SpeedTimes()
+        {
+            Configuration.TimeController timeController = config.timeController;
+            if (!timeController.passageTime.useTimeSpeed)
+                return;
+
+            if (timeComponent == null)
+                return;
+		   		 		  						  	   		   					  			 		   					  	 		
+            if (!ValidateTimeController(timeController))
+                return;
+
+            timeComponent.ProgressTime = true;
+
+            BuildConfiguredTimeCurve(timeController);
+
+            UnsubscribeFromEvents();
+            SubscribeToEvents();
+		   		 		  						  	   		   					  			 		   					  	 		
+            ApplyConfiguredTimeState(true);
+        }
+        private void OnUserPermissionRevoked(String id, String permName) => RefreshPermissionPlayer(id);
+
+        private Single FindHourByCumulativeMinutes(Single[] cumulativeMinutes, Single targetMinutes, Single stepHours)
+        {
+            Int32 lastIndex = cumulativeMinutes.Length - 1;
+
+            if (targetMinutes <= 0f)
+                return 0f;
+
+            if (targetMinutes >= cumulativeMinutes[lastIndex])
+                return 24f;
+
+            for (Int32 i = 0; i < lastIndex; i++)
+            {
+                Single from = cumulativeMinutes[i];
+                Single to = cumulativeMinutes[i + 1];
+
+                if (targetMinutes > to)
+                    continue;
+
+                Single segmentLength = to - from;
+                Single t = segmentLength > 0f ? Mathf.Clamp01((targetMinutes - from) / segmentLength) : 0f;
+
+                return (i + t) * stepHours;
+            }
+
+            return 24f;
+        }
+        
+        private TOD_Time timeComponent = null;
+
+        private void CalculateLinearTangents(Keyframe[] keys)
+        {
+            for (Int32 i = 0; i < keys.Length; i++)
+            {
+                Keyframe key = keys[i];
+
+                if (i > 0)
+                {
+                    Keyframe previous = keys[i - 1];
+                    key.inTangent = (key.value - previous.value) / (key.time - previous.time);
+                }
+
+                if (i < keys.Length - 1)
+                {
+                    Keyframe next = keys[i + 1];
+                    key.outTangent = (next.value - key.value) / (next.time - key.time);
+                }
+
+                keys[i] = key;
+            }
+        }
+        
+        private void OnUserPermissionGranted(String id, String permName) => RefreshPermissionPlayer(id);
+
+        private void ProcessModifier(String userID, ModiferTea tea, Configuration.RateController.RateData playerRateData, Configuration.RateController.RateData defaultRateData, List<ModifierDefintion> mods)
+        {
+            Single defaultRate = tea.type switch
+            {
+                Modifier.ModifierType.Ore_Yield => defaultRateData.gatherRate,
+                Modifier.ModifierType.Wood_Yield => defaultRateData.gatherRate,
+                Modifier.ModifierType.Scrap_Yield => defaultRateData.gatherRate,
+                _ => throw new InvalidOperationException("Unknown modifier type")
+            };
+
+            Single playerRate = tea.type switch
+            {
+                Modifier.ModifierType.Ore_Yield => playerRateData.gatherRate,
+                Modifier.ModifierType.Wood_Yield => playerRateData.gatherRate,
+                Modifier.ModifierType.Scrap_Yield => playerRateData.lootRate,
+                _ => throw new InvalidOperationException("Unknown modifier type")
+            };
+            
+            Single bonusRate = GetBonusRate(userID);
+            playerRate += bonusRate;
+
+            Single modifierDifference = CalculateModifierDifference(defaultRate, playerRate);
+            mods.Add(CreateModifier(tea, modifierDifference));
+        }
+        private List<Configuration.PermissionsRateList> permissionsMixingTablesSorted = new();
+
+        
+        
+        private void OnEntitySpawned(BaseVehicle vehicle)
+        {
+            FuelFillingTransport(vehicle);
+            FuelPerSecController(vehicle);
+        }
+        
+        private void OnGroupPermissionRevoked(String name, String perm)
+        {
+            foreach (BasePlayer player in BasePlayer.activePlayerList)
+                RefreshPermissionPlayer(player.UserIDString);
+        }
+
+        private Boolean IsDayTime() => !TOD_Sky.Instance || IsConfiguredDay(TOD_Sky.Instance.Cycle.Hour, config.timeController.timeStartDay, config.timeController.timeStartNight);
+
+        private Timer timerBradley;
+
+                
+        
+        private void OnMixingTableToggle(MixingTable table, BasePlayer player)
+        {
+            if (table.IsOn())
+                return;
+
+            Single speedMixing = config.mixingTableController.GetSpeeedMixingTable(player);
+            
+            NextTick(() =>
+            {
+                table.RemainingMixTime *= speedMixing;
+                table.TotalMixTime *= speedMixing;
+                table.SendNetworkUpdateImmediate();
+
+                if (!(table.RemainingMixTime < 1f)) return;
+                table.CancelInvoke(table.TickMix);
+                table.Invoke(table.TickMix, table.RemainingMixTime);
+            });
+        }
+        private List<Configuration.PermissionsRateList> permissionsOvensSorted = new();
+        
+        private void OnOvenToggle(BaseOven oven, BasePlayer player)
+        {
+            if (oven is BaseFuelLightSource)
+                return;
+
+            if (config.ovenController.blackListOvenPrefab.Contains(oven.ShortPrefabName))
+                return;
+            
+            Item burnable = oven.FindBurnable();
+            if (burnable == null) return;
+            
+            OvenController controller = GetOrAddOvenController(oven);
+            controller.SwitchOven();
+        }
+
+        
+        
+        private void OnCollectiblePickedup(CollectibleEntity collectible, BasePlayer player, Item item) => ConvertRate(TypeConverted.PickUP, player.UserIDString, item);
         
             }
 }
