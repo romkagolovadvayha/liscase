@@ -1045,7 +1045,7 @@ namespace Oxide.Plugins
             try
             {
                 validContainers.AddRange(player.inventory.loot.containers);
-                HandleCommand(player, arg.GetString(0), validContainers);
+                HandleCommand(player, arg.GetString(0).ToString(), validContainers);
             }
             finally
             {
