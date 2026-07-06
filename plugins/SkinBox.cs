@@ -24,7 +24,7 @@ using UIAnchor = Oxide.Ext.Chaos.UIFramework.Anchor;
 
 namespace Oxide.Plugins
 {
-    [Info("SkinBox", "k1lly0u", "2.2.32")]
+    [Info("SkinBox", "k1lly0u", "2.2.33")]
     [Description("Allows you to reskin item's by placing it in the SkinBox and selecting a new skin")]
     class SkinBox : ChaosPlugin
     {
@@ -408,6 +408,7 @@ namespace Oxide.Plugins
                 player.inventory.loot.AddContainer(container.inventory);
                 player.inventory.loot.SendImmediate();
 
+                //player.ClientRPCPlayer(null, player, "RPC_OpenLootPanel", LOOT_PANEL);
                 player.ClientRPC(RpcTarget.Player("RPC_OpenLootPanel", player), LOOT_PANEL);
                 container.SendNetworkUpdate(BasePlayer.NetworkQueue.Update);
                             
@@ -1625,6 +1626,7 @@ namespace Oxide.Plugins
                 targetEntity.skinID = targetItem.skin;
                 targetEntity.SendNetworkUpdateImmediate();
 
+                //targetEntity.ClientRPC<int, NetworkableId>(null, "Client_ReskinResult", 1, targetEntity.net.ID);
                 targetEntity.ClientRPC(RpcTarget.NetworkGroup("Client_ReskinResult"), 1, targetEntity.net.ID);
                 return true;
             }
