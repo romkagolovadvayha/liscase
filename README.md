@@ -2,7 +2,7 @@
 
 Минимальная установка проекта (Yii2 Advanced):
 
-## Требования 
+## Требования  
 - PHP 7.4+ с расширениями: pdo_mysql, mbstring, intl, curl, json, zip
 - Composer
 - Nginx + PHP-FPM (например php7.4-fpm)
