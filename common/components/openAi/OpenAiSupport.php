@@ -61,7 +61,8 @@ class OpenAiSupport extends \yii\base\Component
         array $chatHistory = [],
         ?int $ticketId = null,
         $user = null,
-        bool $useDiscordInstructions = false
+        bool $useDiscordInstructions = false,
+        array $imageUrls = []
     ): ?string {
         try {
             $knowledge = $this->loadKnowledgeBase();
@@ -154,6 +155,7 @@ class OpenAiSupport extends \yii\base\Component
             }
             
             $systemInstructions .= "\n\nВажно: отвечай игроку по сути обращения в тикете поддержки естественным языком. Без JSON и техничных форматов, без обращений к разработчикам. Коротко и по делу.";
+            $systemInstructions .= "\nЕсли игрок прислал скриншот/изображение — внимательно посмотри содержимое. Если видно нарушение правил (читы, токсичность, оскорбления, багоюз, реклама и т.п.) — кратко подтверди, что скрин получен, нарушение понятно, примем меры / передадим модерации. Не выдумывай то, чего нет на картинке. Без длинных лекций.";
 
             $messages[] = ['role' => 'system', 'content' => $systemInstructions];
 
@@ -166,27 +168,81 @@ class OpenAiSupport extends \yii\base\Component
                     . implode("\n", $context)
             ];
 
-            // История: строго по ролям
-            foreach ($chatHistory as $item) {
-                if (!empty($item['user'])) {
-                    $messages[] = ['role' => 'user', 'content' => (string)$item['user']];
+            $historyItems = $chatHistory;
+            $currentImages = array_values(array_filter($imageUrls));
+
+            // История уже содержит текущее сообщение игрока — снимаем его, чтобы не дублировать,
+            // и забираем картинки в финальный multimodal-блок.
+            if (!empty($historyItems)) {
+                $last = $historyItems[count($historyItems) - 1];
+                if (isset($last['user']) && !isset($last['bot'])) {
+                    $lastText = trim((string)$last['user']);
+                    $currentText = trim($userMessage);
+                    if ($currentText === '' || $lastText === $currentText) {
+                        if (empty($currentImages) && !empty($last['images']) && is_array($last['images'])) {
+                            $currentImages = $last['images'];
+                        }
+                        if ($currentText === '' && $lastText !== '') {
+                            $userMessage = $lastText;
+                        }
+                        array_pop($historyItems);
+                    }
+                }
+            }
+
+            foreach ($historyItems as $item) {
+                if (!empty($item['user']) || !empty($item['images'])) {
+                    $messages[] = [
+                        'role' => 'user',
+                        'content' => $this->buildUserContent(
+                            (string)($item['user'] ?? ''),
+                            is_array($item['images'] ?? null) ? $item['images'] : []
+                        ),
+                    ];
                 }
                 if (!empty($item['bot'])) {
                     $messages[] = ['role' => 'assistant', 'content' => (string)$item['bot']];
                 }
             }
 
-            // ТЕКУЩЕЕ сообщение пользователя — обязательно последним
-            $messages[] = ['role' => 'user', 'content' => $userMessage];
+            $finalText = trim($userMessage);
+            if ($finalText === '' && !empty($currentImages)) {
+                $finalText = 'Пользователь отправил скриншот.';
+            }
+
+            $messages[] = [
+                'role' => 'user',
+                'content' => $this->buildUserContent($finalText, $currentImages),
+            ];
+
+            $model = (string)Yii::$app->settings->get('openAi_model');
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+            ];
+
+            // GPT-5 / o-series: max_tokens и custom temperature не поддерживаются
+            if ($this->isNewCompletionsModel($model)) {
+                // Бюджет включает reasoning-токены — 350 часто даёт пустой ответ
+                $payload['max_completion_tokens'] = 2000;
+            } else {
+                $payload['temperature'] = $this->temperature ?? 0.7;
+                $payload['max_tokens'] = 350;
+            }
+
+            $hasImages = !empty($currentImages);
+            if (!$hasImages) {
+                foreach ($historyItems as $item) {
+                    if (!empty($item['images'])) {
+                        $hasImages = true;
+                        break;
+                    }
+                }
+            }
 
             $response = $this->client->post('chat/completions', [
-                'json' => [
-                    'model' => Yii::$app->settings->get('openAi_model'),
-                    'messages' => $messages,
-                    'temperature' => $this->temperature ?? 0.7,
-                    'max_tokens' => 350, // чтобы не расплывался
-                ],
-                'timeout' => 60, // Увеличено до 50 секунд для медленных ответов
+                'json' => $payload,
+                'timeout' => $hasImages ? 90 : 60,
             ]);
 
             $data = json_decode($response->getBody(), true);
@@ -201,10 +257,50 @@ class OpenAiSupport extends \yii\base\Component
     }
 
     /**
+     * Текст или multimodal-контент (текст + картинки) для Chat Completions.
+     *
+     * @param string[] $imageUrls
+     * @return string|array
+     */
+    private function buildUserContent(string $text, array $imageUrls)
+    {
+        $imageUrls = array_slice(array_values(array_filter($imageUrls)), 0, 4);
+        if (empty($imageUrls)) {
+            return $text;
+        }
+
+        $parts = [];
+        if (trim($text) !== '') {
+            $parts[] = ['type' => 'text', 'text' => $text];
+        }
+        foreach ($imageUrls as $url) {
+            $parts[] = [
+                'type' => 'image_url',
+                'image_url' => [
+                    'url' => $url,
+                    'detail' => 'low',
+                ],
+            ];
+        }
+
+        return $parts;
+    }
+
+    /**
      * Загружает базу знаний из файла
      */
     private function loadKnowledgeBase(): string
     {
         return Yii::$app->settings->get('openAi_knowledgeBase');
+    }
+
+    /**
+     * GPT-5 / o-series принимают max_completion_tokens и не принимают custom temperature.
+     */
+    private function isNewCompletionsModel(string $model): bool
+    {
+        $model = strtolower(trim($model));
+
+        return (bool)preg_match('/^(o\d|gpt-5)/', $model);
     }
 }

@@ -62,6 +62,7 @@ class OpenAiJob extends BaseObject implements JobInterface
             $chatHistory = [];
             /** @var SupportMessage[] $histories */
             $histories = SupportMessage::find()
+                                       ->with('supportFiles')
                                        ->andWhere(['support_id' => $this->chatId])
                                        ->andWhere('user_id IS NOT NULL')
                                        ->orderBy(['id' => SORT_ASC])
@@ -69,10 +70,18 @@ class OpenAiJob extends BaseObject implements JobInterface
             $isReplay = false;
             foreach ($histories as $history) {
                 if ($history->user_id == $chat->user_id) {
-                    if (!empty($history->supportFiles)) {
-                        $history->message = "Пользователь отправил файл.";
+                    $images = $this->collectImageUrls($history);
+                    $text = trim((string)$history->message);
+                    if ($text === '') {
+                        $text = !empty($images)
+                            ? 'Пользователь отправил скриншот.'
+                            : (!empty($history->supportFiles) ? 'Пользователь отправил файл.' : '');
                     }
-                    $chatHistory[] = ['user' => $history->message];
+                    $entry = ['user' => $text];
+                    if (!empty($images)) {
+                        $entry['images'] = $images;
+                    }
+                    $chatHistory[] = $entry;
                     $isReplay = false;
                 } else {
                     $chatHistory[] = ['bot' => $history->message];
@@ -166,6 +175,35 @@ class OpenAiJob extends BaseObject implements JobInterface
             Yii::$app->telegramChats->sendMessage("User findBySteamId: {$steamId} " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             throw new \Exception(Yii::t('common', 'Произошла ошибка, попробуйте обновить страницу!'));
         }
+    }
+
+    /**
+     * Публичные URL картинок из вложений сообщения (для vision API).
+     *
+     * @return string[]
+     */
+    private function collectImageUrls(SupportMessage $message): array
+    {
+        $urls = [];
+        $imageExt = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+
+        foreach ($message->supportFiles as $file) {
+            $mime = strtolower((string)$file->mimetype);
+            $ext = strtolower(pathinfo((string)$file->file, PATHINFO_EXTENSION));
+            $isImage = (strpos($mime, 'image/') === 0 && $mime !== 'image/svg+xml')
+                || ($mime === '' && in_array($ext, $imageExt, true));
+
+            if (!$isImage) {
+                continue;
+            }
+
+            $url = $file->getPublicUrl();
+            if ($url !== '') {
+                $urls[] = $url;
+            }
+        }
+
+        return array_slice($urls, 0, 4);
     }
 
     public static function _loadImage($imageUrl, $id) {
