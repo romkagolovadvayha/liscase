@@ -324,22 +324,27 @@ class StorageController extends Controller
                 $cache->set('api_blog_categories_' . $lang, $payload, BlogCacheHelper::CATEGORIES_CACHE_TTL);
             }
 
-            // Список радиостанций (как в RadioController::actionList)
-            $stations = ServersRadioStation::find()
-                ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
-                ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
-                ->all();
-            $list = [];
-            foreach ($stations as $station) {
-                $item = ['name' => $station->name, 'url' => $station->url];
-                if ($station->logo) {
-                    $item['logo'] = $station->getLogoUrl();
+            if (Yii::$app->settings->get('section_radio')) {
+                // Список радиостанций (как в RadioController::actionList)
+                $stations = ServersRadioStation::find()
+                    ->where(['status' => ServersRadioStation::STATUS_ACTIVE])
+                    ->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])
+                    ->all();
+                $list = [];
+                foreach ($stations as $station) {
+                    $item = ['name' => $station->name, 'url' => $station->url];
+                    if ($station->logo) {
+                        $item['logo'] = $station->getLogoUrl();
+                    }
+                    $list[] = $item;
                 }
-                $list[] = $item;
+                $cache->set('api_radio_list', $list, 600);
+            } else {
+                $cache->delete('api_radio_list');
             }
-            $cache->set('api_radio_list', $list, 600);
 
-            echo "Warmed: settings, products categories, blog categories, radio list.\n";
+            echo "Warmed: settings, products categories, blog categories"
+                . (Yii::$app->settings->get('section_radio') ? ", radio list.\n" : ".\n");
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage('storage/warm-caches ' . $e->getMessage());
             throw $e;

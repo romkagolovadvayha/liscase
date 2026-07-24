@@ -7,6 +7,7 @@ use common\helpers\ApiPublicCacheTtl;
 use yii\web\Response;
 use common\models\servers\ServersRadioStation;
 use OpenApi\Annotations as OA;
+use yii\web\NotFoundHttpException;
 
 /**
  * Контроллер для работы с радиостанциями
@@ -24,6 +25,14 @@ class RadioController extends BaseApiController
         $behaviors = parent::behaviors();
         // Все методы публичные, JWT не требуется
         return $behaviors;
+    }
+
+    public function beforeAction($action)
+    {
+        if (!Yii::$app->settings->get('section_radio')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+        return parent::beforeAction($action);
     }
 
     /**

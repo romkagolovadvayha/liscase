@@ -14,6 +14,7 @@ use frontend\forms\serverskin\ServerSkinForm;
 use yii\data\ActiveDataProvider;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
+use yii\web\NotFoundHttpException;
 
 /**
  * Контроллер для работы с кастомными скинами из мастерской Steam
@@ -38,6 +39,14 @@ class CustomSkinsController extends BaseApiController
         ];
 
         return $behaviors;
+    }
+
+    public function beforeAction($action)
+    {
+        if (!Yii::$app->settings->get('section_skins')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+        return parent::beforeAction($action);
     }
 
     /**

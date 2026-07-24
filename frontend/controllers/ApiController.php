@@ -480,6 +480,10 @@ class ApiController extends WebController
 
     public function actionRadioList()
     {
+        if (!Yii::$app->settings->get('section_radio')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
         Yii::$app->response->format = Response::FORMAT_JSON;
         
         // Получаем радиостанции из базы данных

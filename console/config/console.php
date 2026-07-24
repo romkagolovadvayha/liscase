@@ -131,10 +131,6 @@ $config['modules']['crontask'] = [
             'command' => 'support/empty && cd /var/www/www-root/data/var/www/prostoj.store/frontend/web/uploads/prices && wget https://rust.tm/api/v2/prices/class_instance/RUB.json -O rusttm.json',
             'min'     => '*/3',
         ],
-        'marketSkinsSync'       => [
-            'command' => 'market-skins/sync',
-            'min'     => '*/10',
-        ],
         'getApproved'       => [
             'command' => 'skin-drops/get-approved',
             'hour'     => '6',

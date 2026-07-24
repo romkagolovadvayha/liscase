@@ -6,9 +6,18 @@ use common\models\servers\ServersRadioStation;
 use yii\web\Controller;
 use Yii;
 use yii\web\Response;
+use yii\web\NotFoundHttpException;
 
 class RadioController extends Controller
 {
+
+    public function beforeAction($action)
+    {
+        if (!Yii::$app->settings->get('section_radio')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+        return parent::beforeAction($action);
+    }
 
     public function actionList()
     {

@@ -23,6 +23,10 @@ class StreamersController extends Controller
      */
     public function actionUpdateLiveStatus()
     {
+        if (!Yii::$app->settings->get('section_media')) {
+            return 0;
+        }
+
         $query = User::find()
             ->joinWith(['userProfile'])
             ->where(['user.is_blogger' => 1])

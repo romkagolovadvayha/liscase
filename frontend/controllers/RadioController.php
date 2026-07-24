@@ -60,6 +60,10 @@ class RadioController extends Controller
     
     public function beforeAction($action)
     {
+        if (!Yii::$app->settings->get('section_radio')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+
         // Отключаем CSRF для API endpoints (вызываются из Node.js и AJAX)
         if (in_array($action->id, ['queue', 'update-current', 'update-listeners', 'now-playing', 'station-status', 'get-likes'])) {
             $this->enableCsrfValidation = false;

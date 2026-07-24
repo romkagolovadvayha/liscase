@@ -56,6 +56,14 @@ class CustomSkinsController extends WebController
         ]);
     }
 
+    public function beforeAction($action)
+    {
+        if (!Yii::$app->settings->get('section_skins')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+        return parent::beforeAction($action);
+    }
+
     /**
      * Lists all Building models.
      *

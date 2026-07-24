@@ -11,6 +11,7 @@ use common\models\user\UserProfile;
 use common\models\video\UserVideo;
 use common\models\video\UserVideoLike;
 use Yii;
+use yii\web\NotFoundHttpException;
 
 /**
  * API видео (раздел Медиа): публичный список всех видео, добавление по ссылке (с авторизацией).
@@ -34,6 +35,14 @@ class UserVideoController extends BaseApiController
             'throwException' => false,
         ];
         return $behaviors;
+    }
+
+    public function beforeAction($action)
+    {
+        if (!Yii::$app->settings->get('section_media')) {
+            throw new NotFoundHttpException('Страница не найдена');
+        }
+        return parent::beforeAction($action);
     }
 
     /**

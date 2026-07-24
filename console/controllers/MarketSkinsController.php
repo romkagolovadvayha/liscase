@@ -19,6 +19,11 @@ class MarketSkinsController extends Controller
      */
     public function actionSync()
     {
+        if (!Yii::$app->settings->get('section_market')) {
+            $this->stdout("Маркет скинов отключён, синхронизация пропущена.\n");
+            return 0;
+        }
+
         $this->stdout("Начинаем синхронизацию скинов с rust.tm...\n", \yii\helpers\Console::FG_GREEN);
         
         try {
