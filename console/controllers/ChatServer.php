@@ -2200,6 +2200,7 @@ class ChatServer extends WebSocketServer
                     'message' => $model->message,
                     'username' => $user->username,
                     'chatNumber' => $chat->getNumber(),
+                    'messageId' => $model->id,
                 ]));
 
                 SupportRead::createRecord($chat->user_id, $user->id, $model->id, $chat->id);

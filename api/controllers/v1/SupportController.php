@@ -1636,6 +1636,7 @@ class SupportController extends BaseApiController
                 'message' => $text,
                 'username' => $sender->username,
                 'chatNumber' => $ticket->getNumber(),
+                'messageId' => $supportMessage->id,
             ]));
         } catch (\Exception $ex) {
             Yii::warning('BeforeMessageJob: ' . $ex->getMessage());

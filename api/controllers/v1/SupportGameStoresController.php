@@ -382,6 +382,7 @@ class SupportGameStoresController extends BaseApiController
                     'message' => $userMessage->message,
                     'username' => $user->username,
                     'chatNumber' => $ticket->getNumber(),
+                    'messageId' => $userMessage->id,
                 ]));
             } catch (\Exception $ex) {
                 Yii::warning('Failed to push BeforeMessageJob for user message: ' . $ex->getMessage());
@@ -530,6 +531,7 @@ class SupportGameStoresController extends BaseApiController
                     'message' => $supportMessage->message,
                     'username' => $user->username,
                     'chatNumber' => $ticket->getNumber(),
+                    'messageId' => $supportMessage->id,
                 ]));
             } catch (\Exception $ex) {
                 Yii::warning('Failed to push BeforeMessageJob: ' . $ex->getMessage());

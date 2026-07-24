@@ -121,6 +121,7 @@ class OpenAiJob extends BaseObject implements JobInterface
                 'message' => trim($reply),
                 'username' => "Chat GPT",
                 'chatNumber' => $this->chatNumber,
+                'messageId' => $modelBot->id,
             ]));
             try {
                 \console\controllers\ChatServer::broadcastChatUpdate($this->chatNumber, $this->ownerUserId, $modelBot->id);
