@@ -42,10 +42,6 @@ class MarketController extends WebController
      */
     public function beforeAction($action)
     {
-        if (!Yii::$app->settings->get('section_market')) {
-            throw new NotFoundHttpException('Страница не найдена');
-        }
-
         if (in_array($action->id, ['toggle-favorite'])) {
             $this->enableCsrfValidation = false;
         }

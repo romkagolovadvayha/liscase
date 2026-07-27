@@ -41,17 +41,6 @@ class SkinsController extends BaseApiController
         return $behaviors;
     }
 
-    public function beforeAction($action)
-    {
-        if (
-            in_array($action->id, ['index', 'view', 'buy', 'confirm'], true)
-            && !Yii::$app->settings->get('section_market')
-        ) {
-            throw new NotFoundHttpException('Страница не найдена');
-        }
-        return parent::beforeAction($action);
-    }
-
     /**
      * Один элемент каталога в формате API (как в actionIndex).
      */
@@ -98,7 +87,7 @@ class SkinsController extends BaseApiController
      */
     public function actionView($id)
     {
-        if (!Yii::$app->settings->get('section_market')) {
+        if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('Страница не найдена');
         }
 
@@ -139,7 +128,7 @@ class SkinsController extends BaseApiController
      */
     public function actionIndex()
     {
-        if (!Yii::$app->settings->get('section_market')) {
+        if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('Страница не найдена');
         }
 
@@ -223,7 +212,7 @@ class SkinsController extends BaseApiController
      */
     public function actionBuy($id)
     {
-        if (!Yii::$app->settings->get('section_market')) {
+        if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('Страница не найдена');
         }
 
@@ -312,7 +301,7 @@ class SkinsController extends BaseApiController
      */
     public function actionConfirm($id, $type = 'rust')
     {
-        if (!Yii::$app->settings->get('section_market')) {
+        if (!Yii::$app->settings->get('section_skindrops')) {
             throw new NotFoundHttpException('Страница не найдена');
         }
 

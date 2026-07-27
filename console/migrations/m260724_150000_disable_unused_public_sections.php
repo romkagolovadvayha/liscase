@@ -12,7 +12,6 @@ class m260724_150000_disable_unused_public_sections extends Migration
         'media' => 'Медиа',
         'radio' => 'Радио',
         'skins' => 'Ваши скины',
-        'market' => 'Маркет скинов',
     ];
 
     public function safeUp()
@@ -42,10 +41,6 @@ class m260724_150000_disable_unused_public_sections extends Migration
 
     public function safeDown()
     {
-        $this->delete('{{%site_settings}}', [
-            'category' => 'section',
-            'code' => 'market',
-        ]);
         $this->update(
             '{{%site_settings}}',
             ['value' => '1'],
