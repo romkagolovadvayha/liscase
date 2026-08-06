@@ -64,6 +64,7 @@ class OpenAiSupport extends \yii\base\Component
         bool $useDiscordInstructions = false,
         array $imageUrls = []
     ): ?string {
+        $model = '';
         try {
             $knowledge = $this->loadKnowledgeBase();
 
@@ -245,13 +246,50 @@ class OpenAiSupport extends \yii\base\Component
                 'timeout' => $hasImages ? 90 : 60,
             ]);
 
-            $data = json_decode($response->getBody(), true);
-            return isset($data['choices'][0]['message']['content'])
-                ? trim($data['choices'][0]['message']['content'])
-                : null;
+            $responseBody = (string)$response->getBody();
+            $data = json_decode($responseBody, true);
+            if (!is_array($data)) {
+                Yii::error([
+                    'ai_reply_error' => 'OpenAI returned invalid JSON',
+                    'model' => $model,
+                    'http_status' => $response->getStatusCode(),
+                    'response_bytes' => strlen($responseBody),
+                ], __METHOD__);
+                return null;
+            }
+
+            if (!empty($data['error'])) {
+                Yii::error([
+                    'ai_reply_error' => (string)($data['error']['message'] ?? 'OpenAI API error'),
+                    'error_type' => $data['error']['type'] ?? null,
+                    'error_code' => $data['error']['code'] ?? null,
+                    'model' => $model,
+                    'response_id' => $data['id'] ?? null,
+                ], __METHOD__);
+                return null;
+            }
+
+            $content = $data['choices'][0]['message']['content'] ?? null;
+            if (is_string($content) && trim($content) !== '') {
+                return trim($content);
+            }
+
+            Yii::error([
+                'ai_reply_error' => 'OpenAI returned an empty reply',
+                'model' => $model,
+                'response_id' => $data['id'] ?? null,
+                'finish_reason' => $data['choices'][0]['finish_reason'] ?? null,
+                'refusal' => $data['choices'][0]['message']['refusal'] ?? null,
+                'usage' => $data['usage'] ?? null,
+            ], __METHOD__);
+            return null;
 
         } catch (\Throwable $e) {
-            Yii::error(['ai_reply_error' => $e->getMessage()], __METHOD__);
+            Yii::error([
+                'ai_reply_error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'model' => $model,
+            ], __METHOD__);
             return null;
         }
     }

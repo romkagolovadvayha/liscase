@@ -21,10 +21,13 @@ use yii\queue\JobInterface;
 
 class OpenAiJob extends BaseObject implements JobInterface
 {
+    private const MAX_REPLY_ATTEMPTS = 2;
+
     public $chatId;
     public $ownerUserId;
     public $userId;
     public $message;
+    public $messageId;
     public $chatNumber;
     public $username;
 
@@ -39,8 +42,20 @@ class OpenAiJob extends BaseObject implements JobInterface
         echo $this->message . PHP_EOL;
         try {
             $chat = Support::findOne($this->chatId);
-            if ($chat->status !== Support::STATUS_OPEN) {
+            if ($chat === null || $chat->status !== Support::STATUS_OPEN) {
                 return;
+            }
+
+            // Не отвечаем на устаревшую job, если после её постановки пользователь уже написал ещё раз.
+            if (!empty($this->messageId)) {
+                $latestMessageId = SupportMessage::find()
+                    ->select('id')
+                    ->andWhere(['support_id' => $this->chatId])
+                    ->orderBy(['id' => SORT_DESC])
+                    ->scalar();
+                if ((int)$latestMessageId !== (int)$this->messageId) {
+                    return;
+                }
             }
             
             // Проверяем, были ли ответы от админа/модератора (не ChatGPT)
@@ -92,10 +107,43 @@ class OpenAiJob extends BaseObject implements JobInterface
                 return;
             }
             $server = $chat->user->getCurrentServer();
-            $reply = Yii::$app->openAiSupport->getReply(trim($this->message), $chat->user->username, $server->monitoring_name, $chatHistory, $chat->getNumber(), $chat->user);
-            if ($reply == 'unknown') {
-                $chat->is_bot = false;
-                $chat->save(false);
+            $reply = null;
+            for ($attempt = 1; $attempt <= self::MAX_REPLY_ATTEMPTS; $attempt++) {
+                $candidate = Yii::$app->openAiSupport->getReply(
+                    trim((string)$this->message),
+                    $chat->user->username,
+                    $server ? (string)$server->monitoring_name : '',
+                    $chatHistory,
+                    $chat->getNumber(),
+                    $chat->user
+                );
+
+                if ($this->hasVisibleText($candidate)) {
+                    $reply = trim((string)$candidate);
+                    break;
+                }
+
+                Yii::warning([
+                    'message' => 'OpenAiJob received an empty reply',
+                    'ticket_id' => $chat->id,
+                    'ticket_number' => $chat->getNumber(),
+                    'source_message_id' => $this->messageId,
+                    'attempt' => $attempt,
+                    'max_attempts' => self::MAX_REPLY_ATTEMPTS,
+                ], __METHOD__);
+
+                if ($attempt < self::MAX_REPLY_ATTEMPTS) {
+                    sleep(2);
+                }
+            }
+
+            if ($reply === null) {
+                $this->handOffToStaff($chat, 'OpenAI returned an empty reply after retries');
+                return;
+            }
+
+            if ($reply === 'unknown') {
+                $this->handOffToStaff($chat, 'OpenAI requested staff handoff');
                 return;
             }
 
@@ -112,7 +160,11 @@ class OpenAiJob extends BaseObject implements JobInterface
             $modelBot->message = trim($reply);
             $modelBot->support_id = $chat->id;
             $modelBot->created_at = date('Y-m-d H:i:s');
-            $modelBot->save();
+            if (!$modelBot->save()) {
+                throw new \RuntimeException(
+                    'Failed to save OpenAI support reply: ' . json_encode($modelBot->getErrors(), JSON_UNESCAPED_UNICODE)
+                );
+            }
             SupportRead::createRecord($chat->user_id, $admin->id, $modelBot->id, $chat->id);
 
             Yii::$app->queueProcess->push(new BeforeMessageJob([
@@ -129,9 +181,46 @@ class OpenAiJob extends BaseObject implements JobInterface
                 Yii::$app->telegramChats->sendMessage('Update chat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
             }
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if (isset($chat) && $chat instanceof Support) {
+                $this->handOffToStaff($chat, 'Unexpected OpenAiJob error: ' . $e->getMessage());
+            }
             Yii::$app->telegramChats->sendMessage("OpenAiJob: " . $e->getLine() . ":" . $e->getMessage());
         }
+    }
+
+    private function hasVisibleText($reply): bool
+    {
+        if (!is_string($reply)) {
+            return false;
+        }
+
+        $plainText = str_replace(['&nbsp;', "\xc2\xa0"], ' ', $reply);
+        $plainText = html_entity_decode(strip_tags($plainText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim($plainText) !== '';
+    }
+
+    private function handOffToStaff(Support $chat, string $reason): void
+    {
+        if ($chat->is_bot) {
+            $chat->is_bot = false;
+            if (!$chat->save(false, ['is_bot'])) {
+                Yii::error([
+                    'message' => 'Failed to disable support bot',
+                    'ticket_id' => $chat->id,
+                    'reason' => $reason,
+                ], __METHOD__);
+            }
+        }
+
+        Yii::error([
+            'message' => 'Support ticket handed off to staff',
+            'ticket_id' => $chat->id,
+            'ticket_number' => $chat->getNumber(),
+            'source_message_id' => $this->messageId,
+            'reason' => $reason,
+        ], __METHOD__);
     }
 
     private function createUser($steamId, $username) {

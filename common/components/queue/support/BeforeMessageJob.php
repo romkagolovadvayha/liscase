@@ -32,7 +32,7 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $text .= PHP_EOL . "Имя: {$this->username}";
             $message = str_replace(['<br>', '<br/>'], PHP_EOL, (string)$this->message);
             if (trim(strip_tags($message)) === '') {
-                $message = '[вложение]';
+                $message = $this->hasAttachments() ? '[вложение]' : '[пустое сообщение]';
             }
             $text .= PHP_EOL . "Сообщение: " . $message;
             $text .= PHP_EOL . "<a href=\"https://{$domain}/support/ticket?id={$this->chatNumber}\">Перейти к тикету</a>";
@@ -95,5 +95,16 @@ class BeforeMessageJob extends BaseObject implements JobInterface
         }
 
         return array_slice($urls, 0, 10);
+    }
+
+    private function hasAttachments(): bool
+    {
+        if (empty($this->messageId)) {
+            return false;
+        }
+
+        return SupportFile::find()
+            ->andWhere(['support_message_id' => (int)$this->messageId])
+            ->exists();
     }
 }

@@ -62,6 +62,7 @@ class SupportController extends Controller
                                                                 'userId' => $message->user_id,
                                                                 'ownerUserId' => $ticket->user_id,
                                                                 'message' => $message->message,
+                                                                'messageId' => $message->id,
                                                                 'username' => $message->user->username,
                                                                 'chatNumber' => $ticket->getNumber(),
                                                             ]));
