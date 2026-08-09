@@ -21,8 +21,6 @@ use yii\queue\JobInterface;
 
 class OpenAiJob extends BaseObject implements JobInterface
 {
-    private const MAX_REPLY_ATTEMPTS = 2;
-
     public $chatId;
     public $ownerUserId;
     public $userId;
@@ -42,7 +40,7 @@ class OpenAiJob extends BaseObject implements JobInterface
         echo $this->message . PHP_EOL;
         try {
             $chat = Support::findOne($this->chatId);
-            if ($chat === null || $chat->status !== Support::STATUS_OPEN) {
+            if ($chat === null || $chat->status !== Support::STATUS_OPEN || !$chat->is_bot) {
                 return;
             }
 
@@ -107,41 +105,30 @@ class OpenAiJob extends BaseObject implements JobInterface
                 return;
             }
             $server = $chat->user->getCurrentServer();
-            $reply = null;
-            for ($attempt = 1; $attempt <= self::MAX_REPLY_ATTEMPTS; $attempt++) {
-                $candidate = Yii::$app->openAiSupport->getReply(
-                    trim((string)$this->message),
-                    $chat->user->username,
-                    $server ? (string)$server->monitoring_name : '',
-                    $chatHistory,
-                    $chat->getNumber(),
-                    $chat->user
-                );
 
-                if ($this->hasVisibleText($candidate)) {
-                    $reply = trim((string)$candidate);
-                    break;
-                }
+            // Один вызов API: повтор на пустом ответе только жег токены (GPT-5 reasoning),
+            // не меняя результат.
+            $candidate = Yii::$app->openAiSupport->getReply(
+                trim((string)$this->message),
+                $chat->user->username,
+                $server ? (string)$server->monitoring_name : '',
+                $chatHistory,
+                $chat->getNumber(),
+                $chat->user
+            );
 
+            if (!$this->hasVisibleText($candidate)) {
                 Yii::warning([
                     'message' => 'OpenAiJob received an empty reply',
                     'ticket_id' => $chat->id,
                     'ticket_number' => $chat->getNumber(),
                     'source_message_id' => $this->messageId,
-                    'attempt' => $attempt,
-                    'max_attempts' => self::MAX_REPLY_ATTEMPTS,
                 ], __METHOD__);
-
-                if ($attempt < self::MAX_REPLY_ATTEMPTS) {
-                    sleep(2);
-                }
-            }
-
-            if ($reply === null) {
-                $this->handOffToStaff($chat, 'OpenAI returned an empty reply after retries');
+                $this->handOffToStaff($chat, 'OpenAI returned an empty reply');
                 return;
             }
 
+            $reply = trim((string)$candidate);
             if ($reply === 'unknown') {
                 $this->handOffToStaff($chat, 'OpenAI requested staff handoff');
                 return;

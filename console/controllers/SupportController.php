@@ -42,13 +42,14 @@ class SupportController extends Controller
                 continue;
             }
 
-            // Проверяем, были ли ответы от админа/модератора в этом тикете
+            // Проверяем, были ли ответы от админа/модератора в этом тикете (не ChatGPT)
             $hasStaffReply = SupportMessage::find()
                 ->alias('sm')
                 ->joinWith('user u')
                 ->andWhere(['sm.support_id' => $ticket->id])
                 ->andWhere(['IS NOT', 'sm.user_id', null])
-                ->andWhere(['!=', 'sm.user_id', $ticket->user_id]) // Не сообщения автора тикета
+                ->andWhere(['!=', 'sm.user_id', $ticket->user_id])
+                ->andWhere(['!=', 'u.steam_id', 777])
                 ->exists();
 
             // Если админ/модератор уже отвечал - пропускаем, ChatGPT не должен отвечать
@@ -56,7 +57,19 @@ class SupportController extends Controller
                 continue;
             }
 
+            // Уже ответил бот / последнее сообщение не от игрока — не ставим дубли в очередь
+            if ((int)$message->user_id !== (int)$ticket->user_id) {
+                continue;
+            }
+
             if ($ticket->is_bot) {
+                // Cron может крутиться чаще, чем отрабатывает job — без lock один тикет
+                // набивает очередь одинаковыми запросами к OpenAI.
+                $lockKey = 'openai_support_job:' . $ticket->id . ':' . $message->id;
+                if (!Yii::$app->cache->add($lockKey, 1, 600)) {
+                    continue;
+                }
+
                 Yii::$app->queueSupport->push(new OpenAiJob([
                                                                 'chatId' => $ticket->id,
                                                                 'userId' => $message->user_id,

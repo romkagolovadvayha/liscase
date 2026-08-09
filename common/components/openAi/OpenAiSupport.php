@@ -191,15 +191,16 @@ class OpenAiSupport extends \yii\base\Component
                 }
             }
 
+            // История без картинок: vision по старым скринам жрёт токены на каждый запрос.
+            // Картинки оставляем только у текущего сообщения.
+            if (count($historyItems) > 20) {
+                $historyItems = array_slice($historyItems, -20);
+            }
             foreach ($historyItems as $item) {
-                if (!empty($item['user']) || !empty($item['images'])) {
-                    $messages[] = [
-                        'role' => 'user',
-                        'content' => $this->buildUserContent(
-                            (string)($item['user'] ?? ''),
-                            is_array($item['images'] ?? null) ? $item['images'] : []
-                        ),
-                    ];
+                if (!empty($item['user'])) {
+                    $messages[] = ['role' => 'user', 'content' => (string)$item['user']];
+                } elseif (!empty($item['images'])) {
+                    $messages[] = ['role' => 'user', 'content' => 'Пользователь отправил скриншот.'];
                 }
                 if (!empty($item['bot'])) {
                     $messages[] = ['role' => 'assistant', 'content' => (string)$item['bot']];
@@ -224,22 +225,15 @@ class OpenAiSupport extends \yii\base\Component
 
             // GPT-5 / o-series: max_tokens и custom temperature не поддерживаются
             if ($this->isNewCompletionsModel($model)) {
-                // Бюджет включает reasoning-токены — 350 часто даёт пустой ответ
+                // reasoning съедает budget completion — без low часто приходит пустой content
                 $payload['max_completion_tokens'] = 2000;
+                $payload['reasoning_effort'] = 'low';
             } else {
                 $payload['temperature'] = $this->temperature ?? 0.7;
                 $payload['max_tokens'] = 350;
             }
 
             $hasImages = !empty($currentImages);
-            if (!$hasImages) {
-                foreach ($historyItems as $item) {
-                    if (!empty($item['images'])) {
-                        $hasImages = true;
-                        break;
-                    }
-                }
-            }
 
             $response = $this->client->post('chat/completions', [
                 'json' => $payload,
@@ -269,9 +263,9 @@ class OpenAiSupport extends \yii\base\Component
                 return null;
             }
 
-            $content = $data['choices'][0]['message']['content'] ?? null;
-            if (is_string($content) && trim($content) !== '') {
-                return trim($content);
+            $content = $this->extractMessageContent($data['choices'][0]['message']['content'] ?? null);
+            if ($content !== null) {
+                return $content;
             }
 
             Yii::error([
@@ -292,6 +286,40 @@ class OpenAiSupport extends \yii\base\Component
             ], __METHOD__);
             return null;
         }
+    }
+
+    /**
+     * Достаёт текст ответа из content (string или array parts).
+     */
+    private function extractMessageContent($content): ?string
+    {
+        if (is_string($content)) {
+            $text = trim($content);
+            return $text !== '' ? $text : null;
+        }
+
+        if (!is_array($content)) {
+            return null;
+        }
+
+        $parts = [];
+        foreach ($content as $part) {
+            if (is_string($part)) {
+                $parts[] = $part;
+                continue;
+            }
+            if (!is_array($part)) {
+                continue;
+            }
+            if (isset($part['text']) && is_string($part['text'])) {
+                $parts[] = $part['text'];
+            } elseif (isset($part['type'], $part['content']) && $part['type'] === 'text' && is_string($part['content'])) {
+                $parts[] = $part['content'];
+            }
+        }
+
+        $text = trim(implode("\n", $parts));
+        return $text !== '' ? $text : null;
     }
 
     /**
