@@ -26,10 +26,9 @@ Yii::$container = new yii\di\Container;
  * @property \common\components\steam\MarketApi            $marketApi
  * @property \common\components\payments\Paypalych         $paypalych
  * @property \common\components\payments\Tome              $tomeApi
- * @property \common\components\bansystem\RustApp          $rustApp
+ * @property \common\components\bansystem\RustAdmin        $rustAdmin
  * @property \common\components\rusttm\RustTm              $rustTm
  * @property \common\components\rusttm\CsGoMarket          $csGoMarket
- * @property \common\components\rustcheck\RustCheck        $rustCheck
  * @property \common\components\discord\Discord            $discord
  * @property \common\components\payments\FreeKassa         $freeKassaApi
  * @property \common\components\payments\AnyPay            $anyPayApi

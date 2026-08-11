@@ -1166,7 +1166,7 @@ class User extends ActiveRecord implements IdentityInterface
         return true;
     }
 
-    public function ban($reason, $banBy = null, $bannedAt = null, $rustcheck = true, $siteban = true, $task = true) {
+    public function ban($reason, $banBy = null, $bannedAt = null, $syncExternal = true, $siteban = true, $task = true) {
         $serversBan = [];
         if ($siteban) {
             $this->ban_by     = $banBy;
@@ -1212,9 +1212,6 @@ class User extends ActiveRecord implements IdentityInterface
 //            $command = "helper ban \"{$this->steam_id}\" \"{$reasonText}\"";
 //            RconTasks::execute($command, $serversBan);
 //        }
-//        if (YII_ENV_PROD && $rustcheck && $reason !== User::REASON_NOT_REASON) {
-//            Yii::$app->rustCheck->ban($this->steam_id, $reasonText);
-//        }
 //
 //        /** @var UserChecking $userChecking */
 //        $userChecking = UserChecking::find()
@@ -1241,7 +1238,6 @@ class User extends ActiveRecord implements IdentityInterface
 //        $command = "unban \"{$this->steam_id}\"";
 //        RconTasks::execute($command);
 //
-//        Yii::$app->rustCheck->unban($this->steam_id);
         return true;
     }
 
@@ -1408,26 +1404,22 @@ class User extends ActiveRecord implements IdentityInterface
     }
 
     public function getReferralBalance() {
-        $usersTree = UserTree::find()
-                             ->andWhere(['parent_user_id' => $this->id])
-                             ->andWhere(['NOT IN', 'user_id', [$this->id]])
-                             ->orderBy(['created_at' => SORT_DESC])
-                             ->limit(100)
-                             ->all();
-        $total = 0;
-        /** @var User[] $users */
-        foreach ($usersTree as $userTree) {
-            if (empty($userTree->user)) {
-                continue;
-            }
-            /** @var Deposit $deposit */
-            foreach ($userTree->user->deposits as $deposit) {
-                if ($deposit->status !== Deposit::STATUS_SUCCESS) {
-                    continue;
-                }
-                $total += $deposit->amount;
-            }
-        }
+        // Keep the historical "latest 100 referrals" rule, but aggregate their
+        // successful deposits in SQL. The old implementation loaded each user
+        // and then every deposit separately (up to 201 queries per request).
+        $referralUserIds = UserTree::find()
+                                   ->select('user_id')
+                                   ->andWhere(['parent_user_id' => $this->id])
+                                   ->andWhere(['NOT IN', 'user_id', [$this->id]])
+                                   ->orderBy(['created_at' => SORT_DESC])
+                                   ->limit(100)
+                                   ->column();
+        $total = empty($referralUserIds)
+            ? 0
+            : (float)(Deposit::find()
+                              ->andWhere(['user_id' => $referralUserIds])
+                              ->andWhere(['status' => Deposit::STATUS_SUCCESS])
+                              ->sum('amount') ?? 0);
         $payoutSum = \common\models\user\UserPayoutReferral::find()
                                                            ->andWhere(['user_id' => $this->id])
                                                            ->sum('amount') ?? 0;

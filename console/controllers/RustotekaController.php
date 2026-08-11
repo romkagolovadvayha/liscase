@@ -122,9 +122,8 @@ class RustotekaController extends Controller
 ////            BanSystemApi::TYPE_MOSKOV77,
 //            BanSystemApi::TYPE_SLABIYRUST,
 ////            BanSystemApi::TYPE_JOKERRUST,
-//            BanSystemApi::TYPE_RUSTCHEATCHECK,
 //            BanSystemApi::TYPE_PROSTOJ,
-            BanSystemApi::TYPE_RUSTAPP,
+            BanSystemApi::TYPE_RUSTADMIN,
         ];
 
         foreach ($projects as $project) {

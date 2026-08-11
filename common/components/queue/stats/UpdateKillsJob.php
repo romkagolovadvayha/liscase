@@ -120,6 +120,7 @@ class UpdateKillsJob extends BaseObject implements JobInterface
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateKillsJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            throw $e;
         }
     }
 }

@@ -70,6 +70,7 @@ class ProductsController extends BaseApiController
      */
     public function actionCategories()
     {
+        $this->setPublicCacheHeaders(300, 3600);
         $showMainBlock = Yii::$app->request->get('show_main_block');
         $cacheKey = ProductsCacheHelper::categoriesCacheKey($showMainBlock, Yii::$app->language);
         $cache = Yii::$app->cache;
@@ -142,6 +143,7 @@ class ProductsController extends BaseApiController
      */
     public function actionIndex()
     {
+        $this->setPublicCacheHeaders(60, 300);
         $limit = (int)Yii::$app->request->get('limit', 20);
         $offset = (int)Yii::$app->request->get('offset', 0);
         $categoryId = Yii::$app->request->get('category_id');
@@ -150,9 +152,9 @@ class ProductsController extends BaseApiController
         $sort = Yii::$app->request->get('sort', 'sort');
 
         // Опциональная JWT: для авторизованного пользователя отдаём товары с избранными в начале
-        $this->tryAuthenticateUserFromJwt();
-        $userId = Yii::$app->user->getIsGuest() ? null : (int)Yii::$app->user->getId();
-        $favoriteDropIds = $userId ? DropFavorite::getFavoriteDropIds($userId) : [];
+        // Каталог общий. Favorite IDs уже приходят в user snapshot и
+        // накладываются/сортируются на клиенте.
+        $favoriteDropIds = [];
 
         // Кэшируем только базовый список (без фильтров, первая страница, дефолтная сортировка)
         // Не кэшируем при персональной сортировке по избранному
@@ -178,7 +180,7 @@ class ProductsController extends BaseApiController
             $query = Drop::find()
                 ->where(['status' => Drop::STATUS_ACTIVE])
                 ->andWhere(['market_status' => Drop::MARKET_STATUS_ACTIVE])
-                ->with(['dropImages', 'subDrops.drop', 'subDrops.drop.dropImages']);
+                ->with(['dropImages']);
 
             if ($categoryId) {
                 $query->andWhere(['category_id' => (int)$categoryId]);
@@ -268,36 +270,6 @@ class ProductsController extends BaseApiController
                     }
                 }
 
-                // Получаем субдропы (subDrops)
-                $subDrops = [];
-                $subDropsList = $drop->subDrops;
-                if (!empty($subDropsList)) {
-                    foreach ($subDropsList as $subDropRelation) {
-                        // subDropRelation это DropDrop, нужно получить связанный Drop
-                        $subDrop = $subDropRelation->drop;
-                        if ($subDrop) {
-                            // Получаем изображение субдропа с S3 URL
-                            $subDropImage = null;
-                            $subDropImages = $subDrop->dropImages;
-                            if (!empty($subDropImages)) {
-                                $firstSubImage = reset($subDropImages);
-                                if ($firstSubImage) {
-                                    $subDropImage = $firstSubImage->getImagePubUrl();
-                                }
-                            }
-                            
-                            $subDrops[] = [
-                                'id' => $subDropRelation->id,
-                                'drop_id' => $subDrop->id,
-                                'count' => $subDropRelation->count ?? 1,
-                                'name' => Yii::t('database', $subDrop->name ?? ''),
-                                'price' => (float)($subDrop->price ?? 0),
-                                'image' => $subDropImage,
-                            ];
-                        }
-                    }
-                }
-
                 // Вычисляем реальную цену с учетом скидки
                 // getRealPrice(false) вычисляет цену без floating, но может использовать Yii::$app->user
                 // Для публичного доступа используем простое вычисление
@@ -318,9 +290,7 @@ class ProductsController extends BaseApiController
                     'discount' => $drop->discount ? (int)$drop->discount : null,
                     'count' => $drop->count ? (int)$drop->count : null,
                     'category_id' => $drop->category_id ? (int)$drop->category_id : null,
-                    'description' => $drop->description ? Yii::t('database', $drop->description) : null,
                     'drop_type' => $drop->drop_type ? (int)$drop->drop_type : null,
-                    'subDrops' => !empty($subDrops) ? $subDrops : null,
                     'floating_price_percent' => $drop->floating_price_percent ? (int)$drop->floating_price_percent : null,
                 ];
             }
@@ -377,6 +347,7 @@ class ProductsController extends BaseApiController
      */
     public function actionView($id)
     {
+        $this->setPublicCacheHeaders(300, 600);
         // Кэшируем детальную информацию о товаре на 10 минут (ключ с языком — ответ содержит переводы)
         $cacheKey = 'api_products_view_' . $id . '_' . Yii::$app->language;
         $cache = Yii::$app->cache;
@@ -469,6 +440,15 @@ class ProductsController extends BaseApiController
         }
 
         return $this->successResponse($product);
+    }
+
+    private function setPublicCacheHeaders(int $maxAge, int $sharedMaxAge): void
+    {
+        Yii::$app->response->headers->set(
+            'Cache-Control',
+            "public, max-age={$maxAge}, s-maxage={$sharedMaxAge}, stale-while-revalidate={$sharedMaxAge}"
+        );
+        Yii::$app->response->headers->set('Vary', 'Origin, Accept-Language');
     }
 
     /**

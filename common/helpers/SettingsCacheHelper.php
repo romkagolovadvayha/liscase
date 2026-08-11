@@ -14,6 +14,16 @@ class SettingsCacheHelper
     /** Категории по умолчанию (как в SettingsController::ALLOWED_CATEGORIES). */
     public const DEFAULT_CATEGORIES = ['design', 'colors', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side', 'media'];
 
+    /**
+     * Категории с узким публичным контрактом. В openAi фронтенду нужны только
+     * имя и аватар служебного пользователя; инструкции и knowledge base
+     * никогда не должны попадать в публичный ответ.
+     */
+    public const PUBLIC_KEYS_BY_CATEGORY = [
+        'openAi' => ['avatar', 'username', 'user_name'],
+        'tgbot' => ['login'],
+    ];
+
     /** TTL кэша в секундах (публичный payload настроек). */
     public const CACHE_TTL = ApiPublicCacheTtl::SECONDS;
 
@@ -48,8 +58,8 @@ class SettingsCacheHelper
                 $key = $setting->code;
                 $fullKey = $category . '_' . $key;
 
-                // Категория tgbot публично отдает только login (без токенов/chatId и прочих служебных полей)
-                if ($category === 'tgbot' && $key !== 'login') {
+                if (isset(self::PUBLIC_KEYS_BY_CATEGORY[$category])
+                    && !in_array($key, self::PUBLIC_KEYS_BY_CATEGORY[$category], true)) {
                     continue;
                 }
 
@@ -75,7 +85,7 @@ class SettingsCacheHelper
     public static function cacheKey(array $categories): string
     {
         sort($categories);
-        return 'api_settings2_' . md5(implode(',', $categories));
+        return 'api_settings3_' . md5(implode(',', $categories));
     }
 
     /**

@@ -18,6 +18,8 @@ class SettingsController extends BaseApiController
     /**
      * Список разрешенных категорий для фронтенда.
      * metrics — счётчики (Яндекс.Метрика, gtag и т.д.), поле code — произвольный HTML/скрипты для вставки на Next.
+     * Категория openAi имеет отдельный allowlist в SettingsCacheHelper и
+     * публично содержит только avatar/username.
      */
     const ALLOWED_CATEGORIES = ['design', 'colors', 'social', 'section', 'metrics', 'site', 'personal_info_ip', 'tgbot', 'clans', 'openAi', 'banner_side', 'media'];
 
@@ -78,7 +80,7 @@ class SettingsController extends BaseApiController
     public function actionIndex()
     {
         Yii::$app->response->headers->set('Cache-Control', 'public, max-age=' . SettingsCacheHelper::CACHE_TTL);
-        Yii::$app->response->headers->set('Vary', 'Accept-Language');
+        Yii::$app->response->headers->set('Vary', 'Origin, Accept-Language');
 
         $categoriesParam = Yii::$app->request->get('categories');
         $requestedCategories = $categoriesParam ? explode(',', $categoriesParam) : null;
@@ -135,4 +137,3 @@ class SettingsController extends BaseApiController
         return $this->successResponse($items);
     }
 }
-

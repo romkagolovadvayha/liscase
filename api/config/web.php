@@ -68,6 +68,8 @@ $config = [
                 'v1/auth/refresh' => 'v1/auth/refresh',
                 'v1/auth/logout' => 'v1/auth/logout',
                 'v1/auth/me' => 'v1/auth/me',
+                'v1/auth/session' => 'v1/auth/session',
+                'POST v1/auth/exchange' => 'v1/auth/exchange',
                 'v1/auth/discord' => 'v1/auth/discord',
                 'v1/auth/discord-callback' => 'discord/callback',
                 'v1/auth/twitch' => 'v1/auth/twitch',
@@ -238,6 +240,7 @@ $config = [
                 'v1/payment/callback/<payment:[\w-]+>' => 'v1/payment/callback',
 
                 // Support
+                'v1/support/unread-count' => 'v1/support/unread-count',
                 'v1/support/tickets' => 'v1/support/tickets',
                 'v1/support/tickets/create' => 'v1/support/create',
                 'v1/support/tickets/<id:\d+>' => 'v1/support/view',

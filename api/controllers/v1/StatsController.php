@@ -96,6 +96,24 @@ class StatsController extends BaseApiController
             ? StatsCacheHelper::cacheKeyActivePlayersServer($serverTagNorm)
             : StatsCacheHelper::CACHE_KEY_ACTIVE_PLAYERS_GLOBAL;
 
+        // Кэшируем уже обогащённый публичный payload: иначе каждый запрос повторно
+        // загружает профили всех игроков пачками и заново строит восемь топов.
+        // Язык входит в ключ, потому что подписи секций локализованы.
+        $responseCacheKey = 'api_stats_global_records_response_v2_'
+            . md5(Yii::$app->language . '|' . ($serverTagNorm !== '' ? $serverTagNorm : 'global'));
+        $cachedPayload = Yii::$app->cache->get($responseCacheKey);
+        if (is_array($cachedPayload)
+            && isset($cachedPayload['items'], $cachedPayload['tops'])
+            && is_array($cachedPayload['items'])
+            && is_array($cachedPayload['tops'])) {
+            return $this->successResponse($cachedPayload, [
+                'count' => count($cachedPayload['items']),
+                'cache_key' => $cacheKey,
+                'server_tag' => $serverTagNorm !== '' ? $serverTagNorm : null,
+                'min_active_playtime_minutes' => StatsCacheHelper::ACTIVE_PLAYERS_MIN_PLAYTIME_MINUTES,
+            ]);
+        }
+
         $raw = Yii::$app->cache->get($cacheKey);
         if (!is_array($raw)) {
             return $this->successResponse([
@@ -206,10 +224,13 @@ class StatsController extends BaseApiController
             ];
         }
 
-        return $this->successResponse([
+        $payload = [
             'items' => $items,
             'tops' => $tops,
-        ], [
+        ];
+        Yii::$app->cache->set($responseCacheKey, $payload, 60 * ApiPublicCacheTtl::SECONDS);
+
+        return $this->successResponse($payload, [
             'count' => count($items),
             'cache_key' => $cacheKey,
             'server_tag' => $serverTagNorm !== '' ? $serverTagNorm : null,
@@ -1739,4 +1760,3 @@ class StatsController extends BaseApiController
     }
 
 }
-

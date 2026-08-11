@@ -131,7 +131,7 @@ namespace Oxide.Plugins
         #endregion
         
         #region Reference 
-        [PluginReference] Plugin IQChat, IQFakeActive, IQStaff, NoEscape, EventHelper, Battles, Duel, Duelist, ArenaTournament, Friends, Clans, MultiFighting, StopDamageMan, RustApp, RaidBlock, CombatBlock;
+        [PluginReference] Plugin IQChat, IQFakeActive, IQStaff, NoEscape, EventHelper, Battles, Duel, Duelist, ArenaTournament, Friends, Clans, MultiFighting, StopDamageMan, RaidBlock, CombatBlock;
 
 		#region IQChat
 		private void SendChat(String Message, BasePlayer player, ConVar.Chat.ChatChannel channel = ConVar.Chat.ChatChannel.Global)
@@ -406,113 +406,6 @@ namespace Oxide.Plugins
 
 		#endregion
 
-		#region RustCheatCheck
-
-		#region Local Repository
-
-		private Dictionary<UInt64, LocalRepositoryRCC> RCC_LocalRepository = new Dictionary<UInt64, LocalRepositoryRCC>();
-
-		internal class LocalRepositoryRCC
-		{
-			public List<String> LastChecksServers = new List<String>();
-			public List<String> LastBansServers = new List<String>();
-		}
-		#endregion
-		
-		#region JSON
-		private class Response
-		{
-			public List<String> last_ip;
-			public String last_nick;
-			public List<UInt64> another_accs;
-			public List<last_checks> last_check;
-			public class last_checks
-			{
-				public UInt64 moderSteamID;
-				public String serverName;
-				public Int32 time;
-			}
-			public List<RustCCBans> bans;
-			public class RustCCBans
-			{
-				public Int32 banID;
-				public String reason;
-				public String serverName;
-				public Int32 OVHserverID;
-				public Int32 banDate;
-			}
-		}
-		#endregion
-
-		private void BanPlayerRCC(UInt64 TargetID, String ReasonBan)
-		{
-			if (String.IsNullOrWhiteSpace(config.ReferenceSettings.RCCSettings.RCCKey)) return;
-			String API = $"https://rustcheatcheck.ru/panel/api?action=addBan&key={config.ReferenceSettings.RCCSettings.RCCKey}&player={TargetID}&reason={ReasonBan}";
-			try
-			{
-				webrequest.Enqueue(API, null, (code, response) => { }, this);
-			}
-			catch (Exception e)
-			{
-				PrintError(LanguageEn ? "RCC : We were unable to block the player using RCC, please check if your key is up to date or if RCC is available" : "RCC : Мы не смогли заблокировать игрока с помощью RCC, проверьте актуальность вашего ключа или доступность RCC");
-			}
-		}
-
-		private void StartCheckRCC(UInt64 TargetID, UInt64 ModerID)
-		{
-			if (String.IsNullOrWhiteSpace(config.ReferenceSettings.RCCSettings.RCCKey)) return;
-			String API = $"https://rustcheatcheck.ru/panel/api?action=addPlayer&key={config.ReferenceSettings.RCCSettings.RCCKey}&player={TargetID}";
-			if (ModerID != 0)
-				API += $"&moder={ModerID}";
-			
-			try
-			{
-				webrequest.Enqueue(API, null, (code, response) => { }, this);
-			}
-			catch (Exception e)
-			{
-				PrintError(LanguageEn ? "RCC : We were unable to get the player to check with RCC, please check if your key is up to date or if RCC is available" : "RCC : Мы не смогли вызвать игрока на проверку с помощью RCC, проверьте актуальность вашего ключа или доступность RCC");
-			}
-		}
-
-		private List<String> GetServersCheckRCC(UInt64 TargetID)
-		{
-			if (String.IsNullOrWhiteSpace(config.ReferenceSettings.RCCSettings.RCCKey)) return null;
-			return !RCC_LocalRepository.ContainsKey(TargetID) ? new List<String>() : RCC_LocalRepository[TargetID].LastChecksServers;
-		}
-
-		private List<String> GetServersBansRCC(UInt64 TargetID)
-		{
-			if (String.IsNullOrWhiteSpace(config.ReferenceSettings.RCCSettings.RCCKey)) return null;
-			return !RCC_LocalRepository.ContainsKey(TargetID) ? new List<String>() : RCC_LocalRepository[TargetID].LastBansServers;
-		}
-
-		private void GetPlayerCheckServerRCC(UInt64 TargetID)
-		{
-			if (String.IsNullOrWhiteSpace(config.ReferenceSettings.RCCSettings.RCCKey)) return;
-			if (RCC_LocalRepository.ContainsKey(TargetID)) return;
-			String API = $"https://rustcheatcheck.ru/panel/api?action=getInfo&key={config.ReferenceSettings.RCCSettings.RCCKey}&player={TargetID}";
-			try
-			{
-				webrequest.Enqueue(API, null, (code, response) =>
-				{
-					Response resources = JsonConvert.DeserializeObject<Response>(response);
-					if (resources.last_check == null)
-						return;
-
-					RCC_LocalRepository.Add(TargetID, new LocalRepositoryRCC());
-					RCC_LocalRepository[TargetID].LastChecksServers.AddRange(resources.last_check.Select(resource => resource.serverName));
-					RCC_LocalRepository[TargetID].LastBansServers.AddRange(resources.bans.Select(resource => resource.serverName));
-					
-				}, this);
-			}
-			catch (Exception ex)
-			{
-				PrintError(LanguageEn ? "RCC : We couldn't find player information with RCC, please check if your key is up to date or if RCC is available" : "RCC : Мы не смогли найти информацию об игроке с помощью RCC, проверьте актуальность вашего ключа или доступность RCC");
-			}
-		}
-
-		#endregion
 
 		#region IsSteam / MultiFighting
 		
@@ -782,8 +675,6 @@ namespace Oxide.Plugins
 				public MultiFighting MultiFightingSetting = new MultiFighting();
 				[JsonProperty(LanguageEn ? "Setting up StopDamageMan" : "Настройка StopDamageMan")]
 				public StopDamageMan StopDamageManSetting = new StopDamageMan();
-				[JsonProperty(LanguageEn ? "Setting up RCC support" : "Настройка поддержки RCC")]
-				public RustCheatCheck RCCSettings = new RustCheatCheck();
 				[JsonProperty(LanguageEn ? "Setting up OzProtect support" : "Настройка поддержки OzProtect")]
 				public OzProtectCheck OzProtectSettings = new OzProtectCheck();
 				
@@ -797,12 +688,6 @@ namespace Oxide.Plugins
 				{
 					[JsonProperty(LanguageEn ? "StopDamageMan : Disable player damage during check" : "StopDamageMan : Отключать игроку урон во время проверки")]
 					public Boolean UseStopDamage;
-				}
-				
-				internal class RustCheatCheck
-				{
-					[JsonProperty(LanguageEn ? "RCC key (if you don't need RCC support, leave the key blank)" : "Ключ RCC (если вам не нужна поддержка RCC - оставьте ключ пустым)")]
-					public String RCCKey;
 				}
 				
 				internal class OzProtectCheck
@@ -1086,10 +971,6 @@ namespace Oxide.Plugins
 						{
 							SendReportClan = true,
 							StartCheckedClan = true,
-						},
-						RCCSettings = new References.RustCheatCheck()
-						{
-							RCCKey = "",
 						},
 						OzProtectSettings = new References.OzProtectCheck()
 						{
@@ -3065,7 +2946,6 @@ namespace Oxide.Plugins
 	        PlayerChecks[Target.userID].DisplayName = Target.displayName;
 
 	        UInt64 ModratorID = !IsConsole ? Moderator.userID : 0;
-	        StartCheckRCC(Target.userID.Get(), ModratorID);
 	        StartCheckOzProtect(Target.userID.Get(), ModratorID);
 	        DrawUI_Player_Alert(Target);
 	        
@@ -3293,7 +3173,6 @@ namespace Oxide.Plugins
 	        
 	        StopDamageRemove(TargetID);
 
-	        BanPlayerRCC(TargetID, VerdictReason);
 	        BanPlayerOzProtect(TargetID, Moderator == null ? 0 : Moderator.userID.Get(), VerdictReason);
 
 	        if (Moderator != null)
@@ -3419,8 +3298,6 @@ namespace Oxide.Plugins
 
 	        String reasonLanguage = LanguageEn ? Reason.Title.LanguageEN : Reason.Title.LanguageRU;
 
-	        GetPlayerCheckServerRCC(TargetID);
-
 	        GetPlayerCheckServerOzProtect(TargetID);
 
 	        BasePlayer Target = BasePlayer.FindByID(TargetID);
@@ -3475,7 +3352,6 @@ namespace Oxide.Plugins
 		        AlertMaxReportDiscord(Target.displayName, playerData.Reports, TargetID);
 	        }
 
-	        RustApp?.Call("RA_ReportSend", Sender.UserIDString, TargetID.ToString(), reasonLanguage, String.Empty);
 
 	        Interface.Call("OnSendedReport", Sender, TargetID, reasonLanguage);
 
@@ -4470,21 +4346,6 @@ namespace Oxide.Plugins
 			List<Configuration.LangText> combinedReason = InformationTarget.ReasonHistory.Values.SelectMany(x => x).Take(6).ToList();
 			///История жалоб
 			DrawUI_PoopUp_Moderator_Panel_Info(player, Target, GetLang("TITLE_POOPUP_MODERATION_HISTORY_REPORTS_TITLE", player.UserIDString), combinedReason, "-232.807 -141.2", "-102.14 18.8");
-			
-			if (!String.IsNullOrEmpty(config.ReferenceSettings.RCCSettings.RCCKey))
-			{
-				///История проверок на серверах [RCC]
-				DrawUI_PoopUp_Moderator_Panel_Info(player, Target,
-					GetLang("TITLE_POOPUP_MODERATION_INFO_CHECK_SERVERS_RCC", player.UserIDString), null,
-					"-65.333 -141.2", "65.333 18.8", GetServersCheckRCC(Target.userID.Get()).Take(6).ToList());
-			
-				///История банов на серверах [RCC]
-				DrawUI_PoopUp_Moderator_Panel_Info(player, Target,
-					GetLang("TITLE_POOPUP_MODERATION_INFO_BANS_SERVERS_RCC", player.UserIDString), null,
-					"102.833 -141.2", "233.5 18.8", GetServersBansRCC(Target.userID.Get()).Take(6).ToList());
-			
-				return;
-			}
 			
 			if (!String.IsNullOrWhiteSpace(config.ReferenceSettings.OzProtectSettings.OzProtectKey))
 			{

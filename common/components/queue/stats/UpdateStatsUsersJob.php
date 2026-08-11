@@ -68,6 +68,7 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
             Yii::$app->telegramChats->sendMessage(
                 "UpdateStatsUsersJob::execute: " . $e->getFile() . ':' . $e->getLine() . ':' . $e->getMessage()
             );
+            throw $e;
         }
     }
 

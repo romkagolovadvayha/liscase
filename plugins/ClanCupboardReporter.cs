@@ -374,7 +374,7 @@ namespace Oxide.Plugins
             }
         }
 
-        /// <summary>Квадрат карты как SignStatistics / RustApp MapHelper (сетка 146.3).</summary>
+        /// <summary>Квадрат карты как SignStatistics / Rust Admin map grid (сетка 146.3).</summary>
         private static string GetRustMapSquare(Vector3 pos)
         {
             float ws = ConVar.Server.worldsize;

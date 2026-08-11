@@ -31,8 +31,8 @@ class MapsController extends BaseApiController
         // JWT авторизация требуется для голосования
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'only' => ['vote'],
-            'except' => ['index', 'options'],
+            'only' => ['vote', 'index', 'detail'],
+            'throwException' => false,
         ];
 
         return $behaviors;
@@ -103,7 +103,7 @@ class MapsController extends BaseApiController
 
         $language = Yii::$app->language;
         $cache = Yii::$app->cache;
-        $listCacheKey = 'api_maps_list_' . $server->tag . '_' . $language;
+        $listCacheKey = 'api_maps_list_v2_' . $server->tag . '_' . $language;
         $cachedList = $cache->get($listCacheKey);
         if ($cachedList !== false && is_array($cachedList)) {
             $userVotedMapIds = [];
@@ -119,6 +119,7 @@ class MapsController extends BaseApiController
                 $m['isVoted'] = in_array($m['id'], $userVotedMapIds);
             }
             unset($m);
+            $this->setReadCacheHeaders($currentUser);
             return $this->successResponse([
                 'maps' => $maps,
                 'server' => $cachedList['server'],
@@ -183,7 +184,6 @@ class MapsController extends BaseApiController
 
         // Получаем количество голосов для каждой карты
         $voteCounts = [];
-        $userVotes = [];
         $userVotedMapIds = [];
         $maxVotes = 0;
         $totalVotes = 0;
@@ -207,35 +207,15 @@ class MapsController extends BaseApiController
                 }
             }
 
-            // Получаем всех проголосовавших пользователей
-            $votes = MapListVote::find()
-                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id])
-                ->with('user')
-                ->orderBy(['created_at' => SORT_DESC])
-                ->all();
-
-            foreach ($votes as $vote) {
-                if (!$vote->user) {
-                    continue;
-                }
-                $mapIdKey = (int)$vote->map_list_id;
-                if (!isset($userVotes[$mapIdKey])) {
-                    $userVotes[$mapIdKey] = [];
-                }
-                $userVotes[$mapIdKey][] = [
-                    'id' => $vote->user->id,
-                    'username' => $vote->user->username,
-                    'steamId' => $vote->user->steam_id,
-                    'avatar' => $vote->user->getAvatar(),
-                    'createdAt' => $vote->created_at,
-                ];
-
-                // Если это голос текущего пользователя, добавляем в список
-                if ($currentUser && $vote->user_id === $currentUser->id) {
-                    if (!in_array($mapIdKey, $userVotedMapIds)) {
-                        $userVotedMapIds[] = $mapIdKey;
-                    }
-                }
+            if ($currentUser) {
+                $userVotedMapIds = array_map('intval', MapListVote::find()
+                    ->select('map_list_id')
+                    ->where([
+                        'map_list_id' => $mapIds,
+                        'server_id' => $server->id,
+                        'user_id' => $currentUser->id,
+                    ])
+                    ->column());
             }
         }
 
@@ -262,21 +242,6 @@ class MapsController extends BaseApiController
 
         foreach ($maps as $map) {
             $details = $map->data_json ? json_decode($map->data_json, true) : [];
-            
-            $monumentsRaw = $details['monuments'] ?? json_decode($map->monuments_json ?? '[]', true);
-            if (!is_array($monumentsRaw)) {
-                $monumentsRaw = [];
-            }
-
-            $monuments = [];
-            foreach ($monumentsRaw as $monument) {
-                $type = $monument['type'] ?? '';
-                $monuments[] = [
-                    'type' => $type,
-                    'label' => MapLocalization::monument($type, $language),
-                    'coordinates' => $monument['coordinates'] ?? null,
-                ];
-            }
 
             $mapsData[] = [
                 'id' => (int)$map->id,
@@ -295,7 +260,9 @@ class MapsController extends BaseApiController
                 'isCustomMap' => (bool)$map->is_custom_map,
                 'canDownload' => (bool)$map->can_download,
                 'totalMonuments' => $map->total_monuments,
-                'monuments' => $monuments,
+                // Тяжёлые координаты загружаются через GET /maps/{id}
+                // только при открытии detail modal.
+                'monuments' => [],
                 'landPercentage' => $map->land_percentage,
                 'biomePercentages' => $details['biomePercentages'] ?? json_decode($map->biome_percentages_json ?? '[]', true),
                 'biomeLabels' => $biomeLabels,
@@ -309,7 +276,8 @@ class MapsController extends BaseApiController
                 'buildableRocks' => $map->buildable_rocks,
                 'createdAt' => $map->created_at,
                 'voteCount' => $voteCounts[$map->id] ?? 0,
-                'voters' => $userVotes[$map->id] ?? [],
+                // Список пользователей также относится к detail endpoint.
+                'voters' => [],
                 'isVoted' => in_array($map->id, $userVotedMapIds),
             ];
         }
@@ -393,6 +361,7 @@ class MapsController extends BaseApiController
         ];
         $cache->set($listCacheKey, $toCache, ApiPublicCacheTtl::SECONDS);
 
+        $this->setReadCacheHeaders($currentUser);
         return $this->successResponse($response);
     }
 
@@ -526,6 +495,10 @@ class MapsController extends BaseApiController
             }
         }
 
+        foreach (['ru-RU', 'en-US', 'ru', 'en'] as $language) {
+            Yii::$app->cache->delete('api_maps_list_v2_' . $server->tag . '_' . $language);
+        }
+
         return $this->successResponse([
             'isVoted' => $voteAdded,
             'voteCount' => $voteCount,
@@ -580,18 +553,19 @@ class MapsController extends BaseApiController
         $language = Yii::$app->language;
         $cacheKey = 'api_maps_detail_' . $id . '_' . $serverIdKey . '_' . $language;
         $cache = Yii::$app->cache;
+        $currentUser = Yii::$app->user->identity;
         $cached = $cache->get($cacheKey);
         if ($cached !== false && is_array($cached)) {
-            $user = Yii::$app->user->identity;
-            if ($user && $serverIdKey) {
+            if ($currentUser && $serverIdKey) {
                 $server = Servers::findOne($serverIdKey);
                 if ($server) {
                     $userVote = MapListVote::find()
-                        ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'user_id' => $user->id])
+                        ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'user_id' => $currentUser->id])
                         ->exists();
                     $cached['userVotedMapIds'] = $userVote ? [(int) $map->id] : [];
                 }
             }
+            $this->setReadCacheHeaders($currentUser);
             return $this->successResponse($cached);
         }
 
@@ -646,13 +620,12 @@ class MapsController extends BaseApiController
             }
 
             // Проверяем, проголосовал ли текущий пользователь
-            $user = Yii::$app->user->identity;
-            if ($user) {
+            if ($currentUser) {
                 $userVote = MapListVote::find()
                     ->where([
                         'map_list_id' => $map->id,
                         'server_id' => $server->id,
-                        'user_id' => $user->id,
+                        'user_id' => $currentUser->id,
                     ])
                     ->exists();
                 if ($userVote) {
@@ -703,7 +676,23 @@ class MapsController extends BaseApiController
         $toCache['userVotedMapIds'] = [];
         $cache->set($cacheKey, $toCache, ApiPublicCacheTtl::SECONDS);
 
+        $this->setReadCacheHeaders($currentUser);
         return $this->successResponse($mapData);
+    }
+
+    private function setReadCacheHeaders(?User $currentUser): void
+    {
+        if ($currentUser) {
+            Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+            Yii::$app->response->headers->set('Vary', 'Origin, Authorization, Accept-Language');
+            return;
+        }
+
+        Yii::$app->response->headers->set(
+            'Cache-Control',
+            'public, max-age=60, s-maxage=300, stale-while-revalidate=300'
+        );
+        Yii::$app->response->headers->set('Vary', 'Origin, Accept-Language');
     }
 
     /**

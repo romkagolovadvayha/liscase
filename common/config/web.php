@@ -164,8 +164,8 @@ $config = [
         'tomeApi'   => [
             'class' => \common\components\payments\Tome::class,
         ],
-        'rustApp'   => [
-            'class' => \common\components\bansystem\RustApp::class,
+        'rustAdmin'   => [
+            'class' => \common\components\bansystem\RustAdmin::class,
         ],
         'freeKassaApi'   => [
             'class' => \common\components\payments\FreeKassa::class,
@@ -181,9 +181,6 @@ $config = [
         ],
         'csGoMarket'   => [
             'class' => \common\components\rusttm\CsGoMarket::class,
-        ],
-        'rustCheck'   => [
-            'class' => \common\components\rustcheck\RustCheck::class,
         ],
         'discord'   => [
             'class' => \common\components\discord\Discord::class,

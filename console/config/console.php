@@ -144,6 +144,13 @@ $config['modules']['crontask'] = [
             'hour'     => '3',
             'min'     => '0',
         ],
+        // Safe by default: only reports candidates until
+        // MAINTENANCE_CLEANUP_APPLY=1 is present in the cron environment.
+        'maintenanceCleanup'       => [
+            'command' => 'maintenance/cleanup',
+            'hour'    => '4',
+            'min'     => '30',
+        ],
     ]
 ];
 $config['controllerMap']['supervisortask'] = [

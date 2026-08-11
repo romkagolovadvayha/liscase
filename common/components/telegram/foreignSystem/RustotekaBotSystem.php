@@ -489,23 +489,23 @@ class RustotekaBotSystem extends AbstractSystemBots
             Yii::error("RustotekaBotSystem::getCheck: Steam GetRustPlayTime error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
         }
 
-        // Запрос к RustCheck API (выполняется в очереди)
-        $rustCheckData = null;
+        // Один запрос к локально агрегированным данным Rust Admin.
+        $rustAdminData = null;
         try {
-            if (Yii::$app->has('rustCheck')) {
-                $rustCheckStartTime = microtime(true);
-                $rustCheckData = Yii::$app->rustCheck->getInfo($steamId);
-                $rustCheckTime = round((microtime(true) - $rustCheckStartTime) * 1000, 2);
-                Yii::info("RustotekaBotSystem::getCheck: RustCheck API request completed in {$rustCheckTime}ms", __METHOD__);
+            if (Yii::$app->has('rustAdmin')) {
+                $rustAdminStartTime = microtime(true);
+                $rustAdminData = Yii::$app->rustAdmin->getTrustInfo($steamId);
+                $rustAdminTime = round((microtime(true) - $rustAdminStartTime) * 1000, 2);
+                Yii::info("RustotekaBotSystem::getCheck: Rust Admin API request completed in {$rustAdminTime}ms", __METHOD__);
             }
         } catch (\Exception $e) {
-            Yii::error("RustotekaBotSystem::getCheck: RustCheck API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
+            Yii::error("RustotekaBotSystem::getCheck: Rust Admin API error for steamId {$steamId}: " . $e->getMessage(), __METHOD__);
         }
 
-        // Определяем страну по IP из RustCheck (приоритетнее, чем Steam)
-        if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
-            if (!empty($rustCheckData['last_ip']) && is_array($rustCheckData['last_ip'])) {
-                $ipList = array_unique($rustCheckData['last_ip']);
+        // Определяем страну по последнему IP из Rust Admin (приоритетнее Steam).
+        if (!empty($rustAdminData) && isset($rustAdminData['status']) && $rustAdminData['status'] === 'success') {
+            if (!empty($rustAdminData['last_ip']) && is_array($rustAdminData['last_ip'])) {
+                $ipList = array_unique($rustAdminData['last_ip']);
                 // Берем первый IP для определения страны
                 if (count($ipList) > 0) {
                     $firstIp = reset($ipList);
@@ -527,27 +527,26 @@ class RustotekaBotSystem extends AbstractSystemBots
             }
         }
 
-        // Добавляем информацию из RustCheck
-        if (!empty($rustCheckData) && isset($rustCheckData['status']) && $rustCheckData['status'] === 'success') {
+        // Добавляем информацию из Rust Admin.
+        if (!empty($rustAdminData) && isset($rustAdminData['status']) && $rustAdminData['status'] === 'success') {
             $message .= "\n";
 
-            // Последний ник из RustCheck
-            if (!empty($rustCheckData['last_nick'])) {
-                $message .= "👤 <b>Последний ник:</b> {$rustCheckData['last_nick']}\n";
+            if (!empty($rustAdminData['last_nick'])) {
+                $message .= "👤 <b>Последний ник:</b> {$rustAdminData['last_nick']}\n";
             }
 
             // Количество проверок
-            if (isset($rustCheckData['rcc_checks'])) {
-                $checksCount = (int)$rustCheckData['rcc_checks'];
+            if (isset($rustAdminData['rcc_checks'])) {
+                $checksCount = (int)$rustAdminData['rcc_checks'];
                 $message .= "🔍 <b>Проверок в системе:</b> {$checksCount}\n";
             }
 
             // История проверок
-            if (!empty($rustCheckData['last_check']) && is_array($rustCheckData['last_check'])) {
-                $checkCount = count($rustCheckData['last_check']);
+            if (!empty($rustAdminData['last_check']) && is_array($rustAdminData['last_check'])) {
+                $checkCount = count($rustAdminData['last_check']);
                 if ($checkCount > 0) {
                     // Показываем все проверки
-                    foreach ($rustCheckData['last_check'] as $index => $check) {
+                    foreach ($rustAdminData['last_check'] as $index => $check) {
                         $checkTime = isset($check['time']) ? date('d.m.Y H:i', (int)$check['time']) : 'Неизвестно';
                         $serverName = $check['serverName'] ?? 'Неизвестный сервер';
                         $message .= "   " . ($index + 1) . ". 📅 {$checkTime} 🖥️ {$serverName}\n";
@@ -555,28 +554,27 @@ class RustotekaBotSystem extends AbstractSystemBots
                 }
             }
 
-            // Баны из RustCheck
-            $rustCheckBans = !empty($rustCheckData['bans']) && is_array($rustCheckData['bans']) ? $rustCheckData['bans'] : [];
-            $rustCheckBanCount = count($rustCheckBans);
+            $rustAdminBans = !empty($rustAdminData['bans']) && is_array($rustAdminData['bans']) ? $rustAdminData['bans'] : [];
+            $rustAdminBanCount = count($rustAdminBans);
             
-            if ($rustCheckBanCount > 0) {
-                $activeRustCheckBans = 0;
+            if ($rustAdminBanCount > 0) {
+                $activeRustAdminBans = 0;
                 
-                foreach ($rustCheckBans as $ban) {
+                foreach ($rustAdminBans as $ban) {
                     $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
                     if ($unbanDate === 0 || $unbanDate > time()) {
-                        $activeRustCheckBans++;
+                        $activeRustAdminBans++;
                     }
                 }
 
-                $message .= "\n\n⚠️ <b>Баны: {$rustCheckBanCount}</b>";
-                if ($activeRustCheckBans > 0) {
-                    $message .= " (Активных: {$activeRustCheckBans})";
+                $message .= "\n\n⚠️ <b>Баны: {$rustAdminBanCount}</b>";
+                if ($activeRustAdminBans > 0) {
+                    $message .= " (Активных: {$activeRustAdminBans})";
                 }
                 $message .= "\n\n";
 
                 // Показываем все баны
-                foreach ($rustCheckBans as $index => $ban) {
+                foreach ($rustAdminBans as $index => $ban) {
                     $banDate = isset($ban['banDate']) ? date('d.m.Y H:i', (int)$ban['banDate']) : 'Неизвестно';
                     $unbanDate = isset($ban['unbanDate']) ? (int)$ban['unbanDate'] : 0;
                     $unbanDateStr = ($unbanDate === 0) ? 'Никогда' : date('d.m.Y H:i', $unbanDate);
@@ -590,7 +588,7 @@ class RustotekaBotSystem extends AbstractSystemBots
                     $message .= "   🔓 Дата разбана: {$unbanDateStr}\n";
                     $message .= "   📝 Причина: {$reason}\n";
                     
-                    if ($index < count($rustCheckBans) - 1) {
+                    if ($index < count($rustAdminBans) - 1) {
                         $message .= "\n";
                     }
                 }
@@ -600,7 +598,7 @@ class RustotekaBotSystem extends AbstractSystemBots
             }
 
         } else {
-            // Если данных из RustCheck нет, показываем сообщение
+            // Если агрегированных данных нет, показываем сообщение.
             $message .= "\n\n✅ <b>Аккаунт чист!</b>\nНи одного бана игрока не найдено.";
         }
 

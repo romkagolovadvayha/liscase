@@ -273,7 +273,6 @@ namespace Oxide.Plugins
                                                     CuiHelper.DestroyUi(player, "MUTE_AND_IGNORE_PANEL_ALERT");
                                                     DrawUI_IQChat_Mute_And_Ignore_Player_Panel(player, ActionType);
                                                     
-                                                    RustApp_NotifyIgnore(player.userID.Get(), ignoreID, statusIgnore);
                                                 }
                                                 else
                                                 {
@@ -1577,7 +1576,6 @@ namespace Oxide.Plugins
 
             Interface.Oxide.CallHook("OnSendedPersonalMessage", Sender, RetargetUser, Message);
 
-            RustApp_HandlerPM(Sender.UserIDString, RetargetUser.UserIDString, Message);
             
             Log(LanguageEn ? $"PRIVATE MESSAGES : {DisplayNameSender}({Sender.userID}) sent a message to the player - {TargetDisplayName}({RetargetUser.userID})\nMESSAGE : {Message}" : $"ЛИЧНЫЕ СООБЩЕНИЯ : {DisplayNameSender}({Sender.userID}) отправил сообщение игроку - {TargetDisplayName}({RetargetUser.userID})\nСООБЩЕНИЕ : {Message}");
             DiscordLoggPM(Sender, RetargetUser, Message);
@@ -1850,7 +1848,6 @@ namespace Oxide.Plugins
 
             Info.MuteInfo.SetMute(Type, MuteTime);
 
-            RustApp_NotifyMute(Target.userID.Get(), Reason, FormatTime(MuteTime, Target.UserIDString), Type, Moderator);
             
             if (Moderator != null && Moderator != Target)
                 Interface.Oxide.CallHook("OnPlayerMuted", Target, Moderator, MuteTime, Reason);
@@ -1878,16 +1875,6 @@ namespace Oxide.Plugins
                 SetupParametres(id, permName);
         }
         
-        private void RustApp_NotifyUnMute(UInt64 targetID, MuteType muteType, BasePlayer moderator)
-        {
-            if (!RustApp) return;
-            
-            String messageNotify = LanguageEn
-                ? $"Moderator {(moderator == null ? "Server" : $"{moderator.userID}")} has unblocked the player's {(muteType == MuteType.Chat ? "text" : "voice")} chat {targetID}"
-                : $"Модератор {(moderator == null ? "Server" : $"{moderator.userID}")} разблокировал {(muteType == MuteType.Chat ? "текстовый" : "голосовой")} чат игроку {targetID}";
-            RustApp.Call("RA_CreateAlert", this, messageNotify, null, null);
-        }
-
         void OnUserGroupRemoved(string id, string groupName)
         {
             String[] PermissionsGroup = permission.GetGroupPermissions(groupName);
@@ -3660,16 +3647,6 @@ namespace Oxide.Plugins
 
         
         
-        private void RustApp_NotifyIgnore(UInt64 playerID, UInt64 targetID, Boolean statusIgnore)
-        {
-            if (!RustApp) return;
-            
-            String messageNotify = LanguageEn
-                ? $"{playerID} {(statusIgnore ? "added to ignore" : "removed from ignoring")} player {targetID}"
-                : $"{playerID} {(statusIgnore ? "добавил в игнорирование" : "удалил из игнорирования")} игрока {targetID}";
-            RustApp.Call("RA_CreateAlert", this, messageNotify, null, null);
-        }
-
         void OnGroupPermissionRevoked(string name, string perm)
         {
             String[] PlayerGroups = permission.GetUsersInGroup(name);
@@ -3718,7 +3695,7 @@ namespace Oxide.Plugins
    
         /// </summary>
 
-                [PluginReference] Plugin ImageLibrary, IQStaff, IQFakeActive, IQRankSystem, XLevels, Clans, XPrison, TranslationAPI, RustApp, SkillTree, PlayerRanks;
+                [PluginReference] Plugin ImageLibrary, IQStaff, IQFakeActive, IQRankSystem, XLevels, Clans, XPrison, TranslationAPI, SkillTree, PlayerRanks;
 
 
         
@@ -3871,7 +3848,6 @@ namespace Oxide.Plugins
             
             Interface.Oxide.CallHook("OnSendedPersonalMessage", Sender, TargetUser, Message);
             
-            RustApp_HandlerPM(Sender.UserIDString, TargetUser.UserIDString, Message);
             
             Log(LanguageEn ? $"PRIVATE MESSAGES : {DisplayNameSender}({Sender.userID}) sent a message to the player - {TargetDisplayName}({TargetUser.userID})\nMESSAGE : {Message}" : $"ЛИЧНЫЕ СООБЩЕНИЯ : {DisplayNameSender}({Sender.userID}) отправил сообщение игроку - {TargetDisplayName}({TargetUser.userID})\nСООБЩЕНИЕ : {Message}");
             DiscordLoggPM(Sender, TargetUser, Message);
@@ -4178,7 +4154,6 @@ namespace Oxide.Plugins
             ReplySystem(player, Lang);
 
             Boolean statusIgnore = Info.Settings.IgnoredAddOrRemove(TargetUser.userID);
-            RustApp_NotifyIgnore(player.userID.Get(), TargetUser.userID.Get(), statusIgnore);
         }
 
         private String GetFakeName(String idOrName)
@@ -6087,16 +6062,6 @@ namespace Oxide.Plugins
         }
         private const String PermissionAntiSpam = "iqchat.antispamabuse";
         
-        private void RustApp_NotifyMute(UInt64 targetID, String reason, String formatTime, MuteType muteType, BasePlayer moderator)
-        {
-            if (!RustApp) return;
-            
-            String messageNotify = LanguageEn
-                ? $"Moderator {(moderator == null ? "Server" : $"{moderator.userID}")} has blocked the player's {(muteType == MuteType.Chat ? "text" : "voice")} chat {targetID}\nReason : {reason}\nTime : {formatTime}"
-                : $"Модератор {(moderator == null ? "Server" : $"{moderator.userID}")} заблокировал {(muteType == MuteType.Chat ? "текстовый" : "голосовой")} чат игроку {targetID}\nПричина : {reason}\nВремя : {formatTime}";
-            RustApp.Call("RA_CreateAlert", this, messageNotify, null, null);
-        }
-        
         [ConsoleCommand("rename.reset")]
         private void ConsoleCommandRenameReset(ConsoleSystem.Arg args)
         {
@@ -6649,7 +6614,6 @@ namespace Oxide.Plugins
 
             Info.MuteInfo.UnMute(Type);
 
-            RustApp_NotifyUnMute(Target.userID.Get(), Type, Moderator);
             
             if (Moderator != null && Moderator != Target)
                 Interface.Oxide.CallHook("OnPlayerUnMuted", Target, Moderator);
@@ -7151,12 +7115,6 @@ namespace Oxide.Plugins
             return UserInformation[UserHas].Settings.IsIgnored(User);
         }
 
-        private void RustApp_HandlerPM(String senderUserID, String targetUserID, String message)
-        {
-            if (!RustApp) return;
-            
-            RustApp.Call("RA_DirectMessageHandler", senderUserID, targetUserID, message);
-        }
         String IQRankGetNameRankKey(string Key) => (string)(IQRankSystem?.Call("API_GET_RANK_NAME", Key));
 
         private void SendDiscordLogChats()
@@ -8302,4 +8260,3 @@ namespace Oxide.Plugins
 
             }
 }
-

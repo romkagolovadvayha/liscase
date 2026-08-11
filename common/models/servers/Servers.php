@@ -67,7 +67,7 @@ use yii\helpers\ArrayHelper;
  * @property string $monitoring_tags
  * @property string $wipe_server_name
  * @property string $wipe_server_description
- * @property string $rust_app_id
+ * @property string $rust_admin_id
  * @property int $min_map_size
  * @property int $max_map_size
  * @property int $map_id
@@ -198,7 +198,7 @@ class Servers extends \common\components\base\ActiveRecord
             'monitoring_tags'          => Yii::t('common', 'Теги сервера в мониторинге'),
             'wipe_server_name'          => Yii::t('common', 'Название сервера при вайпе (для игры)'),
             'wipe_server_description'          => Yii::t('common', 'Описание сервера при вайпе (для игры)'),
-            'rust_app_id'          => Yii::t('common', 'ID в RustApp'),
+            'rust_admin_id'        => Yii::t('common', 'ID сервера в Rust Admin'),
             'min_map_size'          => Yii::t('common', 'Минимальный размер карты'),
             'max_map_size'          => Yii::t('common', 'Максимальный размер карты'),
             'map_id'          => Yii::t('common', 'ID карты'),
@@ -217,8 +217,10 @@ class Servers extends \common\components\base\ActiveRecord
     {
         $rules = [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
-            [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'rust_app_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
+            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path', 'rust_admin_id'], 'string'],
+            [['rust_admin_id'], 'string', 'max' => 191],
+            [['rust_admin_id'], 'unique'],
+            [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
             [['wipe_weekday'], 'in', 'range' => [1, 2, 3, 4, 5, 6, 7]],
             [['wipe_weekday'], 'default', 'value' => 5],
             [['wipe', 'next_wipe', 'global_wipe', 'secret_map'], 'safe'],
@@ -331,8 +333,8 @@ class Servers extends \common\components\base\ActiveRecord
         if ($this->wargm_id === '') {
             $this->wargm_id = null;
         }
-        if ($this->rust_app_id === '') {
-            $this->rust_app_id = null;
+        if ($this->rust_admin_id === '') {
+            $this->rust_admin_id = null;
         }
         if ($this->map_list_id === '') {
             $this->map_list_id = null;
@@ -807,25 +809,22 @@ class Servers extends \common\components\base\ActiveRecord
     public function getWipes($update = false)
     {
         $cacheKey = 'Servers_getWipes2_' . $this->id;
-        if (Yii::$app->cache->get($cacheKey) && !$update) {
-            return Yii::$app->cache->get($cacheKey);
+        $cachedWipes = Yii::$app->cache->get($cacheKey);
+        if ($cachedWipes !== false && !$update) {
+            return $cachedWipes;
         }
 
         $result = [];
         $wipes = Statistics::find()
                   ->select('DISTINCT(wipe)')
                   ->andWhere(['server_tag' => $this->tag])
-                  ->orderBy(['id' => SORT_DESC])
+                  ->orderBy(['wipe' => SORT_DESC])
+                  ->limit(11)
                   ->createCommand()
                   ->queryColumn();
 
-        $count = 0;
         foreach ($wipes as $wipe) {
             $result[$wipe] = $wipe;
-            $count++;
-            if ($count > 10) {
-                break;
-            }
         }
 
         Yii::$app->cache->set($cacheKey, $result, 60*60); // 1 час

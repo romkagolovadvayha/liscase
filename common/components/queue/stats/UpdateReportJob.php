@@ -18,7 +18,7 @@ use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
 use yii\helpers\Html;
-use common\components\bansystem\dto\RustAppPlayerResponse;
+use common\components\rustadmin\dto\RustAdminPlayerResponse;
 
 class UpdateReportJob extends BaseObject implements JobInterface
 {
@@ -172,13 +172,13 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $playHourTotal = round($totalPlaytime / 60, 1);
             $playHourWipe = round($playtimeWipe / 60, 1);
 
-            /** @var RustAppPlayerResponse|null $rustAppData */
-            $rustAppData = null;
-            if (Yii::$app->has('rustApp')) {
+            /** @var RustAdminPlayerResponse|null $rustAdminData */
+            $rustAdminData = null;
+            if (Yii::$app->has('rustAdmin')) {
                 try {
-                    $rustAppData = Yii::$app->rustApp->player($reportUser->steam_id);
+                    $rustAdminData = Yii::$app->rustAdmin->player($reportUser->steam_id);
                 } catch (\Throwable $throwable) {
-                    Yii::error('RustApp player fetch failed: ' . $throwable->getMessage(), __METHOD__);
+                    Yii::error('Rust Admin player fetch failed: ' . $throwable->getMessage(), __METHOD__);
                 }
             }
 
@@ -206,15 +206,15 @@ class UpdateReportJob extends BaseObject implements JobInterface
             $lastCheck = "";
             $lastCheckExist = false;
             try {
-                $rustCheck = Yii::$app->rustCheck->getInfo($reportUser->steam_id);
-                if (!empty($rustCheck['bans'])) {
-                    foreach ($rustCheck['bans'] as $ban) {
+                $trustInfo = Yii::$app->rustAdmin->getTrustInfo($reportUser->steam_id);
+                if (!empty($trustInfo['bans'])) {
+                    foreach ($trustInfo['bans'] as $ban) {
                         $bansExist = true;
                         $bans .= $ban['serverName'] . ":" . $ban['reason'] . PHP_EOL;
                     }
                 }
-                if (!empty($rustCheck['last_check'])) {
-                    foreach ($rustCheck['last_check'] as $_lastCheck) {
+                if (!empty($trustInfo['last_check'])) {
+                    foreach ($trustInfo['last_check'] as $_lastCheck) {
                         $lastCheckExist = true;
                         $lastCheck .= $_lastCheck['serverName'] . PHP_EOL;
                     }
@@ -257,9 +257,9 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $message .=  PHP_EOL  . PHP_EOL . "Последние проверки игрока:" . PHP_EOL . $lastCheck;
             }
 
-            $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
-            if (!empty($rustAppLines)) {
-                $message .= PHP_EOL . implode(PHP_EOL, $rustAppLines);
+            $rustAdminLines = $this->buildRustAdminLines($rustAdminData, $server, $reportUser, $this->serverName);
+            if (!empty($rustAdminLines)) {
+                $message .= PHP_EOL . implode(PHP_EOL, $rustAdminLines);
             }
             Yii::$app->telegramReports->sendMessage($message);
 
@@ -281,7 +281,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                     $bans,
                     $lastCheckExist,
                     $lastCheck,
-                    $rustAppData
+                    $rustAdminData
                 );
             }
         } catch (\Exception $e) {
@@ -323,7 +323,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
         string $bans,
         bool $lastCheckExist,
         string $lastCheck,
-        ?RustAppPlayerResponse $rustAppData
+        ?RustAdminPlayerResponse $rustAdminData
     ): void {
         try {
             $formatter = Yii::$app->formatter;
@@ -363,9 +363,9 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $lines[] = nl2br(Html::encode(trim($lastCheck)));
             }
 
-            $rustAppLines = $this->buildRustAppLines($rustAppData, $server, $reportUser, $this->serverName);
-            if (!empty($rustAppLines)) {
-                $lines = array_merge($lines, $rustAppLines);
+            $rustAdminLines = $this->buildRustAdminLines($rustAdminData, $server, $reportUser, $this->serverName);
+            if (!empty($rustAdminLines)) {
+                $lines = array_merge($lines, $rustAdminLines);
             }
 
             $buttons = $this->buildRedFlagButtons($reportUser, $server);
@@ -378,17 +378,17 @@ class UpdateReportJob extends BaseObject implements JobInterface
     }
 
     /**
-     * @param RustAppPlayerResponse|null $rustAppData
+     * @param RustAdminPlayerResponse|null $rustAdminData
      * @return array
      */
-    private function buildRustAppLines(?RustAppPlayerResponse $rustAppData, ?Servers $server, User $reportUser, string $serverName): array
+    private function buildRustAdminLines(?RustAdminPlayerResponse $rustAdminData, ?Servers $server, User $reportUser, string $serverName): array
     {
-        if (!$rustAppData || !$rustAppData->player) {
+        if (!$rustAdminData || !$rustAdminData->player) {
             return [];
         }
 
         $formatter = Yii::$app->formatter;
-        $player = $rustAppData->player;
+        $player = $rustAdminData->player;
 
         if ($player->ipDetails) {
             $details = $player->ipDetails;
@@ -419,7 +419,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
             }
         }
 
-        $createdAt = $this->formatRustAppTimestamp($player->createdAt, $formatter);
+        $createdAt = $this->formatRustAdminTimestamp($player->createdAt, $formatter);
         if ($createdAt) {
             $lines[] = 'Аккаунт создан: ' . Html::encode($createdAt);
         }
@@ -439,7 +439,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
                 $lines[] = 'Gamebans / VAC: ' . ($vac || $game ? ("Game: {$game}, VAC: {$vac}") : 'Банов нет');
             }
             if ($steamData->updatedAt) {
-                $lastUpdate = $this->formatRustAppTimestamp($steamData->updatedAt, $formatter);
+                $lastUpdate = $this->formatRustAdminTimestamp($steamData->updatedAt, $formatter);
                 if ($lastUpdate) {
                     $lines[] = 'Последнее обновление: ' . Html::encode($lastUpdate);
                 }
@@ -447,11 +447,11 @@ class UpdateReportJob extends BaseObject implements JobInterface
         }
 
         $lines[] = '';
-        $lines[] = '<b>RustApp тиммейты:</b>';
+        $lines[] = '<b>Rust Admin тиммейты:</b>';
 
         $teamLines = [];
-        if (!empty($rustAppData->team)) {
-            foreach ($rustAppData->team as $member) {
+        if (!empty($rustAdminData->team)) {
+            foreach ($rustAdminData->team as $member) {
                 $link = $member->steamId
                     ? '<a href="https://steamcommunity.com/profiles/' . Html::encode($member->steamId) . '">' . Html::encode($member->steamName ?? $member->steamId) . '</a>'
                     : Html::encode($member->steamName ?? '');
@@ -468,7 +468,7 @@ class UpdateReportJob extends BaseObject implements JobInterface
         return $lines;
     }
 
-    private function formatRustAppTimestamp(?int $timestamp, \yii\i18n\Formatter $formatter): ?string
+    private function formatRustAdminTimestamp(?int $timestamp, \yii\i18n\Formatter $formatter): ?string
     {
         if (empty($timestamp)) {
             return null;
@@ -522,12 +522,12 @@ class UpdateReportJob extends BaseObject implements JobInterface
 
     private function buildRedFlagButtons(User $reportUser, ?Servers $server): array
     {
-        $serverId = $server && $server->rust_app_id ? (int)$server->rust_app_id : null;
+        $serverId = $server ? (int)$server->id : null;
         $commonPayload = [
             'steam_id' => $reportUser->steam_id,
         ];
         if ($serverId) {
-            $commonPayload['server_ids'] = [$serverId];
+            $commonPayload['server_id'] = $serverId;
         }
 
         $cheatsPayload = $commonPayload;

@@ -989,7 +989,6 @@ namespace Oxide.Plugins
         }
 
         
-                private void RustApp_SendNotify(String messageNotify) => RustApp.Call("RA_CreateAlert", this, messageNotify, null, null);
         private Dictionary<UInt64, TeleportationQueueInfo> playerTeleportationQueue = new();
 
         private static void NormalizePreset(Configuration.PresetOtherSetting p, Configuration.PresetOtherSetting def)
@@ -1223,7 +1222,7 @@ namespace Oxide.Plugins
         
         
         
-        [PluginReference] Plugin IQChat, nanoChat, Clans, Friends, RustApp, SimpleStatus, nanoModalMenu;
+        [PluginReference] Plugin IQChat, nanoChat, Clans, Friends, SimpleStatus, nanoModalMenu;
         
         private Boolean useHomeLimit;
 
@@ -3539,7 +3538,7 @@ namespace Oxide.Plugins
 
         private void LogAction(BasePlayer player, TypeLog typeLog, BasePlayer targetPlayer = default, Vector3 position = default, String homeName = default)
         {
-            if (!config.generalController.useLogged && !RustApp) return;
+            if (!config.generalController.useLogged) return;
 
             String typeAction = typeLog switch
             {
@@ -3552,17 +3551,6 @@ namespace Oxide.Plugins
             if (config.generalController.useLogged)
                 LogToFile("IQTeleportation", typeAction, _, true, true);
             
-            if(RustApp)
-            {
-                String typeActionRustApp = typeLog switch
-                {
-                    TypeLog.RequestTeleportation => $"{player.userID} {tprLog} {targetPlayer.userID}",
-                    TypeLog.AcceptTeleportation => $"{player.userID} {tpaLog} {targetPlayer.userID}",
-                    TypeLog.RequestHomeTeleportation => $"{player.userID} {homeLog} `{homeName}` ({position})",
-                    _ => ""
-                };
-                RustApp_SendNotify(typeActionRustApp);
-            }
         }
         
         private enum TypeLog

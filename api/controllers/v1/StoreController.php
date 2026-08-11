@@ -150,13 +150,27 @@ class StoreController extends BaseApiController
     {
         $user = $this->getCurrentUser();
         $serverId = !empty($user->server) ? (int) $user->server->id : null;
+        $limit = max(20, min(100, (int)Yii::$app->request->get('limit', 100)));
+        $cursor = (int)Yii::$app->request->get('cursor', 0);
 
         $storeVisible = $this->getStoreVisible($user);
 
-        $userDrops = $user->getUserDrop()
-            ->andWhere(['status' => UserDrop::STATUS_ACTIVE])
+        $query = $user->getUserDrop()
+            ->andWhere(['status' => UserDrop::STATUS_ACTIVE]);
+        if ($cursor > 0) {
+            $query->andWhere(['<', 'id', $cursor]);
+        }
+        $userDrops = $query
             ->orderBy(['id' => SORT_DESC])
+            ->limit($limit + 1)
             ->all();
+        $hasMore = count($userDrops) > $limit;
+        if ($hasMore) {
+            array_pop($userDrops);
+        }
+        $nextCursor = $hasMore && !empty($userDrops)
+            ? (int)$userDrops[count($userDrops) - 1]->id
+            : null;
 
         $items = [];
         foreach ($userDrops as $userDrop) {
@@ -187,6 +201,11 @@ class StoreController extends BaseApiController
                 'tag' => $user->server->tag,
             ] : null,
             'can_deliver' => $storeVisible,
+            'pagination' => [
+                'limit' => $limit,
+                'has_more' => $hasMore,
+                'next_cursor' => $nextCursor,
+            ],
         ]);
     }
 
@@ -535,8 +554,6 @@ class StoreController extends BaseApiController
         ]);
     }
 }
-
-
 
 
 

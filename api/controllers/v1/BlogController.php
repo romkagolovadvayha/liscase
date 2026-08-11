@@ -115,6 +115,7 @@ class BlogController extends BaseApiController
      */
     public function actionIndex()
     {
+        $this->setPublicCacheHeaders(60, 300);
         $request = Yii::$app->request;
         $page = (int)$request->get('page', 1);
         $limit = (int)$request->get('limit', 10);
@@ -145,7 +146,7 @@ class BlogController extends BaseApiController
             $query = Blog::find()
                 ->alias('b')
                 ->where(['b.status' => Blog::STATUS_ACTIVE])
-                ->with(['blogCategory.parentCategory', 'blogImages', 'comments']);
+                ->with(['blogCategory.parentCategory', 'blogImages']);
 
         // Фильтр по категории
         if ($categoryId) {
@@ -176,9 +177,31 @@ class BlogController extends BaseApiController
             ],
         ]);
 
+        /** @var Blog[] $blogModels */
+        $blogModels = $dataProvider->getModels();
+        $blogIds = array_map(static function (Blog $blog) {
+            return (int)$blog->id;
+        }, $blogModels);
+        $commentCounts = [];
+        if ($blogIds) {
+            $rows = CommentModel::find()
+                ->select(['entityId', 'cnt' => 'COUNT(*)'])
+                ->where(['entityId' => $blogIds])
+                ->groupBy('entityId')
+                ->asArray()
+                ->all();
+            foreach ($rows as $row) {
+                $commentCounts[(int)$row['entityId']] = (int)$row['cnt'];
+            }
+        }
+
         $posts = [];
-        foreach ($dataProvider->getModels() as $blog) {
-            $posts[] = $this->formatBlogPostForApi($blog);
+        foreach ($blogModels as $blog) {
+            $posts[] = $this->formatBlogPostForApi(
+                $blog,
+                $commentCounts[(int)$blog->id] ?? 0,
+                false
+            );
         }
 
         $pagination = $dataProvider->getPagination();
@@ -222,6 +245,7 @@ class BlogController extends BaseApiController
      */
     public function actionCategories()
     {
+        $this->setPublicCacheHeaders(300, 3600);
         $cacheKey = 'api_blog_categories_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $categories = $cache->get($cacheKey);
@@ -251,7 +275,7 @@ class BlogController extends BaseApiController
         $blog = Blog::find()
             ->alias('b')
             ->where(['b.link_name' => $linkName, 'b.status' => Blog::STATUS_ACTIVE])
-            ->with(['blogCategory.parentCategory', 'blogImages', 'comments'])
+            ->with(['blogCategory.parentCategory', 'blogImages'])
             ->one();
 
         if (!$blog) {
@@ -279,7 +303,7 @@ class BlogController extends BaseApiController
      * @param Blog $blog
      * @return array
      */
-    protected function formatBlogPostForApi(Blog $blog): array
+    protected function formatBlogPostForApi(Blog $blog, ?int $commentsCount = null, bool $includeContent = true): array
     {
         $imageUrl = null;
         $imageUrl100 = null;
@@ -311,24 +335,20 @@ class BlogController extends BaseApiController
             }
         }
 
-        $commentsCount = 0;
-        $comments = $blog->comments;
-        if (!empty($comments)) {
-            if (is_array($comments)) {
-                $commentsCount = count($comments);
-            } elseif (is_object($comments)) {
-                $commentsCount = $comments->count();
-            }
+        if ($commentsCount === null) {
+            $commentsCount = (int)$blog->getComments()->count();
         }
 
-        $contentTranslated = Yii::t('database', $blog->content);
-        $processedContent = $blog->processContentWithS3Images($contentTranslated);
+        $processedContent = null;
+        if ($includeContent) {
+            $contentTranslated = Yii::t('database', $blog->content);
+            $processedContent = $blog->processContentWithS3Images($contentTranslated);
+        }
 
-        return [
+        $result = [
             'id' => $blog->id,
             'title' => Yii::t('database', $blog->name),
             'description' => Yii::t('database', $blog->description),
-            'content' => $processedContent,
             'keywords' => Yii::t('database', $blog->keywords ?? ''),
             'image' => $imageUrl,
             'image_100' => $imageUrl100,
@@ -345,6 +365,10 @@ class BlogController extends BaseApiController
             'parentCategoryLinkName' => $parentCategory ? $parentCategory->link_name : null,
             'createdAt' => $blog->created_at,
         ];
+        if ($includeContent) {
+            $result['content'] = $processedContent;
+        }
+        return $result;
     }
 
     /**
@@ -379,6 +403,7 @@ class BlogController extends BaseApiController
      */
     public function actionSimilar($linkName)
     {
+        $this->setPublicCacheHeaders(300, 600);
         $limit = (int)Yii::$app->request->get('limit', 5);
         
         $blog = Blog::find()
@@ -559,6 +584,15 @@ class BlogController extends BaseApiController
                 ->where(['entity' => $entityHash, 'entityId' => $blog->id, 'status' => 1])
                 ->count(),
         ]);
+    }
+
+    private function setPublicCacheHeaders(int $maxAge, int $sharedMaxAge): void
+    {
+        Yii::$app->response->headers->set(
+            'Cache-Control',
+            "public, max-age={$maxAge}, s-maxage={$sharedMaxAge}, stale-while-revalidate={$sharedMaxAge}"
+        );
+        Yii::$app->response->headers->set('Vary', 'Origin, Accept-Language');
     }
 
     /**
@@ -856,4 +890,3 @@ class BlogController extends BaseApiController
         ];
     }
 }
-

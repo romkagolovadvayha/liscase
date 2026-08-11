@@ -694,13 +694,13 @@ class PersonalBotSystem extends AbstractSystem
         }
 
         $options = [];
-        $serverIds = ArrayHelper::getValue($buttonValueObj, 'server_ids', []);
-        if (is_array($serverIds) && !empty($serverIds)) {
-            $options['server_ids'] = array_values(array_filter(array_map('intval', $serverIds)));
+        $serverId = (int)ArrayHelper::getValue($buttonValueObj, 'server_id', 0);
+        if ($serverId > 0) {
+            $options['server_id'] = $serverId;
         }
 
         try {
-            $result = Yii::$app->rustApp->createBan($steamId, $reason, $options);
+            $result = Yii::$app->rustAdmin->createBan($steamId, $reason, $options);
             if (empty($result['success'])) {
                 $message = ArrayHelper::getValue($result, 'message', 'Неизвестная ошибка');
                 return '❌ <b>Ошибка бана</b>' 
@@ -709,7 +709,7 @@ class PersonalBotSystem extends AbstractSystem
                     . PHP_EOL . "<code>{$message}</code>";
             }
         } catch (\Throwable $throwable) {
-            Yii::error('Failed to ban via RustApp: ' . $throwable->getMessage(), __METHOD__);
+            Yii::error('Failed to ban via Rust Admin: ' . $throwable->getMessage(), __METHOD__);
             return '⚠️ <b>Ошибка подключения</b>' 
                 . PHP_EOL . PHP_EOL
                 . "Ошибка при обращении к игровому серверу. Попробуйте позже.";

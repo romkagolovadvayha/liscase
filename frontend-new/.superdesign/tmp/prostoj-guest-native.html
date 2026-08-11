@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1440, height=900, initial-scale=1.0">
+  <title>PROSTOJ — Главная</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--p:#eb0c35;--s:#ff6134;--sa:rgba(255,97,52,.15);--bg:#080224;--card:#19102d;--raised:#2e1a3b;--hover:#342341;--deep:#100b13;--text:#ece4f3;--muted:#8f8f8f;--soft:#b5b5b5;--line:#3e3249;--line2:#7f718c;--icon:#564a66;--online:#4bcc18;--gold:#f8b34d;--grad:linear-gradient(90deg,#eb0c35 50%,#ff6134 100%);--shadow:4px 4px 4px rgba(0,0,0,.25)}
+    *{box-sizing:border-box}body{margin:0}.app{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--text);font-family:Roboto,sans-serif}.header{height:64px;background:var(--card);border-bottom:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.1)}.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}.ph{height:40px;padding:0 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}.pt{font-size:14px;font-weight:600}.meta{font-size:12px;color:var(--muted)}.nav{padding:8px 10px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted)}.nav:hover{background:var(--raised);color:var(--text)}.social{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--muted)}.primary{height:36px;padding:0 14px;border-radius:6px;background:var(--grad);color:white;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}.server{height:66px;padding:10px 12px;background:var(--deep);border:1px solid var(--line);border-radius:8px}.bar{height:4px;background:var(--raised);border-radius:4px;overflow:hidden}.fill{height:100%;background:var(--grad)}.product{min-width:0;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:8px}.product:hover{border-color:var(--line2)}.product-img{height:92px;border-radius:8px;background:linear-gradient(135deg,rgba(235,12,53,.09),rgba(255,97,52,.09));display:flex;align-items:center;justify-content:center}.day{height:31px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--soft)}.day.event{background:var(--sa);color:var(--s);font-weight:600}.day.global{background:rgba(235,12,53,.18);color:#ff7690;font-weight:600}.day.today{border:1px solid var(--line2);color:var(--text)}
+  </style>
+</head>
+<body>
+  <div class="app flex flex-col">
+    <header class="header px-6 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-7 min-w-0">
+        <img src="https://storage.prostoj.store/uploads/site/design/0554f1c40e29411f9422851a1918153c.svg" alt="PROSTOJ" class="h-8 w-auto shrink-0">
+        <nav class="flex items-center gap-1 whitespace-nowrap">
+          <a id="guest-news" href="#news" class="nav">Новости</a><a id="guest-wipes" href="#wipes" class="nav">Календарь вайпов</a><a id="guest-support" href="#support" class="nav">Поддержка</a><a id="guest-stats" href="#stats" class="nav">Статистика</a><a id="guest-clans" href="#clans" class="nav">Кланы</a><a id="guest-tournaments" href="#tournaments" class="nav">Турниры</a>
+        </nav>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <a id="guest-telegram" href="https://t.me/prostojrust" class="social"><iconify-icon icon="fa6-brands:telegram"></iconify-icon></a><a id="guest-discord" href="#discord" class="social"><iconify-icon icon="fa6-brands:discord"></iconify-icon></a><a id="guest-vk" href="#vk" class="social"><iconify-icon icon="fa6-brands:vk"></iconify-icon></a>
+        <div class="flex items-center gap-1 mx-2"><span class="p-1 rounded border border-[var(--line)]"><img src="https://prostoj.store/flags/RU.svg" class="w-5 h-3.5" alt="RU"></span><span class="p-1 opacity-55"><img src="https://prostoj.store/flags/GB.svg" class="w-5 h-3.5" alt="EN"></span></div>
+        <button class="primary"><iconify-icon icon="fa6-brands:steam" class="text-lg"></iconify-icon>Войти через Steam</button>
+      </div>
+    </header>
+
+    <main class="flex-1 min-h-0 p-3 grid grid-cols-12 gap-3">
+      <div class="col-span-8 min-h-0 grid gap-3" style="grid-template-rows:142px 1fr 232px">
+        <section class="panel">
+          <div class="ph"><div class="flex items-center gap-2"><iconify-icon icon="mdi:server" class="text-[var(--s)]"></iconify-icon><span class="pt">Наши серверы</span></div><div class="flex items-center gap-2 meta"><span class="w-2 h-2 rounded-full bg-[var(--online)]"></span>77 онлайн</div></div>
+          <div class="p-3 grid grid-cols-5 gap-2">
+            <div class="server"><div class="flex justify-between"><b class="text-sm">#1 MAX3</b><span class="meta">3 / 100</span></div><div class="bar my-2"><div class="fill" style="width:3%"></div></div><div class="meta">Вайп через 4 дня</div></div>
+            <div class="server"><div class="flex justify-between"><b class="text-sm">#2 X2</b><span class="meta">1 / 400</span></div><div class="bar my-2"><div class="fill" style="width:1%"></div></div><div class="meta">Вайп в четверг</div></div>
+            <div class="server"><div class="flex justify-between"><b class="text-sm">#4 PVE</b><span class="meta">19 / 50</span></div><div class="bar my-2"><div class="fill" style="width:38%"></div></div><div class="meta">Вайп завтра</div></div>
+            <div class="server"><div class="flex justify-between"><b class="text-sm">#5 X10</b><span class="meta">29 / 200</span></div><div class="bar my-2"><div class="fill" style="width:15%"></div></div><div class="meta">Вайп через 2 дня</div></div>
+            <div class="server"><div class="flex justify-between"><b class="text-sm">#6 X2</b><span class="meta">21 / 250</span></div><div class="bar my-2"><div class="fill" style="width:8%"></div></div><div class="meta">Вайп 14 августа</div></div>
+          </div>
+        </section>
+
+        <section class="panel min-h-0">
+          <div class="ph"><div class="flex items-center gap-2"><iconify-icon icon="mdi:newspaper-variant-outline" class="text-[var(--s)]"></iconify-icon><span class="pt">Последние новости</span></div><a id="guest-all-news" href="#all-news" class="text-xs text-[var(--s)]">Все новости</a></div>
+          <div class="h-[calc(100%-40px)] grid grid-cols-5 min-h-0">
+            <article class="col-span-2 relative overflow-hidden border-r border-[var(--line)]">
+              <img src="https://storage.prostoj.store/uploads/site/design/6005c9eba26ecf8aeaf5e12244103402.png" class="absolute inset-0 w-full h-full object-cover opacity-35" alt="Rust Built Different">
+              <div class="absolute inset-0" style="background:linear-gradient(0deg,var(--deep),transparent 75%)"></div>
+              <div class="absolute left-4 right-4 bottom-4"><span class="text-xs text-[var(--s)]">08.08.2026 · 863 просмотра</span><h2 class="text-xl font-semibold leading-tight mt-1">Обновление Rust Built Different</h2><p class="meta mt-1">Новая модель игрока, M16A2, броня и Industrial DLC.</p></div>
+            </article>
+            <div class="col-span-3 divide-y divide-[var(--line)]">
+              <a id="guest-news-may" href="#news-may" class="h-1/4 px-4 flex items-center justify-between hover:bg-[var(--raised)]"><span class="text-sm font-medium">Rust: обновление мая 2026</span><span class="meta">3 150</span></a>
+              <a id="guest-news-drops" href="#news-drops" class="h-1/4 px-4 flex items-center justify-between hover:bg-[var(--raised)]"><span class="text-sm font-medium">Twitch Drops — Round 49</span><span class="meta">2 185</span></a>
+              <a id="guest-news-april" href="#news-april" class="h-1/4 px-4 flex items-center justify-between hover:bg-[var(--raised)]"><span class="text-sm font-medium">Rust обновление 02.04</span><span class="meta">1 650</span></a>
+              <a id="guest-news-eac" href="#news-eac" class="h-1/4 px-4 flex items-center justify-between hover:bg-[var(--raised)]"><span class="text-sm font-medium">EAC TPM verification failed — решение</span><span class="meta">2 095</span></a>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="ph"><div class="flex items-center gap-2"><iconify-icon icon="mdi:shopping-outline" class="text-[var(--s)]"></iconify-icon><span class="pt">Популярное в магазине</span></div><a id="guest-store" href="#store" class="text-xs text-[var(--s)]">Открыть магазин</a></div>
+          <div class="p-3 grid grid-cols-6 gap-2">
+            <div class="product"><div class="product-img"><iconify-icon icon="mdi:crown" class="text-5xl text-[var(--gold)]"></iconify-icon></div><div class="text-xs font-medium mt-2">VIP</div><div class="text-sm font-semibold text-[var(--s)] mt-1">399 ₽</div></div>
+            <div class="product"><div class="product-img"><img src="https://storage.prostoj.store/uploads/images/categories/color_guns.png" class="h-20 object-contain" alt="Набор рейдера"></div><div class="text-xs font-medium mt-2 truncate">Набор рейдера</div><div class="text-sm font-semibold text-[var(--s)] mt-1">499 ₽</div></div>
+            <div class="product"><div class="product-img"><img src="https://storage.prostoj.store/uploads/images/categories/color_clotch.png" class="h-20 object-contain" alt="Набор пирата"></div><div class="text-xs font-medium mt-2 truncate">Набор пирата</div><div class="text-sm font-semibold text-[var(--s)] mt-1">299 ₽</div></div>
+            <div class="product"><div class="product-img"><img src="https://storage.prostoj.store/uploads/images/categories/color_guns.png" class="h-20 object-contain" alt="Набор киллер"></div><div class="text-xs font-medium mt-2 truncate">Набор киллер</div><div class="text-sm font-semibold text-[var(--s)] mt-1">255 ₽</div></div>
+            <div class="product"><div class="product-img"><img src="https://storage.prostoj.store/uploads/images/categories/color_nabor.png" class="h-20 object-contain" alt="Набор пехотинца"></div><div class="text-xs font-medium mt-2 truncate">Набор пехотинца</div><div class="text-sm font-semibold text-[var(--s)] mt-1">339 ₽</div></div>
+            <div class="product"><div class="product-img"><img src="https://storage.prostoj.store/uploads/images/categories/color_components.png" class="h-20 object-contain" alt="Набор подрывника"></div><div class="text-xs font-medium mt-2 truncate">Набор подрывника</div><div class="text-sm font-semibold text-[var(--s)] mt-1">299 ₽</div></div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="col-span-4 min-h-0 grid gap-3" style="grid-template-rows:358px 188px 210px">
+        <section class="panel" id="wipes">
+          <div class="ph"><div class="flex items-center gap-2"><iconify-icon icon="mdi:calendar-month-outline" class="text-[var(--s)]"></iconify-icon><span class="pt">Календарь вайпов</span></div><span class="meta">Август 2026</span></div>
+          <div class="p-3"><div class="grid grid-cols-7 gap-1 mb-2 text-center text-[11px] text-[var(--muted)]"><span>ПН</span><span>ВТ</span><span>СР</span><span>ЧТ</span><span>ПТ</span><span>СБ</span><span>ВС</span></div><div class="grid grid-cols-7 gap-1"><span class="day opacity-30">27</span><span class="day opacity-30">28</span><span class="day opacity-30">29</span><span class="day opacity-30">30</span><span class="day opacity-30">31</span><span class="day">1</span><span class="day">2</span><span class="day">3</span><span class="day event">4</span><span class="day">5</span><span class="day">6</span><span class="day global">7</span><span class="day">8</span><span class="day">9</span><span class="day today">10</span><span class="day">11</span><span class="day event">12</span><span class="day">13</span><span class="day">14</span><span class="day">15</span><span class="day">16</span><span class="day">17</span><span class="day">18</span><span class="day event">19</span><span class="day">20</span><span class="day global">21</span><span class="day">22</span><span class="day">23</span><span class="day">24</span><span class="day">25</span><span class="day event">26</span><span class="day">27</span><span class="day">28</span><span class="day">29</span><span class="day">30</span></div><div class="mt-3 pt-3 border-t border-[var(--line)] grid grid-cols-3 gap-2 text-[11px]"><span class="flex items-center gap-1"><i class="w-2 h-2 rounded-full bg-[var(--s)]"></i>Карта</span><span class="flex items-center gap-1"><i class="w-2 h-2 rounded-full bg-[var(--p)]"></i>Глобальный</span><span class="flex items-center gap-1"><i class="w-2 h-2 rounded-full bg-[var(--gold)]"></i>Обновление</span></div></div>
+        </section>
+        <section class="panel p-5 relative overflow-hidden"><div class="absolute -right-7 -bottom-8 w-36 h-36 rounded-full bg-[var(--sa)]"></div><div class="relative"><div class="text-sm text-[var(--s)] font-medium">Добро пожаловать</div><h1 class="text-2xl font-semibold mt-2">Все нужное для игры — на одном экране</h1><p class="meta mt-2 max-w-[310px]">Авторизуйтесь, чтобы увидеть карту, команду, игровой чат и быстрый вход на сервер.</p><button class="primary mt-4"><iconify-icon icon="fa6-brands:steam"></iconify-icon>Войти через Steam</button></div></section>
+        <section class="panel"><div class="ph"><span class="pt">Сейчас в проекте</span><span class="w-2 h-2 rounded-full bg-[var(--online)]"></span></div><div class="p-4 grid grid-cols-3 gap-2"><div class="rounded-lg bg-[var(--raised)] p-3"><div class="text-xl font-semibold">77</div><div class="meta mt-1">онлайн</div></div><div class="rounded-lg bg-[var(--raised)] p-3"><div class="text-xl font-semibold">5</div><div class="meta mt-1">серверов</div></div><div class="rounded-lg bg-[var(--raised)] p-3"><div class="text-xl font-semibold">301k</div><div class="meta mt-1">игроков</div></div></div><div class="px-4 flex gap-2"><a id="guest-connect" href="#connect" class="h-9 px-3 rounded-md bg-[var(--raised)] border border-[var(--line)] flex items-center gap-2 text-xs"><iconify-icon icon="mdi:content-copy"></iconify-icon>Скопировать IP</a><a id="guest-help" href="#help" class="h-9 px-3 rounded-md bg-[var(--raised)] border border-[var(--line)] flex items-center gap-2 text-xs"><iconify-icon icon="mdi:lifebuoy"></iconify-icon>Помощь</a></div></section>
+      </aside>
+    </main>
+    <footer class="h-8 shrink-0 px-6 bg-[var(--card)] border-t border-[var(--line)] flex items-center justify-between text-[11px] text-[var(--muted)]"><span>© 2026 prostoj.store</span><div class="flex gap-5"><a id="guest-footer-rules" href="#rules">Правила</a><a id="guest-footer-privacy" href="#privacy">Конфиденциальность</a><a id="guest-footer-contacts" href="#contacts">Контакты</a></div></footer>
+  </div>
+</body>
+</html>

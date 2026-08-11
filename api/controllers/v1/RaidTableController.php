@@ -3,7 +3,6 @@
 namespace api\controllers\v1;
 
 use Yii;
-use common\helpers\ApiPublicCacheTtl;
 use common\models\statistics\Statistics;
 use OpenApi\Annotations as OA;
 
@@ -47,8 +46,9 @@ class RaidTableController extends BaseApiController
             return $this->errorResponse('RAID_CALCULATOR_DISABLED', 'Калькулятор рейдов отключен', [], 404);
         }
 
-        // Кэшируем данные на 1 час (v5; ключ с языком — prodNames и fallback-названия зависят от локали)
-        $cacheKey = 'api_raid_table_v5_' . Yii::$app->language;
+        // Данные меняются только вместе с кодом/справочником. Версия ключа
+        // обеспечивает явную инвалидацию при деплое.
+        $cacheKey = 'api_raid_table_v6_' . Yii::$app->language;
         $cache = Yii::$app->cache;
         $data = $cache->get($cacheKey);
 
@@ -77,6 +77,26 @@ class RaidTableController extends BaseApiController
             $recipes = $this->recipes();
             $items = $this->getRaidTableList($names, $images);
 
+            $usedKeys = [];
+            foreach ($items as $group) {
+                foreach ($group['items'] ?? [] as $target) {
+                    $usedKeys[$target['key']] = true;
+                    foreach ($target['weapons'] ?? [] as $weapon) {
+                        $usedKeys[$weapon['key']] = true;
+                    }
+                }
+            }
+            foreach ($recipes as $recipeKey => $recipe) {
+                $usedKeys[$recipeKey] = true;
+                foreach (array_keys($recipe['ingredients'] ?? []) as $ingredientKey) {
+                    $usedKeys[$ingredientKey] = true;
+                }
+            }
+            // Встроенная таблица уже содержит target/weapon image+name; общие
+            // словари нужны только для реально используемых ключей калькулятора.
+            $images = array_intersect_key($images, $usedKeys);
+            $names = array_intersect_key($names, $usedKeys);
+
             $data = [
                 'items' => $items,
                 'recipes' => $recipes,
@@ -84,10 +104,11 @@ class RaidTableController extends BaseApiController
                 'prodNames' => $names,
             ];
 
-            // Сохраняем в кэш на 1 час (3600 секунд)
-            $cache->set($cacheKey, $data, ApiPublicCacheTtl::SECONDS);
+            $cache->set($cacheKey, $data, 86400);
         }
 
+        Yii::$app->response->headers->set('Cache-Control', 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400');
+        Yii::$app->response->headers->set('Vary', 'Origin, Accept-Language');
         return $this->successResponse($data);
     }
 

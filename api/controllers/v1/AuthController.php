@@ -35,7 +35,7 @@ class AuthController extends BaseApiController
         // Но требуется для me, logout
         $behaviors['authenticator'] = [
             'class' => JwtAuthFilter::class,
-            'except' => ['oauth', 'callback', 'login', 'refresh', 'options'],
+            'except' => ['oauth', 'callback', 'login', 'refresh', 'exchange', 'options'],
             'throwException' => false, // Не выбрасывать исключение, просто не авторизовывать
             // Привязка Twitch/Discord/Kick: переход по ссылке с фронта без заголовка Bearer
             'queryTokenParams' => ['access_token'],
@@ -59,7 +59,7 @@ class AuthController extends BaseApiController
     public function actionOauth()
     {
         // Сохраняем redirect_uri в сессии и cookie (для надежности), если он передан
-        $redirectUri = Yii::$app->request->get('redirect_uri');
+        $redirectUri = $this->sanitizeFrontendUrl(Yii::$app->request->get('redirect_uri'));
         if ($redirectUri) {
             $_SESSION['oauth_redirect_uri'] = $redirectUri;
             // Также сохраняем в cookie как резервный способ (на 10 минут)
@@ -67,7 +67,8 @@ class AuthController extends BaseApiController
                 'name' => 'oauth_redirect_uri',
                 'value' => $redirectUri,
                 'expire' => time() + 600,
-                'httpOnly' => false, // Доступен из JavaScript для отладки
+                'httpOnly' => true,
+                'sameSite' => Cookie::SAME_SITE_LAX,
             ]));
         } else {
             // Если не передан, пробуем определить из Referer
@@ -77,14 +78,17 @@ class AuthController extends BaseApiController
                 $parsed = parse_url($referer);
                 if ($parsed && isset($parsed['scheme']) && isset($parsed['host'])) {
                     $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
-                    $redirectUri = $parsed['scheme'] . '://' . $parsed['host'] . $port;
-                    $_SESSION['oauth_redirect_uri'] = $redirectUri;
-                    Yii::$app->response->cookies->add(new Cookie([
-                        'name' => 'oauth_redirect_uri',
-                        'value' => $redirectUri,
-                        'expire' => time() + 600,
-                        'httpOnly' => false,
-                    ]));
+                    $redirectUri = $this->sanitizeFrontendUrl($parsed['scheme'] . '://' . $parsed['host'] . $port);
+                    if ($redirectUri !== null) {
+                        $_SESSION['oauth_redirect_uri'] = $redirectUri;
+                        Yii::$app->response->cookies->add(new Cookie([
+                            'name' => 'oauth_redirect_uri',
+                            'value' => $redirectUri,
+                            'expire' => time() + 600,
+                            'httpOnly' => true,
+                            'sameSite' => Cookie::SAME_SITE_LAX,
+                        ]));
+                    }
                 }
             }
         }
@@ -215,13 +219,14 @@ class AuthController extends BaseApiController
             $accessToken = $jwtService->generateToken($user->id, $user->steam_id, false);
             $refreshToken = $jwtService->generateToken($user->id, $user->steam_id, true);
 
-            // Редирект на фронтенд с токенами в URL параметрах
+            // Передаём в URL только одноразовый короткоживущий код. JWT не
+            // попадают в browser history, access logs и Referer.
             // Используем сохраненный redirect_uri из сессии/cookie, или frontendUrl из параметров, или определяем из homePage
             $frontendUrl = null;
             
             // Сначала пробуем использовать сохраненный redirect_uri из сессии
             if (isset($_SESSION['oauth_redirect_uri']) && !empty($_SESSION['oauth_redirect_uri'])) {
-                $frontendUrl = $_SESSION['oauth_redirect_uri'];
+                $frontendUrl = $this->sanitizeFrontendUrl($_SESSION['oauth_redirect_uri']);
                 unset($_SESSION['oauth_redirect_uri']); // Удаляем из сессии после использования
             }
             
@@ -229,7 +234,7 @@ class AuthController extends BaseApiController
             if (!$frontendUrl) {
                 $cookie = Yii::$app->request->cookies->get('oauth_redirect_uri');
                 if ($cookie && !empty($cookie->value)) {
-                    $frontendUrl = $cookie->value;
+                    $frontendUrl = $this->sanitizeFrontendUrl($cookie->value);
                     // Удаляем cookie после использования
                     Yii::$app->response->cookies->remove('oauth_redirect_uri');
                 }
@@ -237,7 +242,7 @@ class AuthController extends BaseApiController
             
             // Если не нашли, используем frontendUrl из параметров
             if (!$frontendUrl) {
-                $frontendUrl = Yii::$app->params['frontendUrl'] ?? null;
+                $frontendUrl = $this->sanitizeFrontendUrl(Yii::$app->params['frontendUrl'] ?? null);
             }
             
             // Если все еще не нашли, пытаемся определить из homePage
@@ -247,16 +252,29 @@ class AuthController extends BaseApiController
                 // Если homePage содержит api., убираем его (это старый фронтенд)
                 // Для нового фронтенда лучше использовать frontendUrl из конфигурации
                 $frontendUrl = str_replace('api.', '', $homePage);
-                // Если это localhost, используем порт 3000
+                // Локальный Next.js проект слушает штатный порт 3001.
                 if (strpos($frontendUrl, 'localhost') !== false || strpos($frontendUrl, '127.0.0.1') !== false) {
-                    $frontendUrl = 'http://localhost:3000';
+                    $frontendUrl = 'http://localhost:3001';
                 }
+                $frontendUrl = $this->sanitizeFrontendUrl($frontendUrl);
+            }
+            if (!$frontendUrl) {
+                throw new \RuntimeException('Frontend OAuth redirect URL is not configured or allowed');
             }
             
-            $redirectUrl = $frontendUrl . '/auth/callback?' . http_build_query([
+            $exchangeCode = Yii::$app->security->generateRandomString(48);
+            $exchangeStored = Yii::$app->cache->set('auth_exchange_' . hash('sha256', $exchangeCode), [
                 'token' => $accessToken,
                 'refresh_token' => $refreshToken,
+                'user_id' => (int)$user->id,
+            ], 60);
+            if (!$exchangeStored) {
+                throw new \RuntimeException('Unable to persist OAuth exchange code');
+            }
+            $redirectUrl = rtrim($frontendUrl, '/') . '/auth/callback?' . http_build_query([
+                'code' => $exchangeCode,
             ]);
+            Yii::$app->response->headers->set('Referrer-Policy', 'no-referrer');
             
             return Yii::$app->response->redirect($redirectUrl);
         } catch (\Exception $e) {
@@ -618,6 +636,60 @@ class AuthController extends BaseApiController
     }
 
     /**
+     * Лёгкий payload для корневого layout: профиль и только personal balance.
+     * В отличие от expand=balance не вычисляет skins/referral данные.
+     */
+    public function actionSession()
+    {
+        if (Yii::$app->user->isGuest) {
+            return $this->errorResponse('UNAUTHORIZED', 'Authentication required', [], 401);
+        }
+
+        /** @var User $user */
+        $user = Yii::$app->user->identity;
+        $personalBalance = $user->getPersonalBalance();
+        $data = $this->formatUser($user);
+        $data['balances'] = [
+            'personal' => [
+                'balance' => (float)$personalBalance->balance,
+                'balanceCeil' => (int)ceil($personalBalance->balance),
+                'balanceFormat' => $personalBalance->getBalanceFormat(),
+            ],
+        ];
+
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        return $this->successResponse($data);
+    }
+
+    /**
+     * Однократно обменивает OAuth code на пару JWT. Код удаляется до выдачи
+     * ответа, поэтому повторное воспроизведение невозможно.
+     */
+    public function actionExchange()
+    {
+        if (!Yii::$app->request->isPost) {
+            return $this->errorResponse('METHOD_NOT_ALLOWED', 'POST required', [], 405);
+        }
+        $code = trim((string)Yii::$app->request->post('code', ''));
+        if ($code === '' || strlen($code) > 128) {
+            return $this->errorResponse('INVALID_CODE', 'Invalid or expired authorization code', [], 400);
+        }
+
+        $cacheKey = 'auth_exchange_' . hash('sha256', $code);
+        $payload = $this->pullAuthExchangePayload($cacheKey);
+        if (!is_array($payload) || empty($payload['token']) || empty($payload['refresh_token'])) {
+            return $this->errorResponse('INVALID_CODE', 'Invalid or expired authorization code', [], 400);
+        }
+
+        Yii::$app->response->headers->set('Cache-Control', 'no-store');
+        Yii::$app->response->headers->set('Referrer-Policy', 'no-referrer');
+        return $this->successResponse([
+            'token' => $payload['token'],
+            'refresh_token' => $payload['refresh_token'],
+        ]);
+    }
+
+    /**
      * Payload балансов как у {@see UserController::actionBalance()} (корень data ответа).
      *
      * @return array{personal: array, skins: array, referral: array}
@@ -713,6 +785,75 @@ class AuthController extends BaseApiController
         $digits = preg_replace('/\D/', '', (string)$raw);
 
         return $digits !== '' ? $digits : null;
+    }
+
+    /**
+     * Разрешает OAuth redirect только на origin из CORS allowlist. Путь,
+     * query и fragment намеренно отбрасываются: возврат внутри сайта хранит
+     * сам frontend в sessionStorage.
+     */
+    protected function sanitizeFrontendUrl($raw): ?string
+    {
+        if (!is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+        $parts = parse_url(trim($raw));
+        if (!$parts || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+        $scheme = strtolower($parts['scheme']);
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+        $origin = $scheme . '://' . strtolower($parts['host']);
+        if (!empty($parts['port'])) {
+            $origin .= ':' . (int)$parts['port'];
+        }
+        $allowed = array_map(static function ($value) {
+            return rtrim(strtolower((string)$value), '/');
+        }, $this->getAllowedOrigins());
+
+        return in_array(strtolower($origin), $allowed, true) ? $origin : null;
+    }
+
+    /**
+     * Atomically reads and removes an OAuth exchange code when Redis backs the
+     * Yii cache. Other cache drivers retain the compatible get/delete fallback.
+     */
+    private function pullAuthExchangePayload(string $cacheKey)
+    {
+        $cache = Yii::$app->cache;
+        if ($cache instanceof \yii\redis\Cache) {
+            $script = <<<'LUA'
+local value = redis.call('GET', KEYS[1])
+if value then
+    redis.call('DEL', KEYS[1])
+end
+return value
+LUA;
+            $raw = $cache->redis->executeCommand('EVAL', [
+                $script,
+                1,
+                $cache->buildKey($cacheKey),
+            ]);
+            if ($raw === null || $raw === false) {
+                return false;
+            }
+            if ($cache->serializer === false) {
+                return $raw;
+            }
+            $wrapped = $cache->serializer === null
+                ? @unserialize((string)$raw, ['allowed_classes' => false])
+                : call_user_func($cache->serializer[1], $raw);
+
+            return is_array($wrapped) && array_key_exists(0, $wrapped)
+                ? $wrapped[0]
+                : false;
+        }
+
+        $payload = $cache->get($cacheKey);
+        $cache->delete($cacheKey);
+        return $payload;
     }
 
     /**

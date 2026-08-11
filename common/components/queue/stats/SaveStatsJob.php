@@ -58,6 +58,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                     ]));
                 } catch (\Exception $e) {
                     Yii::$app->telegramChats->sendMessage("SaveStatsJob::queueKills: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                    throw $e;
                 }
             }
 //            foreach ($request['teams'] as $item) {
@@ -90,6 +91,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                                                             ]));
             } catch (\Exception $e) {
                 Yii::$app->telegramChats->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
+                throw $e;
             }
             try {
                 foreach ($request['reports'] as $item) {
@@ -103,10 +105,12 @@ class SaveStatsJob extends BaseObject implements JobInterface
                         ]));
                     } catch (\Exception $e) {
                         Yii::$app->telegramChats->sendMessage("SaveStatsJob::updateTeam: " . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+                        throw $e;
                     }
                 }
             } catch (\Exception $e) {
                 Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
+                throw $e;
             }
 
 
@@ -136,6 +140,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
             Yii::error("SaveStatsJob: " . $e->getMessage(), 'error');
             Yii::$app->cache->delete('usersTop');
             Yii::$app->cache->delete('usersLive');
+            throw $e;
         }
     }
 }

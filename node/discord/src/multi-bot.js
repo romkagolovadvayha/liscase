@@ -4,9 +4,13 @@
 const { Client, GatewayIntentBits } = require("discord.js");
 const mysql = require("mysql");
 
-const [,, DB_HOST, DB_USER, DB_PASS, DB_NAME] = process.argv;
+const [,, argHost, argUser, argPassword, argName] = process.argv;
+const DB_HOST = process.env.DB_HOST || argHost;
+const DB_USER = process.env.DB_USER || argUser;
+const DB_PASS = process.env.DB_PASSWORD || argPassword;
+const DB_NAME = process.env.DB_NAME || argName;
 if (!DB_HOST || !DB_USER || !DB_PASS || !DB_NAME) {
-    console.error("Usage: node multi-bots-all.js <dbHost> <dbUser> <dbPass> <dbName>");
+    console.error("Database configuration is missing (DB_HOST/DB_USER/DB_PASSWORD/DB_NAME)");
     process.exit(1);
 }
 

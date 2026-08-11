@@ -142,6 +142,20 @@ class SupportController extends BaseApiController
         ]);
     }
 
+    /** Компактный счётчик для глобального badge, без загрузки тикетов. */
+    public function actionUnreadCount()
+    {
+        $user = $this->getCurrentUser();
+        $count = (int)SupportRead::find()
+            ->where([
+                'user_id' => (int)$user->id,
+                'status' => SupportRead::STATUS_UNREAD,
+            ])
+            ->count();
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        return $this->successResponse(['count' => $count]);
+    }
+
     /**
      * Тикеты пользователя (для админов/модераторов)
      * 
@@ -1695,4 +1709,3 @@ class SupportController extends BaseApiController
         return $data;
     }
 }
-

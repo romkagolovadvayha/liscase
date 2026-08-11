@@ -18,7 +18,7 @@ class CheckPlayerJob extends BaseObject implements JobInterface
      * 
      * ВНИМАНИЕ: Все запросы к внешним сервисам и базам данных выполняются здесь, в очереди:
      * - Запрос к Steam API (Steam::getInfoUser)
-     * - Запрос к RustCheck API (rustCheck->getInfo)
+     * - Запрос агрегированного профиля Rust Admin
      * - Запрос к GeoIP для определения страны по IP
      * - Запрос к локальной базе данных (BanList::find)
      * 

@@ -2,7 +2,7 @@
 
 namespace common\components\clan;
 
-use common\components\rustcheck\RustCheck;
+use common\components\bansystem\RustAdmin;
 use common\models\bans\Bans;
 use common\models\clan\Clan;
 use common\models\user\User;
@@ -10,7 +10,7 @@ use Yii;
 
 /**
  * Краткая оценка надёжности заявителя в клан (для лидера/офицера).
- * Учитывает активные баны на проекте ({{%bans}}) и данные RustCheatCheck (rustcheatcheck.ru), как на сайте/боте.
+ * Учитывает активные баны проекта и агрегированные данные Rust Admin.
  */
 final class ApplicantTrustHelper
 {
@@ -22,12 +22,12 @@ final class ApplicantTrustHelper
      *   active_ban_count: int,
      *   ban_on_clan_server: bool,
      *   bans: list<array{server_tag: ?string, server_name: string, reason: string, banned_at: ?string}>,
-     *   rustcheatcheck: array<string, mixed>
+     *   rust_admin: array<string, mixed>
      * }
      */
     public static function summarize(User $user, Clan $clan): array
     {
-        $steamId = RustCheck::normalizePlayerSteamId($user->steam_id);
+        $steamId = RustAdmin::normalizeSteamId($user->steam_id);
         if ($steamId === null || $steamId === '') {
             $steamId = trim((string) $user->steam_id);
         }
@@ -77,14 +77,14 @@ final class ApplicantTrustHelper
             $score -= 8;
         }
 
-        $rustcheatcheck = self::buildRustCheatCheckBlock($steamId, $score);
-        $score = (int)$rustcheatcheck['adjusted_score'];
-        unset($rustcheatcheck['adjusted_score']);
+        $rustAdmin = self::buildRustAdminBlock($steamId, $score);
+        $score = (int)$rustAdmin['adjusted_score'];
+        unset($rustAdmin['adjusted_score']);
         $score = max(0, min(100, $score));
 
         $rccActiveBans = 0;
-        if (!empty($rustcheatcheck['available']) && isset($rustcheatcheck['active_ban_count'])) {
-            $rccActiveBans = max(0, (int)$rustcheatcheck['active_ban_count']);
+        if (!empty($rustAdmin['available']) && isset($rustAdmin['active_ban_count'])) {
+            $rccActiveBans = max(0, (int)$rustAdmin['active_ban_count']);
         }
 
         if ($score >= 72) {
@@ -105,35 +105,35 @@ final class ApplicantTrustHelper
             'active_ban_count' => $n + $rccActiveBans,
             'ban_on_clan_server' => $banOnClanServer,
             'bans' => $bans,
-            'rustcheatcheck' => $rustcheatcheck,
+            'rust_admin' => $rustAdmin,
         ];
     }
 
     /**
-     * Данные API rustcheatcheck.ru (getInfo) + корректировка trust_score.
+     * Локально синхронизированные RCC-данные из Rust Admin + корректировка trust_score.
      *
      * @return array{available: bool, adjusted_score: int, status?: string, checks_count?: int, active_ban_count?: int, total_ban_count?: int, last_nick?: ?string, bans?: list<array{server_name: string, reason: string, ban_at: ?int, unban_at: ?int, active: bool}>}
      */
-    private static function buildRustCheatCheckBlock(string $steamId, int $scoreSoFar): array
+    private static function buildRustAdminBlock(string $steamId, int $scoreSoFar): array
     {
         $base = [
             'available' => false,
             'adjusted_score' => $scoreSoFar,
         ];
 
-        if ($steamId === '' || !Yii::$app->has('rustCheck')) {
+        if ($steamId === '' || !Yii::$app->has('rustAdmin')) {
             return $base;
         }
 
-        $apiKey = Yii::$app->settings->get('banSystem_rustcheatcheck');
+        $apiKey = Yii::$app->settings->get('rustAdmin_privateApiKey');
         if (empty($apiKey)) {
             return $base;
         }
 
         try {
-            $raw = Yii::$app->rustCheck->getInfo($steamId);
+            $raw = Yii::$app->rustAdmin->getTrustInfo($steamId);
         } catch (\Throwable $e) {
-            Yii::warning('ApplicantTrustHelper: RustCheatCheck getInfo failed: ' . $e->getMessage(), __METHOD__);
+            Yii::warning('ApplicantTrustHelper: Rust Admin trust request failed: ' . $e->getMessage(), __METHOD__);
             return $base;
         }
 
@@ -141,10 +141,10 @@ final class ApplicantTrustHelper
             return $base;
         }
 
-        $payload = self::flattenRustCheckPayload($raw);
+        $payload = self::flattenRustAdminPayload($raw);
         $statusRaw = isset($payload['status']) ? (string) $payload['status'] : '';
 
-        if (!self::rustCheckPayloadIsUsable($payload)) {
+        if (!self::rustAdminPayloadIsUsable($payload)) {
             $apiMessage = $payload['message'] ?? $payload['error'] ?? $payload['msg'] ?? null;
             if (!is_string($apiMessage) || $apiMessage === '') {
                 $apiMessage = null;
@@ -218,7 +218,7 @@ final class ApplicantTrustHelper
     /**
      * Некоторые ответы RCC кладут поля внутрь data/response/result.
      */
-    private static function flattenRustCheckPayload(array $raw): array
+    private static function flattenRustAdminPayload(array $raw): array
     {
         foreach (['data', 'response', 'result'] as $wrap) {
             if (empty($raw[$wrap]) || !is_array($raw[$wrap])) {
@@ -241,7 +241,7 @@ final class ApplicantTrustHelper
     /**
      * Учитываем ответы без поля status (как в игровом плагине) и явные ошибки.
      */
-    private static function rustCheckPayloadIsUsable(array $payload): bool
+    private static function rustAdminPayloadIsUsable(array $payload): bool
     {
         $status = strtolower((string) ($payload['status'] ?? ''));
         if (in_array($status, ['error', 'fail', 'failed'], true)) {

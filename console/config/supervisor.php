@@ -5,7 +5,7 @@ $params = yii\helpers\ArrayHelper::merge(
     require Yii::getAlias('@common') . '/config/params-local.php',
 );
 
-return [
+$config = [
     'dir'    => '/etc/supervisor/conf.d',
     'prefix' => 'prostoj',
     'group'  => 'prostoj',
@@ -144,11 +144,29 @@ return [
             'redirect_stderr' => true,
             'stdout_logfile'  => '@app/runtime/supervisor/queue-support.queue.log',
         ],
+        'prostoj.queue-rustoteka-bot' => [
+            'directory'       => '@project',
+            'command'         => 'php yii queue-rustoteka-bot/listen --verbose=1 --color=0',
+            'autostart'       => true,
+            'autorestart'     => true,
+            'startretries'    => 10,
+            'stopsignal'      => 'TERM',
+            'stopwaitsecs'    => 1250,
+            'numprocs'        => 1,
+            'redirect_stderr' => true,
+            'stdout_logfile'  => '@app/runtime/supervisor/queue-rustoteka-bot.queue.log',
+        ],
 
         // ===== Node: discord senders =====
         'prostoj.node.discord.multi.bot' => [
             'directory'       => '@project/node/discord/src',
-            'command'         => 'node multi-bot.js "' . $params['db']['host'] . '" "' . $params['db']['user'] . '" "' . $params['db']['password'] . '" "' . $params['db']['name'] . '"',
+            'command'         => 'node multi-bot.js',
+            'environment'     => [
+                'DB_HOST' => $params['db']['host'],
+                'DB_USER' => $params['db']['user'],
+                'DB_PASSWORD' => $params['db']['password'],
+                'DB_NAME' => $params['db']['name'],
+            ],
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -279,3 +297,17 @@ return [
         ],
     ],
 ];
+
+// Единые безопасные настройки завершения и ротации. TERM даёт workers время
+// закончить текущую транзакцию; KILL оставлял частично обработанные события.
+foreach ($config['programs'] as &$program) {
+    if (($program['stopsignal'] ?? null) === 'KILL') {
+        $program['stopsignal'] = 'TERM';
+    }
+    $program['stopwaitsecs'] = $program['stopwaitsecs'] ?? 1250;
+    $program['stdout_logfile_maxbytes'] = $program['stdout_logfile_maxbytes'] ?? '20MB';
+    $program['stdout_logfile_backups'] = $program['stdout_logfile_backups'] ?? 5;
+}
+unset($program);
+
+return $config;
