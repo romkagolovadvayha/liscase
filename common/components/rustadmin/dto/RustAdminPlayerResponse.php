@@ -62,6 +62,7 @@ class RustAdminTeamMember
     public ?string $status = null;
     public ?int $createdAt = null;
     public ?int $lastOnlineAt = null;
+    public ?string $lastLanguage = null;
 
     public static function fromArray(array $data, ?self $member = null): self
     {
@@ -78,6 +79,7 @@ class RustAdminTeamMember
         $member->status = isset($data['status']) ? (string)$data['status'] : null;
         $member->createdAt = isset($data['created_at']) ? (int)$data['created_at'] : null;
         $member->lastOnlineAt = isset($data['last_online_at']) ? (int)$data['last_online_at'] : null;
+        $member->lastLanguage = isset($data['last_language']) ? (string)$data['last_language'] : null;
 
         return $member;
     }
