@@ -25,6 +25,7 @@ use common\models\media\MediaLive;
 use common\models\statistics\Statistics;
 use common\models\stats\Wipe;
 use GeoIp2\Database\Reader;
+use GeoIp2\Exception\AddressNotFoundException;
 use yii\base\BaseObject;
 use yii\base\NotSupportedException;
 use Yii;
@@ -1593,8 +1594,6 @@ class User extends ActiveRecord implements IdentityInterface
 
     /**
      * @return string|null
-     * @throws \GeoIp2\Exception\AddressNotFoundException
-     * @throws \MaxMind\Db\Reader\InvalidDatabaseException
      */
     public function getCountryByIp() {
         if (empty($this->ip)) {
@@ -1622,6 +1621,17 @@ class User extends ActiveRecord implements IdentityInterface
             $cachedCode = trim((string)$this->ip_country_code);
             if ($cachedCode !== '' && $cachedIp !== '' && $cachedIp === $currentIp) {
                 return strtolower($cachedCode);
+            }
+            if (
+                $cachedIp !== ''
+                && $cachedIp === $currentIp
+                && $cachedCode === ''
+                && $this->hasAttribute('ip_country_updated_at')
+                && (int)$this->ip_country_updated_at > time() - 86400
+            ) {
+                // GeoLite may legitimately have no record for an IP range.
+                // Cache that result briefly to avoid repeated lookups and alerts.
+                return null;
             }
         }
 
@@ -1652,6 +1662,19 @@ class User extends ActiveRecord implements IdentityInterface
             }
 
             return $countryCode;
+        } catch (AddressNotFoundException $e) {
+            if (
+                $this->hasAttribute('ip_country_code')
+                && $this->hasAttribute('ip_country_source_ip')
+                && $this->hasAttribute('ip_country_updated_at')
+            ) {
+                $this->ip_country_code = null;
+                $this->ip_country_source_ip = $currentIp;
+                $this->ip_country_updated_at = time();
+                $this->save(false, ['ip_country_code', 'ip_country_source_ip', 'ip_country_updated_at']);
+            }
+            Yii::info("GeoLite2 has no country record for IP {$currentIp}", 'geoip');
+            return null;
         } catch (\Exception $e) {
             if (
                 $this->hasAttribute('ip_country_code')
