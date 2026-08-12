@@ -21,7 +21,12 @@ class PaymentTinkoff
         $commission = !empty(Yii::$app->settings->get('tinkoffpay_percent')) ? round($deposit->amount * (Yii::$app->settings->get('tinkoffpay_percent') / 100)) : 0;
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
         $request = $TBank->create($deposit->amount + $commission, 'sbp', 'Донат на игровой сервер', $deposit->id, null, null, $deposit->user->email);
-        if (!$request['Success']) {
+        if (empty($request['Success']) || empty($request['PaymentId']) || empty($request['PaymentURL'])) {
+            Yii::warning(sprintf(
+                'TBank payment creation failed: code=%s message=%s',
+                (string)($request['ErrorCode'] ?? 'unknown'),
+                (string)($request['Message'] ?? 'unknown')
+            ), 'payment');
             return null;
         }
         $deposit->commission = $commission;
@@ -36,9 +41,13 @@ class PaymentTinkoff
         $terminalKey = Yii::$app->settings->get('tinkoffpay_terminalKey');
         $secretKey = Yii::$app->settings->get('tinkoffpay_secretKey');
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
-        $request = $TBank->check($depositId);
         $model = Deposit::findOne($depositId);
-        if (!$request['Success']) {
+        if (!$model) {
+            return null;
+        }
+
+        $request = $TBank->check($depositId);
+        if (empty($request['Success'])) {
             return null;
         }
 
@@ -46,14 +55,19 @@ class PaymentTinkoff
             return $model->status;
         }
 
-        if ($request['Payments'][0]['Status'] === 'CONFIRMED') {
+        $status = $request['Payments'][0]['Status'] ?? null;
+        if (!is_string($status) || $status === '') {
+            return null;
+        }
+
+        if ($status === 'CONFIRMED') {
             $model->status = Deposit::STATUS_SUCCESS;
             $model->save(false);
             Deposit::bonus($model->user, $model->amount, $model->payment_type);
             $model->user->getPersonalBalance()->recalculateBalance();
         }
 
-        if (in_array($request['Payments'][0]['Status'], ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'])) {
+        if (in_array($status, ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'], true)) {
             $model->status = Deposit::STATUS_CANCELED;
             $model->save(false);
         }
@@ -74,7 +88,7 @@ class PaymentTinkoff
         if (empty($request['Payments'])) {
             return '';
         }
-        return $request['Payments'][0]['Status'];
+        return $request['Payments'][0]['Status'] ?? '';
     }
 
 }

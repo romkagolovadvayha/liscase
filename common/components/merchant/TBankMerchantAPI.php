@@ -55,7 +55,13 @@ class TBankMerchantAPI
         if (empty($response)) {
             return [];
         }
-        return json_decode($response, 1);
+        $decoded = json_decode($response, true);
+        if (!is_array($decoded)) {
+            Yii::warning('TBank API returned an invalid JSON response', 'payment');
+            return [];
+        }
+
+        return $decoded;
     }
 
     /**
