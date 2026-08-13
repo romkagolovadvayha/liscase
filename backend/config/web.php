@@ -2,6 +2,7 @@
 
 $params = require __DIR__ . '/../../common/config/params-local.php';
 $db = require __DIR__ . '/../../common/config/db-local.php';
+$useSecureCookies = parse_url((string) $params['backendUrl'], PHP_URL_SCHEME) === 'https';
 
 $config = [
     'id' => 'basic',
@@ -58,14 +59,14 @@ $config = [
             'enableCsrfValidation' => !YII_ENV_DEV, // Отключаем CSRF валидацию в dev, включаем в prod
             'csrfCookie' => array_merge([
                 'httpOnly' => true,
-                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                'secure'   => $useSecureCookies,
                 'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
             ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
         'session' => [
             'cookieParams' => array_merge([
                 'httpOnly' => true,
-                'secure'   => !YII_ENV_DEV, // Только для прода (HTTPS), для dev (HTTP) - false
+                'secure'   => $useSecureCookies,
                 'sameSite' => yii\web\Cookie::SAME_SITE_LAX,
             ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
