@@ -40,7 +40,6 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                 <?= $form->field($model, 'max_map_size', ['options' => ['class' => 'mb-0 w-24'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'number', 'placeholder' => 'Макс. карта']) ?>
                 <?= $form->field($model, 'max', ['options' => ['class' => 'mb-0 w-24'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'number', 'placeholder' => 'Слотов']) ?>
                 <?= $form->field($model, 'team_limit', ['options' => ['class' => 'mb-0 w-24'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'type' => 'number', 'placeholder' => 'Лимит']) ?>
-                <?= $form->field($model, 'rust_admin_id', ['options' => ['class' => 'mb-0 min-w-[220px] flex-1'], 'template' => '{label}{input}{error}'])->textInput(['class' => 'ds-input form-control', 'placeholder' => 'Rust Admin server ID']) ?>
             </div>
 
             <div>

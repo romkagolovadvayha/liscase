@@ -98,7 +98,6 @@ class RustAdmin extends Component
         $payload = [
             'steamId' => $steamId,
             'reason' => $reason,
-            'serverIds' => array_values(array_unique(array_filter(array_column($servers, 'rust_admin_id')))),
             'servers' => array_map(static function (array $server): array {
                 return [
                     'ip' => (string)$server['ip'],
@@ -130,7 +129,7 @@ class RustAdmin extends Component
         }
 
         $serverMaps = $this->serverMaps();
-        if ($serverMaps['by_id'] === [] && $serverMaps['by_address'] === []) {
+        if ($serverMaps === []) {
             return [];
         }
 
@@ -260,7 +259,7 @@ class RustAdmin extends Component
     private function serverMaps(): array
     {
         $rows = Servers::find()
-            ->select(['id', 'rust_admin_id', 'ip', 'port'])
+            ->select(['id', 'ip', 'port'])
             ->andWhere(['in', 'status', [
                 Servers::STATUS_WAIT,
                 Servers::STATUS_NOACTIVE,
@@ -268,16 +267,12 @@ class RustAdmin extends Component
             ]])
             ->asArray()
             ->all();
-        $byId = [];
         $byAddress = [];
         foreach ($rows as $row) {
-            if (!empty($row['rust_admin_id'])) {
-                $byId[(string)$row['rust_admin_id']] = (int)$row['id'];
-            }
             $byAddress[$this->addressKey((string)$row['ip'], (int)$row['port'])] = (int)$row['id'];
         }
 
-        return ['by_id' => $byId, 'by_address' => $byAddress];
+        return $byAddress;
     }
 
     private function mapBanRows(array $rows, array $maps): array
@@ -288,13 +283,13 @@ class RustAdmin extends Component
                 continue;
             }
             $remoteServer = $row['server'];
-            $serverId = $maps['by_id'][(string)($row['serverId'] ?? '')] ?? null;
-            if ($serverId === null && is_array($remoteServer)) {
+            $serverId = null;
+            if (is_array($remoteServer)) {
                 $key = $this->addressKey(
                     (string)($remoteServer['ip'] ?? ''),
                     (int)($remoteServer['gamePort'] ?? 0)
                 );
-                $serverId = $maps['by_address'][$key] ?? null;
+                $serverId = $maps[$key] ?? null;
             }
             if ($serverId === null) {
                 continue;
@@ -360,7 +355,7 @@ class RustAdmin extends Component
         }
 
         return Servers::find()
-            ->select(['id', 'rust_admin_id', 'ip', 'port'])
+            ->select(['id', 'ip', 'port'])
             ->andWhere(['in', 'id', $localIds])
             ->asArray()
             ->all();

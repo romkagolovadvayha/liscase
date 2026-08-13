@@ -42,7 +42,8 @@ class ServerMapController extends BaseApiController
         $steamId = (string)$user->steam_id;
         $cacheKey = [
             'v1-user-server-map',
-            (int)$server->id,
+            strtolower(trim((string)$server->ip)),
+            (int)$server->port,
             $steamId,
         ];
 
