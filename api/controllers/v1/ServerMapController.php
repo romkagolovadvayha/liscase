@@ -101,6 +101,12 @@ class ServerMapController extends BaseApiController
         $players = !empty($remote['players']) && is_array($remote['players'])
             ? array_values($remote['players'])
             : [];
+        $cupboards = !empty($remote['cupboards']) && is_array($remote['cupboards'])
+            ? array_values($remote['cupboards'])
+            : [];
+        $activityCells = !empty($remote['activityCells']) && is_array($remote['activityCells'])
+            ? array_values($remote['activityCells'])
+            : [];
 
         return $this->successResponse([
             'available' => $map !== null,
@@ -108,6 +114,8 @@ class ServerMapController extends BaseApiController
             'server' => $this->serverData($server),
             'map' => $map,
             'players' => $players,
+            'cupboards' => $cupboards,
+            'activityCells' => $activityCells,
         ]);
     }
 
@@ -119,6 +127,8 @@ class ServerMapController extends BaseApiController
             'server' => $server !== null ? $this->serverData($server) : null,
             'map' => null,
             'players' => [],
+            'cupboards' => [],
+            'activityCells' => [],
         ];
     }
 
