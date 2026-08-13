@@ -81,6 +81,7 @@ $config = [
                 'v1/profile' => 'v1/user/profile',
                 'v1/user/profile' => 'v1/user/profile',
                 'v1/user/current-server' => 'v1/user/current-server',
+                'v1/user/server-map' => 'v1/server-map/index',
                 'v1/user/social-links' => 'v1/user/social-links',
                 'v1/user/telegram-bot-activate' => 'v1/user/telegram-bot-activate',
                 'v1/user/balance' => 'v1/user/balance',

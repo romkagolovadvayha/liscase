@@ -58,6 +58,30 @@ class RustAdmin extends Component
             : [];
     }
 
+    /**
+     * Read-only map payload for the liscase player sidebar.
+     * The server is intentionally resolved by its public game address so both
+     * systems keep working without sharing internal database identifiers.
+     */
+    public function serverMap(string $ip, int $port, $steamId = null): array
+    {
+        $ip = trim($ip);
+        $normalizedSteamId = self::normalizeSteamId($steamId);
+        if ($ip === '' || strlen($ip) > 255 || $port < 1 || $port > 65535) {
+            throw new \InvalidArgumentException('Valid server ip and game port are required');
+        }
+
+        $query = [
+            'ip' => $ip,
+            'port' => $port,
+        ];
+        if ($normalizedSteamId !== null) {
+            $query['steamId'] = $normalizedSteamId;
+        }
+
+        return $this->request('GET', '/api/services/private/server-map', $query);
+    }
+
     public function createBan(string $steamId, string $reason, array $options = []): array
     {
         $steamId = self::normalizeSteamId($steamId);
