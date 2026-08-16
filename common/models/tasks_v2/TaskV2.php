@@ -3,6 +3,7 @@
 namespace common\models\tasks_v2;
 
 use common\components\base\ActiveRecord;
+use common\models\battle_pass\BattlePassSeason;
 use common\models\box\Drop;
 use common\models\user\User;
 use Yii;
@@ -16,6 +17,8 @@ use yii\helpers\Json;
  * @property string|null $short_description
  * @property string|null $full_description
  * @property string $type
+ * @property int|null $battle_pass_season_id
+ * @property int|null $battle_pass_position
  * @property string $check_type
  * @property string|null $check_params
  * @property string $reward_type
@@ -45,6 +48,7 @@ class TaskV2 extends ActiveRecord
     const TYPE_ONE_TIME = 'one_time';
     const TYPE_REPEATABLE = 'repeatable';
     const TYPE_DAILY_REWARD = 'daily_reward';
+    const TYPE_BATTLE_PASS = 'battle_pass';
 
     const REWARD_TYPE_ITEM = 'item';
     const REWARD_TYPE_CURRENCY = 'currency';
@@ -87,9 +91,13 @@ class TaskV2 extends ActiveRecord
         return [
             [['title', 'check_type', 'reward_type'], 'required'],
             [['short_description', 'full_description'], 'string'],
-            [['type'], 'in', 'range' => [self::TYPE_ONE_TIME, self::TYPE_REPEATABLE, self::TYPE_DAILY_REWARD]],
+            [['type'], 'in', 'range' => [self::TYPE_ONE_TIME, self::TYPE_REPEATABLE, self::TYPE_DAILY_REWARD, self::TYPE_BATTLE_PASS]],
             [['reward_type'], 'in', 'range' => [self::REWARD_TYPE_ITEM, self::REWARD_TYPE_CURRENCY]],
-            [['reward_item_id', 'per_user_limit', 'global_limit', 'global_completed', 'max_progress', 'is_active', 'is_visible_for_guests', 'is_vip_only', 'sort'], 'integer'],
+            [['reward_item_id', 'battle_pass_season_id', 'battle_pass_position', 'per_user_limit', 'global_limit', 'global_completed', 'max_progress', 'is_active', 'is_visible_for_guests', 'is_vip_only', 'sort'], 'integer'],
+            [['battle_pass_season_id', 'battle_pass_position'], 'required', 'when' => function ($model) {
+                return $model->type === self::TYPE_BATTLE_PASS;
+            }],
+            [['battle_pass_season_id', 'battle_pass_position'], 'unique', 'targetAttribute' => ['battle_pass_season_id', 'battle_pass_position'], 'message' => Yii::t('common', 'Этот номер уже занят в выбранном сезоне.')],
             [['reward_amount'], 'number'],
             [['check_params', 'extra_buttons'], 'safe'],
             [['created_at', 'updated_at', 'available_from'], 'safe'],
@@ -113,6 +121,8 @@ class TaskV2 extends ActiveRecord
             'short_description' => Yii::t('common', 'Краткое описание'),
             'full_description' => Yii::t('common', 'Полное описание'),
             'type' => Yii::t('common', 'Тип задания'),
+            'battle_pass_season_id' => Yii::t('common', 'Сезон Battle Pass'),
+            'battle_pass_position' => Yii::t('common', 'Номер в сезоне'),
             'check_type' => Yii::t('common', 'Тип проверки'),
             'check_params' => Yii::t('common', 'Параметры проверки'),
             'reward_type' => Yii::t('common', 'Тип награды'),
@@ -276,6 +286,11 @@ class TaskV2 extends ActiveRecord
         return $this->hasOne(Drop::class, ['id' => 'reward_item_id']);
     }
 
+    public function getBattlePassSeason()
+    {
+        return $this->hasOne(BattlePassSeason::class, ['id' => 'battle_pass_season_id']);
+    }
+
     /**
      * Награда-предмет для UI/API: не обращаться к {@see getRewardItem()} при пустом reward_item_id (иначе Yii даёт `drop WHERE 0=1`).
      * Дроп кэшируется 5 минут, сброс при правках в админке — {@see \common\models\box\Drop::invalidateApiRowCache()}.
@@ -393,7 +408,7 @@ class TaskV2 extends ActiveRecord
         }
 
         // Для одноразовых заданий
-        if ($this->type === self::TYPE_ONE_TIME && $countCompleted > 0) {
+        if (in_array($this->type, [self::TYPE_ONE_TIME, self::TYPE_BATTLE_PASS], true) && $countCompleted > 0) {
             return [
                 'status' => 'completed',
                 'message' => Yii::t('common', 'Выполнено'),
@@ -418,6 +433,7 @@ class TaskV2 extends ActiveRecord
             self::TYPE_ONE_TIME => Yii::t('common', 'Одноразовое'),
             self::TYPE_REPEATABLE => Yii::t('common', 'Многоразовое'),
             self::TYPE_DAILY_REWARD => Yii::t('common', 'Ежедневная награда'),
+            self::TYPE_BATTLE_PASS => Yii::t('common', 'Battle Pass'),
         ];
     }
 
@@ -677,4 +693,3 @@ class TaskV2 extends ActiveRecord
         return $rewardList['items'][$index] ?? null;
     }
 }
-

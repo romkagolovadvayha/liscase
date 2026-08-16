@@ -101,7 +101,11 @@ class StatsController extends WebController
             'data' => $rawBody,
             'ip' => $_SERVER['REMOTE_ADDR'],
         ]));
-        Yii::$app->response->setStatusCode(202);
+        Yii::$app->response->setStatusCode(200);
+        return [
+            'success' => true,
+            'queued' => true,
+        ];
     }
 
     /**

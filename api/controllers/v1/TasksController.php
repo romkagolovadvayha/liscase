@@ -65,7 +65,8 @@ class TasksController extends BaseApiController
         if ($cachedTasks === false) {
             // Получаем только активные задания
             $query = TaskV2::find()
-                ->where(['is_active' => 1]);
+                ->where(['is_active' => 1])
+                ->andWhere(['<>', 'type', TaskV2::TYPE_BATTLE_PASS]);
 
             // Фильтр по типу (daily_reward всегда включен)
             if ($type && in_array($type, [TaskV2::TYPE_ONE_TIME, TaskV2::TYPE_REPEATABLE])) {
@@ -700,4 +701,3 @@ class TasksController extends BaseApiController
         }
     }
 }
-

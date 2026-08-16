@@ -18,12 +18,16 @@ class TelegramConnectedChecker implements TaskCheckerInterface
     {
         if (!empty($user->telegram_chat_id)) {
             return CheckResult::success(
-                Yii::t('common', 'Telegram-бот успешно подключен!')
+                Yii::t('common', 'Telegram-бот успешно подключен!'),
+                1,
+                1
             );
         }
 
         return CheckResult::failure(
-            Yii::t('common', 'Telegram-бот не подключен. Перейдите в раздел настройки и подключите бота.')
+            Yii::t('common', 'Telegram-бот не подключен. Перейдите в раздел настройки и подключите бота.'),
+            0,
+            1
         );
     }
 }

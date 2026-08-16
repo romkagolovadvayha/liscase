@@ -17,7 +17,6 @@ use common\models\invoice\Deposit;
 use common\models\invoice\Invoice;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
-use common\models\tasks_v2\TaskV2;
 use common\models\box\Drop;
 use common\models\box\DropFavorite;
 use common\helpers\FrontendPublicUrl;
@@ -1565,75 +1564,18 @@ class UserController extends BaseApiController
             }
         }
         
-        // Получаем награды из заданий (кэшируем активные задания)
-        $awards = [];
-        $tasksCacheKey = 'homepage_tasks_active';
-        $allTasks = Yii::$app->cache->get($tasksCacheKey);
-        
-        if ($allTasks === false) {
-            // Получаем все активные задания
-            $allTasks = TaskV2::find()
-                ->select(['id', 'title', 'image_path', 'sort'])
-                ->where(['is_active' => 1])
-                ->orderBy(['sort' => SORT_ASC])
-                ->asArray()
-                ->all();
-            
-            // Кэшируем на 10 минут
-            Yii::$app->cache->set($tasksCacheKey, $allTasks, 10 * 60);
+        // Медали теперь независимы от заданий: ручные и сезонные выдачи хранятся в user_medal.
+        $medalsCacheKey = 'homepage_medals_' . (int)$user->id;
+        $medalsData = Yii::$app->cache->get($medalsCacheKey);
+        if ($medalsData === false) {
+            $medalsData = [
+                'items' => \common\models\medals\UserMedal::getUserAwardsPayload((int)$user->id, 7),
+                'completed' => \common\models\medals\UserMedal::countUserActiveMedals((int)$user->id),
+                'total' => (int)\common\models\medals\Medal::find()->where(['is_active' => 1])->count(),
+            ];
+            Yii::$app->cache->set($medalsCacheKey, $medalsData, 60);
         }
-        
-        // Получаем выполненные задания пользователя одним запросом (кэшируем на 1 минуту)
-        $completionsCacheKey = 'homepage_completions_' . $user->id;
-        $userCompletions = Yii::$app->cache->get($completionsCacheKey);
-        
-        if ($userCompletions === false) {
-            $userCompletions = \common\models\tasks_v2\TaskV2UserCompletion::find()
-                ->select(['task_id', 'count_completed'])
-                ->where(['user_id' => $user->id])
-                ->andWhere(['>', 'count_completed', 0])
-                ->indexBy('task_id')
-                ->asArray()
-                ->all();
-            
-            // Кэшируем на 1 минуту
-            Yii::$app->cache->set($completionsCacheKey, $userCompletions, 60);
-        }
-        
-        $completedTasks = 0;
-        $totalTasks = count($allTasks);
-        $completedAwardsList = [];
-        
-        // Формируем массив выполненных заданий
-        foreach ($allTasks as $task) {
-            $taskId = is_array($task) ? $task['id'] : $task->id;
-            $completion = $userCompletions[$taskId] ?? null;
-            $completed = $completion && (is_array($completion) ? $completion['count_completed'] : $completion->count_completed) > 0;
-            
-            if ($completed) {
-                $completedTasks++;
-                
-                // Получаем изображение задания
-                $imagePath = is_array($task) ? $task['image_path'] : $task->image_path;
-                if (empty($imagePath)) {
-                    $image = '/images/design/icons/128px/task-default.png';
-                } else {
-                    $image = Yii::$app->settings->get('s3_publicUrl') . '/' . ltrim($imagePath, '/');
-                }
-                
-                $awardData = [
-                    'id' => $taskId,
-                    'name' => Yii::t('database', is_array($task) ? $task['title'] : $task->title),
-                    'image' => $image,
-                    'completed' => true,
-                ];
-                
-                $completedAwardsList[] = $awardData;
-            }
-        }
-        
-        // Берем только выполненные задания (не более 7, как в старой версии)
-        $awards = array_slice($completedAwardsList, 0, 7);
+        $awards = $medalsData['items'];
         
         // Формируем ссылку на статистику
         $userStatsLink = null;
@@ -1660,8 +1602,8 @@ class UserController extends BaseApiController
             'userStats' => $userStats,
             'awards' => $awards,
             'awardsStats' => [
-                'completed' => $completedTasks,
-                'total' => $totalTasks,
+                'completed' => $medalsData['completed'],
+                'total' => $medalsData['total'],
             ],
             'userStatsLink' => $userStatsLink,
             'serverActiveTag' => $server ? $server->tag : null,
@@ -1832,4 +1774,3 @@ class UserController extends BaseApiController
         ]);
     }
 }
-

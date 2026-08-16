@@ -10,78 +10,36 @@ use Yii;
 use yii\helpers\Json;
 
 /**
- * Проверка параметров статистики игрока
+ * Проверка накопительных параметров статистики игрока.
  */
 class StatisticsParamChecker implements TaskCheckerInterface
 {
-    /**
-     * {@inheritdoc}
-     */
     public function check(TaskV2 $task, User $user): CheckResult
     {
-        $params = is_array($task->check_params) ? $task->check_params : Json::decode($task->check_params, true);
-        
-        if (empty($params['stat_key'])) {
-            return CheckResult::failure(
-                Yii::t('common', 'Настройки задания неверны: не указан параметр статистики.')
-            );
-        }
+        return $this->checkFromBaseline($task, $user, 0, '2025-12-04');
+    }
 
-        $statKey = $params['stat_key'];
-        // Поддержка нескольких ключей через запятую
-        $statKeys = array_map('trim', explode(',', $statKey));
-        
+    /**
+     * Проверяет задание относительно персонального снимка статистики.
+     */
+    public function checkFromBaseline(TaskV2 $task, User $user, int $baselineValue, ?string $startDate = null): CheckResult
+    {
+        $params = $this->getParams($task);
         $requiredValue = (int)($params['required_value'] ?? 0);
-        $serverId = (int)($params['server_id'] ?? 0);
-        $sumAllServers = !empty($params['sum_all_servers']) && $params['sum_all_servers'] === true;
-
+        if (empty($params['stat_key'])) {
+            return CheckResult::failure(Yii::t('common', 'Настройки задания неверны: не указан параметр статистики.'));
+        }
         if ($requiredValue <= 0) {
-            return CheckResult::failure(
-                Yii::t('common', 'Настройки задания неверны: не указано требуемое значение.')
-            );
+            return CheckResult::failure(Yii::t('common', 'Настройки задания неверны: не указано требуемое значение.'));
         }
 
-        // Дата начала отсчета: 04.12.2025 22:00
-        $startDate = '2025-12-04';
-        
-        $currentValue = 0;
-
-        if ($sumAllServers) {
-            // Суммируем статистику по всем серверам начиная с указанной даты (не закрытые — колонки is_active в servers нет)
-            $servers = Servers::find()
-                ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
-                ->orderBy(['sort' => SORT_ASC])
-                ->all();
-            foreach ($servers as $server) {
-                $playerStats = $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate);
-                $currentValue += $this->getStatsSum($playerStats, $statKeys);
-            }
-        } else {
-            // Статистика по конкретному серверу начиная с указанной даты
-            if ($serverId > 0) {
-                $server = Servers::findOne($serverId);
-                if (!$server) {
-                    return CheckResult::failure(
-                        Yii::t('common', 'Сервер не найден.')
-                    );
-                }
-            } else {
-                // Используем текущий сервер пользователя
-                $server = $user->server ?? Servers::find()
-                    ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
-                    ->orderBy(['sort' => SORT_ASC])
-                    ->one();
-                if (!$server) {
-                    return CheckResult::failure(
-                        Yii::t('common', 'Не удалось определить сервер.')
-                    );
-                }
-            }
-
-            $playerStats = $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate);
-            $currentValue = $this->getStatsSum($playerStats, $statKeys);
+        try {
+            $rawValue = $this->getCurrentValue($task, $user, $startDate);
+        } catch (\RuntimeException $e) {
+            return CheckResult::failure($e->getMessage());
         }
 
+        $currentValue = max(0, $rawValue - max(0, $baselineValue));
         if ($currentValue >= $requiredValue) {
             return CheckResult::success(
                 Yii::t('common', 'Задание выполнено! Текущее значение: {current} из {required}', [
@@ -93,12 +51,11 @@ class StatisticsParamChecker implements TaskCheckerInterface
             );
         }
 
-        $remaining = $requiredValue - $currentValue;
         return CheckResult::failure(
             Yii::t('common', 'Прогресс: {current} из {required}. Осталось: {remaining}', [
                 'current' => number_format($currentValue, 0, '.', ' '),
                 'required' => number_format($requiredValue, 0, '.', ' '),
-                'remaining' => number_format($remaining, 0, '.', ' '),
+                'remaining' => number_format($requiredValue - $currentValue, 0, '.', ' '),
             ]),
             $currentValue,
             $requiredValue
@@ -106,18 +63,67 @@ class StatisticsParamChecker implements TaskCheckerInterface
     }
 
     /**
-     * Получить статистику игрока начиная с указанной даты
-     * Суммирует значения по всем вайпам, начиная с указанной даты
-     * 
-     * @param Servers $server
-     * @param string $steamId
-     * @param string $startDate Дата в формате Y-m-d
-     * @return array Массив статистики с ключами и суммированными значениями
+     * Возвращает текущее абсолютное значение, которое можно сохранить как снимок.
      */
+    public function getCurrentValue(TaskV2 $task, User $user, ?string $startDate = null): int
+    {
+        $params = $this->getParams($task);
+        if (empty($params['stat_key'])) {
+            throw new \RuntimeException(Yii::t('common', 'Настройки задания неверны: не указан параметр статистики.'));
+        }
+
+        $statKeys = array_values(array_filter(array_map('trim', explode(',', (string)$params['stat_key']))));
+        $serverId = (int)($params['server_id'] ?? 0);
+        $sumAllServers = !empty($params['sum_all_servers']);
+        $startDate = $startDate ?: '2025-12-04';
+        $currentValue = 0;
+
+        if ($sumAllServers) {
+            $servers = Servers::find()
+                ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+                ->orderBy(['sort' => SORT_ASC])
+                ->all();
+            foreach ($servers as $server) {
+                $currentValue += $this->getStatsSum(
+                    $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate),
+                    $statKeys
+                );
+            }
+            return $currentValue;
+        }
+
+        if ($serverId > 0) {
+            $server = Servers::findOne($serverId);
+        } else {
+            $server = $user->server ?? Servers::find()
+                ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
+                ->orderBy(['sort' => SORT_ASC])
+                ->one();
+        }
+        if (!$server) {
+            throw new \RuntimeException(Yii::t('common', 'Не удалось определить сервер.'));
+        }
+
+        return $this->getStatsSum(
+            $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate),
+            $statKeys
+        );
+    }
+
+    private function getParams(TaskV2 $task): array
+    {
+        if (is_array($task->check_params)) {
+            return $task->check_params;
+        }
+        if (!$task->check_params) {
+            return [];
+        }
+        $decoded = Json::decode($task->check_params, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
     private function getPlayerStatsSinceDate(Servers $server, string $steamId, string $startDate): array
     {
-        // Получаем все записи статистики для игрока на сервере, где начало вайпа >= указанной даты
-        // Поле wipe хранится в формате "Y-m-d/Y-m-d", извлекаем первую часть (дату начала вайпа)
         $statistics = Statistics::find()
             ->select(['key', 'SUM(value) as value'])
             ->andWhere(['steam_id' => $steamId])
@@ -128,22 +134,13 @@ class StatisticsParamChecker implements TaskCheckerInterface
             ->asArray()
             ->all();
 
-        // Преобразуем результат: SUM возвращает строку, нужно преобразовать в int
         $result = [];
         foreach ($statistics as $key => $item) {
             $result[$key] = (int)$item['value'];
         }
-
         return $result;
     }
 
-    /**
-     * Получить сумму значений статистики по указанным ключам
-     * 
-     * @param array $playerStats Массив статистики игрока
-     * @param array $statKeys Массив ключей статистики
-     * @return int Сумма значений по всем указанным ключам
-     */
     private function getStatsSum(array $playerStats, array $statKeys): int
     {
         $sum = 0;
@@ -153,26 +150,3 @@ class StatisticsParamChecker implements TaskCheckerInterface
         return $sum;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

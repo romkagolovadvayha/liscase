@@ -3,6 +3,8 @@
 $params = require __DIR__ . '/../../common/config/params-local.php';
 $db = require __DIR__ . '/../../common/config/db-local.php';
 $useSecureCookies = parse_url((string) $params['backendUrl'], PHP_URL_SCHEME) === 'https';
+$csrfCookieName = $useSecureCookies ? '_csrf' : '_csrf_backend_http';
+$sessionCookieName = $useSecureCookies ? 'PHPSESSID' : 'BACKENDSESSID_HTTP';
 
 $config = [
     'id' => 'basic',
@@ -56,6 +58,7 @@ $config = [
         'request' => [
             // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => '5c4cf22fbe90065a4a8e4591cf2cea84',
+            'csrfParam' => $csrfCookieName,
             'enableCsrfValidation' => !YII_ENV_DEV, // Отключаем CSRF валидацию в dev, включаем в prod
             'csrfCookie' => array_merge([
                 'httpOnly' => true,
@@ -64,6 +67,7 @@ $config = [
             ], !empty($params['cookieDomain']) ? ['domain' => $params['cookieDomain']] : []),
         ],
         'session' => [
+            'name' => $sessionCookieName,
             'cookieParams' => array_merge([
                 'httpOnly' => true,
                 'secure'   => $useSecureCookies,

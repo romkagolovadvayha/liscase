@@ -15,6 +15,7 @@ $typeLabel = ArrayHelper::getValue($typeList, $model->type, $model->type);
 $checkTypeLabel = ArrayHelper::getValue($checkTypeList, $model->check_type, $model->check_type);
 $activeBadgeClass = $model->is_active ? 'ds-badge--success' : 'ds-badge--secondary';
 $rewardLine = '—';
+$rewardDropCard = null;
 if ($model->reward_type === TaskV2::REWARD_TYPE_CURRENCY) {
     $rewardLine = '<i class="fas fa-coins"></i> ' . number_format((float)$model->reward_amount, 0, '.', ' ');
 } elseif ($model->reward_type === TaskV2::REWARD_TYPE_ITEM) {
@@ -30,8 +31,11 @@ if ($model->reward_type === TaskV2::REWARD_TYPE_CURRENCY) {
         }
     }
 }
+if (!$imgUrl && $model->type === TaskV2::TYPE_BATTLE_PASS && $rewardDropCard && $rewardDropCard->imageOrig) {
+    $imgUrl = $rewardDropCard->imageOrig->getImagePubUrl();
+}
 ?>
-<div class="tasks-v2-index-card">
+<div class="tasks-v2-index-card" data-task-id="<?= (int)$model->id ?>" data-vip="<?= $model->is_vip_only ? '1' : '0' ?>" <?= $model->type === TaskV2::TYPE_BATTLE_PASS ? 'draggable="true"' : '' ?>>
     <div class="tasks-v2-index-card__preview">
         <?php if ($imgUrl): ?>
             <a href="<?= Html::encode($imgUrl) ?>" target="_blank" rel="noopener" class="tasks-v2-index-card__preview-link">
@@ -52,9 +56,13 @@ if ($model->reward_type === TaskV2::REWARD_TYPE_CURRENCY) {
         <div class="tasks-v2-index-card__stats">
             <span><?= Yii::t('common', 'Выполнено') ?>: <?= (int)$model->global_completed ?></span>
             <span><?= Yii::t('common', 'Сорт') ?>: <?= (int)$model->sort ?></span>
+            <?php if ($model->type === TaskV2::TYPE_BATTLE_PASS): ?>
+                <span class="tasks-v2-index-card__position">№<?= (int)$model->battle_pass_position ?></span>
+            <?php endif; ?>
         </div>
         <div class="tasks-v2-index-card__badges">
             <span class="ds-badge <?= $activeBadgeClass ?>"><?= $model->is_active ? Yii::t('common', 'Активно') : Yii::t('common', 'Неактивно') ?></span>
+            <?php if ($model->is_vip_only): ?><span class="ds-badge ds-badge--warning">VIP</span><?php endif; ?>
         </div>
         <div class="tasks-v2-index-card__actions">
             <?= Html::a('<i class="fas fa-pen"></i>', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm', 'title' => Yii::t('common', 'Изменить')]) ?>

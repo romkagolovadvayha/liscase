@@ -303,7 +303,7 @@ if ($moder) {
     $managementItems[] = [
         'label' => 'Бонусы',
         'icon' => 'fas fa-tags',
-        'active' => _checkActive('/audience-bonus') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('category=referral'),
+        'active' => _checkActive('/audience-bonus') || _checkActive('/payment-bonuses') || _checkActive('/promocode') || _checkActive('/tasks-v2') || _checkActive('/battle-pass-seasons') || _checkActive('/medals') || _checkActive('category=referral'),
         'items' => [
             [
                 'label' => 'Бонусы аудитории',
@@ -323,6 +323,20 @@ if ($moder) {
                 'url' => ['/tasks-v2/index'],
                 'visibility' => Yii::$app->settings->get('section_tasks'),
                 'active' => _checkActive('/tasks-v2'),
+            ],
+            [
+                'label' => Yii::t('common', 'Сезоны Battle Pass'),
+                'icon' => 'fa-solid fa-trophy',
+                'url' => ['/battle-pass-seasons/index'],
+                'visibility' => Yii::$app->settings->get('section_tasks'),
+                'active' => _checkActive('/battle-pass-seasons'),
+            ],
+            [
+                'label' => Yii::t('common', 'Медали'),
+                'icon' => 'fa-solid fa-medal',
+                'url' => ['/medals/index'],
+                'visibility' => Yii::$app->settings->get('section_tasks'),
+                'active' => _checkActive('/medals'),
             ],
             [
                 'label' => Yii::t('common', 'Реферальная система'),

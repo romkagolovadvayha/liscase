@@ -1,6 +1,7 @@
 <?php
 
 use common\models\box\Drop;
+use common\models\battle_pass\BattlePassSeason;
 use common\models\tasks_v2\TaskV2;
 use kartik\select2\Select2;
 use yii\bootstrap5\ActiveForm;
@@ -77,6 +78,18 @@ $labelOpt = ['class' => 'text-xs text-gray-400 mb-1 block'];
             </div>
         </div>
 
+        <div id="battle-pass-fields" class="flex flex-wrap gap-3 mb-3" style="display:none;">
+            <div class="min-w-0" style="flex:1 1 220px;">
+                <?= $form->field($model, 'battle_pass_season_id', $fieldOpt)->dropDownList(
+                    \yii\helpers\ArrayHelper::map(BattlePassSeason::find()->orderBy(['season_number' => SORT_DESC])->all(), 'id', 'name'),
+                    ['prompt' => Yii::t('common', 'Выберите сезон...'), 'class' => 'ds-select w-full text-sm']
+                ) ?>
+            </div>
+            <div class="min-w-0" style="flex:1 1 160px;">
+                <?= $form->field($model, 'battle_pass_position', $fieldOpt)->textInput(['type' => 'number', 'min' => 1, 'class' => 'ds-input w-full text-sm']) ?>
+            </div>
+        </div>
+
         <div id="check-params-container" class="mb-4" style="display: none;">
             <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide"><?= Yii::t('common', 'Параметры проверки') ?></h3>
             <div id="check-params-content" class="space-y-3"></div>
@@ -147,7 +160,7 @@ $labelOpt = ['class' => 'text-xs text-gray-400 mb-1 block'];
     <!-- Правая колонка: изображение, UX, видимость (на всю высоту как в форме предмета) -->
     <aside class="tasks-v2-form-sidebar admin-filters-content flex-shrink-0 w-full lg:w-[300px] lg:border-l border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)] h-full overflow-y-auto flex flex-col">
         <div class="p-4 flex-1 flex flex-col">
-            <div class="mb-6">
+            <div class="mb-6" id="task-image-section">
                 <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide"><?= Yii::t('common', 'Изображение') ?></h3>
                 <?php if ($model->image_path): ?>
                     <div class="mb-3">
@@ -235,6 +248,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const rewardAmountContainer = document.getElementById('reward-amount-container');
     const perUserLimitContainer = document.getElementById('per-user-limit-container');
     const maxProgressContainer = document.getElementById('max-progress-container');
+    const battlePassFields = document.getElementById('battle-pass-fields');
+    const taskImageSection = document.getElementById('task-image-section');
     const extraButtonsContainer = document.getElementById('extra-buttons-container');
     
     // Показываем/скрываем лимит на пользователя для многоразовых заданий
@@ -249,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Показываем/скрываем поле max_progress для заданий с прогрессом
     function updateMaxProgress() {
         const isRepeatable = taskType.value === '<?= TaskV2::TYPE_REPEATABLE ?>';
-        const isOneTimeWithStats = taskType.value === '<?= TaskV2::TYPE_ONE_TIME ?>' && 
+        const isOneTimeWithStats = (taskType.value === '<?= TaskV2::TYPE_ONE_TIME ?>' || taskType.value === '<?= TaskV2::TYPE_BATTLE_PASS ?>') &&
                                    checkType.value === '<?= TaskV2::CHECK_TYPE_STATISTICS_PARAM ?>';
         
         if (isRepeatable || isOneTimeWithStats) {
@@ -257,6 +272,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             maxProgressContainer.style.display = 'none';
         }
+    }
+
+    function updateBattlePassFields() {
+        const isBattlePass = taskType.value === '<?= TaskV2::TYPE_BATTLE_PASS ?>';
+        battlePassFields.style.display = isBattlePass ? 'flex' : 'none';
+        taskImageSection.style.display = isBattlePass ? 'none' : 'block';
     }
     
     // Обновляем поля награды в зависимости от типа
@@ -558,6 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
     taskType.addEventListener('change', function() {
         updatePerUserLimit();
         updateMaxProgress();
+        updateBattlePassFields();
     });
     checkType.addEventListener('change', function() {
         updateCheckParams();
@@ -570,6 +592,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateMaxProgress();
     updateRewardFields();
     updateCheckParams();
+    updateBattlePassFields();
     
     // Добавление/удаление дополнительных кнопок
     let extraButtonIndex = <?= count($model->extra_buttons ?? []) ?>;
@@ -645,4 +668,3 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .drop-select-item img { display: block; width: 24px; }
 </style>
-

@@ -57,3 +57,7 @@ frontend/web/uploads/
 
 # сгенерированный CSS
 /frontend/assets/sources/css/design/styles-local.min.css
+
+# local agent/staging worktrees
+/frontend-new/.patch-staging/
+/frontend-new/.site-starter/

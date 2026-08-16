@@ -2,10 +2,14 @@
 
 use common\models\tasks_v2\TaskV2;
 use yii\helpers\Html;
+use yii\helpers\ArrayHelper;
+use yii\helpers\Url;
 use yii\widgets\ListView;
 
 /** @var yii\web\View $this */
 /** @var \yii\data\ActiveDataProvider $dataProvider */
+/** @var \common\models\battle_pass\BattlePassSeason[] $seasons */
+/** @var int $seasonId */
 
 $this->title = Yii::t('common', 'Задания v2');
 $this->params['contentClass'] = 'content-no-padding';
@@ -27,6 +31,10 @@ $search = Yii::$app->request->get('search');
                     <?= Html::dropDownList('type', $type, ['' => Yii::t('common', 'Все')] + TaskV2::getTypeList(), ['class' => 'ds-select', 'id' => 'type']) ?>
                 </div>
                 <div class="tasks-v2-index-filters__field">
+                    <label class="tasks-v2-index-label" for="season_id"><?= Yii::t('common', 'Сезон Battle Pass') ?></label>
+                    <?= Html::dropDownList('season_id', $seasonId, ['' => Yii::t('common', 'Все сезоны')] + ArrayHelper::map($seasons, 'id', 'name'), ['class' => 'ds-select', 'id' => 'season_id']) ?>
+                </div>
+                <div class="tasks-v2-index-filters__field">
                     <label class="tasks-v2-index-label" for="is_active"><?= Yii::t('common', 'Статус') ?></label>
                     <?= Html::dropDownList('is_active', $isActive, ['' => Yii::t('common', 'Все'), '1' => Yii::t('common', 'Активные'), '0' => Yii::t('common', 'Неактивные')], ['class' => 'ds-select', 'id' => 'is_active']) ?>
                 </div>
@@ -43,6 +51,9 @@ $search = Yii::$app->request->get('search');
         </div>
 
         <div class="tasks-v2-index-cards-wrap">
+            <?php if ($seasonId > 0): ?>
+                <p class="tasks-v2-sort-hint"><i class="fas fa-grip-lines"></i> Перетаскивайте карточки, чтобы изменить номера. Бесплатные задания должны оставаться перед VIP.</p>
+            <?php endif; ?>
             <?= ListView::widget([
                 'dataProvider' => $dataProvider,
                 'itemView' => '_card',
@@ -55,6 +66,56 @@ $search = Yii::$app->request->get('search');
         </div>
     </div>
 </div>
+
+<?php if ($seasonId > 0): ?>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const container = document.querySelector('.tasks-v2-index-cards');
+    if (!container) return;
+    let dragged = null;
+
+    container.addEventListener('dragstart', function (event) {
+        const card = event.target.closest('.tasks-v2-index-card[draggable="true"]');
+        if (!card) return;
+        dragged = card.closest('.tasks-v2-index-card-wrap');
+        dragged.classList.add('is-dragging');
+        event.dataTransfer.effectAllowed = 'move';
+    });
+    container.addEventListener('dragover', function (event) {
+        if (!dragged) return;
+        event.preventDefault();
+        const target = event.target.closest('.tasks-v2-index-card-wrap');
+        if (!target || target === dragged) return;
+        const rect = target.getBoundingClientRect();
+        const after = event.clientY > rect.top + rect.height / 2 || event.clientX > rect.left + rect.width / 2;
+        container.insertBefore(dragged, after ? target.nextSibling : target);
+    });
+    container.addEventListener('dragend', async function () {
+        if (!dragged) return;
+        dragged.classList.remove('is-dragging');
+        dragged = null;
+        const params = new URLSearchParams();
+        params.append('<?= Yii::$app->request->csrfParam ?>', '<?= Yii::$app->request->csrfToken ?>');
+        params.append('season_id', '<?= (int)$seasonId ?>');
+        container.querySelectorAll('.tasks-v2-index-card[data-task-id]').forEach(function (card) {
+            params.append('order[]', card.dataset.taskId);
+        });
+        const response = await fetch('<?= Url::to(['sort-battle-pass']) ?>', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+            body: params.toString(),
+        });
+        const result = await response.json();
+        if (!result.success) {
+            alert(result.message || 'Не удалось сохранить порядок.');
+            window.location.reload();
+            return;
+        }
+        window.location.reload();
+    });
+});
+</script>
+<?php endif; ?>
 
 <style>
 .tasks-v2-index-page {
@@ -101,6 +162,9 @@ $search = Yii::$app->request->get('search');
 .tasks-v2-index-cards-wrap {
     padding: 16px 20px;
 }
+.tasks-v2-sort-hint { margin: 0 0 12px; color: hsl(0 0% 62%); font-size: 12px; }
+.tasks-v2-index-card[draggable="true"] { cursor: grab; }
+.tasks-v2-index-card-wrap.is-dragging { opacity: .45; }
 .tasks-v2-index-cards {
     list-style: none;
     margin: 0;

@@ -234,6 +234,11 @@ $config = [
                 'v1/tasks/<id:\d+>' => 'v1/tasks/detail',
                 'v1/tasks/<id:\d+>/check' => 'v1/tasks/check',
 
+                // Battle Pass
+                'v1/battle-pass' => 'v1/battle-pass/index',
+                'v1/battle-pass/tasks/<id:\d+>' => 'v1/battle-pass/detail',
+                'v1/battle-pass/tasks/<id:\d+>/check' => 'v1/battle-pass/check',
+
                 // Payment
                 'v1/payment/methods' => 'v1/payment/methods',
                 'v1/payment/create' => 'v1/payment/create',

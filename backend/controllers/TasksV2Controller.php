@@ -3,6 +3,7 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\models\battle_pass\BattlePassSeason;
 use common\models\box\Drop;
 use common\models\tasks_v2\TaskV2;
 use Yii;
@@ -55,8 +56,14 @@ class TasksV2Controller extends BackendController
         }
         
         $type = Yii::$app->request->get('type');
-        if ($type && in_array($type, [TaskV2::TYPE_ONE_TIME, TaskV2::TYPE_REPEATABLE, TaskV2::TYPE_DAILY_REWARD])) {
+        if ($type && in_array($type, [TaskV2::TYPE_ONE_TIME, TaskV2::TYPE_REPEATABLE, TaskV2::TYPE_DAILY_REWARD, TaskV2::TYPE_BATTLE_PASS], true)) {
             $query->andWhere(['type' => $type]);
+        }
+
+        $seasonId = (int)Yii::$app->request->get('season_id', 0);
+        if ($seasonId > 0) {
+            $query->andWhere(['battle_pass_season_id' => $seasonId]);
+            $type = TaskV2::TYPE_BATTLE_PASS;
         }
         
         $search = Yii::$app->request->get('search');
@@ -64,13 +71,15 @@ class TasksV2Controller extends BackendController
             $query->andWhere(['like', 'title', $search]);
         }
         
-        $query->orderBy(['sort' => SORT_ASC, 'created_at' => SORT_DESC]);
+        $query->orderBy([
+            'battle_pass_position' => SORT_ASC,
+            'sort' => SORT_ASC,
+            'created_at' => SORT_DESC,
+        ]);
         
         $dataProvider = new \yii\data\ActiveDataProvider([
             'query' => $query,
-            'pagination' => [
-                'pageSize' => 20,
-            ],
+            'pagination' => $type === TaskV2::TYPE_BATTLE_PASS ? false : ['pageSize' => 20],
         ]);
 
         $this->view->params['headerActions'] = [
@@ -79,11 +88,74 @@ class TasksV2Controller extends BackendController
                 'url' => ['create'],
                 'class' => 'bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5',
             ],
+            [
+                'label' => '<i class="fas fa-trophy"></i> ' . Yii::t('common', 'Сезоны'),
+                'url' => ['/battle-pass-seasons/index'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+            ],
+            [
+                'label' => '<i class="fas fa-medal"></i> ' . Yii::t('common', 'Медали'),
+                'url' => ['/medals/index'],
+                'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+            ],
         ];
 
         return $this->render('index', [
             'dataProvider' => $dataProvider,
+            'seasons' => BattlePassSeason::find()->orderBy(['season_number' => SORT_DESC])->all(),
+            'seasonId' => $seasonId,
         ]);
+    }
+
+    public function actionSortBattlePass()
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $seasonId = (int)Yii::$app->request->post('season_id');
+        $order = Yii::$app->request->post('order', []);
+        if ($seasonId <= 0 || !is_array($order) || !$order) {
+            return ['success' => false, 'message' => 'Некорректный порядок заданий.'];
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $order)));
+        $seasonTaskCount = (int)TaskV2::find()
+            ->where(['battle_pass_season_id' => $seasonId, 'type' => TaskV2::TYPE_BATTLE_PASS])
+            ->count();
+        if (count($ids) !== $seasonTaskCount) {
+            return ['success' => false, 'message' => 'Для сортировки сбросьте поиск и фильтры: в списке должны быть все задания сезона.'];
+        }
+        $models = TaskV2::find()
+            ->where(['battle_pass_season_id' => $seasonId, 'type' => TaskV2::TYPE_BATTLE_PASS, 'id' => $ids])
+            ->indexBy('id')
+            ->all();
+        if (count($models) !== count($ids)) {
+            return ['success' => false, 'message' => 'Часть заданий не принадлежит выбранному сезону.'];
+        }
+
+        $vipStarted = false;
+        foreach ($ids as $id) {
+            if ($models[$id]->is_vip_only) {
+                $vipStarted = true;
+            } elseif ($vipStarted) {
+                return ['success' => false, 'message' => 'Бесплатные задания должны идти перед VIP-заданиями.'];
+            }
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            // Временный высокий диапазон исключает конфликт уникального индекса при перестановке.
+            foreach ($ids as $index => $id) {
+                TaskV2::updateAll(['battle_pass_position' => 1000000 + $index, 'sort' => 1000000 + $index], ['id' => $id]);
+            }
+            foreach ($ids as $index => $id) {
+                TaskV2::updateAll(['battle_pass_position' => $index + 1, 'sort' => $index + 1], ['id' => $id]);
+            }
+            $transaction->commit();
+            return ['success' => true];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            Yii::error('Battle Pass sort failed: ' . $e->getMessage(), __METHOD__);
+            return ['success' => false, 'message' => 'Не удалось сохранить порядок.'];
+        }
     }
 
     /**

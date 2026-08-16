@@ -10,8 +10,6 @@ use common\models\statistics\Statistics;
 use common\models\statistics\Kills;
 use common\models\statistics\Reports;
 use common\models\user\User;
-use common\models\tasks_v2\TaskV2;
-use common\models\tasks_v2\TaskV2UserCompletion;
 use common\models\user\UserTop;
 use common\models\teams\Teams as TeamsModel;
 use common\helpers\ApiPublicCacheTtl;
@@ -989,36 +987,9 @@ class StatsController extends BaseApiController
                 ];
             }
 
-            $tasksV2 = TaskV2::find()
-                ->where(['is_active' => 1])
-                ->orderBy(['sort' => SORT_ASC])
-                ->all();
-            $userCompletions = TaskV2UserCompletion::find()
-                ->where(['user_id' => $user->id])
-                ->indexBy('task_id')
-                ->all();
-            $awards = [];
-            foreach ($tasksV2 as $task) {
-                $completed = isset($userCompletions[$task->id]) && $userCompletions[$task->id]->count_completed > 0;
-                $awards[] = [
-                    'id' => $task->id,
-                    'name' => $task->title,
-                    'image' => $task->getImageUrl(),
-                    'completed' => $completed,
-                ];
-            }
-            usort($awards, function ($a, $b) {
-                if ($a['completed'] === $b['completed']) {
-                    return 0;
-                }
-                return $a['completed'] ? -1 : 1;
-            });
-            $awardsCompleted = 0;
-            foreach ($awards as $a) {
-                if ($a['completed']) {
-                    $awardsCompleted++;
-                }
-            }
+            $awards = \common\models\medals\UserMedal::getUserAwardsPayload((int)$user->id);
+            $awardsCompleted = count($awards);
+            $awardsTotal = (int)\common\models\medals\Medal::find()->where(['is_active' => 1])->count();
 
             // Команда игрока (как в frontend/views/widgets/teams.twig)
             $teamMembers = [];
@@ -1100,7 +1071,7 @@ class StatsController extends BaseApiController
                     'awards' => $awards,
                     'awards_stats' => [
                         'completed' => $awardsCompleted,
-                        'total' => count($awards),
+                        'total' => $awardsTotal,
                     ],
                     'wipes_activity' => $wipesActivity,
                     'kills' => $killsForApi,
@@ -1122,6 +1093,13 @@ class StatsController extends BaseApiController
         $cached['player']['avatar_frame_id'] = null;
         $cached['player']['avatar_frame_url'] = null;
         if ($userNow) {
+            // Медали могут быть выданы вручную или сразу после Battle Pass, поэтому не держим
+            // их внутри пяти минут общего кэша статистики профиля.
+            $cached['player']['awards'] = \common\models\medals\UserMedal::getUserAwardsPayload((int)$userNow->id);
+            $cached['player']['awards_stats'] = [
+                'completed' => \common\models\medals\UserMedal::countUserActiveMedals((int)$userNow->id),
+                'total' => (int)\common\models\medals\Medal::find()->where(['is_active' => 1])->count(),
+            ];
             $cached['player']['has_vip'] = $userNow->hasVip();
             $frameUrl = $userNow->getAvatarFrameImageUrl();
             if ($frameUrl !== null) {
