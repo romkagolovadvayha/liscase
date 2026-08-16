@@ -1,5 +1,6 @@
 <?php
 
+use common\services\battle_pass\BattlePassRewardAllocator;
 use console\components\migration\Migration;
 
 /**
@@ -8,7 +9,6 @@ use console\components\migration\Migration;
 class m260813_222000_rebalance_battle_pass_rewards extends Migration
 {
     private const FREE_TASKS = 80;
-    private const FREE_REGULAR_REWARDS = 73;
 
     public function safeUp()
     {
@@ -20,29 +20,10 @@ class m260813_222000_rebalance_battle_pass_rewards extends Migration
         }
 
         $products = $this->loadEligibleProducts();
-        $sets = array_values(array_filter($products, static function (array $product): bool {
-            return (int)$product['drop_type'] === 2;
-        }));
-        $regular = array_values(array_filter($products, static function (array $product): bool {
-            return (int)$product['drop_type'] !== 2;
-        }));
-
-        if (count($sets) < 3) {
-            throw new RuntimeException('Для распределения наград Battle Pass требуется минимум три активных набора.');
-        }
-        if (count($regular) < self::FREE_REGULAR_REWARDS) {
-            throw new RuntimeException('Недостаточно обычных товаров для 80 бесплатных наград Battle Pass.');
-        }
-
-        // The two most expensive sets are exclusive to the VIP extra track.
-        $vipSets = array_splice($sets, -2);
-        $vipRegular = array_slice($regular, -18);
-        $freeRegular = $this->sampleEvenly($regular, self::FREE_REGULAR_REWARDS);
-        $freeRewards = array_merge($freeRegular, $sets);
-        usort($freeRewards, static function (array $left, array $right): int {
-            $byPrice = (float)$left['price'] <=> (float)$right['price'];
-            return $byPrice !== 0 ? $byPrice : ((int)$left['id'] <=> (int)$right['id']);
-        });
+        $allocation = BattlePassRewardAllocator::allocate($products);
+        $freeRewards = $allocation['free'];
+        $vipRegular = $allocation['vip_regular'];
+        $vipSets = $allocation['vip_sets'];
 
         if (count($freeRewards) !== self::FREE_TASKS) {
             throw new RuntimeException('Не удалось собрать ровно 80 бесплатных наград Battle Pass.');
@@ -160,21 +141,6 @@ class m260813_222000_rebalance_battle_pass_rewards extends Migration
                AND EXISTS (SELECT 1 FROM drop_image di WHERE di.drop_id = d.id AND di.type = 1)
              ORDER BY d.price ASC, d.id ASC"
         )->queryAll();
-    }
-
-    private function sampleEvenly(array $products, int $count): array
-    {
-        if ($count === 1) {
-            return [$products[0]];
-        }
-
-        $sample = [];
-        $lastIndex = count($products) - 1;
-        for ($index = 0; $index < $count; $index++) {
-            $sourceIndex = (int)round(($index * $lastIndex) / ($count - 1));
-            $sample[] = $products[$sourceIndex];
-        }
-        return $sample;
     }
 
 }
