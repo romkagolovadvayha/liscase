@@ -1930,7 +1930,7 @@ namespace Oxide.Plugins
             }
             if (view.Snapshot == null && !string.IsNullOrEmpty(view.Error))
             {
-                RenderEmptyState(player, "ДАННЫЕ НЕДОСТУПНЫ", view.Error + "\nПроверьте URL, тег сервера и серверный секрет.", Danger);
+                RenderEmptyState(player, "ДАННЫЕ НЕДОСТУПНЫ", view.Error + "\nПопробуйте обновить меню через несколько секунд.", Danger);
                 return;
             }
 
