@@ -604,6 +604,9 @@ class BattlePassController extends TasksController
             'reward_amount' => $task->reward_amount ? (float)$task->reward_amount : null,
             'reward_item' => $reward ? [
                 'id' => (int)$reward->id,
+                'item_id' => is_numeric($reward->rust_id) && (int)$reward->rust_id !== 0
+                    ? (int)$reward->rust_id
+                    : null,
                 'name' => Yii::t('database', $reward->name),
                 'image' => $reward->imageOrig ? $reward->imageOrig->getImagePubUrl() : null,
                 'count' => max(1, (int)$reward->count),
@@ -635,6 +638,9 @@ class BattlePassController extends TasksController
                 'amount' => $season->reward_amount ? (float)$season->reward_amount : null,
                 'item' => $reward ? [
                     'id' => (int)$reward->id,
+                    'item_id' => is_numeric($reward->rust_id) && (int)$reward->rust_id !== 0
+                        ? (int)$reward->rust_id
+                        : null,
                     'name' => Yii::t('database', $reward->name),
                     'image' => $reward->imageOrig ? $reward->imageOrig->getImagePubUrl() : null,
                     'count' => max(1, (int)$reward->count),
