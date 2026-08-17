@@ -252,6 +252,62 @@ class RustMenuController extends BaseApiController
         }
     }
 
+    /**
+     * Closes an open ticket owned by the player authenticated through the
+     * trusted Rust server. Website/JWT support endpoints are not affected.
+     */
+    public function actionSupportClose($number)
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        if (!$user) {
+            return $this->errorResponse('ACCOUNT_REQUIRED', 'Войдите на сайт через Steam, чтобы управлять обращением.', [], 403);
+        }
+
+        $ticket = $this->findOwnedSupportTicketByNumber((int) $user->id, (int) $number);
+        if (!$ticket) {
+            throw new NotFoundHttpException('Обращение не найдено.');
+        }
+        if ((int) $ticket->status !== Support::STATUS_OPEN) {
+            return $this->errorResponse('ALREADY_CLOSED', 'Обращение уже закрыто.', [], 400);
+        }
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $closedAt = date('Y-m-d H:i:s');
+            $systemMessage = new SupportMessage();
+            $systemMessage->support_id = (int) $ticket->id;
+            $systemMessage->user_id = null;
+            $systemMessage->message = 'Обращение закрыто пользователем ' . (string) $user->username;
+            $systemMessage->created_at = $closedAt;
+            if (!$systemMessage->save()) {
+                $transaction->rollBack();
+                return $this->validationErrorResponse($systemMessage);
+            }
+
+            $ticket->status = Support::STATUS_CLOSED;
+            $ticket->updated_at = $closedAt;
+            $ticket->save(false, ['status', 'updated_at']);
+            SupportRead::readedAll((int) $ticket->id, (int) $user->id);
+            $transaction->commit();
+
+            try {
+                \console\controllers\NotificationServer::broadcastTicketStatus($ticket->getNumber(), 'closed');
+            } catch (\Throwable $e) {
+                Yii::warning('RustMenu support close websocket unavailable: ' . $e->getMessage(), 'rust-menu');
+            }
+
+            return $this->successResponse($this->buildSupportPayload($server, $user, $ticket->getNumber()));
+        } catch (\Throwable $e) {
+            if ($transaction->isActive) {
+                $transaction->rollBack();
+            }
+            Yii::error('RustMenu support close failed: ' . $e->getMessage(), 'rust-menu');
+            return $this->errorResponse('SUPPORT_CLOSE_FAILED', 'Не удалось закрыть обращение. Попробуйте ещё раз.', [], 500);
+        }
+    }
+
     private function authenticatePlayerRequest(): array
     {
         $request = Yii::$app->request;

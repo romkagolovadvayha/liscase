@@ -313,6 +313,7 @@ $config = [
                 ['pattern' => 'v1/rust-menu/battlepass/tasks/<id:\d+>/check', 'route' => 'v1/rust-menu/battlepass-check', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/support', 'route' => 'v1/rust-menu/support', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/support/messages', 'route' => 'v1/rust-menu/support-send', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/support/tickets/<number:\d+>/close', 'route' => 'v1/rust-menu/support-close', 'verb' => ['POST', 'OPTIONS']],
 
                 // Legacy API магазина ProstojRUST (?secret=&method=…)
                 'v1/rust-legacy-store' => 'v1/rust-legacy-store/index',

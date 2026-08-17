@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.4")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.6")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -113,6 +113,7 @@ namespace Oxide.Plugins
             public string Error;
             public bool SupportLoading;
             public bool SupportSending;
+            public bool SupportClosing;
             public bool SupportComposeNew;
             public int SupportRequestVersion;
             public DateTime SupportNextPollAtUtc = DateTime.MinValue;
@@ -787,12 +788,12 @@ namespace Oxide.Plugins
                     FetchCalendarMonth(player, view, false);
                     return;
                 case "support_refresh":
-                    if (!CanUseSupportCommand(view)) return;
+                    if (!CanUseSupportCommand(view) || view.SupportClosing) return;
                     view.SupportComposeNew = false;
                     FetchSupport(player, view, true);
                     return;
                 case "support_ticket":
-                    if (!CanUseSupportCommand(view) || arg.Args.Length < 2) return;
+                    if (!CanUseSupportCommand(view) || view.SupportClosing || arg.Args.Length < 2) return;
                     long ticketNumber;
                     if (!long.TryParse(arg.Args[1].ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out ticketNumber) || ticketNumber <= 0) return;
                     view.SupportSelectedTicket = ticketNumber;
@@ -800,7 +801,17 @@ namespace Oxide.Plugins
                     FetchSupport(player, view, true);
                     return;
                 case "support_new":
-                    if (!CanUseSupportCommand(view)) return;
+                    if (!CanUseSupportCommand(view) || view.SupportClosing) return;
+                    var existingOpenTicket = view.Support != null && view.Support.Tickets != null
+                        ? view.Support.Tickets.FirstOrDefault(ticket => string.Equals(ticket.Status, "open", StringComparison.OrdinalIgnoreCase))
+                        : null;
+                    if (existingOpenTicket != null)
+                    {
+                        view.SupportSelectedTicket = existingOpenTicket.Number;
+                        view.SupportComposeNew = false;
+                        FetchSupport(player, view, true);
+                        return;
+                    }
                     view.SupportSelectedTicket = null;
                     view.SupportComposeNew = true;
                     view.SupportDraft = string.Empty;
@@ -808,7 +819,7 @@ namespace Oxide.Plugins
                     RenderContent(player, view);
                     return;
                 case "support_input":
-                    if (!CanUseSupportCommand(view) || view.SupportSending) return;
+                    if (!CanUseSupportCommand(view) || view.SupportSending || view.SupportClosing) return;
                     var input = arg.Args.Length > 1
                         ? string.Join(" ", arg.Args.Skip(1).Select(item => item.ToString()).ToArray())
                         : string.Empty;
@@ -817,6 +828,10 @@ namespace Oxide.Plugins
                 case "support_send":
                     if (!CanUseSupportCommand(view)) return;
                     SendSupportMessage(player, view);
+                    return;
+                case "support_close":
+                    if (!CanUseSupportCommand(view)) return;
+                    CloseSupportTicket(player, view);
                     return;
             }
         }
@@ -1221,7 +1236,7 @@ namespace Oxide.Plugins
             foreach (var entry in views.ToList())
             {
                 var view = entry.Value;
-                if (!CanUseSupportCommand(view) || view.SupportLoading || view.SupportSending || view.SupportComposeNew || !string.IsNullOrWhiteSpace(view.SupportDraft))
+                if (!CanUseSupportCommand(view) || view.SupportLoading || view.SupportSending || view.SupportClosing || view.SupportComposeNew || !string.IsNullOrWhiteSpace(view.SupportDraft))
                     continue;
                 if (view.SupportNextPollAtUtc > now)
                     continue;
@@ -1233,7 +1248,7 @@ namespace Oxide.Plugins
 
         private void FetchSupport(BasePlayer player, PlayerView view, bool force, bool silent = false)
         {
-            if (view.SupportSending) return;
+            if (view.SupportSending || view.SupportClosing) return;
             // Background polls never overlap. An explicit ticket switch may replace
             // an older read request; its version is invalidated when this one starts.
             if (view.SupportLoading && !force) return;
@@ -1322,7 +1337,7 @@ namespace Oxide.Plugins
 
         private void SendSupportMessage(BasePlayer player, PlayerView view)
         {
-            if (view.SupportSending) return;
+            if (view.SupportSending || view.SupportClosing) return;
             // Sending has priority over an in-flight silent poll. The request version
             // below makes the obsolete GET callback a no-op.
             if (view.SupportLoading) view.SupportLoading = false;
@@ -1405,6 +1420,74 @@ namespace Oxide.Plugins
                         RenderContent(player, current);
                 }
             }, this, RequestMethod.POST, headers);
+        }
+
+        private void CloseSupportTicket(BasePlayer player, PlayerView view)
+        {
+            if (view.SupportClosing || view.SupportSending || view.SupportLoading || view.Support == null || view.Support.ActiveTicket == null)
+                return;
+
+            var ticket = view.Support.ActiveTicket;
+            if (!string.Equals(ticket.Status, "open", StringComparison.OrdinalIgnoreCase))
+            {
+                ShowToast(player, "Обращение уже закрыто", "error");
+                return;
+            }
+
+            view.SupportClosing = true;
+            view.SupportError = null;
+            var requestVersion = ++view.SupportRequestVersion;
+            RenderContent(player, view);
+
+            var endpoint = (settings.SupportApiUrl ?? string.Empty).Trim().TrimEnd('/') + "/tickets/" +
+                           ticket.Number.ToString(CultureInfo.InvariantCulture) + "/close";
+            var url = BuildPlayerApiUrl(endpoint, player);
+            webrequest.Enqueue(url, "{}", (code, response) =>
+            {
+                PlayerView current;
+                if (!views.TryGetValue(player.userID, out current) || current.SupportRequestVersion != requestVersion)
+                    return;
+
+                current.SupportClosing = false;
+                ScheduleNextSupportPoll(current, player.userID);
+                if (code != 200 || string.IsNullOrWhiteSpace(response))
+                {
+                    current.SupportError = ReadApiError(response, "Не удалось закрыть обращение");
+                    if (current.Open && player.IsConnected && string.Equals(current.ActiveTab, "support", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RenderContent(player, current);
+                        ShowToast(player, current.SupportError, "error");
+                    }
+                    return;
+                }
+
+                try
+                {
+                    var envelope = JsonConvert.DeserializeObject<SupportApiEnvelope>(response);
+                    if (envelope == null || !envelope.Success || envelope.Data == null)
+                        throw new Exception(envelope != null && envelope.Error != null ? envelope.Error.Message : "Некорректный ответ API");
+
+                    current.Support = envelope.Data;
+                    current.SupportSelectedTicket = envelope.Data.ActiveTicket != null ? (long?) envelope.Data.ActiveTicket.Number : null;
+                    current.SupportComposeNew = false;
+                    current.SupportDraft = string.Empty;
+                    current.SupportError = null;
+                    if (current.Snapshot != null && current.Snapshot.Support != null)
+                        current.Snapshot.Support.UnreadCount = envelope.Data.UnreadCount;
+                    if (current.Open && player.IsConnected && string.Equals(current.ActiveTab, "support", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RenderContent(player, current);
+                        ShowToast(player, "Обращение закрыто", "success");
+                    }
+                }
+                catch (Exception exception)
+                {
+                    current.SupportError = exception.Message;
+                    PrintWarning("Support close parse failed: " + exception.Message);
+                    if (current.Open && player.IsConnected && string.Equals(current.ActiveTab, "support", StringComparison.OrdinalIgnoreCase))
+                        RenderContent(player, current);
+                }
+            }, this, RequestMethod.POST, BuildApiHeaders(true));
         }
 
         private string BuildSupportUrl(BasePlayer player, bool messagesEndpoint, long? ticketNumber, string knownRevision)
@@ -2356,7 +2439,7 @@ namespace Oxide.Plugins
         {
             var ui = new CuiElementContainer();
             var support = view.Support;
-            var badge = view.SupportSending ? "ОТПРАВЛЯЕМ" : view.SupportLoading ? "ОБНОВЛЯЕМ" : support != null && support.UnreadCount > 0
+            var badge = view.SupportClosing ? "ЗАКРЫВАЕМ" : view.SupportSending ? "ОТПРАВЛЯЕМ" : view.SupportLoading ? "ОБНОВЛЯЕМ" : support != null && support.UnreadCount > 0
                 ? (support.UnreadCountCapped ? "99+ НОВЫХ" : support.UnreadCount + " НОВЫХ")
                 : "НА СВЯЗИ";
             AddSectionHeading(ui, "ПОДДЕРЖКА", "Напишите администрации — ответ появится прямо в этом диалоге", badge);
@@ -2388,17 +2471,18 @@ namespace Oxide.Plugins
             }
 
             var ticketsRoot = Content + ".Support.Tickets";
-            AddPanel(ui, Content + ".Body", ticketsRoot, "0 0.15", "0.27 0.82", "0.098 0.063 0.176 0.88");
+            AddPanel(ui, Content + ".Body", ticketsRoot, "0 0.035", "0.27 0.82", "0.098 0.063 0.176 0.88");
             AddPanel(ui, ticketsRoot, ticketsRoot + ".Rail", "0 0", "0.012 1", Accent);
-            AddLabel(ui, ticketsRoot, ticketsRoot + ".Title", "0.07 0.9", "0.93 0.98", "ОБРАЩЕНИЯ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, ticketsRoot, ticketsRoot + ".Hint", "0.07 0.845", "0.93 0.91", "ИСТОРИЯ ДИАЛОГОВ", 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddLabel(ui, ticketsRoot, ticketsRoot + ".Title", "0.07 0.915", "0.93 0.98", "ОБРАЩЕНИЯ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, ticketsRoot, ticketsRoot + ".Hint", "0.07 0.86", "0.93 0.92", "ИСТОРИЯ ДИАЛОГОВ", 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
             var tickets = support.Tickets ?? new List<SupportTicketData>();
-            for (var i = 0; i < Math.Min(5, tickets.Count); i++)
+            const int visibleTicketLimit = 7;
+            for (var i = 0; i < Math.Min(visibleTicketLimit, tickets.Count); i++)
             {
                 var ticket = tickets[i];
-                var yMax = 0.81f - i * 0.132f;
-                var yMin = yMax - 0.112f;
+                var yMax = 0.825f - i * 0.115f;
+                var yMin = yMax - 0.098f;
                 var selected = !view.SupportComposeNew && support.ActiveTicket != null && support.ActiveTicket.Number == ticket.Number;
                 var row = ticketsRoot + ".Row." + i;
                 AddButton(ui, ticketsRoot, row, F(0.045f, yMin), F(0.955f, yMax), selected ? "1 0.38 0.204 0.12" : BgRaised,
@@ -2415,9 +2499,6 @@ namespace Oxide.Plugins
                 }
             }
 
-            AddButton(ui, ticketsRoot, ticketsRoot + ".New", "0.07 0.035", "0.93 0.115", view.SupportComposeNew ? AccentWarm : Accent,
-                "prostojmenu.ui support_new", "+  НОВОЕ ОБРАЩЕНИЕ", 10, TextMain);
-
             var dialogRoot = Content + ".Support.Dialog";
             AddPanel(ui, Content + ".Body", dialogRoot, "0.29 0.18", "1 0.82", "0.031 0.008 0.141 0.72");
             AddPanel(ui, dialogRoot, dialogRoot + ".Header", "0 0.86", "1 1", BgSecondary);
@@ -2429,6 +2510,10 @@ namespace Oxide.Plugins
                 9, active == null || string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase) ? Success : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
             AddButton(ui, dialogRoot + ".Header", dialogRoot + ".Header.Refresh", "0.92 0.18", "0.985 0.82", "0 0 0 0",
                 "prostojmenu.ui support_refresh", "↻", 23, view.SupportLoading ? AccentWarm : TextSecondary);
+            if (active != null && string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase))
+                AddButton(ui, dialogRoot + ".Header", dialogRoot + ".Header.Close", "0.73 0.22", "0.90 0.78",
+                    view.SupportClosing ? BgTertiary : "0.860 0.420 0.480 0.16", view.SupportClosing ? string.Empty : "prostojmenu.ui support_close",
+                    view.SupportClosing ? "ЗАКРЫВАЕМ…" : "ЗАКРЫТЬ ТИКЕТ", 9, view.SupportClosing ? TextSecondary : Danger);
 
             var messages = view.SupportComposeNew ? new List<SupportMessageData>() : support.Messages ?? new List<SupportMessageData>();
             var visibleMessages = messages.Skip(Math.Max(0, messages.Count - 5)).Take(5).ToList();
@@ -2473,6 +2558,7 @@ namespace Oxide.Plugins
             var composer = Content + ".Support.Composer";
             AddPanel(ui, Content + ".Body", composer, "0.29 0.035", "1 0.155", "0 0 0 0");
             var activeClosed = active != null && !string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase);
+            var hasOpenTicket = tickets.Any(ticket => string.Equals(ticket.Status, "open", StringComparison.OrdinalIgnoreCase));
             if (!support.CanWrite)
             {
                 AddPanel(ui, composer, composer + ".Blocked", "0 0", "1 1", "0.945 0.420 0.478 0.12");
@@ -2480,7 +2566,8 @@ namespace Oxide.Plugins
             }
             else if (activeClosed && !view.SupportComposeNew)
             {
-                AddButton(ui, composer, composer + ".ClosedNew", "0.28 0.12", "0.72 0.88", Accent, "prostojmenu.ui support_new", "СОЗДАТЬ НОВОЕ ОБРАЩЕНИЕ", 11, TextMain);
+                AddButton(ui, composer, composer + ".ClosedAction", "0.22 0.12", "0.78 0.88", Accent, "prostojmenu.ui support_new",
+                    hasOpenTicket ? "ПЕРЕЙТИ К ОТКРЫТОМУ ОБРАЩЕНИЮ" : "СОЗДАТЬ НОВОЕ ОБРАЩЕНИЕ", 11, TextMain);
             }
             else
             {
