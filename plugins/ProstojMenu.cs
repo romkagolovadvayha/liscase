@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.7")]
+    [Info("ProstojMenu", "Prostoj Team", "2.2.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -68,6 +68,7 @@ namespace Oxide.Plugins
         private readonly System.Collections.Generic.Queue<CachedImage> pendingImages = new System.Collections.Generic.Queue<CachedImage>();
         private int activeImageDownloads;
         private bool imageRefreshScheduled;
+        private bool imageShellRefreshRequired;
         private bool imageCacheReady;
         private bool imageCacheUnloading;
 
@@ -118,6 +119,7 @@ namespace Oxide.Plugins
             public int Page;
             public int RequestVersion;
             public DateTime LoadedAtUtc = DateTime.MinValue;
+            public DateTime NextManualRefreshAtUtc = DateTime.MinValue;
             public MenuSnapshot Snapshot;
             public string Error;
             public bool SupportLoading;
@@ -169,6 +171,7 @@ namespace Oxide.Plugins
             public string LocalPath;
             public string PngId;
             public CachedImageStatus Status;
+            public bool RequiresShellRefresh;
         }
 
         private class CachedCalendarMonth
@@ -793,6 +796,7 @@ namespace Oxide.Plugins
                     return;
                 case "refresh":
                     if (view == null || !view.Open) return;
+                    if (!BeginManualRefresh(view)) return;
                     if (string.Equals(view.ActiveTab, "battlepass", StringComparison.OrdinalIgnoreCase))
                         FetchBattlePass(player, view, true);
                     else if (string.Equals(view.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase))
@@ -833,6 +837,7 @@ namespace Oxide.Plugins
                     return;
                 case "support_refresh":
                     if (!CanUseSupportCommand(view) || view.SupportClosing) return;
+                    if (!BeginManualRefresh(view)) return;
                     view.SupportComposeNew = false;
                     FetchSupport(player, view, true);
                     return;
@@ -890,6 +895,13 @@ namespace Oxide.Plugins
             return view != null && view.Open && string.Equals(view.ActiveTab, "battlepass", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool BeginManualRefresh(PlayerView view)
+        {
+            if (view == null || view.NextManualRefreshAtUtc > DateTime.UtcNow) return false;
+            view.NextManualRefreshAtUtc = DateTime.UtcNow.AddSeconds(2);
+            return true;
+        }
+
         private bool CanUse(BasePlayer player)
         {
             if (!settings.RequirePermission || permission.UserHasPermission(player.UserIDString, PermissionUse))
@@ -935,7 +947,7 @@ namespace Oxide.Plugins
 
         private void FetchSnapshot(BasePlayer player, PlayerView view, bool force)
         {
-            if (view.Loading && !force) return;
+            if (view.Loading) return;
             if (string.IsNullOrWhiteSpace(settings.ApiUrl))
             {
                 view.Error = "API меню не настроен";
@@ -1035,7 +1047,7 @@ namespace Oxide.Plugins
                 return;
             }
 
-            if (view.CalendarLoading && !force &&
+            if (view.CalendarLoading &&
                 string.Equals(view.CalendarRequestedMonthKey, monthKey, StringComparison.Ordinal)) return;
             if (string.IsNullOrWhiteSpace(settings.CalendarApiUrl))
             {
@@ -1375,7 +1387,7 @@ namespace Oxide.Plugins
 
         private static void ScheduleNextSupportPoll(PlayerView view, ulong userId)
         {
-            var spreadSeconds = 13 + (int) ((userId + (ulong) view.SupportRequestVersion) % 7UL);
+            var spreadSeconds = 20 + (int) ((userId + (ulong) view.SupportRequestVersion) % 11UL);
             view.SupportNextPollAtUtc = DateTime.UtcNow.AddSeconds(spreadSeconds);
         }
 
@@ -2677,15 +2689,15 @@ namespace Oxide.Plugins
 
         private void PreloadMenuImages()
         {
-            EnsureImage(settings.BackgroundImageUrl);
-            EnsureImage(BrandLogoUrl());
+            EnsureImage(settings.BackgroundImageUrl, true);
+            EnsureImage(BrandLogoUrl(), true);
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));
@@ -2701,7 +2713,7 @@ namespace Oxide.Plugins
             return image != null && image.Status == CachedImageStatus.Loaded ? image.PngId : null;
         }
 
-        private CachedImage EnsureImage(string url)
+        private CachedImage EnsureImage(string url, bool requiresShellRefresh = false)
         {
             url = (url ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(url)) return null;
@@ -2715,13 +2727,18 @@ namespace Oxide.Plugins
             }
 
             CachedImage image;
-            if (cachedImages.TryGetValue(url, out image)) return image;
+            if (cachedImages.TryGetValue(url, out image))
+            {
+                if (requiresShellRefresh) image.RequiresShellRefresh = true;
+                return image;
+            }
 
             image = new CachedImage
             {
                 Url = url,
                 LocalPath = GetImageCachePath(url),
-                Status = CachedImageStatus.Pending
+                Status = CachedImageStatus.Pending,
+                RequiresShellRefresh = requiresShellRefresh
             };
             cachedImages[url] = image;
 
@@ -2744,7 +2761,7 @@ namespace Oxide.Plugins
 
                 if (TryLoadImageFromDisk(image))
                 {
-                    ScheduleImageRefresh();
+                    ScheduleImageRefresh(image.RequiresShellRefresh);
                     continue;
                 }
 
@@ -2813,7 +2830,7 @@ namespace Oxide.Plugins
                 image.Status = loaded ? CachedImageStatus.Loaded : CachedImageStatus.Failed;
             activeImageDownloads = Math.Max(0, activeImageDownloads - 1);
 
-            if (loaded) ScheduleImageRefresh();
+            if (loaded) ScheduleImageRefresh(image != null && image.RequiresShellRefresh);
             PumpImageQueue();
         }
 
@@ -2914,19 +2931,31 @@ namespace Oxide.Plugins
                    bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
         }
 
-        private void ScheduleImageRefresh()
+        private void ScheduleImageRefresh(bool requiresShellRefresh = false)
         {
+            if (requiresShellRefresh) imageShellRefreshRequired = true;
             if (imageRefreshScheduled || imageCacheUnloading) return;
             imageRefreshScheduled = true;
-            timer.Once(0.2f, () =>
+            timer.Once(0.5f, () =>
             {
                 imageRefreshScheduled = false;
                 if (imageCacheUnloading) return;
+                var redrawShell = imageShellRefreshRequired;
+                imageShellRefreshRequired = false;
                 foreach (var entry in views.ToArray())
                 {
                     if (!entry.Value.Open) continue;
                     var player = BasePlayer.FindByID(entry.Key);
-                    if (player != null && player.IsConnected) DrawShell(player, entry.Value);
+                    if (player == null || !player.IsConnected) continue;
+                    if (redrawShell)
+                    {
+                        DrawShell(player, entry.Value);
+                    }
+                    else
+                    {
+                        RenderHeader(player, entry.Value);
+                        RenderContent(player, entry.Value);
+                    }
                 }
             });
         }

@@ -109,7 +109,7 @@ class RustMenuController extends BaseApiController
     public function actionBattlepass()
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
-        [, $steamId] = $this->authenticatePlayerRequest();
+        [$server, $steamId] = $this->authenticatePlayerRequest();
         $season = BattlePassSeason::findActive();
         if (!$season) {
             return $this->errorResponse(
@@ -120,10 +120,18 @@ class RustMenuController extends BaseApiController
             );
         }
 
+        $cacheKey = $this->battlePassCacheKey($server, $steamId);
+        $cached = Yii::$app->cache->get($cacheKey);
+        if (is_array($cached)) {
+            return $this->successResponse($cached, ['cached' => true]);
+        }
+
         $user = User::find()->andWhere(['steam_id' => $steamId])->one();
         $battlePass = new BattlePassController('battle-pass', $this->module);
+        $payload = $battlePass->buildRustMenuPayload($season, $user);
+        Yii::$app->cache->set($cacheKey, $payload, 15);
 
-        return $this->successResponse($battlePass->buildRustMenuPayload($season, $user));
+        return $this->successResponse($payload, ['cached' => false]);
     }
 
     /**
@@ -133,7 +141,7 @@ class RustMenuController extends BaseApiController
     public function actionBattlepassCheck($id)
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
-        [, $steamId] = $this->authenticatePlayerRequest();
+        [$server, $steamId] = $this->authenticatePlayerRequest();
         $user = User::find()->andWhere(['steam_id' => $steamId])->one();
         if (!$user) {
             return $this->errorResponse(
@@ -150,6 +158,7 @@ class RustMenuController extends BaseApiController
             $battlePass = new BattlePassController('battle-pass', $this->module);
             return $battlePass->actionCheck((int) $id);
         } finally {
+            Yii::$app->cache->delete($this->battlePassCacheKey($server, $steamId));
             Yii::$app->user->setIdentity($previousIdentity);
         }
     }
@@ -342,6 +351,11 @@ class RustMenuController extends BaseApiController
             (int) $request->get('server_port', 0)
         );
         return [$server, $steamId];
+    }
+
+    private function battlePassCacheKey(Servers $server, string $steamId): string
+    {
+        return 'api_rust_menu_battlepass_v1_' . md5((int) $server->id . '|' . $steamId);
     }
 
     private function buildSupportPayload(
@@ -643,7 +657,7 @@ class RustMenuController extends BaseApiController
             throw new BadRequestHttpException('server_tag or server_ip/server_port is required.');
         }
 
-        $server = $query->one();
+        $server = $query->cache(60)->one();
         if (!$server) {
             throw new NotFoundHttpException('Server not found.');
         }

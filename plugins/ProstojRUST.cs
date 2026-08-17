@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.10")]
+    [Info("ProstojRUST", "prostoj.store", "0.8.0")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -274,7 +274,7 @@ namespace Oxide.Plugins
                         }
                     }
 
-                    if (!string.IsNullOrEmpty(ImageUrl) && ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                    if (ItemID == 0 && !string.IsNullOrEmpty(ImageUrl) && ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                     {
                         if (instance.ProstojMenu != null)
                         {
@@ -356,6 +356,7 @@ namespace Oxide.Plugins
         private Dictionary<int, Dictionary<ulong, int>> ListTimeOutCommand = new Dictionary<int, Dictionary<ulong, int>>();
         private Dictionary<ulong, List<int>> playersBasketCache = new Dictionary<ulong, List<int>>();
         private readonly Dictionary<ulong, List<WItem>> playerBaskets = new Dictionary<ulong, List<WItem>>();
+        private readonly HashSet<ulong> menuBasketRequests = new HashSet<ulong>();
         private HashSet<ulong> ListBannedCommandUserID = new HashSet<ulong>();
         private Timer TimerCheckInstant;
         private const string StoreLayer = "ProstojRUST.Store";
@@ -566,7 +567,6 @@ namespace Oxide.Plugins
             instance = this;
             Settings.TOPSettings.UseTop = false; //Принудительное отключение топа игроков
             if (!Settings.TOPSettings.UseTop) Unsubscribe(nameof(OnEntityDeath));
-            if (!Settings.TOPSettings.UseTop) Unsubscribe(nameof(OnPlayerDisconnected));
 
             if (Settings.APISettings.ShopID == "UNDEFINED" || Settings.APISettings.SecretKey == "UNDEFINED")
             {
@@ -673,6 +673,8 @@ namespace Oxide.Plugins
             ProstojMenu?.Call("API_UnregisterTab", this, "store");
             menuStoreParents.Clear();
             menuStorePages.Clear();
+            menuBasketRequests.Clear();
+            playerBaskets.Clear();
 
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
             foreach (var pl in BasePlayer.activePlayerList)
@@ -732,7 +734,12 @@ namespace Oxide.Plugins
         {
             menuStoreParents.Remove(player.userID);
             menuStorePages.Remove(player.userID);
-            StatHandler.AddStat(new StatHandler.TimeStat(player));
+            menuBasketRequests.Remove(player.userID);
+            playerBaskets.Remove(player.userID);
+            playersBasketCache.Remove(player.userID);
+            Delays.ItemList.Remove(player.userID);
+            ListBannedCommandUserID.Remove(player.userID);
+            if (Settings.TOPSettings.UseTop) StatHandler.AddStat(new StatHandler.TimeStat(player));
         }
 
         private void OnPlayerConnected(BasePlayer player)
@@ -1150,6 +1157,8 @@ namespace Oxide.Plugins
         {
             string parent;
             if (player == null || !menuStoreParents.TryGetValue(player.userID, out parent)) return;
+            var userId = player.userID;
+            if (!menuBasketRequests.Add(userId)) return;
             page = Math.Max(0, page);
             menuStorePages[player.userID] = page;
             // Keep the current grid visible during background refreshes. Replacing it
@@ -1160,6 +1169,7 @@ namespace Oxide.Plugins
 
             Request($"&method=basket&basket=true&steam_id={player.UserIDString}", (code, response) =>
             {
+                menuBasketRequests.Remove(userId);
                 if (player == null || !player.IsConnected || !IsMenuStoreActive(player)) return;
                 if (code != 200 || string.IsNullOrEmpty(response))
                 {
