@@ -29,7 +29,7 @@ class CashRaceController extends BaseApiController
     {
         $user = Yii::$app->user->identity;
         if (!$user instanceof User) throw new UnauthorizedHttpException('Войдите через Steam');
-        $config = CashRaceService::findCurrent($user->server_id ? (int)$user->server_id : null) ?: CashRaceService::findCurrent();
+        $config = CashRaceService::findCurrent($user->server_id ? (int)$user->server_id : null, true) ?: CashRaceService::findCurrent(null, true);
         if (!$config) throw new NotFoundHttpException('Денежная гонка пока не запланирована');
         if (!CashRaceService::canPreview($user, $config) && $config->preview_only) throw new NotFoundHttpException('Раздел пока недоступен');
         $this->finalizeIfEnded($config);
@@ -48,7 +48,7 @@ class CashRaceController extends BaseApiController
         $eligible = $user instanceof User && CashRaceService::canPlayerParticipate($user, $config, $serverAdmin);
         $compact = Yii::$app->request->get('compact') === '1' && !$steamId;
         $this->finalizeIfEnded($config);
-        $data = $this->payload($config, $eligible ? $user : null, 8, $compact);
+        $data = $this->payload($config, $eligible ? $user : null, 8, $compact, false);
         $data['available'] = true;
         $data['eligible'] = $eligible;
         $data['poll_after'] = 30;
@@ -98,7 +98,7 @@ class CashRaceController extends BaseApiController
         return $this->successResponse($result);
     }
 
-    private function payload(CashRaceTournament $config, ?User $user, int $leaderboardLimit = 20, bool $compact = false): array
+    private function payload(CashRaceTournament $config, ?User $user, int $leaderboardLimit = 20, bool $compact = false, bool $includeRewards = true): array
     {
         $t = $config->tournament;
         $terminal = $compact ? null : CashRaceTerminalSession::find()->where([
@@ -107,7 +107,7 @@ class CashRaceController extends BaseApiController
             ])->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])->orderBy(['id' => SORT_DESC])->one();
         $score = $user ? CashRaceScore::findOne(['tournament_id' => $t->id, 'user_id' => $user->id]) : null;
         $rewards = [];
-        if (!$compact) {
+        if ($includeRewards) {
             foreach ($t->rewards as $reward) {
                 $rewards[] = ['place' => (int)$reward->place, 'title' => $reward->title, 'subtitle' => $reward->subtitle, 'image' => $reward->getImageUrl()];
             }

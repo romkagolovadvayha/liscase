@@ -33,7 +33,7 @@ final class CashRaceService
         return !$config->preview_only || $serverAdmin || self::canPreview($user, $config);
     }
 
-    public static function findCurrent(?int $serverId = null): ?CashRaceTournament
+    public static function findCurrent(?int $serverId = null, bool $withRewards = false): ?CashRaceTournament
     {
         $base = static function () use ($serverId) {
             $query = CashRaceTournament::find()->alias('cr')
@@ -42,13 +42,14 @@ final class CashRaceService
             if ($serverId !== null) $query->andWhere(['t.server_id' => $serverId]);
             return $query;
         };
+        $relations = $withRewards ? ['tournament.server', 'tournament.rewards'] : ['tournament.server'];
         $current = $base()->andWhere(['>=', 't.ends_at', date('Y-m-d H:i:s')])
             ->orderBy(['t.starts_at' => SORT_ASC, 't.id' => SORT_DESC])
-            ->with(['tournament.server', 'tournament.rewards'])->one();
+            ->with($relations)->one();
         if ($current) return $current;
         return $base()->andWhere(['>=', 't.ends_at', date('Y-m-d H:i:s', time() - 30 * 86400)])
             ->orderBy(['t.ends_at' => SORT_DESC, 't.id' => SORT_DESC])
-            ->with(['tournament.server', 'tournament.rewards'])->one();
+            ->with($relations)->one();
     }
 
     public static function score(Tournament $tournament, User $user): CashRaceScore
