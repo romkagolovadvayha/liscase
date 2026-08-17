@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.14")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.15")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -34,6 +34,8 @@ namespace Oxide.Plugins
         private const string ImageCacheDirectory = "ProstojMenu/Images";
         private const int MaxConcurrentImageDownloads = 3;
         private const string StoreCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
+        private const string MenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v3.jpg";
+        private const string LegacyMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v2.jpg";
 
         private const string BgMain = "0.031 0.008 0.141 0.985";       // #080224
         private const string BgSecondary = "0.098 0.063 0.176 1";     // #19102d
@@ -95,7 +97,7 @@ namespace Oxide.Plugins
             public bool RequirePermission;
 
             [JsonProperty("Background artwork URL")]
-            public string BackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v2.jpg";
+            public string BackgroundImageUrl = MenuBackgroundImageUrl;
 
             [JsonProperty("Website images base URL")]
             public string ImagesBaseUrl = "https://prostoj.store/images";
@@ -485,6 +487,9 @@ namespace Oxide.Plugins
             settings.ServerTag = (settings.ServerTag ?? string.Empty).Trim();
             settings.ChatCommand = string.IsNullOrWhiteSpace(settings.ChatCommand) ? "menu" : settings.ChatCommand.Trim();
             settings.BackgroundImageUrl = (settings.BackgroundImageUrl ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(settings.BackgroundImageUrl) ||
+                string.Equals(settings.BackgroundImageUrl, LegacyMenuBackgroundImageUrl, StringComparison.OrdinalIgnoreCase))
+                settings.BackgroundImageUrl = MenuBackgroundImageUrl;
             settings.ImagesBaseUrl = (settings.ImagesBaseUrl ?? string.Empty).Trim().TrimEnd('/');
             SaveConfig();
         }
