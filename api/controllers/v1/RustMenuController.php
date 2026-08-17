@@ -32,7 +32,7 @@ class RustMenuController extends BaseApiController
     {
         [$server, $steamId] = $this->authenticatePlayerRequest();
 
-        $cacheKey = 'api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v4');
+        $cacheKey = 'api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v6');
         $cached = Yii::$app->cache->get($cacheKey);
         if (is_array($cached)) {
             return $this->successResponse($cached, ['cached' => true]);
@@ -619,6 +619,46 @@ class RustMenuController extends BaseApiController
 
         $kills = (int) Statistics::getParam($rows, 'kills');
         $deaths = (int) Statistics::getParam($rows, 'deaths');
+        $images = Statistics::productsImages();
+        $lootDefinitions = [
+            ['key' => 'crates', 'name' => 'Крейты', 'image_key' => 'codelockedhackablecrate_oilrig', 'stat_keys' => ['codelockedhackablecrate_oilrig', 'codelockedhackablecrate']],
+            ['key' => 'crate_elite', 'name' => 'Элитный ящик', 'image_key' => 'crate_elite', 'stat_keys' => ['crate_elite']],
+            ['key' => 'crate_normal', 'name' => 'Армейский ящик', 'image_key' => 'crate_normal', 'stat_keys' => ['crate_normal']],
+            ['key' => 'crate_underwater_advanced', 'name' => 'Подводный ящик (продвинутый)', 'image_key' => 'crate_underwater_advanced', 'stat_keys' => ['crate_underwater_advanced']],
+            ['key' => 'crate_underwater_basic', 'name' => 'Подводный ящик (базовый)', 'image_key' => 'crate_underwater_basic', 'stat_keys' => ['crate_underwater_basic']],
+            ['key' => 'supply_drop', 'name' => 'Аирдроп', 'image_key' => 'supply_drop', 'stat_keys' => ['supply_drop']],
+            ['key' => 'barrel', 'name' => 'Разбито бочек', 'image_key' => 'barrel', 'stat_keys' => ['barrel']],
+            ['key' => 'crate_open', 'name' => 'Обычный ящик', 'image_key' => 'crate_open', 'stat_keys' => ['crate_open']],
+        ];
+        $loot = [];
+        foreach ($lootDefinitions as $definition) {
+            $count = 0;
+            foreach ($definition['stat_keys'] as $statKey) {
+                $count += (int) Statistics::getParam($rows, $statKey);
+            }
+            $loot[] = [
+                'key' => $definition['key'],
+                'name' => $definition['name'],
+                'image' => Statistics::getImage($images, $definition['image_key']),
+                'count' => $count,
+            ];
+        }
+
+        $foundDefinitions = [
+            ['key' => 'diesel_barrel', 'name' => 'Дизельная бочка', 'stat_key' => 'diesel_barrel', 'image_key' => 'diesel_barrel'],
+            ['key' => 'animal_fat', 'name' => 'Животный жир', 'stat_key' => 'fat.animal', 'image_key' => 'fat.animal'],
+            ['key' => 'leather', 'name' => 'Кожа', 'stat_key' => 'leather', 'image_key' => 'leather'],
+            ['key' => 'scrap', 'name' => 'Скрап', 'stat_key' => 'scrap', 'image_key' => 'scrap'],
+        ];
+        $found = [];
+        foreach ($foundDefinitions as $definition) {
+            $found[] = [
+                'key' => $definition['key'],
+                'name' => $definition['name'],
+                'image' => Statistics::getImage($images, $definition['image_key']),
+                'count' => (int) Statistics::getParam($rows, $definition['stat_key']),
+            ];
+        }
 
         return [
             'kills' => $kills,
@@ -627,6 +667,8 @@ class RustMenuController extends BaseApiController
             'playtime' => (int) Statistics::getParam($rows, 'playtime'),
             'scientists' => (int) Statistics::getParam($rows, 'scientists'),
             'headshots' => (int) Statistics::getParam($rows, 'head_hits'),
+            'loot' => $loot,
+            'found' => $found,
             'resources' => [
                 'wood' => (int) Statistics::getParam($rows, 'wood'),
                 'stones' => (int) Statistics::getParam($rows, 'stones'),

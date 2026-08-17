@@ -28,7 +28,7 @@ class SupportMessage extends \yii\db\ActiveRecord
     public function init()
     {
         parent::init();
-        // $this->on(self::EVENT_AFTER_INSERT, [$this, 'notifyPlayerIfModeratorReply']);
+        $this->on(self::EVENT_AFTER_INSERT, [$this, 'notifyTicketOwnerInGame']);
     }
     /**
      * {@inheritdoc}
@@ -108,18 +108,28 @@ class SupportMessage extends \yii\db\ActiveRecord
     }
 
     /**
-     * Ставит в очередь RCON-уведомление игрока (ответ саппорта), чтобы не блокировать save() на 5–10 сек.
-     * Раньше RconTasks::execute() вызывался здесь синхронно и задерживал ответ в чат.
+     * Ставит в очередь игровое уведомление владельца тикета, чтобы RCON не блокировал save().
+     * Окончательная проверка автора выполняется в задаче: уведомлять нужно о любом ответе
+     * не от самого владельца, включая автоматического помощника.
      */
-    public function notifyPlayerIfModeratorReply()
+    public function notifyTicketOwnerInGame()
     {
         if (empty($this->user_id)) {
             return;
         }
-        $queue = Yii::$app->get('queueProcess', false);
-        if (!$queue) {
-            return;
+
+        try {
+            $queue = Yii::$app->get('queueProcess', false);
+            if (!$queue) {
+                return;
+            }
+            $queue->push(new SupportRconNotifyJob(['messageId' => $this->id]));
+        } catch (\Throwable $e) {
+            // Сохранённое сообщение важнее уведомления: недоступная очередь не должна ломать ответ в тикете.
+            Yii::warning(
+                'Failed to enqueue in-game support notification for message #' . $this->id . ': ' . $e->getMessage(),
+                __METHOD__
+            );
         }
-        $queue->push(new SupportRconNotifyJob(['messageId' => $this->id]));
     }
 }

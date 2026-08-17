@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "1.7.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.4")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -33,6 +33,7 @@ namespace Oxide.Plugins
         private const string PermissionUse = "prostojmenu.use";
         private const string ImageCacheDirectory = "ProstojMenu/Images";
         private const int MaxConcurrentImageDownloads = 3;
+        private const string StoreCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
 
         private const string BgMain = "0.031 0.008 0.141 0.985";       // #080224
         private const string BgSecondary = "0.098 0.063 0.176 1";     // #19102d
@@ -41,12 +42,13 @@ namespace Oxide.Plugins
         private const string TextMain = "0.925 0.894 0.953 1";        // #ece4f3
         private const string TextSecondary = "0.561 0.561 0.561 1";   // #8f8f8f
         private const string Border = "0.243 0.196 0.286 1";          // #3e3249
-        private const string Accent = "0.922 0.047 0.208 1";          // #eb0c35
-        private const string AccentWarm = "1 0.380 0.204 1";          // #ff6134
-        private const string Success = "0.231 0.796 0.498 1";
-        private const string Warning = "0.898 0.706 0.329 1";
-        private const string Danger = "0.945 0.420 0.478 1";
-        private const string Gold = "0.973 0.702 0.302 1";
+        private const string Accent = "0.860 0.220 0.330 1";          // softer brand red
+        private const string AccentWarm = "0.900 0.430 0.310 1";      // muted warm orange
+        private const string Success = "0.340 0.720 0.540 1";
+        private const string Warning = "0.820 0.660 0.400 1";
+        private const string Danger = "0.860 0.420 0.480 1";
+        private const string Gold = "0.880 0.670 0.390 1";
+        private const string FrameBorder = "0.580 0.240 0.340 0.88";  // subdued wine border
         private const string Silver = "0.706 0.706 0.706 1";
         private const string Bronze = "0.686 0.451 0.333 1";
         private const string FontRegular = "robotocondensed-regular.ttf";
@@ -56,6 +58,7 @@ namespace Oxide.Plugins
         private readonly Dictionary<ulong, PlayerView> views = new Dictionary<ulong, PlayerView>();
         private readonly Dictionary<string, MenuTab> tabs = new Dictionary<string, MenuTab>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, CachedImage> cachedImages = new Dictionary<string, CachedImage>(StringComparer.Ordinal);
+        private readonly Dictionary<string, CachedCalendarMonth> cachedCalendarMonths = new Dictionary<string, CachedCalendarMonth>(StringComparer.Ordinal);
         private readonly System.Collections.Generic.Queue<CachedImage> pendingImages = new System.Collections.Generic.Queue<CachedImage>();
         private int activeImageDownloads;
         private bool imageRefreshScheduled;
@@ -72,6 +75,9 @@ namespace Oxide.Plugins
 
             [JsonProperty("Battle Pass API URL")]
             public string BattlePassApiUrl = "https://api.prostoj.store/v1/rust-menu/battlepass";
+
+            [JsonProperty("Calendar API URL")]
+            public string CalendarApiUrl = "https://api.prostoj.store/v1/wipe-calendar/server";
 
             [JsonProperty("Rust server secret")]
             public string ServerSecret = "CHANGE_ME";
@@ -121,6 +127,12 @@ namespace Oxide.Plugins
             public DateTime BattlePassLoadedAtUtc = DateTime.MinValue;
             public BattlePassData BattlePass;
             public string BattlePassError;
+            public bool CalendarLoading;
+            public int CalendarRequestVersion;
+            public string CalendarRequestedMonthKey;
+            public string CalendarMonthKey;
+            public CalendarMonthData CalendarMonth;
+            public string CalendarError;
         }
 
         private class MenuTab
@@ -147,6 +159,12 @@ namespace Oxide.Plugins
             public string LocalPath;
             public string PngId;
             public CachedImageStatus Status;
+        }
+
+        private class CachedCalendarMonth
+        {
+            public CalendarMonthData Data;
+            public DateTime LoadedAtUtc;
         }
 
         private class ApiEnvelope
@@ -339,7 +357,17 @@ namespace Oxide.Plugins
             [JsonProperty("scientists")] public int Scientists;
             [JsonProperty("headshots")] public int Headshots;
             [JsonProperty("raid_score")] public double RaidScore;
+            [JsonProperty("loot")] public List<LootMetric> Loot = new List<LootMetric>();
+            [JsonProperty("found")] public List<LootMetric> Found = new List<LootMetric>();
             [JsonProperty("resources")] public ResourceData Resources = new ResourceData();
+        }
+
+        private class LootMetric
+        {
+            [JsonProperty("key")] public string Key;
+            [JsonProperty("name")] public string Name;
+            [JsonProperty("image")] public string Image;
+            [JsonProperty("count")] public int Count;
         }
 
         private class ResourceData
@@ -357,6 +385,28 @@ namespace Oxide.Plugins
             [JsonProperty("title")] public string Title;
             [JsonProperty("label")] public string Label;
             [JsonProperty("event_at")] public string EventAt;
+        }
+
+        private class CalendarApiEnvelope
+        {
+            [JsonProperty("success")] public bool Success;
+            [JsonProperty("data")] public CalendarMonthData Data;
+            [JsonProperty("error")] public ApiError Error;
+        }
+
+        private class CalendarMonthData
+        {
+            [JsonProperty("events")] public Dictionary<string, List<CalendarMonthEvent>> Events =
+                new Dictionary<string, List<CalendarMonthEvent>>(StringComparer.Ordinal);
+            [JsonProperty("highlights")] public Dictionary<string, string> Highlights =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+        }
+
+        private class CalendarMonthEvent
+        {
+            [JsonProperty("id")] public int Id;
+            [JsonProperty("date")] public string Date;
+            [JsonProperty("event_type")] public string Type;
         }
 
         private class LeaderboardData
@@ -428,6 +478,9 @@ namespace Oxide.Plugins
             settings.BattlePassApiUrl = (settings.BattlePassApiUrl ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(settings.BattlePassApiUrl) && settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase))
                 settings.BattlePassApiUrl = settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/battlepass";
+            settings.CalendarApiUrl = (settings.CalendarApiUrl ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(settings.CalendarApiUrl))
+                settings.CalendarApiUrl = "https://api.prostoj.store/v1/wipe-calendar/server";
             settings.ServerTag = (settings.ServerTag ?? string.Empty).Trim();
             settings.ChatCommand = string.IsNullOrWhiteSpace(settings.ChatCommand) ? "menu" : settings.ChatCommand.Trim();
             settings.BackgroundImageUrl = (settings.BackgroundImageUrl ?? string.Empty).Trim();
@@ -516,7 +569,6 @@ namespace Oxide.Plugins
             RegisterBuiltIn("calendar", "КАЛЕНДАРЬ", "WIPE", 30);
             RegisterBuiltIn("stats", "МОЯ СТАТИСТИКА", "STAT", 40);
             RegisterBuiltIn("top", "ТОП ИГРОКОВ", "TOP", 50);
-            RegisterBuiltIn("clans", "КЛАНЫ", "CLAN", 60);
             RegisterBuiltIn("support", "ПОДДЕРЖКА", "SUPPORT", 70);
         }
 
@@ -543,9 +595,6 @@ namespace Oxide.Plugins
                     return true;
                 case "top":
                     RegisterBuiltIn("top", "ТОП ИГРОКОВ", "TOP", 50);
-                    return true;
-                case "clans":
-                    RegisterBuiltIn("clans", "КЛАНЫ", "CLAN", 60);
                     return true;
                 case "support":
                     RegisterBuiltIn("support", "ПОДДЕРЖКА", "SUPPORT", 70);
@@ -674,17 +723,17 @@ namespace Oxide.Plugins
 
             PlayerView view;
             views.TryGetValue(player.userID, out view);
-            switch (arg.Args[0].ToLowerInvariant())
+            switch ((arg.GetString(0) ?? string.Empty).ToLowerInvariant())
             {
                 case "close":
                     CloseMenu(player);
                     return;
                 case "open":
-                    OpenMenu(player, arg.Args.Length > 1 ? arg.Args[1] : "calendar", false);
+                    OpenMenu(player, arg.Args.Length > 1 ? arg.Args[1].ToString() : "calendar", false);
                     return;
                 case "tab":
                     if (view == null || !view.Open || arg.Args.Length < 2) return;
-                    var key = NormalizeKey(arg.Args[1]);
+                    var key = NormalizeKey(arg.Args[1].ToString());
                     if (!tabs.ContainsKey(key)) return;
                     view.ActiveTab = key;
                     view.Page = 0;
@@ -694,11 +743,18 @@ namespace Oxide.Plugins
                         FetchSupport(player, view, false);
                     if (string.Equals(key, "battlepass", StringComparison.OrdinalIgnoreCase))
                         FetchBattlePass(player, view, false);
+                    if (string.Equals(key, "calendar", StringComparison.OrdinalIgnoreCase))
+                        FetchCalendarMonth(player, view, false);
                     return;
                 case "refresh":
                     if (view == null || !view.Open) return;
                     if (string.Equals(view.ActiveTab, "battlepass", StringComparison.OrdinalIgnoreCase))
                         FetchBattlePass(player, view, true);
+                    else if (string.Equals(view.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        FetchSnapshot(player, view, true);
+                        FetchCalendarMonth(player, view, true);
+                    }
                     else
                         FetchSnapshot(player, view, true);
                     return;
@@ -717,18 +773,18 @@ namespace Oxide.Plugins
                 case "battlepass_check":
                     if (!CanUseBattlePassCommand(view) || view.BattlePassChecking || arg.Args.Length < 2) return;
                     int battlePassTaskId;
-                    if (!int.TryParse(arg.Args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out battlePassTaskId) || battlePassTaskId <= 0) return;
+                    if (!int.TryParse(arg.Args[1].ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out battlePassTaskId) || battlePassTaskId <= 0) return;
                     CheckBattlePassTask(player, view, battlePassTaskId);
                     return;
                 case "calendar_prev":
                     if (view == null || !view.Open || !string.Equals(view.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase)) return;
-                    view.Page = Mathf.Clamp(view.Page - 1, -1, 3);
-                    RenderContent(player, view);
+                    view.Page = Mathf.Clamp(view.Page - 1, -24, 12);
+                    FetchCalendarMonth(player, view, false);
                     return;
                 case "calendar_next":
                     if (view == null || !view.Open || !string.Equals(view.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase)) return;
-                    view.Page = Mathf.Clamp(view.Page + 1, -1, 3);
-                    RenderContent(player, view);
+                    view.Page = Mathf.Clamp(view.Page + 1, -24, 12);
+                    FetchCalendarMonth(player, view, false);
                     return;
                 case "support_refresh":
                     if (!CanUseSupportCommand(view)) return;
@@ -738,7 +794,7 @@ namespace Oxide.Plugins
                 case "support_ticket":
                     if (!CanUseSupportCommand(view) || arg.Args.Length < 2) return;
                     long ticketNumber;
-                    if (!long.TryParse(arg.Args[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out ticketNumber) || ticketNumber <= 0) return;
+                    if (!long.TryParse(arg.Args[1].ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out ticketNumber) || ticketNumber <= 0) return;
                     view.SupportSelectedTicket = ticketNumber;
                     view.SupportComposeNew = false;
                     FetchSupport(player, view, true);
@@ -753,10 +809,10 @@ namespace Oxide.Plugins
                     return;
                 case "support_input":
                     if (!CanUseSupportCommand(view) || view.SupportSending) return;
-                    var input = arg.Args.Length > 1 ? string.Join(" ", arg.Args.Skip(1).ToArray()) : string.Empty;
+                    var input = arg.Args.Length > 1
+                        ? string.Join(" ", arg.Args.Skip(1).Select(item => item.ToString()).ToArray())
+                        : string.Empty;
                     view.SupportDraft = input.Length > 500 ? input.Substring(0, 500) : input;
-                    if (!string.IsNullOrWhiteSpace(view.SupportDraft))
-                        CuiHelper.DestroyUi(player, Content + ".Support.Composer.Placeholder");
                     return;
                 case "support_send":
                     if (!CanUseSupportCommand(view)) return;
@@ -807,6 +863,8 @@ namespace Oxide.Plugins
                 FetchSupport(player, view, forceRefresh);
             if (string.Equals(key, "battlepass", StringComparison.OrdinalIgnoreCase))
                 FetchBattlePass(player, view, forceRefresh);
+            if (string.Equals(key, "calendar", StringComparison.OrdinalIgnoreCase) && view.Snapshot != null)
+                FetchCalendarMonth(player, view, forceRefresh);
         }
 
         private void CloseMenu(BasePlayer player)
@@ -886,8 +944,119 @@ namespace Oxide.Plugins
                     RenderHeader(player, current);
                     RenderNavigation(player, current);
                     RenderContent(player, current);
+                    if (string.Equals(current.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase))
+                        FetchCalendarMonth(player, current, false);
                 }
             }, this, RequestMethod.GET, headers);
+        }
+
+        private void FetchCalendarMonth(BasePlayer player, PlayerView view, bool force)
+        {
+            if (view == null) return;
+            var snapshot = view != null ? view.Snapshot : null;
+            var server = snapshot != null ? snapshot.Server : null;
+            if (server == null || server.Id <= 0)
+            {
+                RenderContent(player, view);
+                return;
+            }
+
+            var month = SelectedCalendarMonth(view);
+            var monthKey = server.Id.ToString(CultureInfo.InvariantCulture) + "/" + month.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+            CachedCalendarMonth cached;
+            if (!force && cachedCalendarMonths.TryGetValue(monthKey, out cached) && cached.Data != null &&
+                (DateTime.UtcNow - cached.LoadedAtUtc).TotalMinutes < 10d)
+            {
+                view.CalendarMonthKey = monthKey;
+                view.CalendarMonth = cached.Data;
+                view.CalendarLoading = false;
+                view.CalendarRequestedMonthKey = null;
+                view.CalendarError = null;
+                RenderContent(player, view);
+                return;
+            }
+
+            if (view.CalendarLoading && !force &&
+                string.Equals(view.CalendarRequestedMonthKey, monthKey, StringComparison.Ordinal)) return;
+            if (string.IsNullOrWhiteSpace(settings.CalendarApiUrl))
+            {
+                view.CalendarError = "API календаря не настроен";
+                RenderContent(player, view);
+                return;
+            }
+
+            view.CalendarLoading = true;
+            view.CalendarRequestedMonthKey = monthKey;
+            view.CalendarError = null;
+            var requestVersion = ++view.CalendarRequestVersion;
+            RenderContent(player, view);
+            var url = settings.CalendarApiUrl.Trim() + (settings.CalendarApiUrl.Contains("?") ? "&" : "?") +
+                      "server_id=" + server.Id.ToString(CultureInfo.InvariantCulture) +
+                      "&year=" + month.Year.ToString(CultureInfo.InvariantCulture) +
+                      "&month=" + month.Month.ToString(CultureInfo.InvariantCulture) + "&months=1";
+
+            webrequest.Enqueue(url, null, (code, response) =>
+            {
+                PlayerView current;
+                if (!views.TryGetValue(player.userID, out current) || current.CalendarRequestVersion != requestVersion)
+                    return;
+
+                current.CalendarLoading = false;
+                current.CalendarRequestedMonthKey = null;
+                if (code != 200 || string.IsNullOrWhiteSpace(response))
+                {
+                    current.CalendarError = "Календарь временно недоступен";
+                }
+                else
+                {
+                    try
+                    {
+                        var envelope = JsonConvert.DeserializeObject<CalendarApiEnvelope>(response);
+                        if (envelope == null || !envelope.Success || envelope.Data == null)
+                            current.CalendarError = envelope != null && envelope.Error != null
+                                ? envelope.Error.Message
+                                : "Некорректный ответ API календаря";
+                        else
+                        {
+                            current.CalendarMonthKey = monthKey;
+                            current.CalendarMonth = envelope.Data;
+                            current.CalendarError = null;
+                            cachedCalendarMonths[monthKey] = new CachedCalendarMonth
+                            {
+                                Data = envelope.Data,
+                                LoadedAtUtc = DateTime.UtcNow
+                            };
+                            PruneCalendarCache();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        current.CalendarError = "Ошибка чтения календаря";
+                        PrintWarning("Calendar parse failed: " + exception.Message);
+                    }
+                }
+
+                if (current.Open && player.IsConnected &&
+                    string.Equals(current.ActiveTab, "calendar", StringComparison.OrdinalIgnoreCase))
+                    RenderContent(player, current);
+            }, this, RequestMethod.GET, new Dictionary<string, string> { ["Accept"] = "application/json" });
+        }
+
+        private static DateTime SelectedCalendarMonth(PlayerView view)
+        {
+            var now = DateTime.Now;
+            return new DateTime(now.Year, now.Month, 1).AddMonths(view != null ? view.Page : 0);
+        }
+
+        private void PruneCalendarCache()
+        {
+            if (cachedCalendarMonths.Count <= 48) return;
+            var staleKeys = cachedCalendarMonths
+                .OrderBy(pair => pair.Value != null ? pair.Value.LoadedAtUtc : DateTime.MinValue)
+                .Take(cachedCalendarMonths.Count - 48)
+                .Select(pair => pair.Key)
+                .ToList();
+            foreach (var key in staleKeys) cachedCalendarMonths.Remove(key);
         }
 
         private void FetchBattlePass(BasePlayer player, PlayerView view, bool force)
@@ -1299,16 +1468,19 @@ namespace Oxide.Plugins
             if (!string.IsNullOrEmpty(settings.BackgroundImageUrl))
                 AddRawImage(ui, Frame, Frame + ".Artwork", "0 0", "1 1", settings.BackgroundImageUrl, "1 1 1 0.78");
             AddPanel(ui, Frame, Frame + ".ArtworkShade", "0 0", "1 1", "0.025 0.008 0.09 0.42");
-            AddPanel(ui, Frame, Frame + ".BorderTop", "0 0.996", "1 1", Accent);
-            AddPanel(ui, Frame, Frame + ".BorderWarm", "0.68 0.996", "1 1", AccentWarm);
             AddPanel(ui, Frame, Sidebar, "0 0", "0.222 1", "0.098 0.063 0.176 0.94");
             AddPanel(ui, Frame, Main, "0.222 0", "1 1", "0.031 0.008 0.141 0.73");
-            AddPanel(ui, Main, Header, "0 0.865", "1 1", "0.098 0.063 0.176 0.90");
+            // Keep the header inside the frame's top and right borders. Anchoring it
+            // at exactly 1 1 could round a few pixels beyond the window in Rust CUI.
+            AddPanel(ui, Main, Header, "0 0.865", "0.996 0.996", "0.098 0.063 0.176 0.90");
             AddPanel(ui, Main, Content, "0.03 0.04", "0.97 0.83", "0 0 0 0");
 
             AddBrand(ui);
             AddPanel(ui, Sidebar, Navigation, "0 0", "1 1", "0 0 0 0");
             AddNavigation(ui, view);
+            // Draw the frame last so the sidebar, artwork and main surface cannot
+            // cover individual sides. Pixel offsets keep all four edges identical.
+            AddOutline(ui, Frame, Frame + ".Border", FrameBorder, 2f);
             CuiHelper.AddUi(player, ui);
 
             RenderHeader(player, view);
@@ -1326,8 +1498,12 @@ namespace Oxide.Plugins
 
         private void AddBrand(CuiElementContainer ui)
         {
-            AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.07 0.895", "0.93 0.973",
+            AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.17 0.9033", "0.83 0.9647",
                 ImageUrl("rust-menu/prostoj-logo-transparent.png"), "1 1 1 1");
+            // Rust may sample a colored texel into the transparent right padding of
+            // a RawImage. Cover only that empty padding; the visible logo ends left
+            // of this mask, so its proportions and artwork remain unchanged.
+            AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.824 0.9033", "0.834 0.9647", "0.098 0.063 0.176 0.94");
             AddPanel(ui, Sidebar, Sidebar + ".Divider", "0.07 0.823", "0.93 0.825", Border);
             AddLabel(ui, Sidebar, Sidebar + ".Section", "0.07 0.785", "0.93 0.815", "РАЗДЕЛЫ", 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
         }
@@ -1366,7 +1542,6 @@ namespace Oxide.Plugins
             }
 
             AddSidebarStatus(ui, view);
-            AddLabel(ui, Navigation, Sidebar + ".Hint", "0.07 0.035", "0.93 0.075", "/MENU  •  ESC — ЗАКРЫТЬ", 10, TextSecondary, TextAnchor.MiddleLeft, FontBold);
         }
 
         private void AddSidebarStatus(CuiElementContainer ui, PlayerView view)
@@ -1374,32 +1549,51 @@ namespace Oxide.Plugins
             var snapshot = view.Snapshot;
             var hasServer = snapshot != null && snapshot.Server != null;
             var root = Sidebar + ".Status";
-            AddPanel(ui, Navigation, root, "0.07 0.102", "0.93 0.185", "0.031 0.008 0.141 0.46");
+            AddPanel(ui, Navigation, root, "0.07 0.032", "0.93 0.137", "0.031 0.008 0.141 0.46");
             AddPanel(ui, root, root + ".Rail", "0 0", "0.012 1", hasServer ? Success : Warning);
-            AddPanel(ui, root, root + ".Dot", "0.06 0.59", "0.085 0.72", hasServer ? Success : Warning);
-            AddLabel(ui, root, root + ".State", "0.11 0.48", "0.72 0.86", hasServer ? "СЕРВЕР ОНЛАЙН" : "СИНХРОНИЗАЦИЯ", 9, hasServer ? Success : Warning, TextAnchor.MiddleLeft, FontBold);
+            AddPanel(ui, root, root + ".Dot", "0.06 0.68", "0.085 0.79", hasServer ? Success : Warning);
+            AddLabel(ui, root, root + ".State", "0.11 0.58", "0.86 0.9", hasServer ? "СЕРВЕР ОНЛАЙН" : "СИНХРОНИЗАЦИЯ", 9, hasServer ? Success : Warning, TextAnchor.MiddleLeft, FontBold);
             var online = hasServer ? snapshot.Server.Players + " / " + snapshot.Server.MaxPlayers + " ИГРОКОВ" : "ДАННЫЕ ЗАГРУЖАЮТСЯ";
-            AddLabel(ui, root, root + ".Online", "0.06 0.11", "0.94 0.48", online, 10, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddLabel(ui, root, root + ".Online", "0.06 0.28", "0.94 0.59", online, 10, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+
+            AddPanel(ui, root, root + ".OnlineTrack", "0.06 0.1", "0.94 0.18", "1 1 1 0.10");
+            var onlineRatio = hasServer && snapshot.Server.MaxPlayers > 0
+                ? Mathf.Clamp01((float) snapshot.Server.Players / snapshot.Server.MaxPlayers)
+                : 0f;
+            if (onlineRatio > 0f)
+            {
+                var onlineColor = onlineRatio >= 0.95f ? Danger : onlineRatio >= 0.85f ? AccentWarm : Success;
+                AddPanel(ui, root, root + ".OnlineFill", "0.06 0.1", F(0.06f + 0.88f * onlineRatio, 0.18f), onlineColor);
+            }
         }
 
         private void AddNavigationIcon(CuiElementContainer ui, string parent, MenuTab tab, bool active)
         {
             var root = parent + ".Icon";
             var color = active ? AccentWarm : "0.62 0.59 0.66 1";
-            // Keep the icon canvas square at the menu's reference aspect ratio.
+            // The icon canvas and the source images are square, so the original
+            // proportions survive at every supported resolution.
             AddPanel(ui, parent, root, "0.075 0.17", "0.187 0.83", active ? "1 0.38 0.204 0.13" : "0.18 0.102 0.231 0.72");
 
             var icon = NormalizeIcon(tab.Key, tab.Glyph);
+            var imageUrl = NavigationIconUrl(icon);
+            if (!string.IsNullOrWhiteSpace(imageUrl))
+                AddRawImage(ui, root, root + ".Image", "0.12 0.12", "0.88 0.88", imageUrl, color);
+            else
+                AddGridIcon(ui, root, color);
+        }
+
+        private string NavigationIconUrl(string icon)
+        {
             switch (icon)
             {
-                case "store": AddStoreIcon(ui, root, color); break;
-                case "battlepass": AddBattlePassIcon(ui, root, color); break;
-                case "calendar": AddCalendarIcon(ui, root, color); break;
-                case "stats": AddStatsIcon(ui, root, color); break;
-                case "top": AddTopIcon(ui, root, color); break;
-                case "clans": AddClansIcon(ui, root, color); break;
-                case "support": AddSupportIcon(ui, root, color); break;
-                default: AddGridIcon(ui, root, color); break;
+                case "store": return ImageUrl("rust-menu/icons/nav-store.png");
+                case "battlepass": return ImageUrl("rust-menu/icons/nav-battlepass.png");
+                case "calendar": return ImageUrl("rust-menu/icons/nav-calendar.png");
+                case "stats": return ImageUrl("rust-menu/icons/nav-stats.png");
+                case "top": return ImageUrl("rust-menu/icons/nav-top.png");
+                case "support": return ImageUrl("rust-menu/icons/nav-support.png");
+                default: return null;
             }
         }
 
@@ -1539,22 +1733,24 @@ namespace Oxide.Plugins
                 ? "?"
                 : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
 
-            AddPanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.035 0.24", "0.085 0.76", Accent);
-            AddPanel(ui, Header + ".AvatarFrame", Header + ".AvatarSurface", "0.055 0.055", "0.945 0.945", BgTertiary);
+            AddPanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.035 0.24", "0.085 0.76", "0 0 0 0");
+            AddOffsetPanel(ui, Header + ".AvatarFrame", Header + ".AvatarSurface",
+                "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
             if (!string.IsNullOrEmpty(avatarUrl))
                 AddRawImage(ui, Header + ".AvatarSurface", Header + ".AvatarImage", "0 0", "1 1", avatarUrl, "1 1 1 1");
             else
                 AddLabel(ui, Header + ".AvatarSurface", Header + ".AvatarInitial", "0 0", "1 1", playerInitial, 20, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Accent, 2f);
 
             AddLabel(ui, Header + ".Dynamic", Header + ".Title", "0.105 0.51", "0.70 0.88", cleanPlayerName.ToUpperInvariant(), 18, TextMain, TextAnchor.MiddleLeft, FontBold);
             AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.105 0.15", "0.70 0.5", CleanText(serverName), 12, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
-            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.745 0.22", "0.945 0.78", "0 0 0 0");
+            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.735 0.22", "0.915 0.78", "0 0 0 0");
             var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
-            AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0.08 0.18", "0.70 0.82", balance, 19, TextMain, TextAnchor.MiddleRight, FontBold);
-            AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.73 0.18", "0.90 0.82", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
+            AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 19, TextMain, TextAnchor.MiddleRight, FontBold);
+            AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.76 0.18", "0.95 0.82", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
             // Add last inside the dynamic header so later header renders cannot cover it.
-            AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.957 0.34", "0.987 0.66",
+            AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.9345 0.34", "0.965 0.66",
                 "prostojmenu.ui close", "assets/icons/close.png", TextMain);
 
             CuiHelper.AddUi(player, ui);
@@ -1619,7 +1815,7 @@ namespace Oxide.Plugins
                 case "stats": RenderStats(player, view.Snapshot); break;
                 case "top": RenderLeaderboard(player, view.Snapshot); break;
                 case "clans": RenderClans(player, view.Snapshot); break;
-                case "store": RenderEmptyState(player, "МАГАЗИН ПОДКЛЮЧАЕТСЯ", "Установите или перезагрузите ProstojRUST — вкладка зарегистрируется автоматически.", AccentWarm); break;
+                case "store": RenderEmptyState(player, "МАГАЗИН ПОДКЛЮЧАЕТСЯ", "Установите или перезагрузите ProstojRUST — вкладка зарегистрируется автоматически.", AccentWarm, StoreCartImageUrl); break;
                 default: RenderEmptyState(player, "МОДУЛЬ НЕ ПОДКЛЮЧЁН", "Плагин вкладки сейчас недоступен.", TextSecondary); break;
             }
         }
@@ -1675,9 +1871,9 @@ namespace Oxide.Plugins
 
             if (season.Medal != null && !string.IsNullOrWhiteSpace(season.Medal.Image))
             {
-                AddRawImage(ui, hero, hero + ".Medal", "0.82 0.48", "0.94 0.88", season.Medal.Image, "1 1 1 1");
-                AddLabel(ui, hero, hero + ".MedalLabel", "0.76 0.35", "0.99 0.47", "МЕДАЛЬ СЕЗОНА", 9, Gold, TextAnchor.MiddleCenter, FontBold);
-                AddLabel(ui, hero, hero + ".MedalName", "0.72 0.24", "0.995 0.36",
+                AddRawImage(ui, hero, hero + ".Medal", "0.82 0.48", "0.94 0.88", BattlePassImageUrl(season.Medal.Image), "1 1 1 1");
+                AddLabel(ui, hero, hero + ".MedalLabel", "0.765 0.35", "0.995 0.47", "МЕДАЛЬ СЕЗОНА", 9, Gold, TextAnchor.MiddleCenter, FontBold);
+                AddLabel(ui, hero, hero + ".MedalName", "0.765 0.24", "0.995 0.36",
                     CompactText(Safe(season.Medal.Name).ToUpperInvariant(), 28), 11, TextMain, TextAnchor.MiddleCenter, FontBold);
             }
 
@@ -1730,7 +1926,7 @@ namespace Oxide.Plugins
             // so item and medal artwork stays square instead of stretching.
             AddPanel(ui, root, root + ".RewardSurface", "0.20 0.39", "0.80 0.827", "0.031 0.008 0.141 0.58");
             if (task.RewardItem != null && !string.IsNullOrWhiteSpace(task.RewardItem.Image))
-                AddRawImage(ui, root + ".RewardSurface", root + ".Reward", "0.08 0.08", "0.92 0.92", task.RewardItem.Image, completed ? "1 1 1 0.62" : "1 1 1 1");
+                AddRawImage(ui, root + ".RewardSurface", root + ".Reward", "0.08 0.08", "0.92 0.92", BattlePassImageUrl(task.RewardItem.Image), completed ? "1 1 1 0.62" : "1 1 1 1");
             else if (string.Equals(task.RewardType, "currency", StringComparison.OrdinalIgnoreCase))
                 AddRawImage(ui, root + ".RewardSurface", root + ".RewardCoin", "0.20 0.20", "0.80 0.80", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
             else
@@ -1745,11 +1941,15 @@ namespace Oxide.Plugins
             var maxProgress = Math.Max(1, task.MaxProgress ?? 1);
             if (isCurrent && !completed)
             {
-                AddPanel(ui, root, root + ".ProgressTrack", "0.06 0.105", "0.72 0.13", "1 1 1 0.10");
-                var progressMax = 0.06f + 0.66f * Mathf.Clamp01((float) progress / maxProgress);
+                // Reserve a stable right-hand column for long counters. The old 21%
+                // label width clipped values while the progress bar occupied 66%.
+                AddPanel(ui, root, root + ".ProgressTrack", "0.06 0.105", "0.56 0.13", "1 1 1 0.10");
+                var progressMax = 0.06f + 0.50f * Mathf.Clamp01((float) progress / maxProgress);
                 if (progressMax > 0.061f)
                     AddPanel(ui, root, root + ".ProgressFill", "0.06 0.105", F(progressMax, 0.13f), AccentWarm);
-                AddLabel(ui, root, root + ".ProgressText", "0.73 0.075", "0.94 0.16", progress + "/" + maxProgress, 8, TextMain, TextAnchor.MiddleRight, FontBold);
+                var progressText = progress + " / " + maxProgress;
+                var progressFontSize = progressText.Length > 15 ? 6 : progressText.Length > 11 ? 7 : 8;
+                AddLabel(ui, root, root + ".ProgressText", "0.58 0.075", "0.95 0.16", progressText, progressFontSize, TextMain, TextAnchor.MiddleRight, FontBold);
                 if (canCheck)
                     AddLabel(ui, root, root + ".ActionHint", "0.06 0.01", "0.94 0.075", "НАЖМИТЕ, ЧТОБЫ ПРОВЕРИТЬ", 7, AccentWarm, TextAnchor.MiddleLeft, FontBold);
             }
@@ -1790,15 +1990,28 @@ namespace Oxide.Plugins
         private void RenderCalendar(BasePlayer player, PlayerView view)
         {
             var snapshot = view.Snapshot;
-            var events = snapshot != null && snapshot.Calendar != null ? snapshot.Calendar : new List<CalendarEvent>();
             var now = DateTime.Now;
-            var month = new DateTime(now.Year, now.Month, 1).AddMonths(view.Page);
+            var month = SelectedCalendarMonth(view);
+            var serverId = snapshot != null && snapshot.Server != null ? snapshot.Server.Id : 0;
+            var selectedMonthKey = serverId.ToString(CultureInfo.InvariantCulture) + "/" + month.ToString("yyyy-MM", CultureInfo.InvariantCulture);
+            var monthData = string.Equals(view.CalendarMonthKey, selectedMonthKey, StringComparison.Ordinal)
+                ? view.CalendarMonth
+                : null;
+            var snapshotEvents = snapshot != null && snapshot.Calendar != null
+                ? snapshot.Calendar
+                : new List<CalendarEvent>();
             var mondayOffset = ((int) month.DayOfWeek + 6) % 7;
             var firstGridDay = month.AddDays(-mondayOffset);
             var ui = new CuiElementContainer();
 
             AddLabel(ui, Content + ".Body", Content + ".Calendar.Title", "0 0.91", "0.55 1", MonthName(month.Month) + " " + month.Year, 25, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, Content + ".Body", Content + ".Calendar.Subtitle", "0 0.865", "0.68 0.92", "Календарь сервера • вайпы, обновления и выходные", 11, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            var calendarSubtitle = view.CalendarLoading
+                ? "Загружаем события месяца…"
+                : !string.IsNullOrWhiteSpace(view.CalendarError)
+                    ? view.CalendarError + " • показаны доступные данные"
+                    : "Календарь сервера • вайпы, обновления и выходные";
+            AddLabel(ui, Content + ".Body", Content + ".Calendar.Subtitle", "0 0.865", "0.82 0.92", calendarSubtitle, 11,
+                !string.IsNullOrWhiteSpace(view.CalendarError) ? Warning : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
             AddButton(ui, Content + ".Body", Content + ".Calendar.Prev", "0.88 0.91", "0.93 0.985", BgTertiary, "prostojmenu.ui calendar_prev", "‹", 23, TextMain);
             AddButton(ui, Content + ".Body", Content + ".Calendar.Next", "0.945 0.91", "0.995 0.985", BgTertiary, "prostojmenu.ui calendar_next", "›", 23, TextMain);
 
@@ -1810,7 +2023,8 @@ namespace Oxide.Plugins
             for (var column = 0; column < 7; column++)
             {
                 var xMin = column * (columnWidth + gap);
-                AddLabel(ui, grid, grid + ".Weekday." + column, F(xMin, 0.91f), F(xMin + columnWidth, 0.99f), weekdays[column], 10, TextSecondary, TextAnchor.MiddleCenter, FontBold);
+                AddLabel(ui, grid, grid + ".Weekday." + column, F(xMin, 0.91f), F(xMin + columnWidth, 0.99f), weekdays[column], 10,
+                    column >= 5 ? "0.98 0.52 0.50 1" : TextSecondary, TextAnchor.MiddleCenter, FontBold);
             }
 
             const float rowHeight = 0.139f;
@@ -1826,10 +2040,38 @@ namespace Oxide.Plugins
                 var root = grid + ".Day." + index;
                 var inMonth = date.Month == month.Month;
                 var isToday = date.Date == now.Date;
-                var dayEvents = events.Where(item => IsCalendarDay(item.EventAt, date)).ToList();
+                var dateKey = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                var dayEvents = new List<CalendarEvent>();
+                List<CalendarMonthEvent> apiEvents;
+                if (monthData != null && monthData.Events != null && monthData.Events.TryGetValue(dateKey, out apiEvents) && apiEvents != null)
+                {
+                    foreach (var apiEvent in apiEvents)
+                    {
+                        if (apiEvent == null) continue;
+                        dayEvents.Add(new CalendarEvent
+                        {
+                            Id = apiEvent.Id,
+                            Type = apiEvent.Type,
+                            Label = CalendarEventLabel(apiEvent.Type),
+                            EventAt = !string.IsNullOrWhiteSpace(apiEvent.Date) ? apiEvent.Date : dateKey
+                        });
+                    }
+                }
+                else if (monthData == null)
+                {
+                    dayEvents = snapshotEvents.Where(item => IsCalendarDay(item.EventAt, date)).ToList();
+                }
+                string highlight = null;
+                var hasHighlight = monthData != null && monthData.Highlights != null &&
+                                   monthData.Highlights.TryGetValue(dateKey, out highlight);
+                var isHoliday = hasHighlight && string.Equals(highlight, "holiday", StringComparison.OrdinalIgnoreCase);
+                var isWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday ||
+                                (hasHighlight && string.Equals(highlight, "weekend", StringComparison.OrdinalIgnoreCase));
                 var primary = dayEvents.FirstOrDefault();
                 var eventColor = primary != null ? EventColor(primary.Type) : Border;
                 var baseColor = inMonth ? "0.098 0.063 0.176 0.88" : "0.055 0.035 0.102 0.62";
+                if (isWeekend) baseColor = inMonth ? "0.145 0.052 0.118 0.90" : "0.075 0.035 0.082 0.62";
+                if (isHoliday) baseColor = inMonth ? "0.205 0.052 0.095 0.92" : "0.09 0.035 0.07 0.64";
                 if (primary != null) baseColor = EventSurface(primary.Type);
 
                 AddPanel(ui, grid, root, F(xMin, yMin), F(xMax, yMax), baseColor);
@@ -1839,7 +2081,7 @@ namespace Oxide.Plugins
                 if (isToday) AddOutline(ui, root, root + ".TodayBorder", Accent, 2f);
                 else if (primary != null) AddOutline(ui, root, root + ".EventBorder", eventColor, 2f);
                 AddLabel(ui, root, root + ".Date", "0.08 0.58", "0.42 0.94", date.Day.ToString(CultureInfo.InvariantCulture), 13,
-                    isToday ? AccentWarm : inMonth ? TextMain : "0.42 0.40 0.46 1", TextAnchor.MiddleLeft, FontBold);
+                    isToday ? AccentWarm : isHoliday ? "1 0.45 0.43 1" : isWeekend ? "0.98 0.62 0.60 1" : inMonth ? TextMain : "0.42 0.40 0.46 1", TextAnchor.MiddleLeft, FontBold);
 
                 if (primary != null)
                 {
@@ -1857,13 +2099,13 @@ namespace Oxide.Plugins
         {
             var root = Content + ".Calendar.Legend";
             AddPanel(ui, parent, root, anchorMin, anchorMax, "0.031 0.008 0.141 0.44");
-            var labels = new[] { "ГЛОБАЛЬНЫЙ ВАЙП", "ОБНОВЛЕНИЕ ИГРЫ", "ВАЙП КАРТЫ", "СЕГОДНЯ" };
-            var colors = new[] { AccentWarm, "0.302 0.702 0.961 1", Success, Accent };
+            var labels = new[] { "ГЛОБАЛЬНЫЙ ВАЙП", "ОБНОВЛЕНИЕ", "ВАЙП КАРТЫ", "ВЫХОДНОЙ", "СЕГОДНЯ" };
+            var colors = new[] { AccentWarm, "0.302 0.702 0.961 1", Success, "0.98 0.52 0.50 1", Accent };
             for (var i = 0; i < labels.Length; i++)
             {
-                var xMin = 0.02f + i * 0.245f;
+                var xMin = 0.015f + i * 0.197f;
                 AddPanel(ui, root, root + ".Dot." + i, F(xMin, 0.34f), F(xMin + 0.012f, 0.66f), colors[i]);
-                AddLabel(ui, root, root + ".Text." + i, F(xMin + 0.022f, 0f), F(xMin + 0.235f, 1f), labels[i], 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
+                AddLabel(ui, root, root + ".Text." + i, F(xMin + 0.022f, 0f), F(xMin + 0.19f, 1f), labels[i], 8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
             }
         }
 
@@ -1889,16 +2131,65 @@ namespace Oxide.Plugins
             else
                 AddLabel(ui, portrait + ".AvatarSurface", portrait + ".AvatarInitial", "0 0", "1 1", playerInitial, 58, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, portrait, portrait + ".Status", "0.07 0.26", "0.93 0.34", "АКТИВНЫЙ ИГРОК", 9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
-            AddPanel(ui, portrait, portrait + ".Info", "0.05 0.04", "0.95 0.20", "0.031 0.008 0.141 0.88");
-            AddLabel(ui, portrait + ".Info", portrait + ".Name", "0.06 0.52", "0.94 0.9", playerName, 14, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, portrait + ".Info", portrait + ".Meta", "0.06 0.08", "0.94 0.52", "K/D  " + stats.Kd.ToString("0.00", CultureInfo.InvariantCulture) + "   •   " + FormatPlaytime(stats.Playtime), 10, AccentWarm, TextAnchor.MiddleLeft, FontBold);
+            AddPanel(ui, portrait, portrait + ".Info", "0.05 0.035", "0.95 0.225", "0.031 0.008 0.141 0.88");
+            AddLabel(ui, portrait + ".Info", portrait + ".Name", "0.06 0.67", "0.94 0.94", playerName, 14, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, portrait + ".Info", portrait + ".Meta", "0.06 0.36", "0.94 0.68",
+                "K/D  " + stats.Kd.ToString("0.00", CultureInfo.InvariantCulture) + "   •   ВРЕМЯ  " + FormatPlaytime(stats.Playtime),
+                9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, portrait + ".Info", portrait + ".Combat", "0.06 0.06", "0.94 0.38",
+                "УБ.  " + FormatNumber(stats.Kills) + "   •   СМ.  " + FormatNumber(stats.Deaths) + "   •   УЧЁНЫЕ  " + FormatNumber(stats.Scientists),
+                8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
 
-            AddMetricImageCard(ui, 0, 0, "УБИЙСТВА", FormatNumber(stats.Kills), ImageUrl("awards/records/kills.png"), Accent);
-            AddMetricImageCard(ui, 1, 0, "СМЕРТИ", FormatNumber(stats.Deaths), ImageUrl("awards/records/hunter.png"), Danger);
-            AddMetricImageCard(ui, 2, 0, "K/D", stats.Kd.ToString("0.00", CultureInfo.InvariantCulture), ImageUrl("awards/records/reider.png"), AccentWarm);
-            AddMetricImageCard(ui, 0, 1, "ВРЕМЯ", FormatPlaytime(stats.Playtime), ImageUrl("awards/records/playtime.png"), Success);
-            AddMetricImageCard(ui, 1, 1, "УЧЁНЫЕ", FormatNumber(stats.Scientists), ImageUrl("awards/records/scientists.png"), Warning);
-            AddMetricImageCard(ui, 2, 1, "РЕЙД", stats.RaidScore.ToString("0.#", CultureInfo.InvariantCulture), ImageUrl("awards/records/reider.png"), Gold);
+            AddPanel(ui, Content + ".Body", Content + ".Stats.Found", "0.315 0.61", "1 0.835", "0.031 0.008 0.141 0.64");
+            AddLabel(ui, Content + ".Stats.Found", Content + ".Stats.Found.Title", "0.025 0.75", "0.7 0.95", "НАЙДЕНО И СОБРАНО", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
+            var foundByKey = (stats.Found ?? new List<LootMetric>())
+                .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Key))
+                .GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            var foundKeys = new[] { "diesel_barrel", "animal_fat", "leather", "scrap" };
+            var foundLabels = new[] { "ДИЗЕЛЬНАЯ БОЧКА", "ЖИВОТНЫЙ ЖИР", "КОЖА", "СКРАП" };
+            var foundFallbackImages = new[]
+            {
+                "https://storage.prostoj.store/uploads/drop64/296_d034f99297824b26e006fd4345f2fd9d.png",
+                "https://storage.prostoj.store/uploads/drop64/298_911c5ed162dbd022146e25022957757d.png",
+                "https://storage.prostoj.store/uploads/drop64/301_75d16b9d76868a7a833e6fb6942614ea.png",
+                "https://storage.prostoj.store/uploads/drop64/305_6949c48b05801055b644b5938b1c427c.png"
+            };
+            for (var i = 0; i < foundKeys.Length; i++)
+            {
+                LootMetric foundItem;
+                foundByKey.TryGetValue(foundKeys[i], out foundItem);
+                var foundImage = foundItem != null && !string.IsNullOrWhiteSpace(foundItem.Image) ? foundItem.Image : foundFallbackImages[i];
+                AddFoundMetricCard(ui, i, foundLabels[i], foundItem != null ? foundItem.Count : 0, foundImage);
+            }
+
+            AddPanel(ui, Content + ".Body", Content + ".Stats.Loot", "0.315 0.285", "1 0.59", "0.031 0.008 0.141 0.64");
+            AddLabel(ui, Content + ".Stats.Loot", Content + ".Stats.Loot.Title", "0.025 0.82", "0.7 0.97", "НАЙДЕНО КОНТЕЙНЕРОВ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
+            var lootByKey = (stats.Loot ?? new List<LootMetric>())
+                .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Key))
+                .GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            var lootKeys = new[] { "crates", "crate_elite", "crate_normal", "crate_underwater_advanced", "crate_underwater_basic", "supply_drop", "barrel", "crate_open" };
+            var lootLabels = new[] { "КРЕЙТЫ", "ЭЛИТНЫЙ ЯЩИК", "АРМЕЙСКИЙ ЯЩИК", "ПОДВОДНЫЙ\nПРОДВИНУТЫЙ", "ПОДВОДНЫЙ\nБАЗОВЫЙ", "АИРДРОП", "РАЗБИТО БОЧЕК", "ОБЫЧНЫЙ ЯЩИК" };
+            var lootImageAspects = new[] { 1f, 1f, 64f / 39f, 1f, 1f, 64f / 58f, 38f / 64f, 1f };
+            var lootFallbackImages = new[]
+            {
+                "https://storage.prostoj.store/uploads/drop64/1016_1_0dfd250d3e2c32bca8931e5543a7b96a.webp",
+                "https://storage.prostoj.store/uploads/drop64/1018_1_3cb9b6c81067adf8bda075d4f3fc4ea6.webp",
+                "https://storage.prostoj.store/uploads/drop64/1019_1_fcbdbbe5ea8a4ad0f379b41af6bc1f43.png",
+                "https://storage.prostoj.store/uploads/drop64/1020_1_46817913f780ec6dee026b2ab96a5bac.webp",
+                "https://storage.prostoj.store/uploads/drop64/1021_1_d667b074c9e038fd08f8c3f59f8ddadb.webp",
+                "https://storage.prostoj.store/uploads/drop64/1022_1_5fe8a20475f1a4ebd47bca582e71b13b.png",
+                "https://storage.prostoj.store/uploads/drop64/863_ca8a4487be04988f2814bc8841a7c425.png",
+                "https://storage.prostoj.store/uploads/drop64/441_522b6e2b6c99a6e2e596db57ef080be6.png"
+            };
+            for (var i = 0; i < lootKeys.Length; i++)
+            {
+                LootMetric lootItem;
+                lootByKey.TryGetValue(lootKeys[i], out lootItem);
+                var lootImage = lootItem != null && !string.IsNullOrWhiteSpace(lootItem.Image) ? lootItem.Image : lootFallbackImages[i];
+                AddLootMetricCard(ui, i % 4, i / 4, lootLabels[i], lootItem != null ? lootItem.Count : 0, lootImage, lootImageAspects[i]);
+            }
 
             AddPanel(ui, Content + ".Body", Content + ".Stats.Resources", "0.315 0.035", "1 0.285", "0.031 0.008 0.141 0.64");
             AddLabel(ui, Content + ".Stats.Resources", Content + ".Stats.Resources.Title", "0.025 0.74", "0.5 0.94", "ДОБЫТО РЕСУРСОВ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
@@ -1912,25 +2203,39 @@ namespace Oxide.Plugins
                 var xMax = xMin + 0.218f;
                 var barRoot = Content + ".Stats.Resources." + i;
                 AddPanel(ui, Content + ".Stats.Resources", barRoot, F(xMin, 0.12f), F(xMax, 0.69f), "0.18 0.102 0.231 0.62");
-                AddRawImage(ui, barRoot, barRoot + ".Image", "0.04 0.225", "0.36 0.775", images[i], "1 1 1 0.92");
+                AddSquareRawImage(ui, barRoot, barRoot + ".Image", "0.20 0.5", 23f, images[i], "1 1 1 0.92");
                 AddLabel(ui, barRoot, barRoot + ".Label", "0.40 0.53", "0.96 0.9", labels[i], 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
                 AddLabel(ui, barRoot, barRoot + ".Value", "0.40 0.08", "0.96 0.58", FormatNumber(values[i]), 15, TextMain, TextAnchor.MiddleLeft, FontBold);
             }
             CuiHelper.AddUi(player, ui);
         }
 
-        private void AddMetricImageCard(CuiElementContainer ui, int column, int row, string label, string value, string imageUrl, string color)
+        private void AddFoundMetricCard(CuiElementContainer ui, int column, string label, int value, string imageUrl)
         {
-            var xMin = 0.315f + column * 0.232f;
+            var panel = Content + ".Stats.Found";
+            var xMin = 0.025f + column * 0.242f;
             var xMax = xMin + 0.218f;
-            var yMax = 0.835f - row * 0.265f;
-            var yMin = yMax - 0.235f;
-            var root = Content + ".Stats.Card." + column + "." + row;
-            AddPanel(ui, Content + ".Body", root, F(xMin, yMin), F(xMax, yMax), "0.098 0.063 0.176 0.82");
-            AddPanel(ui, root, root + ".Accent", "0 0", "0.014 1", color);
-            AddRawImage(ui, root, root + ".Image", "0.04 0.225", "0.40 0.775", imageUrl, "1 1 1 0.86");
-            AddLabel(ui, root, root + ".Label", "0.44 0.56", "0.94 0.86", label, 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, root, root + ".Value", "0.44 0.14", "0.94 0.62", value, 21, TextMain, TextAnchor.MiddleLeft, FontBold);
+            var root = panel + ".Item." + column;
+            AddPanel(ui, panel, root, F(xMin, 0.10f), F(xMax, 0.70f), "0.18 0.102 0.231 0.62");
+            AddSquareRawImage(ui, root, root + ".Image", "0.20 0.5", 24f, imageUrl, "1 1 1 0.94");
+            AddLabel(ui, root, root + ".Value", "0.40 0.47", "0.95 0.90", FormatNumber(value), 15, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, root, root + ".Label", "0.40 0.08", "0.96 0.50", label, 8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
+        }
+
+        private void AddLootMetricCard(CuiElementContainer ui, int column, int row, string label, int value, string imageUrl, float imageAspect)
+        {
+            var panel = Content + ".Stats.Loot";
+            var xMin = 0.025f + column * 0.242f;
+            var xMax = xMin + 0.218f;
+            var yMax = 0.78f - row * 0.38f;
+            var yMin = yMax - 0.32f;
+            var root = panel + ".Item." + column + "." + row;
+            AddPanel(ui, panel, root, F(xMin, yMin), F(xMax, yMax), "0.18 0.102 0.231 0.62");
+            var imageHalfWidth = imageAspect >= 1f ? 22f : 22f * imageAspect;
+            var imageHalfHeight = imageAspect >= 1f ? 22f / imageAspect : 22f;
+            AddFittedRawImage(ui, root, root + ".Image", "0.19 0.5", imageHalfWidth, imageHalfHeight, imageUrl, "1 1 1 0.94");
+            AddLabel(ui, root, root + ".Value", "0.39 0.49", "0.95 0.92", FormatNumber(value), 14, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, root, root + ".Label", "0.39 0.06", "0.96 0.52", label, 8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
         }
 
         private void RenderLeaderboard(BasePlayer player, MenuSnapshot snapshot)
@@ -1981,19 +2286,22 @@ namespace Oxide.Plugins
                     var row = items[playerIndex];
                     var position = row.Position > 0 ? row.Position : playerIndex + 1;
                     var medal = position == 1 ? Gold : position == 2 ? Silver : Bronze;
-                    // Keep the portrait square at the reference 1920x1080 canvas:
-                    // 14% of the row width equals 59% of its height.
-                    AddPanel(ui, rowRoot, rowRoot + ".AvatarFrame", "0.045 0.205", "0.185 0.795", medal);
-                    AddPanel(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarSurface", "0.055 0.055", "0.945 0.945", BgTertiary);
+                    // Keep the portrait square at the reference canvas. The image
+                    // uses a fixed two-pixel inset so every side of the frame has
+                    // identical thickness after Rust rounds UI coordinates.
+                    AddPanel(ui, rowRoot, rowRoot + ".AvatarFrame", "0.045 0.205", "0.183 0.795", "0 0 0 0");
+                    AddOffsetPanel(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarSurface",
+                        "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
                     if (!string.IsNullOrWhiteSpace(row.Avatar))
                         AddRawImage(ui, rowRoot + ".AvatarSurface", rowRoot + ".Avatar", "0 0", "1 1", row.Avatar, "1 1 1 1");
                     else
                         AddLabel(ui, rowRoot + ".AvatarSurface", rowRoot + ".Initial", "0 0", "1 1", PlayerInitial(row.Username), 13, TextMain, TextAnchor.MiddleCenter, FontBold);
+                    AddOutline(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarBorder", medal, 2f);
                     if (row.Status == true)
                         AddStatusDot(ui, rowRoot + ".AvatarFrame", rowRoot + ".Online");
 
-                    AddLabel(ui, rowRoot, rowRoot + ".Place", "0.195 0.53", "0.29 0.91", "#" + position, 9, medal, TextAnchor.MiddleLeft, FontBold);
-                    AddLabel(ui, rowRoot, rowRoot + ".Name", "0.195 0.12", "0.69 0.58", CompactText(Safe(row.Username), 15), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
+                    AddLabel(ui, rowRoot, rowRoot + ".Place", "0.21 0.53", "0.30 0.91", "#" + position, 9, medal, TextAnchor.MiddleLeft, FontBold);
+                    AddLabel(ui, rowRoot, rowRoot + ".Name", "0.21 0.12", "0.69 0.58", CompactText(Safe(row.Username), 15), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
                     AddLabel(ui, rowRoot, rowRoot + ".Score", "0.70 0.16", "0.955 0.84", CompactText(Safe(row.Score), 12), 11, TextSecondary, TextAnchor.MiddleRight, FontBold);
                 }
             }
@@ -2137,12 +2445,14 @@ namespace Oxide.Plugins
                 var avatarUrl = message.Avatar;
                 if (message.IsOwn && string.IsNullOrWhiteSpace(avatarUrl) && view.Snapshot != null && view.Snapshot.Player != null)
                     avatarUrl = view.Snapshot.Player.Avatar;
-                AddPanel(ui, dialogRoot, bubble + ".AvatarFrame", F(avatarXMin, yMin + 0.008f), F(avatarXMax, yMax - 0.008f), message.IsOwn ? Accent : AccentWarm);
-                AddPanel(ui, bubble + ".AvatarFrame", bubble + ".AvatarSurface", "0.05 0.05", "0.95 0.95", BgTertiary);
+                AddPanel(ui, dialogRoot, bubble + ".AvatarFrame", F(avatarXMin, yMin + 0.008f), F(avatarXMax, yMax - 0.008f), "0 0 0 0");
+                AddOffsetPanel(ui, bubble + ".AvatarFrame", bubble + ".AvatarSurface",
+                    "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
                 if (!string.IsNullOrWhiteSpace(avatarUrl))
                     AddRawImage(ui, bubble + ".AvatarSurface", bubble + ".Avatar", "0 0", "1 1", avatarUrl, "1 1 1 1");
                 else
                     AddLabel(ui, bubble + ".AvatarSurface", bubble + ".AvatarInitial", "0 0", "1 1", PlayerInitial(message.Author), 16, TextMain, TextAnchor.MiddleCenter, FontBold);
+                AddOutline(ui, bubble + ".AvatarFrame", bubble + ".AvatarBorder", message.IsOwn ? Accent : AccentWarm, 2f);
                 AddPanel(ui, dialogRoot, bubble, F(xMin, yMin), F(xMax, yMax), message.IsOwn ? "0.922 0.047 0.208 0.16" : BgRaised);
                 AddPanel(ui, bubble, bubble + ".Rail", message.IsOwn ? "0.988 0" : "0 0", message.IsOwn ? "1 1" : "0.012 1", message.IsOwn ? Accent : AccentWarm);
                 AddLabel(ui, bubble, bubble + ".Author", "0.035 0.68", "0.78 0.94", Safe(message.Author).ToUpperInvariant(), 9,
@@ -2176,9 +2486,9 @@ namespace Oxide.Plugins
             {
                 AddPanel(ui, composer, composer + ".Field", "0 0", "0.78 1", BgSecondary);
                 AddPanel(ui, composer + ".Field", composer + ".Field.Rail", "0 0", "0.008 1", view.SupportSending ? Warning : AccentWarm);
-                if (string.IsNullOrWhiteSpace(view.SupportDraft))
-                    AddLabel(ui, composer + ".Field", composer + ".Placeholder", "0.035 0", "0.94 1", "Введите сообщение…", 12, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-                AddInputField(ui, composer + ".Field", composer + ".Input", "0.03 0.08", "0.97 0.92", view.SupportDraft,
+                AddLabel(ui, composer + ".Field", composer + ".Caption", "0.035 0.68", "0.94 0.96", "СООБЩЕНИЕ", 8,
+                    view.SupportSending ? Warning : AccentWarm, TextAnchor.MiddleLeft, FontBold);
+                AddInputField(ui, composer + ".Field", composer + ".Input", "0.03 0.04", "0.97 0.72", view.SupportDraft,
                     "prostojmenu.ui support_input", 500, 13, TextMain);
                 AddButton(ui, composer, composer + ".Send", "0.8 0", "1 1", view.SupportSending ? BgTertiary : Accent,
                     "prostojmenu.ui support_send", view.SupportSending ? "ОТПРАВКА…" : "ОТПРАВИТЬ", 12, TextMain);
@@ -2198,11 +2508,14 @@ namespace Oxide.Plugins
             AddLabel(ui, Content + ".Section.Badge", Content + ".Section.Badge.Text", "0.05 0", "0.95 1", badge, 10, AccentWarm, TextAnchor.MiddleCenter, FontBold);
         }
 
-        private void RenderEmptyState(BasePlayer player, string title, string text, string color)
+        private void RenderEmptyState(BasePlayer player, string title, string text, string color, string iconUrl = null)
         {
             var ui = new CuiElementContainer();
             AddPanel(ui, Content + ".Body", Content + ".Empty", "0 0.05", "1 0.95", BgSecondary);
-            AddPanel(ui, Content + ".Empty", Content + ".Empty.Mark", "0.47 0.61", "0.53 0.69", color);
+            if (!string.IsNullOrWhiteSpace(iconUrl))
+                AddSquareRawImage(ui, Content + ".Empty", Content + ".Empty.Icon", "0.5 0.65", 27f, iconUrl, "1 1 1 0.55");
+            else
+                AddPanel(ui, Content + ".Empty", Content + ".Empty.Mark", "0.47 0.61", "0.53 0.69", color);
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Title", "0.12 0.45", "0.88 0.61", title, 22, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Text", "0.16 0.28", "0.84 0.47", CleanText(text), 13, TextSecondary, TextAnchor.UpperCenter, FontRegular);
             AddButton(ui, Content + ".Empty", Content + ".Empty.Refresh", "0.39 0.13", "0.61 0.23", Accent, "prostojmenu.ui refresh", "ОБНОВИТЬ", 12, TextMain);
@@ -2226,12 +2539,14 @@ namespace Oxide.Plugins
             EnsureImage(settings.BackgroundImageUrl);
             EnsureImage(ImageUrl("rust-menu/prostoj-logo-transparent.png"));
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
-            EnsureImage(ImageUrl("battlepass/season-1-medal-v5.webp"));
-            EnsureImage(ImageUrl("awards/records/kills.png"));
-            EnsureImage(ImageUrl("awards/records/hunter.png"));
-            EnsureImage(ImageUrl("awards/records/reider.png"));
-            EnsureImage(ImageUrl("awards/records/playtime.png"));
-            EnsureImage(ImageUrl("awards/records/scientists.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-store.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"));
+            EnsureImage(StoreCartImageUrl);
+            EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));
             EnsureImage(ImageUrl("user-stats/wood.png"));
             EnsureImage(ImageUrl("user-stats/stone.png"));
             EnsureImage(ImageUrl("user-stats/iron_stone.png"));
@@ -2480,6 +2795,24 @@ namespace Oxide.Plugins
             return settings.ImagesBaseUrl + "/" + (relativePath ?? string.Empty).TrimStart('/');
         }
 
+        private string BattlePassImageUrl(string value)
+        {
+            value = (value ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+
+            const string medalWebpPath = "/images/battlepass/season-1-medal-v5.webp";
+            if (value.EndsWith(medalWebpPath, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(value, medalWebpPath, StringComparison.OrdinalIgnoreCase))
+                return ImageUrl("battlepass/season-1-medal-v5.png");
+
+            Uri absolute;
+            if (Uri.TryCreate(value, UriKind.Absolute, out absolute)) return value;
+            const string imagesPrefix = "/images/";
+            if (value.StartsWith(imagesPrefix, StringComparison.OrdinalIgnoreCase))
+                return ImageUrl(value.Substring(imagesPrefix.Length));
+            return value;
+        }
+
         private static string MonthName(int month)
         {
             var months = new[] { "ЯНВАРЬ", "ФЕВРАЛЬ", "МАРТ", "АПРЕЛЬ", "МАЙ", "ИЮНЬ", "ИЮЛЬ", "АВГУСТ", "СЕНТЯБРЬ", "ОКТЯБРЬ", "НОЯБРЬ", "ДЕКАБРЬ" };
@@ -2538,6 +2871,37 @@ namespace Oxide.Plugins
             });
         }
 
+        private void AddSquareRawImage(CuiElementContainer container, string parent, string name, string anchor, float halfSizePixels, string url, string color)
+        {
+            AddFittedRawImage(container, parent, name, anchor, halfSizePixels, halfSizePixels, url, color);
+        }
+
+        private void AddFittedRawImage(CuiElementContainer container, string parent, string name, string anchor,
+            float halfWidthPixels, float halfHeightPixels, string url, string color)
+        {
+            var png = ResolveImage(url);
+            if (string.IsNullOrWhiteSpace(png)) return;
+
+            var halfWidth = Mathf.Max(1f, halfWidthPixels).ToString("0.###", CultureInfo.InvariantCulture);
+            var halfHeight = Mathf.Max(1f, halfHeightPixels).ToString("0.###", CultureInfo.InvariantCulture);
+            container.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = anchor,
+                        AnchorMax = anchor,
+                        OffsetMin = "-" + halfWidth + " -" + halfHeight,
+                        OffsetMax = halfWidth + " " + halfHeight
+                    }
+                }
+            });
+        }
+
         private static void AddSpriteButton(CuiElementContainer container, string parent, string name, string anchorMin, string anchorMax,
             string command, string sprite, string color)
         {
@@ -2575,8 +2939,8 @@ namespace Oxide.Plugins
                     {
                         AnchorMin = "1 0",
                         AnchorMax = "1 0",
-                        OffsetMin = "-5 -4",
-                        OffsetMax = "6 7"
+                        OffsetMin = "-3 -3",
+                        OffsetMax = "5 5"
                     }
                 }
             });
@@ -2706,6 +3070,17 @@ namespace Oxide.Plugins
                 case "game_update": return "0.302 0.702 0.961 1";
                 case "map_wipe": return Success;
                 default: return "0.718 0.580 0.957 1";
+            }
+        }
+
+        private static string CalendarEventLabel(string type)
+        {
+            switch ((type ?? string.Empty).ToLowerInvariant())
+            {
+                case "global_wipe": return "Глобальный вайп";
+                case "game_update": return "Обновление Rust";
+                case "map_wipe": return "Вайп карты";
+                default: return "Событие";
             }
         }
 

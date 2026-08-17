@@ -168,8 +168,8 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.07 0.895",
-                               "anchormax":  "0.93 0.973"
+                               "anchormin":  "0.17 0.9033",
+                               "anchormax":  "0.83 0.9647"
                            }
                        ]
     },
@@ -185,126 +185,6 @@
                                "type":  "RectTransform",
                                "anchormin":  "0.045 0.698",
                                "anchormax":  "0.955 0.765"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.BagLeft",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.18",
-                               "anchormax":  "0.32 0.68"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.BagRight",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.68 0.18",
-                               "anchormax":  "0.76 0.68"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.BagBottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.18",
-                               "anchormax":  "0.76 0.27"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.BagTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.60",
-                               "anchormax":  "0.76 0.69"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HandleLeft",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.36 0.65",
-                               "anchormax":  "0.44 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HandleRight",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.56 0.65",
-                               "anchormax":  "0.64 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HandleTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.36 0.76",
-                               "anchormax":  "0.64 0.84"
                            }
                        ]
     },
@@ -343,156 +223,6 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Left",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.2 0.18",
-                               "anchormax":  "0.28 0.76"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Right",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.72 0.18",
-                               "anchormax":  "0.8 0.76"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Bottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.2 0.18",
-                               "anchormax":  "0.8 0.27"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Top",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.2 0.68",
-                               "anchormax":  "0.8 0.77"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Rule",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.54",
-                               "anchormax":  "0.76 0.62"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BindLeft",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.72",
-                               "anchormax":  "0.42 0.88"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BindRight",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.58 0.72",
-                               "anchormax":  "0.66 0.88"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Day1",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.36",
-                               "anchormax":  "0.43 0.46"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Day2",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.57 0.36",
-                               "anchormax":  "0.66 0.46"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Text",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
         "components":  [
@@ -523,81 +253,6 @@
                                "type":  "RectTransform",
                                "anchormin":  "0.045 0.467",
                                "anchormax":  "0.955 0.534"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Base",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.18",
-                               "anchormax":  "0.82 0.27"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Bar1",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.27",
-                               "anchormax":  "0.38 0.48"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Bar2",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.45 0.27",
-                               "anchormax":  "0.59 0.68"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Bar3",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.66 0.27",
-                               "anchormax":  "0.8 0.84"
                            }
                        ]
     },
@@ -636,226 +291,12 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Base",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.16 0.18",
-                               "anchormax":  "0.84 0.27"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Second",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.27",
-                               "anchormax":  "0.39 0.55"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.First",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.4 0.27",
-                               "anchormax":  "0.61 0.82"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Third",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.62 0.27",
-                               "anchormax":  "0.82 0.44"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Cap",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.45 0.84",
-                               "anchormax":  "0.56 0.91"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Text",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Text",
                                "text":  "ТОП ИГРОКОВ\nРЕЙТИНГ ВАЙПА",
-                               "fontSize":  11,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.72 0.69 0.75 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.285 0.08",
-                               "anchormax":  "0.94 0.92"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.045 0.313",
-                               "anchormax":  "0.955 0.380"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.Pole",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.25 0.16",
-                               "anchormax":  "0.34 0.84"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FlagTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.67",
-                               "anchormax":  "0.78 0.84"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FlagMid",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.52",
-                               "anchormax":  "0.68 0.68"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FlagTip",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.61 0.6",
-                               "anchormax":  "0.78 0.68"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.Base",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.16 0.16",
-                               "anchormax":  "0.52 0.25"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Text",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "КЛАНЫ\nКОМАНДЫ СЕРВЕРА",
                                "fontSize":  11,
                                "font":  "robotocondensed-bold.ttf",
                                "color":  "0.72 0.69 0.75 1",
@@ -878,8 +319,8 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.045 0.236",
-                               "anchormax":  "0.955 0.303"
+                               "anchormin":  "0.045 0.313",
+                               "anchormax":  "0.955 0.380"
                            }
                        ]
     },
@@ -895,141 +336,6 @@
                                "type":  "RectTransform",
                                "anchormin":  "0 0",
                                "anchormax":  "0.014 1"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.38 0.204 0.13"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Left",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.28",
-                               "anchormax":  "0.27 0.78"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Right",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.73 0.28",
-                               "anchormax":  "0.82 0.78"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Top",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.69",
-                               "anchormax":  "0.82 0.79"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Bottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.27",
-                               "anchormax":  "0.68 0.36"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Tail",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.60 0.18",
-                               "anchormax":  "0.72 0.36"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot1",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.32 0.48",
-                               "anchormax":  "0.40 0.57"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot2",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.48 0.48",
-                               "anchormax":  "0.56 0.57"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot3",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.IconBg",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.64 0.48",
-                               "anchormax":  "0.72 0.57"
                            }
                        ]
     },
@@ -1497,8 +803,10 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.05 0.05",
-                               "anchormax":  "0.95 0.95"
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "2 2",
+                               "offsetmax":  "-2 -2"
                            }
                        ]
     },
@@ -1577,8 +885,10 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.05 0.05",
-                               "anchormax":  "0.95 0.95"
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "2 2",
+                               "offsetmax":  "-2 -2"
                            }
                        ]
     },
@@ -1797,6 +1107,181 @@
                        ]
     },
     {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-store.png",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 0.13"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-support.png",
+                               "color":  "1 0.38 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-top.png",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-calendar.png",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-stats.png",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
         "components":  [
@@ -1814,119 +1299,18 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketLeft",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.Image",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
         "components":  [
                            {
-                               "type":  "UnityEngine.UI.Image",
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-battlepass.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.18 0.25",
-                               "anchormax":  "0.27 0.75",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketRight",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.73 0.25",
-                               "anchormax":  "0.82 0.75",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.22 0.67",
-                               "anchormax":  "0.78 0.76",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketBottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.22 0.24",
-                               "anchormax":  "0.78 0.33",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.Spine",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.47 0.34",
-                               "anchormax":  "0.53 0.66",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.42 0.53",
-                               "anchormax":  "0.58 0.61",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarBottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.42 0.39",
-                               "anchormax":  "0.58 0.47",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }

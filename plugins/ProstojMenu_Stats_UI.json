@@ -188,8 +188,8 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.07 0.895",
-                               "anchormax":  "0.93 0.973",
+                               "anchormin":  "0.17 0.9033",
+                               "anchormax":  "0.83 0.9647",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
@@ -207,159 +207,6 @@
                                "type":  "RectTransform",
                                "anchormin":  "0.045 0.698",
                                "anchormax":  "0.955 0.765",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.12 0.09 0.18 0.70"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.L",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.18",
-                               "anchormax":  "0.32 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.R",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.68 0.18",
-                               "anchormax":  "0.76 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.B",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.18",
-                               "anchormax":  "0.76 0.27",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.T",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.60",
-                               "anchormax":  "0.76 0.69",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HL",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.36 0.65",
-                               "anchormax":  "0.44 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HR",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.56 0.65",
-                               "anchormax":  "0.64 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HT",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.36 0.76",
-                               "anchormax":  "0.64 0.84",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
@@ -437,193 +284,6 @@
                                "type":  "RectTransform",
                                "anchormin":  "0.045 0.544",
                                "anchormax":  "0.955 0.611",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.12 0.09 0.18 0.70"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.L",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.20 0.18",
-                               "anchormax":  "0.28 0.76",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.R",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.72 0.18",
-                               "anchormax":  "0.80 0.76",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.B",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.20 0.18",
-                               "anchormax":  "0.80 0.27",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.T",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.20 0.68",
-                               "anchormax":  "0.80 0.77",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Rule",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.54",
-                               "anchormax":  "0.76 0.62",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BL",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.72",
-                               "anchormax":  "0.42 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BR",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.58 0.72",
-                               "anchormax":  "0.66 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.D1",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.36",
-                               "anchormax":  "0.43 0.46",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.D2",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.57 0.36",
-                               "anchormax":  "0.66 0.46",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
@@ -724,108 +384,6 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.922 0.047 0.208 0.22"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.B",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.18",
-                               "anchormax":  "0.82 0.27",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.A",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.24 0.27",
-                               "anchormax":  "0.38 0.48",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.C",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.45 0.27",
-                               "anchormax":  "0.59 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.D",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "1 0.380 0.204 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.66 0.27",
-                               "anchormax":  "0.80 0.84",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Title",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
         "components":  [
@@ -903,125 +461,6 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.12 0.09 0.18 0.70"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.B",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.16 0.18",
-                               "anchormax":  "0.84 0.27",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.S",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.27",
-                               "anchormax":  "0.39 0.55",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.F",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.40 0.27",
-                               "anchormax":  "0.61 0.82",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.T",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.62 0.27",
-                               "anchormax":  "0.82 0.44",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.C",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.45 0.84",
-                               "anchormax":  "0.56 0.91",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Title",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
         "components":  [
@@ -1071,202 +510,6 @@
                                "type":  "UnityEngine.UI.Button",
                                "color":  "0 0 0 0",
                                "command":  "prostojmenu.ui tab top"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.07 0.05 0.12 0.35"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.045 0.313",
-                               "anchormax":  "0.955 0.380",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.IconBg",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.12 0.09 0.18 0.70"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0 0 0 0"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.P",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.25 0.16",
-                               "anchormax":  "0.34 0.84",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FT",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.67",
-                               "anchormax":  "0.78 0.84",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FM",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.34 0.52",
-                               "anchormax":  "0.68 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.Tip",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.61 0.60",
-                               "anchormax":  "0.78 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.B",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.69 0.63 0.78 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.16 0.16",
-                               "anchormax":  "0.52 0.25",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Title",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "КЛАНЫ",
-                               "fontSize":  14,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.82 0.77 0.88 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.245 0.44",
-                               "anchormax":  "0.94 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "КОМАНДЫ СЕРВЕРА",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.47 0.42 0.56 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.245 0.10",
-                               "anchormax":  "0.94 0.46",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Button",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Button",
-                               "color":  "0 0 0 0",
-                               "command":  "prostojmenu.ui tab clans"
                            },
                            {
                                "type":  "RectTransform",
@@ -1752,696 +995,6 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.375 0.535",
-                               "anchormax":  "0.558 0.780",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.922 0.047 0.208 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/kills.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "УБИЙСТВА",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "1 284",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "+86 за неделю",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "1 0.380 0.204 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.573 0.535",
-                               "anchormax":  "0.756 0.780",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.22 0.16 0.31 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/hunter.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "ЖИВОТНЫЕ",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "342",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "лучший: медведь",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.53 0.48 0.60 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.771 0.535",
-                               "anchormax":  "0.954 0.780",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.22 0.16 0.31 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/reider.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "ВЗРЫВЧАТКА",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "96",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "C4, ракеты, сачели",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.53 0.48 0.60 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.375 0.265",
-                               "anchormax":  "0.558 0.510",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.22 0.16 0.31 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/playtime.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "ВРЕМЯ В ИГРЕ",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "67 Ч",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "текущий вайп",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.53 0.48 0.60 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.573 0.265",
-                               "anchormax":  "0.756 0.510",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.22 0.16 0.31 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/scientists.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "УЧЁНЫЕ",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "418",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "точность 38%",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.53 0.48 0.60 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.045 0.028 0.090 0.88"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.771 0.265",
-                               "anchormax":  "0.954 0.510",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Top",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.22 0.16 0.31 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0 0.975",
-                               "anchormax":  "1 1",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Image",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/awards/records/farmer.webp",
-                               "color":  "1 1 1 0.90"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.035 0.26",
-                               "anchormax":  "0.43 0.74",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Label",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "ДОБЫТО",
-                               "fontSize":  9,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.58 0.52 0.65 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.64",
-                               "anchormax":  "0.95 0.88",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Value",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "1.8М",
-                               "fontSize":  21,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.98 0.95 1 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.34",
-                               "anchormax":  "0.95 0.68",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Meta",
-        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Text",
-                               "text":  "всех ресурсов",
-                               "fontSize":  8,
-                               "font":  "robotocondensed-bold.ttf",
-                               "color":  "0.53 0.48 0.60 1",
-                               "align":  "MiddleLeft"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.46 0.12",
-                               "anchormax":  "0.95 0.35",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Main.Content.Resources",
         "parent":  "ProstojMenu.Root.Frame.Main.Content",
         "components":  [
@@ -2818,142 +1371,6 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.18 0.102 0.231 0.72"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.075 0.17",
-                               "anchormax":  "0.187 0.83",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketLeft",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.18 0.25",
-                               "anchormax":  "0.27 0.75",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketRight",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.73 0.25",
-                               "anchormax":  "0.82 0.75",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.22 0.67",
-                               "anchormax":  "0.78 0.76",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketBottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.22 0.24",
-                               "anchormax":  "0.78 0.33",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.Spine",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.47 0.34",
-                               "anchormax":  "0.53 0.66",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarTop",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.42 0.53",
-                               "anchormax":  "0.58 0.61",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarBottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
-        "components":  [
-                           {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
-                           },
-                           {
-                               "type":  "RectTransform",
-                               "anchormin":  "0.42 0.39",
-                               "anchormax":  "0.58 0.47",
-                               "offsetmin":  "0 0",
-                               "offsetmax":  "0 0"
-                           }
-                       ]
-    },
-    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
         "parent":  "ProstojMenu.Root.Frame.Sidebar",
         "components":  [
@@ -2963,8 +1380,8 @@
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.045 0.236",
-                               "anchormax":  "0.955 0.303",
+                               "anchormin":  "0.045 0.313",
+                               "anchormax":  "0.955 0.380",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
@@ -3031,6 +1448,41 @@
                        ]
     },
     {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-store.png",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
         "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
         "components":  [
@@ -3048,136 +1500,1268 @@
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Left",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Image",
         "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
         "components":  [
                            {
-                               "type":  "UnityEngine.UI.Image",
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-support.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.18 0.28",
-                               "anchormax":  "0.27 0.78",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Right",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
+                               "color":  "0.18 0.102 0.231 0.72"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.73 0.28",
-                               "anchormax":  "0.82 0.78",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Top",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
         "components":  [
                            {
-                               "type":  "UnityEngine.UI.Image",
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-top.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.18 0.69",
-                               "anchormax":  "0.82 0.79",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Bottom",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
+                               "color":  "0.18 0.102 0.231 0.72"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.18 0.27",
-                               "anchormax":  "0.68 0.36",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Tail",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
         "components":  [
                            {
-                               "type":  "UnityEngine.UI.Image",
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-calendar.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.60 0.18",
-                               "anchormax":  "0.72 0.36",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot1",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
+                               "color":  "1 0.38 0.204 0.13"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.32 0.48",
-                               "anchormax":  "0.40 0.57",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot2",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
         "components":  [
                            {
-                               "type":  "UnityEngine.UI.Image",
-                               "color":  "0.62 0.59 0.66 1"
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-stats.png",
+                               "color":  "1 0.38 0.204 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.48 0.48",
-                               "anchormax":  "0.56 0.57",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
                        ]
     },
     {
-        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot3",
-        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.Image",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-battlepass.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {
                                "type":  "RectTransform",
-                               "anchormin":  "0.64 0.48",
-                               "anchormax":  "0.72 0.57",
+                               "anchormin":  "0.12 0.12",
+                               "anchormax":  "0.88 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.375 0.675",
+                               "anchormax":  "0.568 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "УБИЙСТВА",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.0.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "1 284",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.582 0.675",
+                               "anchormax":  "0.775 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.945 0.42 0.478 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СМЕРТИ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.1.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "452",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.789 0.675",
+                               "anchormax":  "0.982 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "K/D",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.2.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "2.84",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.375 0.555",
+                               "anchormax":  "0.568 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.333 0.8 0.51 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВРЕМЯ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.3.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "67 ЧАСОВ",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.582 0.555",
+                               "anchormax":  "0.775 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.949 0.667 0.176 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "УЧЁНЫЕ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.4.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "389",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.789 0.555",
+                               "anchormax":  "0.982 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.941 0.706 0.294 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "РЕЙД",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.15",
+                               "anchormax":  "0.56 0.85",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Metric.5.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Metric.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "184.6",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.55 0.12",
+                               "anchormax":  "0.93 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.375 0.29",
+                               "anchormax":  "0.99 0.54",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Title",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "НАЙДЕНО КОНТЕЙНЕРОВ",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.025 0.82",
+                               "anchormax":  "0.7 0.97",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.025 0.46",
+                               "anchormax":  "0.243 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1016_1_0dfd250d3e2c32bca8931e5543a7b96a.webp",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "24",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КРЕЙТЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.267 0.46",
+                               "anchormax":  "0.485 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1018_1_3cb9b6c81067adf8bda075d4f3fc4ea6.webp",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "267",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЭЛИТНЫЙ ЯЩИК",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.509 0.46",
+                               "anchormax":  "0.727 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1019_1_fcbdbbe5ea8a4ad0f379b41af6bc1f43.png",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "0",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "АРМЕЙСКИЙ ЯЩИК",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.751 0.46",
+                               "anchormax":  "0.969 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1020_1_46817913f780ec6dee026b2ab96a5bac.webp",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "0",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОДВОДНЫЙ\nПРОДВИНУТЫЙ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.025 0.08",
+                               "anchormax":  "0.243 0.40",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1021_1_d667b074c9e038fd08f8c3f59f8ddadb.webp",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "11",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.0.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОДВОДНЫЙ\nБАЗОВЫЙ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.267 0.08",
+                               "anchormax":  "0.485 0.4",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/1022_1_5fe8a20475f1a4ebd47bca582e71b13b.png",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "66",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.1.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "АИРДРОП",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.509 0.08",
+                               "anchormax":  "0.727 0.4",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/863_ca8a4487be04988f2814bc8841a7c425.png",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "333",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.2.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "РАЗБИТО БОЧЕК",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.751 0.08",
+                               "anchormax":  "0.969 0.4",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1.Image",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://storage.prostoj.store/uploads/drop64/441_522b6e2b6c99a6e2e596db57ef080be6.png",
+                               "color":  "1 1 1 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.17",
+                               "anchormax":  "0.34 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "418",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.49",
+                               "anchormax":  "0.95 0.92",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1.Label",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Loot.Item.3.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ОБЫЧНЫЙ ЯЩИК",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.58 0.52 0.65 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.39 0.06",
+                               "anchormax":  "0.96 0.52",
                                "offsetmin":  "0 0",
                                "offsetmax":  "0 0"
                            }
