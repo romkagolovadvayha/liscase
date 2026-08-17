@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.6")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.7")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -582,7 +582,7 @@ namespace Oxide.Plugins
 
         private void RegisterBuiltInTabs()
         {
-            RegisterBuiltIn("store", "МАГАЗИН", "SHOP", 10);
+            RegisterBuiltIn("store", "КОРЗИНА", "CART", 10);
             RegisterBuiltIn("battlepass", "BATTLE PASS", "PASS", 20);
             RegisterBuiltIn("calendar", "КАЛЕНДАРЬ", "WIPE", 30);
             RegisterBuiltIn("stats", "МОЯ СТАТИСТИКА", "STAT", 40);
@@ -600,7 +600,7 @@ namespace Oxide.Plugins
             switch (key)
             {
                 case "store":
-                    RegisterBuiltIn("store", "МАГАЗИН", "SHOP", 10);
+                    RegisterBuiltIn("store", "КОРЗИНА", "CART", 10);
                     return true;
                 case "battlepass":
                     RegisterBuiltIn("battlepass", "BATTLE PASS", "PASS", 20);
@@ -1713,7 +1713,7 @@ namespace Oxide.Plugins
         {
             switch (icon)
             {
-                case "store": return ImageUrl("rust-menu/icons/nav-store.png");
+                case "store": return ImageUrl("rust-menu/icons/nav-cart.png");
                 case "battlepass": return ImageUrl("rust-menu/icons/nav-battlepass.png");
                 case "calendar": return ImageUrl("rust-menu/icons/nav-calendar.png");
                 case "stats": return ImageUrl("rust-menu/icons/nav-stats.png");
@@ -1726,7 +1726,7 @@ namespace Oxide.Plugins
         private static string NormalizeIcon(string key, string glyph)
         {
             var value = ((glyph ?? string.Empty) + " " + (key ?? string.Empty)).ToLowerInvariant();
-            if (value.Contains("shop") || value.Contains("store")) return "store";
+            if (value.Contains("cart") || value.Contains("basket") || value.Contains("shop") || value.Contains("store")) return "store";
             if (value.Contains("pass") || value.Contains("season") || value.Contains("task")) return "battlepass";
             if (value.Contains("wipe") || value.Contains("calendar")) return "calendar";
             if (value.Contains("stat") || value.Contains("chart")) return "stats";
@@ -1740,7 +1740,7 @@ namespace Oxide.Plugins
         {
             switch ((key ?? string.Empty).ToLowerInvariant())
             {
-                case "store": return "ПОКУПКИ И ПРИВИЛЕГИИ";
+                case "store": return "ВАШИ ПОКУПКИ";
                 case "battlepass": return "СЕЗОННЫЕ НАГРАДЫ";
                 case "calendar": return "ВАЙПЫ И ОБНОВЛЕНИЯ";
                 case "stats": return "ПРОГРЕСС ИГРОКА";
@@ -1944,7 +1944,7 @@ namespace Oxide.Plugins
                 case "stats": RenderStats(player, view.Snapshot); break;
                 case "top": RenderLeaderboard(player, view.Snapshot); break;
                 case "clans": RenderClans(player, view.Snapshot); break;
-                case "store": RenderEmptyState(player, "МАГАЗИН ПОДКЛЮЧАЕТСЯ", "Установите или перезагрузите ProstojRUST — вкладка зарегистрируется автоматически.", AccentWarm, StoreCartImageUrl); break;
+                case "store": RenderEmptyState(player, "КОРЗИНА ПОДКЛЮЧАЕТСЯ", "Установите или перезагрузите ProstojRUST — вкладка зарегистрируется автоматически.", AccentWarm, StoreCartImageUrl); break;
                 default: RenderEmptyState(player, "МОДУЛЬ НЕ ПОДКЛЮЧЁН", "Плагин вкладки сейчас недоступен.", TextSecondary); break;
             }
         }
@@ -2680,7 +2680,7 @@ namespace Oxide.Plugins
             EnsureImage(settings.BackgroundImageUrl);
             EnsureImage(BrandLogoUrl());
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
-            EnsureImage(ImageUrl("rust-menu/icons/nav-store.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"));

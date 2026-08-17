@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.9")]
+    [Info("ProstojRUST", "prostoj.store", "0.7.10")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -714,7 +714,7 @@ namespace Oxide.Plugins
 
         private void RegisterMenuTab()
         {
-            ProstojMenu?.Call("API_RegisterTab", this, "store", "МАГАЗИН", "SHOP", 10);
+            ProstojMenu?.Call("API_RegisterTab", this, "store", "КОРЗИНА", "CART", 10);
         }
 
         private void RefreshMenuTheme()
@@ -1128,7 +1128,7 @@ namespace Oxide.Plugins
 
             if (!Initialized || initialization)
             {
-                DrawMenuStoreMessage(player, parent, "МАГАЗИН ЗАПУСКАЕТСЯ", "Подождите завершения синхронизации с магазином.", "1 0.38 0.204 1");
+                DrawMenuStoreMessage(player, parent, "КОРЗИНА ЗАГРУЖАЕТСЯ", "Подождите завершения синхронизации с магазином.", "1 0.38 0.204 1");
                 return true;
             }
 
@@ -1168,7 +1168,7 @@ namespace Oxide.Plugins
                         ShowNotify(player, "Не удалось обновить покупки");
                         return;
                     }
-                    DrawMenuStoreMessage(player, parent, "МАГАЗИН НЕДОСТУПЕН", "Не удалось получить покупки. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
+                    DrawMenuStoreMessage(player, parent, "КОРЗИНА НЕДОСТУПНА", "Не удалось получить покупки. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
                     return;
                 }
 
@@ -1185,7 +1185,7 @@ namespace Oxide.Plugins
                         ShowNotify(player, "Не удалось обновить покупки");
                         return;
                     }
-                    DrawMenuStoreMessage(player, parent, "МАГАЗИН НЕДОСТУПЕН", "Сервер магазина вернул некорректный ответ. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
+                    DrawMenuStoreMessage(player, parent, "КОРЗИНА НЕДОСТУПНА", "Сервер магазина вернул некорректный ответ. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
                     return;
                 }
                 if (data == null || !data.ContainsKey("result") || data["result"]?.ToString() != "success")
@@ -1237,7 +1237,7 @@ namespace Oxide.Plugins
 
             var ui = new CuiElementContainer();
             MenuAddPanel(ui, parent, MenuStoreLayer, "0 0", "1 1", "0 0 0 0");
-            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Title", "0 0.89", "0.62 1", "МАГАЗИН", 24, "0.925 0.894 0.953 1", TextAnchor.MiddleLeft, "robotocondensed-bold.ttf");
+            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Title", "0 0.89", "0.62 1", "КОРЗИНА", 24, "0.925 0.894 0.953 1", TextAnchor.MiddleLeft, "robotocondensed-bold.ttf");
             MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Badge", "0.77 0.9", "1 0.98", "1 0.38 0.204 0.12");
             MenuAddLabel(ui, MenuStoreLayer + ".Badge", MenuStoreLayer + ".Badge.Text", "0.05 0", "0.95 1", basket.Count + " ПОКУПОК В КОРЗИНЕ", 10, "1 0.38 0.204 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
 

@@ -194,7 +194,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.Text",
-                               "text":  "МАГАЗИН\nПОКУПКИ И ПРИВИЛЕГИИ",
+                               "text":  "КОРЗИНА\nВАШИ ПОКУПКИ",
                                "fontSize":  11,
                                "font":  "robotocondensed-bold.ttf",
                                "color":  "0.72 0.69 0.75 1",
@@ -1129,7 +1129,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-store.png",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-cart.png",
                                "color":  "0.62 0.59 0.66 1"
                            },
                            {

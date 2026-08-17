@@ -3427,7 +3427,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-store.png",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/icons/nav-cart.png",
                                "color":  "1 0.38 0.204 1"
                            },
                            {
