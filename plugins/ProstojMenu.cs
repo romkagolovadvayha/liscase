@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.6")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.7")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1604,22 +1604,17 @@ namespace Oxide.Plugins
                 var yMin = yMax - height;
                 var active = string.Equals(tab.Key, view.ActiveTab, StringComparison.OrdinalIgnoreCase);
                 var root = Sidebar + ".Nav." + tab.Key;
-                AddButton(ui, Navigation, root, F(0.045f, yMin), F(0.955f, yMax), active ? "1 0.38 0.204 0.10" : "0 0 0 0",
+                AddButton(ui, Navigation, root, F(0f, yMin), F(1f, yMax), active ? "1 0.38 0.204 0.10" : "0 0 0 0",
                     "prostojmenu.ui tab " + tab.Key, string.Empty, 1, TextMain);
-                if (active)
-                {
-                    AddPanel(ui, root, root + ".Active", "0 0", "0.014 1", AccentWarm);
-                    AddPanel(ui, root, root + ".ActiveTop", "0.014 0.975", "1 1", "1 0.38 0.204 0.38");
-                }
                 AddNavigationIcon(ui, root, tab, active);
-                AddLabel(ui, root, root + ".Text", "0.285 0.43", "0.94 0.86", tab.Title, 14, active ? TextMain : "0.72 0.69 0.75 1", TextAnchor.MiddleLeft, FontBold);
-                AddLabel(ui, root, root + ".Meta", "0.285 0.12", "0.94 0.45", NavigationMeta(tab.Key), 9, active ? AccentWarm : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+                AddLabel(ui, root, root + ".Text", "0.304 0.43", "0.90 0.86", tab.Title, 14, active ? TextMain : "0.72 0.69 0.75 1", TextAnchor.MiddleLeft, FontBold);
+                AddLabel(ui, root, root + ".Meta", "0.304 0.12", "0.90 0.45", NavigationMeta(tab.Key), 9, active ? AccentWarm : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
                 var supportUnread = view.Support != null
                     ? view.Support.UnreadCount
                     : view.Snapshot != null && view.Snapshot.Support != null ? view.Snapshot.Support.UnreadCount : 0;
                 if (string.Equals(tab.Key, "support", StringComparison.OrdinalIgnoreCase) && supportUnread > 0)
                 {
-                    AddPanel(ui, root, root + ".Unread", "0.84 0.52", "0.94 0.86", Accent);
+                    AddPanel(ui, root, root + ".Unread", "0.809 0.52", "0.90 0.86", Accent);
                     AddLabel(ui, root + ".Unread", root + ".Unread.Text", "0 0", "1 1", supportUnread >= 100 ? "99+" : supportUnread.ToString(CultureInfo.InvariantCulture), 9, TextMain, TextAnchor.MiddleCenter, FontBold);
                 }
             }
@@ -1656,7 +1651,7 @@ namespace Oxide.Plugins
             var color = active ? AccentWarm : "0.62 0.59 0.66 1";
             // The icon canvas and the source images are square, so the original
             // proportions survive at every supported resolution.
-            AddPanel(ui, parent, root, "0.075 0.17", "0.187 0.83", active ? "1 0.38 0.204 0.13" : "0.18 0.102 0.231 0.72");
+            AddPanel(ui, parent, root, "0.113 0.17", "0.215 0.83", active ? "1 0.38 0.204 0.13" : "0.18 0.102 0.231 0.72");
 
             var icon = NormalizeIcon(tab.Key, tab.Glyph);
             var imageUrl = NavigationIconUrl(icon);
