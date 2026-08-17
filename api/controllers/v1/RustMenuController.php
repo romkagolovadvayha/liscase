@@ -32,16 +32,19 @@ class RustMenuController extends BaseApiController
     {
         [$server, $steamId] = $this->authenticatePlayerRequest();
 
+        // Opening the trusted in-game menu also selects the server on the
+        // website. Do this before the snapshot cache lookup so a cached menu
+        // response cannot leave the account attached to a different server.
+        $user = User::find()
+            ->andWhere(['steam_id' => $steamId])
+            ->one();
+        $this->syncUserServer($user, $server);
+
         $cacheKey = 'api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v6');
         $cached = Yii::$app->cache->get($cacheKey);
         if (is_array($cached)) {
             return $this->successResponse($cached, ['cached' => true]);
         }
-
-        $user = User::find()
-            ->with('userProfile')
-            ->andWhere(['steam_id' => $steamId])
-            ->one();
 
         $wipe = $server->currentWipe();
         $stats = $this->buildPlayerStats($server, $steamId, $wipe);
@@ -79,6 +82,26 @@ class RustMenuController extends BaseApiController
         Yii::$app->cache->set($cacheKey, $payload, 30);
 
         return $this->successResponse($payload, ['cached' => false]);
+    }
+
+    /**
+     * Keep the website's selected server aligned with the trusted Rust server.
+     * The server secret is verified before this method is reached, and the
+     * write only happens on an actual mismatch.
+     */
+    private function syncUserServer(?User $user, Servers $server): void
+    {
+        if (!$user || (int) $user->server_id === (int) $server->id) {
+            return;
+        }
+
+        $user->server_id = (int) $server->id;
+        if (!$user->save(false, ['server_id'])) {
+            Yii::warning(
+                'RustMenu could not sync website server for user ' . (int) $user->id,
+                'rust-menu'
+            );
+        }
     }
 
     /**

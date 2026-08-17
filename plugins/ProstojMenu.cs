@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.1")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.2")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -2490,7 +2490,8 @@ namespace Oxide.Plugins
             if (support == null)
             {
                 AddPanel(ui, Content + ".Body", Content + ".Support.State", "0 0.08", "1 0.82", BgSecondary);
-                AddPanel(ui, Content + ".Support.State", Content + ".Support.State.Mark", "0.475 0.59", "0.525 0.67", view.SupportError == null ? AccentWarm : Danger);
+                AddSquareRawImage(ui, Content + ".Support.State", Content + ".Support.State.Icon", "0.5 0.64", 27f,
+                    ImageUrl("rust-menu/icons/nav-support.png"), "1 1 1 0.55");
                 AddLabel(ui, Content + ".Support.State", Content + ".Support.State.Title", "0.1 0.43", "0.9 0.58",
                     view.SupportError == null ? "ЗАГРУЖАЕМ ДИАЛОГ" : "ПОДДЕРЖКА НЕДОСТУПНА", 21, TextMain, TextAnchor.MiddleCenter, FontBold);
                 AddLabel(ui, Content + ".Support.State", Content + ".Support.State.Text", "0.16 0.29", "0.84 0.44",
@@ -2645,10 +2646,10 @@ namespace Oxide.Plugins
         {
             var ui = new CuiElementContainer();
             AddPanel(ui, Content + ".Body", Content + ".Empty", "0 0.05", "1 0.95", BgSecondary);
-            if (!string.IsNullOrWhiteSpace(iconUrl))
-                AddSquareRawImage(ui, Content + ".Empty", Content + ".Empty.Icon", "0.5 0.65", 27f, iconUrl, "1 1 1 0.55");
-            else
-                AddPanel(ui, Content + ".Empty", Content + ".Empty.Mark", "0.47 0.61", "0.53 0.69", color);
+            var stateIconUrl = string.IsNullOrWhiteSpace(iconUrl)
+                ? ImageUrl("rust-menu/icons/action-refresh.png")
+                : iconUrl;
+            AddSquareRawImage(ui, Content + ".Empty", Content + ".Empty.Icon", "0.5 0.65", 27f, stateIconUrl, "1 1 1 0.55");
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Title", "0.12 0.45", "0.88 0.61", title, 22, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Text", "0.16 0.28", "0.84 0.47", CleanText(text), 13, TextSecondary, TextAnchor.UpperCenter, FontRegular);
             AddButton(ui, Content + ".Empty", Content + ".Empty.Refresh", "0.39 0.13", "0.61 0.23", Accent, "prostojmenu.ui refresh", "ОБНОВИТЬ", 12, TextMain);
