@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.8.0")]
+    [Info("ProstojRUST", "prostoj.store", "0.8.1")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -1721,7 +1721,6 @@ namespace Oxide.Plugins
                     var leftTime = selected.Block_Date - CurrentTime();
                     if (selected.Blocked || leftTime > 0)
                     {
-                        ShowNotify(player, _(player, "TAKE.ITEM.BLOCKED", FormatLeftTime(leftTime)));
                         return;
                     }
                 }
@@ -1729,26 +1728,22 @@ namespace Oxide.Plugins
 
             if (ListBannedCommandUserID.Contains(player.userID))
             {
-                ShowNotify(player, _(player, "PlayerFloodBlock"));
                 ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                 return;
             }
 
             if (player.IsDead() || player.IsWounded())
             {
-                ShowNotify(player, "Игрок мертв или ранен");
                 ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                 return;
             }
 
-            ShowNotify(player, _(player, "TAKE.REQUEST.PROCESSING"));
             ShowItemStateOverlay(player, index, basketId, "TAKE.WAIT", "1 1 1 0.2", "1 1 1 0.4", false);
 
             Request($"&method=item&item=true&steam_id={player.UserIDString}&id={basketId}", (code, response) =>
             {
                 if (code != 200 || string.IsNullOrEmpty(response))
                 {
-                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
                     ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                     return;
                 }
@@ -1761,13 +1756,11 @@ namespace Oxide.Plugins
                 catch (Exception exception)
                 {
                     PrintWarning("Store item response parse failed: " + exception.Message);
-                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
                     ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                     return;
                 }
                 if (data == null || !data.ContainsKey("data"))
                 {
-                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
                     ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                     return;
                 }
@@ -1789,13 +1782,11 @@ namespace Oxide.Plugins
 
                     if (markData?["result"]?.ToString() != "success")
                     {
-                        ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
                         ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
                         return;
                     }
 
                     ProcessTake(player, data["data"] as Dictionary<string, object>);
-                    ShowNotify(player, _(player, "TAKE.GIVE.SUCCESS"));
                     ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.SUCCESS", "0.5 1 0.5 0.2", "0.7 1 0.7 1", false);
 
                     if (playerBaskets.TryGetValue(player.userID, out var list))
