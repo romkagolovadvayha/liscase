@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.13")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.14")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1900,14 +1900,15 @@ namespace Oxide.Plugins
         {
             if (view.BattlePass == null && view.BattlePassLoading)
             {
-                RenderEmptyState(player, "ЗАГРУЖАЕМ BATTLE PASS", "Получаем сезон, прогресс и награды…", AccentWarm);
+                RenderEmptyState(player, "ЗАГРУЖАЕМ BATTLE PASS", "Получаем сезон, прогресс и награды…", AccentWarm,
+                    ImageUrl("rust-menu/icons/nav-battlepass.png"));
                 return;
             }
             if (view.BattlePass == null)
             {
                 RenderEmptyState(player, "BATTLE PASS НЕДОСТУПЕН",
                     string.IsNullOrWhiteSpace(view.BattlePassError) ? "Активный сезон пока не найден." : view.BattlePassError,
-                    Danger);
+                    Danger, ImageUrl("rust-menu/icons/nav-battlepass.png"));
                 return;
             }
 
