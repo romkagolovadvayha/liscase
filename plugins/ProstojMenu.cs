@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.11")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.12")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1824,7 +1824,7 @@ namespace Oxide.Plugins
             AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.735 0.22", "0.915 0.78", "0 0 0 0");
             var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
             AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 19, TextMain, TextAnchor.MiddleRight, FontBold);
-            AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.76 0.18", "0.95 0.82", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
+            AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.798 0.308", "0.912 0.692", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
             // Add last inside the dynamic header so later header renders cannot cover it.
             AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.9345 0.34", "0.965 0.66",
                 "prostojmenu.ui close", "assets/icons/close.png", TextMain);
