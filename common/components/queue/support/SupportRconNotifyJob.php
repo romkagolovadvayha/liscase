@@ -13,7 +13,8 @@ use yii\queue\JobInterface;
  */
 class SupportRconNotifyJob extends BaseObject implements JobInterface
 {
-    private const SOUND_PREFAB = 'assets/prefabs/missions/effects/mission_objective_complete.prefab';
+    // Bundled notice effect is always available on the client and does not depend on an asset scene.
+    private const SOUND_PREFAB = 'assets/bundled/prefabs/fx/notice/item.select.fx.prefab';
     private const MAX_MESSAGE_LENGTH = 700;
 
     /** @var int ID сообщения поддержки */
