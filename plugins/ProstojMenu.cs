@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.16")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.17")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -2200,7 +2200,7 @@ namespace Oxide.Plugins
             AddSectionHeading(ui, "СТАТИСТИКА ИГРОКА", "Боевой профиль и прогресс текущего вайпа", "LIVE PROFILE");
 
             var portrait = Content + ".Stats.Portrait";
-            AddPanel(ui, Content + ".Body", portrait, "0 0.035", "0.295 0.835", "0.031 0.008 0.141 0.58");
+            AddPanel(ui, Content + ".Body", portrait, "0 0.055", "0.295 0.855", "0.031 0.008 0.141 0.58");
             AddPanel(ui, portrait, portrait + ".Glow", "0.02 0.02", "0.98 0.52", "0.922 0.047 0.208 0.13");
             var playerProfile = snapshot != null ? snapshot.Player : null;
             var avatarUrl = playerProfile != null ? (playerProfile.Avatar ?? string.Empty).Trim() : string.Empty;
@@ -2214,7 +2214,7 @@ namespace Oxide.Plugins
                 AddLabel(ui, portrait + ".AvatarSurface", portrait + ".AvatarInitial", "0 0", "1 1", playerInitial, 58, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, portrait, portrait + ".Status", "0.07 0.26", "0.93 0.34", "АКТИВНЫЙ ИГРОК", 9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
             AddPanel(ui, portrait, portrait + ".Info", "0.05 0.035", "0.95 0.225", "0.031 0.008 0.141 0.88");
-            AddLabel(ui, portrait + ".Info", portrait + ".Name", "0.06 0.67", "0.94 0.94", playerName, 14, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, portrait + ".Info", portrait + ".Name", "0.06 0.67", "0.94 0.94", playerName, 10, TextMain, TextAnchor.MiddleLeft, FontBold);
             AddLabel(ui, portrait + ".Info", portrait + ".Meta", "0.06 0.36", "0.94 0.68",
                 "K/D  " + stats.Kd.ToString("0.00", CultureInfo.InvariantCulture) + "   •   ВРЕМЯ  " + FormatPlaytime(stats.Playtime),
                 9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
