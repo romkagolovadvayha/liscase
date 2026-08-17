@@ -161,10 +161,7 @@ class m260817_164000_fix_battle_pass_statistics_keys extends Migration
             throw new RuntimeException("Battle Pass task #{$position} is not a statistics task.");
         }
 
-        $params = Json::decode((string)$task['check_params'], true);
-        if (!is_array($params)) {
-            throw new RuntimeException("Battle Pass task #{$position} has invalid check_params.");
-        }
+        $params = $this->decodeParams($task['check_params'], $position);
 
         $currentKeys = $this->normalizeKeys((string)($params['stat_key'] ?? ''));
         if ($currentKeys === $newKeys) {
@@ -284,5 +281,39 @@ class m260817_164000_fix_battle_pass_statistics_keys extends Migration
     private function normalizeKeys(string $keys): array
     {
         return array_values(array_filter(array_map('trim', explode(',', $keys))));
+    }
+
+    /**
+     * Older environments contain values that were JSON-encoded twice. Decode
+     * a bounded number of layers so both the legacy and normalized formats are
+     * accepted without hiding genuinely invalid task configuration.
+     *
+     * @param mixed $value
+     */
+    private function decodeParams($value, int $position): array
+    {
+        $params = $value;
+
+        for ($depth = 0; $depth < 3 && is_string($params); $depth++) {
+            if (trim($params) === '') {
+                break;
+            }
+
+            try {
+                $params = Json::decode($params, true);
+            } catch (Throwable $exception) {
+                throw new RuntimeException(
+                    "Battle Pass task #{$position} has invalid check_params.",
+                    0,
+                    $exception
+                );
+            }
+        }
+
+        if (!is_array($params)) {
+            throw new RuntimeException("Battle Pass task #{$position} has invalid check_params.");
+        }
+
+        return $params;
     }
 }
