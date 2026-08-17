@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.5")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.6")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -273,7 +273,7 @@ namespace Oxide.Plugins
         private class BattlePassRewardItemData
         {
             [JsonProperty("id")] public int Id;
-            [JsonProperty("item_id")] public int ItemId;
+            [JsonProperty("item_id")] public int? ItemId;
             [JsonProperty("name")] public string Name;
             [JsonProperty("image")] public string Image;
             [JsonProperty("count")] public int Count;
@@ -2055,8 +2055,8 @@ namespace Oxide.Plugins
             // 60% of the card width equals 43.7% of its height at 1920x1080,
             // so item and medal artwork stays square instead of stretching.
             AddPanel(ui, root, root + ".RewardSurface", "0.20 0.39", "0.80 0.827", "0.031 0.008 0.141 0.58");
-            if (task.RewardItem != null && task.RewardItem.ItemId != 0)
-                AddItemIcon(ui, root + ".RewardSurface", root + ".RewardItem", "0.08 0.08", "0.92 0.92", task.RewardItem.ItemId,
+            if (task.RewardItem != null && task.RewardItem.ItemId.GetValueOrDefault() != 0)
+                AddItemIcon(ui, root + ".RewardSurface", root + ".RewardItem", "0.08 0.08", "0.92 0.92", task.RewardItem.ItemId.Value,
                     completed ? "1 1 1 0.62" : "1 1 1 1");
             else if (task.RewardItem != null && !string.IsNullOrWhiteSpace(task.RewardItem.Image))
                 AddRawImage(ui, root + ".RewardSurface", root + ".Reward", "0.08 0.08", "0.92 0.92", BattlePassImageUrl(task.RewardItem.Image), completed ? "1 1 1 0.62" : "1 1 1 1");
