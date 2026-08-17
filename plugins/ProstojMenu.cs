@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.12")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.13")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1819,7 +1819,7 @@ namespace Oxide.Plugins
             AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Accent, 2f);
 
             AddLabel(ui, Header + ".Dynamic", Header + ".Title", "0.105 0.51", "0.70 0.88", cleanPlayerName.ToUpperInvariant(), 18, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.105 0.15", "0.70 0.5", CleanText(serverName), 12, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.105 0.24", "0.70 0.55", CleanText(serverName), 12, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
             AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.735 0.22", "0.915 0.78", "0 0 0 0");
             var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
