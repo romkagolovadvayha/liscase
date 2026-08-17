@@ -112,3 +112,16 @@ private object ProstojMenu_Render(BasePlayer player, string parent, int page)
 `ProstojMenu_UI.json` — статический макет вкладки календаря для Rust CUI Editor: месячная сетка, события, легенда, единый фон и sidebar. `ProstojMenu_Stats_UI.json` — отдельный макет статистики с персонажем, наградами и ресурсами. Они нужны для визуальной проверки и не загружаются игровым плагином во время работы.
 
 В календаре команды `prostojmenu.ui calendar_prev` и `prostojmenu.ui calendar_next` переключают месяцы. Сетка и цветовые категории повторяют календарь на странице сервера: глобальный вайп — оранжевый, обновление — синий, вайп карты — зелёный, текущая дата — красная рамка.
+
+## Визуальные темы
+
+Один и тот же `ProstojMenu.cs` поддерживает две темы. В `oxide/config/ProstojMenu.json` задайте:
+
+```json
+"Visual theme (prostoj or moscow77)": "prostoj"
+```
+
+- `prostoj` — фиолетово-красная тема Prostoj, логотип Prostoj и фон `prostoj-command-center-v3.jpg`;
+- `moscow77` — чёрно-изумрудная тема Moscow77, логотип Moscow77 и фон `moscow77-command-center-v1.jpg`.
+
+После изменения значения выполните `oxide.reload ProstojMenu`. Известные встроенные URL фона переключаются автоматически. Пользовательский URL, не совпадающий со встроенными фонами, сохраняется. Активные логотип и фон при первом запуске загружаются с сайта в `oxide/data/ProstojMenu/Images/`, а при последующих запусках читаются локально.

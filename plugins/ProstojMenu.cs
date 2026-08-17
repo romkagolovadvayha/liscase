@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.17")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -34,8 +34,12 @@ namespace Oxide.Plugins
         private const string ImageCacheDirectory = "ProstojMenu/Images";
         private const int MaxConcurrentImageDownloads = 3;
         private const string StoreCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
-        private const string MenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v3.jpg";
+        private const string ProstojMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v3.jpg";
+        private const string MoscowMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/moscow77-command-center-v1.jpg";
+        private const string ProstojLogoImageUrl = "https://prostoj.store/images/rust-menu/prostoj-logo-transparent.png";
+        private const string MoscowLogoImageUrl = "https://prostoj.store/images/rust-menu/moscow77-logo.png";
         private const string LegacyMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v2.jpg";
+        private static bool useMoscowVisualTheme;
 
         private const string BgMain = "0.031 0.008 0.141 0.985";       // #080224
         private const string BgSecondary = "0.098 0.063 0.176 1";     // #19102d
@@ -96,8 +100,11 @@ namespace Oxide.Plugins
             [JsonProperty("Require permission")]
             public bool RequirePermission;
 
+            [JsonProperty("Visual theme (prostoj or moscow77)")]
+            public string VisualTheme = "prostoj";
+
             [JsonProperty("Background artwork URL")]
-            public string BackgroundImageUrl = MenuBackgroundImageUrl;
+            public string BackgroundImageUrl = ProstojMenuBackgroundImageUrl;
 
             [JsonProperty("Website images base URL")]
             public string ImagesBaseUrl = "https://prostoj.store/images";
@@ -486,10 +493,14 @@ namespace Oxide.Plugins
                 settings.CalendarApiUrl = "https://api.prostoj.store/v1/wipe-calendar/server";
             settings.ServerTag = (settings.ServerTag ?? string.Empty).Trim();
             settings.ChatCommand = string.IsNullOrWhiteSpace(settings.ChatCommand) ? "menu" : settings.ChatCommand.Trim();
+            settings.VisualTheme = NormalizeVisualTheme(settings.VisualTheme);
+            useMoscowVisualTheme = string.Equals(settings.VisualTheme, "moscow77", StringComparison.Ordinal);
             settings.BackgroundImageUrl = (settings.BackgroundImageUrl ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(settings.BackgroundImageUrl) ||
-                string.Equals(settings.BackgroundImageUrl, LegacyMenuBackgroundImageUrl, StringComparison.OrdinalIgnoreCase))
-                settings.BackgroundImageUrl = MenuBackgroundImageUrl;
+                string.Equals(settings.BackgroundImageUrl, LegacyMenuBackgroundImageUrl, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(settings.BackgroundImageUrl, ProstojMenuBackgroundImageUrl, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(settings.BackgroundImageUrl, MoscowMenuBackgroundImageUrl, StringComparison.OrdinalIgnoreCase))
+                settings.BackgroundImageUrl = useMoscowVisualTheme ? MoscowMenuBackgroundImageUrl : ProstojMenuBackgroundImageUrl;
             settings.ImagesBaseUrl = (settings.ImagesBaseUrl ?? string.Empty).Trim().TrimEnd('/');
             SaveConfig();
         }
@@ -1548,7 +1559,7 @@ namespace Oxide.Plugins
             {
                 CursorEnabled = true,
                 KeyboardEnabled = true,
-                Image = { Color = "0.012 0.008 0.035 0.86", Material = "assets/content/ui/uibackgroundblur.mat" },
+                Image = { Color = ThemeColor("0.012 0.008 0.035 0.86"), Material = "assets/content/ui/uibackgroundblur.mat" },
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
             }, "Overlay", Root, Root);
 
@@ -1586,11 +1597,17 @@ namespace Oxide.Plugins
 
         private void AddBrand(CuiElementContainer ui)
         {
+            if (useMoscowVisualTheme)
+            {
+                AddFittedRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.5 0.934", 100f, 30.5f,
+                    BrandLogoUrl(), "1 1 1 1");
+                return;
+            }
+
             AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.17 0.9033", "0.83 0.9647",
-                ImageUrl("rust-menu/prostoj-logo-transparent.png"), "1 1 1 1");
+                BrandLogoUrl(), "1 1 1 1");
             // Rust may sample a colored texel into the transparent right padding of
-            // a RawImage. Cover only that empty padding; the visible logo ends left
-            // of this mask, so its proportions and artwork remain unchanged.
+            // the Prostoj RawImage. Cover only that empty padding.
             AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.824 0.9033", "0.834 0.9647", "0.098 0.063 0.176 0.94");
         }
 
@@ -2626,7 +2643,7 @@ namespace Oxide.Plugins
         private void PreloadMenuImages()
         {
             EnsureImage(settings.BackgroundImageUrl);
-            EnsureImage(ImageUrl("rust-menu/prostoj-logo-transparent.png"));
+            EnsureImage(BrandLogoUrl());
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-store.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"));
@@ -2885,6 +2902,11 @@ namespace Oxide.Plugins
             return settings.ImagesBaseUrl + "/" + (relativePath ?? string.Empty).TrimStart('/');
         }
 
+        private string BrandLogoUrl()
+        {
+            return useMoscowVisualTheme ? MoscowLogoImageUrl : ProstojLogoImageUrl;
+        }
+
         private string BattlePassImageUrl(string value)
         {
             value = (value ?? string.Empty).Trim();
@@ -2940,7 +2962,7 @@ namespace Oxide.Plugins
         {
             container.Add(new CuiPanel
             {
-                Image = { Color = color },
+                Image = { Color = ThemeColor(color) },
                 RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax, OffsetMin = offsetMin, OffsetMax = offsetMax }
             }, parent, name, name);
         }
@@ -2955,7 +2977,7 @@ namespace Oxide.Plugins
                 Parent = parent,
                 Components =
                 {
-                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRawImageComponent { Png = png, Color = ThemeColor(color) },
                     new CuiRectTransformComponent { AnchorMin = anchorMin, AnchorMax = anchorMax }
                 }
             });
@@ -2980,7 +3002,7 @@ namespace Oxide.Plugins
                 Parent = parent,
                 Components =
                 {
-                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRawImageComponent { Png = png, Color = ThemeColor(color) },
                     new CuiRectTransformComponent
                     {
                         AnchorMin = anchor,
@@ -3002,7 +3024,7 @@ namespace Oxide.Plugins
                 Parent = name,
                 Components =
                 {
-                    new CuiImageComponent { Sprite = sprite, Color = color },
+                    new CuiImageComponent { Sprite = sprite, Color = ThemeColor(color) },
                     // Keep the sprite pixel-square even when its transparent
                     // button hitbox is stretched by a non-16:9 resolution.
                     new CuiRectTransformComponent
@@ -3024,7 +3046,7 @@ namespace Oxide.Plugins
                 Parent = parent,
                 Components =
                 {
-                    new CuiImageComponent { Sprite = "assets/icons/circle_closed.png", Color = Success },
+                    new CuiImageComponent { Sprite = "assets/icons/circle_closed.png", Color = ThemeColor(Success) },
                     new CuiRectTransformComponent
                     {
                         AnchorMin = "1 0",
@@ -3040,7 +3062,7 @@ namespace Oxide.Plugins
         {
             container.Add(new CuiPanel
             {
-                Image = { Color = color },
+                Image = { Color = ThemeColor(color) },
                 RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax }
             }, parent, name, name);
         }
@@ -3050,7 +3072,7 @@ namespace Oxide.Plugins
         {
             container.Add(new CuiLabel
             {
-                Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = color, Align = align, Font = font },
+                Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = ThemeColor(color), Align = align, Font = font },
                 RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax }
             }, parent, name, name);
         }
@@ -3060,8 +3082,8 @@ namespace Oxide.Plugins
         {
             container.Add(new CuiButton
             {
-                Button = { Color = color, Command = command },
-                Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = textColor, Align = TextAnchor.MiddleCenter, Font = FontBold },
+                Button = { Color = ThemeColor(color), Command = command },
+                Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = ThemeColor(textColor), Align = TextAnchor.MiddleCenter, Font = FontBold },
                 RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax }
             }, parent, name, name);
         }
@@ -3083,7 +3105,7 @@ namespace Oxide.Plugins
                         FontSize = fontSize,
                         Font = FontRegular,
                         Align = TextAnchor.MiddleLeft,
-                        Color = color,
+                        Color = ThemeColor(color),
                         NeedsKeyboard = true
                     },
                     new CuiRectTransformComponent { AnchorMin = anchorMin, AnchorMax = anchorMax }
@@ -3095,6 +3117,67 @@ namespace Oxide.Plugins
         {
             if (string.IsNullOrWhiteSpace(value)) return string.Empty;
             return new string(value.Trim().ToLowerInvariant().Where(character => char.IsLetterOrDigit(character) || character == '_' || character == '-').ToArray());
+        }
+
+        private static string NormalizeVisualTheme(string value)
+        {
+            var normalized = NormalizeKey(value);
+            return normalized == "moscow" || normalized == "moscow77" || normalized == "emerald"
+                ? "moscow77"
+                : "prostoj";
+        }
+
+        private static string ThemeColor(string color)
+        {
+            if (!useMoscowVisualTheme || string.IsNullOrWhiteSpace(color)) return color;
+
+            switch (color)
+            {
+                case BgMain: return "0.012 0.047 0.035 0.985";
+                case BgSecondary: return "0.027 0.082 0.063 1";
+                case BgTertiary: return "0.047 0.133 0.102 1";
+                case BgRaised: return "0.035 0.106 0.080 1";
+                case TextMain: return "0.902 0.945 0.929 1";
+                case TextSecondary: return "0.545 0.620 0.588 1";
+                case Border: return "0.133 0.286 0.231 1";
+                case Accent: return "0.000 0.718 0.494 1";
+                case AccentWarm: return "0.196 0.678 0.537 1";
+                case Success: return "0.216 0.820 0.588 1";
+                case FrameBorder: return "0.145 0.510 0.396 0.82";
+                case "0.012 0.008 0.035 0.86": return "0.004 0.020 0.015 0.88";
+                case "0.025 0.008 0.09 0.42": return "0.004 0.045 0.032 0.46";
+                case "0.098 0.063 0.176 0.94": return "0.027 0.082 0.063 0.94";
+                case "0.098 0.063 0.176 0.92": return "0.027 0.082 0.063 0.92";
+                case "0.098 0.063 0.176 0.90": return "0.027 0.082 0.063 0.90";
+                case "0.098 0.063 0.176 0.88": return "0.027 0.082 0.063 0.88";
+                case "0.031 0.008 0.141 0.88": return "0.012 0.047 0.035 0.88";
+                case "0.031 0.008 0.141 0.86": return "0.012 0.047 0.035 0.86";
+                case "0.031 0.008 0.141 0.73": return "0.012 0.047 0.035 0.76";
+                case "0.031 0.008 0.141 0.72": return "0.012 0.047 0.035 0.74";
+                case "0.031 0.008 0.141 0.68": return "0.012 0.047 0.035 0.70";
+                case "0.031 0.008 0.141 0.64": return "0.012 0.047 0.035 0.66";
+                case "0.031 0.008 0.141 0.58": return "0.012 0.047 0.035 0.60";
+                case "0.031 0.008 0.141 0.56": return "0.012 0.047 0.035 0.58";
+                case "0.031 0.008 0.141 0.50": return "0.012 0.047 0.035 0.52";
+                case "0.031 0.008 0.141 0.46": return "0.012 0.047 0.035 0.48";
+                case "0.031 0.008 0.141 0.44": return "0.012 0.047 0.035 0.46";
+                case "0.031 0.008 0.141 0.34": return "0.012 0.047 0.035 0.36";
+                case "0.18 0.102 0.231 0.98": return "0.047 0.133 0.102 0.98";
+                case "0.18 0.102 0.231 0.72": return "0.047 0.133 0.102 0.72";
+                case "0.18 0.102 0.231 0.62": return "0.047 0.133 0.102 0.62";
+                case "0.18 0.102 0.231 0.35": return "0.047 0.133 0.102 0.38";
+                case "0.133 0.086 0.216 0.56": return "0.035 0.106 0.080 0.56";
+                case "1 0.38 0.204 0.13": return "0.196 0.678 0.537 0.15";
+                case "1 0.38 0.204 0.12": return "0.196 0.678 0.537 0.14";
+                case "1 0.38 0.204 0.10": return "0.196 0.678 0.537 0.12";
+                case "0.922 0.047 0.208 0.16": return "0.000 0.718 0.494 0.16";
+                case "0.922 0.047 0.208 0.13": return "0.000 0.718 0.494 0.13";
+                case "0.922 0.047 0.208 0.12": return "0.000 0.718 0.494 0.12";
+                case "0.922 0.047 0.208 0.035": return "0.000 0.718 0.494 0.045";
+                case "0.72 0.69 0.75 1": return "0.64 0.71 0.68 1";
+                case "0.62 0.59 0.66 1": return "0.48 0.61 0.55 1";
+                default: return color;
+            }
         }
 
         private static string F(float x, float y) => x.ToString("0.####", CultureInfo.InvariantCulture) + " " + y.ToString("0.####", CultureInfo.InvariantCulture);
