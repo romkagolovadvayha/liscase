@@ -1,0 +1,9 @@
+{
+  "API URL (without trailing slash)": "https://api.moscow77.store/v1/cash-race",
+  "Server tag": "max2",
+  "Private preview Steam ID": "76561198394504608",
+  "Status poll seconds": 30.0,
+  "Website assets URL": "https://moscow77.store/images/cash-race",
+  "Chat prefix": "<color=#36ad89>[ДЕНЕЖНАЯ ГОНКА]</color>",
+  "Debug logging": false
+}

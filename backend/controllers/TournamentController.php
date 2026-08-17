@@ -109,7 +109,7 @@ class TournamentController extends BackendController
     public function actionUpdate($id)
     {
         $model = TournamentForm::find()
-            ->where(['id' => (int)$id])
+            ->where(['id' => (int)$id, 'type' => Tournament::TYPE_CLAN])
             ->with('rewards')
             ->one();
         if (!$model) {
@@ -155,7 +155,7 @@ class TournamentController extends BackendController
     protected function findModel($id): Tournament
     {
         $model = Tournament::find()
-            ->where(['id' => (int)$id])
+            ->where(['id' => (int)$id, 'type' => Tournament::TYPE_CLAN])
             ->with(['server', 'rewards'])
             ->one();
         if (!$model) {

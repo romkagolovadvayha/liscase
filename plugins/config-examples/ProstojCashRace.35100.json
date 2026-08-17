@@ -1,0 +1,9 @@
+{
+  "API URL (without trailing slash)": "https://api.prostoj.store/v1/cash-race",
+  "Server tag": "classic14x2",
+  "Private preview Steam ID": "76561198394504608",
+  "Status poll seconds": 30.0,
+  "Website assets URL": "https://prostoj.store/images/cash-race",
+  "Chat prefix": "<color=#72b883>[ДЕНЕЖНАЯ ГОНКА]</color>",
+  "Debug logging": false
+}

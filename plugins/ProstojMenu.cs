@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.3.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.4.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -813,7 +813,8 @@ namespace Oxide.Plugins
                 case "tab":
                     if (view == null || !view.Open || arg.Args.Length < 2) return;
                     var key = NormalizeKey(arg.Args[1].ToString());
-                    if (!tabs.ContainsKey(key)) return;
+                    MenuTab selectedTab;
+                    if (!tabs.TryGetValue(key, out selectedTab) || !CanViewTab(player, selectedTab)) return;
                     view.ActiveTab = key;
                     view.Page = 0;
                     RenderNavigation(player, view);
@@ -944,7 +945,8 @@ namespace Oxide.Plugins
         private void OpenMenu(BasePlayer player, string requestedTab, bool forceRefresh)
         {
             var key = NormalizeKey(requestedTab);
-            if (!tabs.ContainsKey(key)) key = "calendar";
+            MenuTab requested;
+            if (!tabs.TryGetValue(key, out requested) || !CanViewTab(player, requested)) key = "calendar";
 
             PlayerView view;
             if (!views.TryGetValue(player.userID, out view))
@@ -1695,7 +1697,7 @@ namespace Oxide.Plugins
 
             AddBrand(ui);
             AddPanel(ui, Sidebar, Navigation, "0 0", "1 1", "0 0 0 0");
-            AddNavigation(ui, view);
+            AddNavigation(ui, player, view);
             // Draw the frame last so the sidebar, artwork and main surface cannot
             // cover individual sides. Pixel offsets keep all four edges identical.
             AddOutline(ui, Frame, Frame + ".Border", FrameBorder, 2f);
@@ -1710,7 +1712,7 @@ namespace Oxide.Plugins
             CuiHelper.DestroyUi(player, Navigation);
             var ui = new CuiElementContainer();
             AddPanel(ui, Sidebar, Navigation, "0 0", "1 1", "0 0 0 0");
-            AddNavigation(ui, view);
+            AddNavigation(ui, player, view);
             CuiHelper.AddUi(player, ui);
         }
 
@@ -1730,9 +1732,9 @@ namespace Oxide.Plugins
             AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.727 0.9125", "0.734 0.9555", "0.098 0.063 0.176 0.94");
         }
 
-        private void AddNavigation(CuiElementContainer ui, PlayerView view)
+        private void AddNavigation(CuiElementContainer ui, BasePlayer player, PlayerView view)
         {
-            var ordered = tabs.Values.OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).Take(7).ToList();
+            var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).Take(7).ToList();
             var top = 0.855f;
             var height = ordered.Count > 5 ? 0.067f : 0.078f;
             const float gap = 0.01f;
@@ -1759,6 +1761,22 @@ namespace Oxide.Plugins
             }
 
             AddSidebarStatus(ui, view);
+        }
+
+        private bool CanViewTab(BasePlayer player, MenuTab tab)
+        {
+            if (player == null || tab == null) return false;
+            if (tab.Owner == null) return true;
+            try
+            {
+                var result = tab.Owner.Call("ProstojMenu_CanView", player);
+                return !(result is bool) || (bool)result;
+            }
+            catch (Exception exception)
+            {
+                PrintWarning("Tab visibility check failed for '" + tab.Key + "': " + exception.Message);
+                return false;
+            }
         }
 
         private void AddSidebarStatus(CuiElementContainer ui, PlayerView view)
@@ -1810,6 +1828,7 @@ namespace Oxide.Plugins
                 case "stats": return ImageUrl("rust-menu/icons/nav-stats.png");
                 case "top": return ImageUrl("rust-menu/icons/nav-top.png");
                 case "support": return ImageUrl("rust-menu/icons/nav-support.png");
+                case "tournament": return ImageUrl("rust-menu/icons/nav-tournament.png");
                 default: return null;
             }
         }
@@ -1824,6 +1843,7 @@ namespace Oxide.Plugins
             if (value.Contains("top") || value.Contains("rank") || value.Contains("leader")) return "top";
             if (value.Contains("clan") || value.Contains("team") || value.Contains("flag")) return "clans";
             if (value.Contains("support") || value.Contains("help") || value.Contains("chat")) return "support";
+            if (value.Contains("key") || value.Contains("tournament") || value.Contains("race")) return "tournament";
             return "grid";
         }
 
@@ -1831,6 +1851,7 @@ namespace Oxide.Plugins
         {
             switch ((key ?? string.Empty).ToLowerInvariant())
             {
+                case "tournament": return "КЛЮЧИ И ТЕРМИНАЛ";
                 case "store": return "ВАШИ ПОКУПКИ";
                 case "battlepass": return "СЕЗОННЫЕ НАГРАДЫ";
                 case "calendar": return "ВАЙПЫ И ОБНОВЛЕНИЯ";
@@ -1981,7 +2002,7 @@ namespace Oxide.Plugins
             CuiHelper.AddUi(player, ui);
 
             MenuTab tab;
-            if (!tabs.TryGetValue(view.ActiveTab, out tab))
+            if (!tabs.TryGetValue(view.ActiveTab, out tab) || !CanViewTab(player, tab))
             {
                 view.ActiveTab = "calendar";
                 tab = tabs[view.ActiveTab];
@@ -2777,6 +2798,7 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-tournament.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));

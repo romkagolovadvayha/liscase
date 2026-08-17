@@ -38,7 +38,7 @@ class TournamentSearch extends Tournament
      */
     public function search(array $params): ActiveDataProvider
     {
-        $query = Tournament::find()->with('server');
+        $query = Tournament::find()->where(['type' => Tournament::TYPE_CLAN])->with('server');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,

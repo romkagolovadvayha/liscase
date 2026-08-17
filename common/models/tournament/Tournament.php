@@ -35,6 +35,8 @@ use yii\helpers\Inflector;
  */
 class Tournament extends ActiveRecord
 {
+    public const TYPE_CLAN = 'clan';
+    public const TYPE_CASH_RACE = 'cash_race';
     public const STATUS_DRAFT = 'draft';
     public const STATUS_PUBLISHED = 'published';
     public const STATUS_ARCHIVED = 'archived';
@@ -68,6 +70,8 @@ class Tournament extends ActiveRecord
             [['prize_pool_label', 'format_label'], 'string', 'max' => 255],
             [['cover_image'], 'string', 'max' => 512],
             [['status'], 'in', 'range' => [self::STATUS_DRAFT, self::STATUS_PUBLISHED, self::STATUS_ARCHIVED]],
+            [['type'], 'in', 'range' => [self::TYPE_CLAN, self::TYPE_CASH_RACE]],
+            [['type'], 'default', 'value' => self::TYPE_CLAN],
             [['status'], 'default', 'value' => self::STATUS_DRAFT],
             [['sort'], 'default', 'value' => 0],
             [['tags'], 'safe'],
@@ -150,6 +154,11 @@ class Tournament extends ActiveRecord
     {
         return $this->hasMany(TournamentRanking::class, ['tournament_id' => 'id'])
             ->orderBy(['position' => SORT_ASC]);
+    }
+
+    public function getCashRace()
+    {
+        return $this->hasOne(CashRaceTournament::class, ['tournament_id' => 'id']);
     }
 
     public function isPubliclyVisible(): bool
@@ -281,7 +290,7 @@ class Tournament extends ActiveRecord
             return null;
         }
         return static::find()
-            ->where(['slug' => $slug, 'status' => self::STATUS_PUBLISHED])
+            ->where(['slug' => $slug, 'status' => self::STATUS_PUBLISHED, 'type' => self::TYPE_CLAN])
             ->with(['server', 'rewards'])
             ->one();
     }

@@ -51,7 +51,7 @@ class TournamentsController extends BaseApiController
 
         $query = Tournament::find()
             ->alias('t')
-            ->where(['t.status' => Tournament::STATUS_PUBLISHED])
+            ->where(['t.status' => Tournament::STATUS_PUBLISHED, 't.type' => Tournament::TYPE_CLAN])
             ->with(['server', 'rewards']);
 
         if ($q !== '') {
@@ -63,7 +63,7 @@ class TournamentsController extends BaseApiController
         }
 
         $allPublished = Tournament::find()
-            ->where(['status' => Tournament::STATUS_PUBLISHED])
+            ->where(['status' => Tournament::STATUS_PUBLISHED, 'type' => Tournament::TYPE_CLAN])
             ->all();
         $stats = [
             'total' => count($allPublished),

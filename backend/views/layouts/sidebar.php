@@ -134,6 +134,12 @@ if ($moder) {
         'url' => ['/tournament/index'],
         'active' => _checkActive('/tournament'),
     ];
+    $moderationItems[] = [
+        'label' => 'Денежная гонка',
+        'icon' => 'fas fa-key',
+        'url' => ['/cash-race/index'],
+        'active' => _checkActive('/cash-race'),
+    ];
 }
 if ($moder) {
     $moderationItems[] = [

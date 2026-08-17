@@ -25,6 +25,7 @@ class UserMedal extends ActiveRecord
     public const SOURCE_BATTLE_PASS = 'battle_pass';
     public const SOURCE_ANNUAL_PLAYTIME = 'annual_playtime';
     public const SOURCE_ANNUAL_SERVER_RECORD = 'annual_server_record';
+    public const SOURCE_CASH_RACE = 'cash_race';
 
     public static function tableName()
     {

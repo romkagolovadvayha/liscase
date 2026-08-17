@@ -165,6 +165,15 @@ $config = [
                 'v1/tournaments/<slug:[\w-]+>' => 'v1/tournaments/view',
                 'v1/tournaments' => 'v1/tournaments/index',
 
+                // Cash Race (private preview on website; server actions are scoped to a configured server/player).
+                'v1/cash-race' => 'v1/cash-race/index',
+                'v1/cash-race/plugin/status' => 'v1/cash-race/plugin-status',
+                ['pattern' => 'v1/cash-race/plugin/mint', 'route' => 'v1/cash-race/plugin-mint', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/cash-race/plugin/lost', 'route' => 'v1/cash-race/plugin-lost', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/cash-race/plugin/terminal/open', 'route' => 'v1/cash-race/plugin-terminal-open', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/cash-race/plugin/terminal/close', 'route' => 'v1/cash-race/plugin-terminal-close', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/cash-race/plugin/deposit', 'route' => 'v1/cash-race/plugin-deposit', 'verb' => ['POST', 'OPTIONS']],
+
                 // Settings (site-definitions — до index, иначе перехватит общий v1/settings)
                 'v1/settings/site-definitions' => 'v1/settings/site-definitions',
                 'v1/settings' => 'v1/settings/index',
