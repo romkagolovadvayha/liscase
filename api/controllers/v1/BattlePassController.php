@@ -104,6 +104,18 @@ class BattlePassController extends TasksController
         return $this->successResponse($payload);
     }
 
+    /**
+     * Reuses the exact website payload for trusted in-game integrations.
+     * Authentication remains the caller's responsibility; RustMenu validates
+     * the server secret and resolves the Steam user before calling this method.
+     */
+    public function buildRustMenuPayload(BattlePassSeason $season, ?User $user): array
+    {
+        return $user instanceof User
+            ? $this->buildPayload($season, $user)
+            : $this->buildPublicPayload($season);
+    }
+
     public function actionDetail($id)
     {
         $user = $this->getCurrentUser();

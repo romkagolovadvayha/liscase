@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -10,16 +11,18 @@ using Oxide.Core.Libraries;
 using Oxide.Core.Plugins;
 using Oxide.Game.Rust.Cui;
 using UnityEngine;
-using WebSocketSharp;
+
+#pragma warning disable 0649 // PluginReference fields are injected by Oxide.
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.4.5")]
+    [Info("ProstojRUST", "prostoj.store", "0.6.0")]
     public class ProstojRUST : RustPlugin
     {
         #region References
 
         [PluginReference] private Plugin ImageLibrary;
+        [PluginReference] private Plugin ProstojMenu;
 
         #endregion
 
@@ -268,33 +271,34 @@ namespace Oxide.Plugins
                         }
                     }
 
-                    var imageLibrary = instance.plugins.Find("ImageLibrary");
-                    if (imageLibrary != null)
+                    if (!string.IsNullOrEmpty(ImageUrl) && ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                     {
-                        //if (ItemID == 0)
-                        //{
-                            if ((bool)imageLibrary.Call("HasImage", $"IconGS.{ID}"))
+                        if (instance.ProstojMenu != null)
+                        {
+                            instance.ProstojMenu.Call("API_CacheImage", ImageUrl);
+                        }
+                        else
+                        {
+                            var imageLibrary = instance.plugins.Find("ImageLibrary");
+                            if (imageLibrary != null)
                             {
-                                string probablyId = (string)imageLibrary.Call("GetImage", $"IconGS.{ID}");
-                                if (!probablyId.IsNullOrEmpty() && probablyId != instance.NoImageID && probablyId != instance.LoadingImageID)
-                                    ImageUrl = probablyId;
-                                return;
-                            }
+                                var imageKey = $"IconGS.{ID}";
+                                if ((bool)imageLibrary.Call("HasImage", imageKey))
+                                {
+                                    var cachedImageId = imageLibrary.Call("GetImage", imageKey) as string;
+                                    if (!string.IsNullOrEmpty(cachedImageId) && cachedImageId != instance.NoImageID && cachedImageId != instance.LoadingImageID)
+                                    {
+                                        ImageUrl = cachedImageId;
+                                        return;
+                                    }
+                                }
 
-                            if (!ImageUrl.IsNullOrEmpty())
-                            {
-                                imageLibrary.Call("AddImage", ImageUrl.Replace("https", "http"), $"IconGS.{ID}");
+                                imageLibrary.Call("AddImage", ImageUrl.Replace("https", "http"), imageKey);
                             }
-                        //}
-                        //else
-                        //{
-                        //    string probablyId = (string)imageLibrary.Call("GetImage", ShortName);
-                        //    if (!probablyId.IsNullOrEmpty() && probablyId != instance.NoImageID && probablyId != instance.LoadingImageID)
-                        //        ImageUrl = probablyId;
-                        //}
+                        }
                     }
                 }
-                catch (NullReferenceException e)
+                catch (NullReferenceException)
                 {
                     Interface.Oxide.LogError(JsonConvert.SerializeObject(data));
                 }
@@ -354,6 +358,9 @@ namespace Oxide.Plugins
         private const string StoreLayer = "ProstojRUST.Store";
         private const string HelpLayer = "ProstojRUST.Help";
         private const string IconLayer = "ProstojRUST.Icon";
+        private const string MenuStoreLayer = "ProstojMenu.Content.Store";
+        private readonly Dictionary<ulong, string> menuStoreParents = new Dictionary<ulong, string>();
+        private readonly Dictionary<ulong, int> menuStorePages = new Dictionary<ulong, int>();
         private string MainApiLink => NormalizeLegacyShopRoot(Settings?.APISettings?.LegacyShopApiRoot);
         private string ReserveApiLink
         {
@@ -373,12 +380,12 @@ namespace Oxide.Plugins
         }
 
         //private string BaseRequest => $"https://gamestores.app/api/?shop_id={Settings.APISettings.ShopID}&secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
-        private string BaseRequestParams => $"?secret={Settings.APISettings.SecretKey}{(!Settings.APISettings.ServerID.IsNullOrEmpty() && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
+        private string BaseRequestParams => $"?secret={Settings.APISettings.SecretKey}{(!string.IsNullOrEmpty(Settings.APISettings.ServerID) && Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "1" && Settings.APISettings.ServerID != "UNDEFINED" ? $"&server={Settings.APISettings.ServerID}" : "")}";
         private string BaseRequest = "";
         #endregion
 
         #region Language
-        private void LoadDefaultMessages()
+        protected override void LoadDefaultMessages()
         {
             lang.RegisterMessages(new Dictionary<string, string>()
             {
@@ -502,6 +509,7 @@ namespace Oxide.Plugins
         private int TryImageCounter = 0;
         private void OnServerInitialized()
         {
+            RegisterMenuTab();
             BaseRequest = MainApiLink + BaseRequestParams;
             if (Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "UNDEFINED")
             {
@@ -531,7 +539,12 @@ namespace Oxide.Plugins
                 LoadingImageID = (string)ImageLibrary.Call("GetImage", "LOADING");
             }
 
-            if (Settings.InterfaceSettings.BucketURL.Contains("http") && plugins.Find("ImageLibrary") != null)
+            if (Settings.InterfaceSettings.BucketURL.Contains("http") && ProstojMenu != null)
+            {
+                ProstojMenu.Call("API_CacheImage", Settings.InterfaceSettings.BucketURL);
+                LoadingCoroutine = ServerMgr.Instance.StartCoroutine(WaitForMenuImageLoad(Settings.InterfaceSettings.BucketURL));
+            }
+            else if (Settings.InterfaceSettings.BucketURL.Contains("http") && plugins.Find("ImageLibrary") != null)
             {
                 ImageLibrary.Call("AddImage", Settings.InterfaceSettings.BucketURL, "ProstojRUSTBucket");
                 LoadingCoroutine = ServerMgr.Instance.StartCoroutine(WaitForLoad());
@@ -544,9 +557,6 @@ namespace Oxide.Plugins
                     OnPlayerConnected(BasePlayer.activePlayerList[i]);
                 }
             }
-
-			if (plugins.Find("ImageLibrary") != null && ImageLibrary != null && !(bool)ImageLibrary.Call("HasImage", $"blueprintbase"))
-				ImageLibrary.Call("AddImage", "http://gamestores.ru/img/games/rust/blueprintbase.png", "blueprintbase");
 
             instance = this;
             Settings.TOPSettings.UseTop = false; //Принудительное отключение топа игроков
@@ -609,6 +619,19 @@ namespace Oxide.Plugins
             yield return 0;
         }
 
+        private IEnumerator WaitForMenuImageLoad(string url)
+        {
+            var attempts = 0;
+            while (string.IsNullOrEmpty(ResolveMenuImage(url)) && attempts < 30)
+            {
+                attempts++;
+                yield return new WaitForSeconds(1);
+            }
+
+            for (var i = 0; i < BasePlayer.activePlayerList.Count; i++)
+                OnPlayerConnected(BasePlayer.activePlayerList[i]);
+        }
+
         protected override void LoadConfig()
         {
             base.LoadConfig();
@@ -637,6 +660,10 @@ namespace Oxide.Plugins
         {
             //if (Initialized) StatHandler.SendStats();
 
+            ProstojMenu?.Call("API_UnregisterTab", this, "store");
+            menuStoreParents.Clear();
+            menuStorePages.Clear();
+
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
             foreach (var pl in BasePlayer.activePlayerList)
             {
@@ -650,8 +677,36 @@ namespace Oxide.Plugins
 
         #region Hooks
 
+        private void OnPluginLoaded(Plugin plugin)
+        {
+            if (plugin != null && plugin.Name == "ProstojMenu")
+            {
+                ProstojMenu = plugin;
+                RegisterMenuTab();
+                if (Settings != null && Settings.InterfaceSettings != null &&
+                    Settings.InterfaceSettings.BucketURL.Contains("http"))
+                {
+                    ProstojMenu.Call("API_CacheImage", Settings.InterfaceSettings.BucketURL);
+                    LoadingCoroutine = ServerMgr.Instance.StartCoroutine(WaitForMenuImageLoad(Settings.InterfaceSettings.BucketURL));
+                }
+            }
+        }
+
+        private void OnPluginUnloaded(Plugin plugin)
+        {
+            if (plugin != null && plugin.Name == "ProstojMenu")
+                ProstojMenu = null;
+        }
+
+        private void RegisterMenuTab()
+        {
+            ProstojMenu?.Call("API_RegisterTab", this, "store", "МАГАЗИН", "SHOP", 10);
+        }
+
         private void OnPlayerDisconnected(BasePlayer player, string reason)
         {
+            menuStoreParents.Remove(player.userID);
+            menuStorePages.Remove(player.userID);
             StatHandler.AddStat(new StatHandler.TimeStat(player));
         }
 
@@ -816,6 +871,12 @@ namespace Oxide.Plugins
         [ChatCommand("store")]
         private void CmdChatStore(BasePlayer player, string command, string[] args)
         {
+            if (ProstojMenu != null)
+            {
+                ProstojMenu.Call("API_Open", player, "store");
+                return;
+            }
+
             if (!Initialized || initialization)
             {
                 player.ChatMessage(_(player, "PluginNotInitialized"));
@@ -858,6 +919,29 @@ namespace Oxide.Plugins
                 {
                     CuiHelper.DestroyUi(player, StoreLayer);
                     CuiHelper.DestroyUi(player, HelpLayer);
+                    break;
+                }
+                case "menu_page":
+                {
+                    var page = Math.Max(0, args.GetInt(1));
+                    DrawMenuStore(player, page, false);
+                    break;
+                }
+                case "menu_refresh":
+                {
+                    RequestMenuBasket(player, 0);
+                    break;
+                }
+                case "menu_take":
+                {
+                    var index = Math.Max(0, args.GetInt(1));
+                    var basketId = args.GetInt(2);
+                    RequestTakeFromBasket(player, index, basketId);
+                    timer.Once(1.5f, () =>
+                    {
+                        if (player != null && player.IsConnected && IsMenuStoreActive(player))
+                            RequestMenuBasket(player, menuStorePages.ContainsKey(player.userID) ? menuStorePages[player.userID] : 0);
+                    });
                     break;
                 }
             }
@@ -1009,6 +1093,215 @@ namespace Oxide.Plugins
 
         private int BasketItemsPerPage => Settings.InterfaceSettings.ItemOnString * Settings.InterfaceSettings.StringAmount;
 
+        private const int MenuBasketItemsPerPage = 8;
+
+        private object ProstojMenu_Render(BasePlayer player, string parent, int page)
+        {
+            if (player == null || string.IsNullOrEmpty(parent)) return false;
+            menuStoreParents[player.userID] = parent;
+            menuStorePages[player.userID] = Math.Max(0, page);
+
+            if (!Initialized || initialization)
+            {
+                DrawMenuStoreMessage(player, parent, "МАГАЗИН ЗАПУСКАЕТСЯ", "Подождите завершения синхронизации с магазином.", "1 0.38 0.204 1");
+                return true;
+            }
+
+            if (playerBaskets.ContainsKey(player.userID))
+                DrawMenuStore(player, page, false);
+            else
+                RequestMenuBasket(player, page);
+            return true;
+        }
+
+        private bool IsMenuStoreActive(BasePlayer player)
+        {
+            if (player == null || ProstojMenu == null || !menuStoreParents.ContainsKey(player.userID)) return false;
+            var result = ProstojMenu.Call("API_IsTabActive", player, "store");
+            return result is bool && (bool)result;
+        }
+
+        private void RequestMenuBasket(BasePlayer player, int page)
+        {
+            string parent;
+            if (player == null || !menuStoreParents.TryGetValue(player.userID, out parent)) return;
+            page = Math.Max(0, page);
+            menuStorePages[player.userID] = page;
+            DrawMenuStoreMessage(player, parent, "ЗАГРУЖАЕМ ПОКУПКИ", "Синхронизируем корзину с prostoj.store…", "1 0.38 0.204 1");
+
+            Request($"&method=basket&basket=true&steam_id={player.UserIDString}", (code, response) =>
+            {
+                if (player == null || !player.IsConnected || !IsMenuStoreActive(player)) return;
+                if (code != 200 || string.IsNullOrEmpty(response))
+                {
+                    DrawMenuStoreMessage(player, parent, "МАГАЗИН НЕДОСТУПЕН", "Не удалось получить покупки. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
+                    return;
+                }
+
+                Dictionary<string, object> data;
+                try
+                {
+                    data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
+                }
+                catch (Exception exception)
+                {
+                    PrintWarning("Store basket response parse failed: " + exception.Message);
+                    DrawMenuStoreMessage(player, parent, "МАГАЗИН НЕДОСТУПЕН", "Сервер магазина вернул некорректный ответ. Попробуйте обновить вкладку.", "0.945 0.42 0.478 1");
+                    return;
+                }
+                if (data == null || !data.ContainsKey("result") || data["result"]?.ToString() != "success")
+                {
+                    DrawMenuStoreMessage(player, parent, "НУЖНА АВТОРИЗАЦИЯ", "Авторизуйтесь на prostoj.store через Steam, затем обновите вкладку.", "0.945 0.42 0.478 1");
+                    return;
+                }
+
+                var newItems = new List<WItem>();
+                var list = data.ContainsKey("data") ? data["data"] as List<object> : null;
+                if (list != null)
+                {
+                    foreach (var obj in list)
+                    {
+                        var raw = obj as Dictionary<string, object>;
+                        if (raw == null) continue;
+                        var item = new WItem(raw);
+                        if (!string.IsNullOrEmpty(item.ID)) newItems.Add(item);
+                    }
+                }
+
+                playerBaskets[player.userID] = newItems;
+                DrawMenuStore(player, page, false);
+            }, player);
+        }
+
+        private void DrawMenuStore(BasePlayer player, int page, bool request)
+        {
+            string parent;
+            if (player == null || !menuStoreParents.TryGetValue(player.userID, out parent)) return;
+            if (request)
+            {
+                RequestMenuBasket(player, page);
+                return;
+            }
+
+            CuiHelper.DestroyUi(player, MenuStoreLayer);
+            List<WItem> basket;
+            if (!playerBaskets.TryGetValue(player.userID, out basket)) basket = new List<WItem>();
+            var pageCount = Math.Max(1, (int)Math.Ceiling(basket.Count / (double)MenuBasketItemsPerPage));
+            page = Math.Max(0, Math.Min(page, pageCount - 1));
+            menuStorePages[player.userID] = page;
+            var pageItems = basket.Skip(page * MenuBasketItemsPerPage).Take(MenuBasketItemsPerPage).ToList();
+
+            var ui = new CuiElementContainer();
+            MenuAddPanel(ui, parent, MenuStoreLayer, "0 0", "1 1", "0 0 0 0");
+            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Title", "0 0.89", "0.62 1", "МАГАЗИН", 24, "0.925 0.894 0.953 1", TextAnchor.MiddleLeft, "robotocondensed-bold.ttf");
+            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Subtitle", "0 0.83", "0.7 0.9", "Ваши покупки с prostoj.store — заберите их прямо в игре", 11, "0.561 0.561 0.561 1", TextAnchor.MiddleLeft, "robotocondensed-regular.ttf");
+            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Badge", "0.77 0.9", "1 0.98", "1 0.38 0.204 0.12");
+            MenuAddLabel(ui, MenuStoreLayer + ".Badge", MenuStoreLayer + ".Badge.Text", "0.05 0", "0.95 1", basket.Count + " ПОКУПОК В КОРЗИНЕ", 10, "1 0.38 0.204 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
+
+            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Grid", "0 0.115", "1 0.80", "0.098 0.063 0.176 1");
+            for (var i = 0; i < pageItems.Count; i++)
+            {
+                var item = pageItems[i];
+                var column = i % 4;
+                var row = i / 4;
+                var xMin = 0.025f + column * 0.245f;
+                var xMax = xMin + 0.225f;
+                var yMax = 0.95f - row * 0.47f;
+                var yMin = yMax - 0.41f;
+                var root = MenuStoreLayer + ".Grid.item." + i;
+                MenuAddPanel(ui, MenuStoreLayer + ".Grid", root, MenuF(xMin, yMin), MenuF(xMax, yMax), "0.18 0.102 0.231 1");
+                // Store assets and Rust item icons are square. Keep the visual slot square
+                // instead of stretching them across the full width of the product card.
+                MenuAddPanel(ui, root, root + ".ImageBg", "0.25 0.28", "0.75 0.94", "0.031 0.008 0.141 0.75");
+
+                if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
+                {
+                    ui.Add(new CuiElement
+                    {
+                        Parent = root + ".ImageBg",
+                        Components =
+                        {
+                            new CuiImageComponent { ItemId = item.ItemID },
+                            new CuiRectTransformComponent { AnchorMin = "0.06 0.06", AnchorMax = "0.94 0.94" }
+                        }
+                    });
+                }
+                else if (!string.IsNullOrEmpty(item.ImageUrl))
+                {
+                    var imageId = ResolveMenuImage(item.ImageUrl);
+                    if (!string.IsNullOrEmpty(imageId)) ui.Add(new CuiElement
+                    {
+                        Parent = root + ".ImageBg",
+                        Components =
+                        {
+                            new CuiRawImageComponent { Png = imageId },
+                            new CuiRectTransformComponent { AnchorMin = "0.06 0.06", AnchorMax = "0.94 0.94" }
+                        }
+                    });
+                }
+
+                MenuAddLabel(ui, root, root + ".Name", "0.06 0.1", "0.76 0.27", MenuUiText(string.IsNullOrWhiteSpace(item.Name) ? "Покупка" : item.Name), 12, "0.925 0.894 0.953 1", TextAnchor.MiddleLeft, "robotocondensed-bold.ttf");
+                MenuAddLabel(ui, root, root + ".Amount", "0.76 0.1", "0.94 0.27", "×" + Math.Max(1, item.Amount), 12, "1 0.38 0.204 1", TextAnchor.MiddleRight, "robotocondensed-bold.ttf");
+                var basketId = 0;
+                int.TryParse(item.ID, out basketId);
+                MenuAddButton(ui, root, root + ".Action", "0 0", "1 1", "0 0 0 0", $"UI_ProstojRUST menu_take {i} {basketId}", string.Empty, 1, "1 1 1 0");
+
+                var blockedLeft = item.Block_Date - CurrentTime();
+                if (item.Blocked || blockedLeft > 0)
+                {
+                    MenuAddPanel(ui, root, root + ".Blocked", "0 0", "1 1", "0.922 0.047 0.208 0.58");
+                    MenuAddLabel(ui, root + ".Blocked", root + ".Blocked.Text", "0.08 0.2", "0.92 0.8", "ЗАБЛОКИРОВАНО\n" + FormatLeftTime(blockedLeft), 11, "0.925 0.894 0.953 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
+                }
+            }
+
+            if (pageItems.Count == 0)
+            {
+                MenuAddLabel(ui, MenuStoreLayer + ".Grid", MenuStoreLayer + ".Grid.Empty", "0.1 0.2", "0.9 0.8", "КОРЗИНА ПУСТА\n<size=12><color=#8f8f8f>Купленные товары появятся здесь автоматически</color></size>", 18, "0.925 0.894 0.953 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
+            }
+
+            MenuAddButton(ui, MenuStoreLayer, MenuStoreLayer + ".Refresh", "0 0.015", "0.17 0.085", "0.18 0.102 0.231 1", "UI_ProstojRUST menu_refresh", "ОБНОВИТЬ", 11, "0.925 0.894 0.953 1");
+            MenuAddButton(ui, MenuStoreLayer, MenuStoreLayer + ".Prev", "0.41 0.015", "0.46 0.085", page > 0 ? "0.18 0.102 0.231 1" : "0.18 0.102 0.231 0.35", page > 0 ? $"UI_ProstojRUST menu_page {page - 1}" : string.Empty, "‹", 20, "0.925 0.894 0.953 1");
+            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Page", "0.46 0.015", "0.54 0.085", (page + 1) + " / " + pageCount, 12, "0.561 0.561 0.561 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
+            MenuAddButton(ui, MenuStoreLayer, MenuStoreLayer + ".Next", "0.54 0.015", "0.59 0.085", page + 1 < pageCount ? "0.18 0.102 0.231 1" : "0.18 0.102 0.231 0.35", page + 1 < pageCount ? $"UI_ProstojRUST menu_page {page + 1}" : string.Empty, "›", 20, "0.925 0.894 0.953 1");
+            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Site", "0.72 0.015", "1 0.085", string.IsNullOrWhiteSpace(ShopURL) ? "PROSTOJ.STORE" : ShopURL.ToUpperInvariant(), 11, "1 0.38 0.204 1", TextAnchor.MiddleRight, "robotocondensed-bold.ttf");
+            CuiHelper.AddUi(player, ui);
+        }
+
+        private void DrawMenuStoreMessage(BasePlayer player, string parent, string title, string text, string color)
+        {
+            CuiHelper.DestroyUi(player, MenuStoreLayer);
+            var ui = new CuiElementContainer();
+            MenuAddPanel(ui, parent, MenuStoreLayer, "0 0", "1 1", "0 0 0 0");
+            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Message", "0 0.05", "1 0.95", "0.098 0.063 0.176 1");
+            MenuAddPanel(ui, MenuStoreLayer + ".Message", MenuStoreLayer + ".Message.Mark", "0.47 0.61", "0.53 0.69", color);
+            MenuAddLabel(ui, MenuStoreLayer + ".Message", MenuStoreLayer + ".Message.Title", "0.12 0.45", "0.88 0.61", title, 22, "0.925 0.894 0.953 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
+            MenuAddLabel(ui, MenuStoreLayer + ".Message", MenuStoreLayer + ".Message.Text", "0.16 0.28", "0.84 0.47", text, 13, "0.561 0.561 0.561 1", TextAnchor.UpperCenter, "robotocondensed-regular.ttf");
+            MenuAddButton(ui, MenuStoreLayer + ".Message", MenuStoreLayer + ".Message.Refresh", "0.39 0.13", "0.61 0.23", "0.922 0.047 0.208 1", "UI_ProstojRUST menu_refresh", "ОБНОВИТЬ", 12, "0.925 0.894 0.953 1");
+            CuiHelper.AddUi(player, ui);
+        }
+
+        private static void MenuAddPanel(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string color)
+        {
+            ui.Add(new CuiPanel { Image = { Color = color }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+        }
+
+        private static void MenuAddLabel(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string text, int size, string color, TextAnchor align, string font)
+        {
+            ui.Add(new CuiLabel { Text = { Text = text ?? string.Empty, FontSize = size, Color = color, Align = align, Font = font }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+        }
+
+        private static void MenuAddButton(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string color, string command, string text, int size, string textColor)
+        {
+            ui.Add(new CuiButton { Button = { Color = color, Command = command }, Text = { Text = text ?? string.Empty, FontSize = size, Color = textColor, Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+        }
+
+        private static string MenuF(float x, float y) => x.ToString("0.####", CultureInfo.InvariantCulture) + " " + y.ToString("0.####", CultureInfo.InvariantCulture);
+
+        private static string MenuUiText(string value)
+        {
+            return (value ?? string.Empty).Replace("<", "‹").Replace(">", "›");
+        }
+
         private void ShowStoreUI(BasePlayer player, int page, bool first = true)
         {
             CuiHelper.DestroyUi(player, HelpLayer);
@@ -1104,14 +1397,21 @@ namespace Oxide.Plugins
 
         private void ShowNotify(BasePlayer player, string text, float destroyTime = 2.5f)
         {
-            var notifyName = StoreLayer + ".Notify";
+            var integrated = IsMenuStoreActive(player);
+            var notifyParent = integrated ? MenuStoreLayer : StoreLayer;
+            var notifyName = notifyParent + ".Notify";
             CuiHelper.DestroyUi(player, notifyName);
             var container = new CuiElementContainer();
+            container.Add(new CuiPanel
+            {
+                RectTransform = { AnchorMin = integrated ? "0.27 0.74" : "0 0.77", AnchorMax = integrated ? "0.73 0.84" : "1 0.87" },
+                Image = { Color = integrated ? "0.18 0.102 0.231 0.98" : "0 0 0 0" }
+            }, notifyParent, notifyName, notifyName);
             container.Add(new CuiLabel
             {
-                RectTransform = { AnchorMin = "0 0.77", AnchorMax = "1 0.87" },
-                Text = { Text = text, Align = TextAnchor.UpperCenter, Font = "robotocondensed-regular.ttf", FontSize = 16 }
-            }, StoreLayer, notifyName, notifyName);
+                RectTransform = { AnchorMin = "0.04 0", AnchorMax = "0.96 1" },
+                Text = { Text = text, Align = TextAnchor.MiddleCenter, Font = "robotocondensed-regular.ttf", FontSize = integrated ? 12 : 16, Color = "0.925 0.894 0.953 1" }
+            }, notifyName);
             CuiHelper.AddUi(player, container);
             if (destroyTime > 0f) timer.Once(destroyTime, () => CuiHelper.DestroyUi(player, notifyName));
         }
@@ -1228,27 +1528,15 @@ namespace Oxide.Plugins
                 }
                 else if (!string.IsNullOrEmpty(item.ImageUrl))
                 {
-                    var isUrl = item.ImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase);
-                    if (isUrl)
+                    var imageId = ResolveMenuImage(item.ImageUrl);
+                    if (!string.IsNullOrEmpty(imageId))
                     {
                         content.Add(new CuiElement
                         {
                             Parent = itemRoot,
                             Components =
                             {
-                                new CuiRawImageComponent { Url = item.ImageUrl },
-                                new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "5 5", OffsetMax = "-5 -5" }
-                            }
-                        });
-                    }
-                    else
-                    {
-                        content.Add(new CuiElement
-                        {
-                            Parent = itemRoot,
-                            Components =
-                            {
-                                new CuiRawImageComponent { Png = item.ImageUrl },
+                                new CuiRawImageComponent { Png = imageId },
                                 new CuiRectTransformComponent { AnchorMin = "0 0", AnchorMax = "1 1", OffsetMin = "5 5", OffsetMax = "-5 -5" }
                             }
                         });
@@ -1359,7 +1647,18 @@ namespace Oxide.Plugins
                     return;
                 }
 
-                var data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
+                Dictionary<string, object> data;
+                try
+                {
+                    data = JsonConvert.DeserializeObject<Dictionary<string, object>>(response, new KeyValuesConverter());
+                }
+                catch (Exception exception)
+                {
+                    PrintWarning("Store item response parse failed: " + exception.Message);
+                    ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
+                    ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
+                    return;
+                }
                 if (data == null || !data.ContainsKey("data"))
                 {
                     ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
@@ -1369,7 +1668,20 @@ namespace Oxide.Plugins
 
                 Request($"&method=gived&gived=true&id={basketId}", (markCode, markResponse) =>
                 {
-                    if (markCode != 200 || JsonConvert.DeserializeObject<JObject>(markResponse)?["result"]?.ToString() != "success")
+                    JObject markData = null;
+                    if (markCode == 200 && !string.IsNullOrEmpty(markResponse))
+                    {
+                        try
+                        {
+                            markData = JsonConvert.DeserializeObject<JObject>(markResponse);
+                        }
+                        catch (Exception exception)
+                        {
+                            PrintWarning("Store confirmation response parse failed: " + exception.Message);
+                        }
+                    }
+
+                    if (markData?["result"]?.ToString() != "success")
                     {
                         ShowNotify(player, _(player, "TAKE.GIVE.ERROR.NOTIFY"));
                         ShowItemStateOverlay(player, index, basketId, "TAKE.GIVE.ERROR", "1 0.5 0.5 0.2", "1 0.7 0.7 1");
@@ -1391,7 +1703,8 @@ namespace Oxide.Plugins
 
         private void ShowItemStateOverlay(BasePlayer player, int index, int basketId, string textKey, string color, string textColor, bool keepClickable = true)
         {
-            var itemRoot = StoreLayer + ".BlockPanel.Content.item." + index;
+            var integrated = IsMenuStoreActive(player);
+            var itemRoot = integrated ? MenuStoreLayer + ".Grid.item." + index : StoreLayer + ".BlockPanel.Content.item." + index;
             var overlay = itemRoot + ".Open";
             CuiHelper.DestroyUi(player, overlay);
 
@@ -1404,7 +1717,9 @@ namespace Oxide.Plugins
                     FadeIn = 1f,
                     Color = color,
                     Close = keepClickable ? overlay : string.Empty,
-                    Command = keepClickable ? $"UI_ProstojRUST take {index} {basketId}" : string.Empty
+                    Command = keepClickable
+                        ? $"UI_ProstojRUST {(integrated ? "menu_take" : "take")} {index} {basketId}"
+                        : string.Empty
                 },
                 Text =
                 {
@@ -1429,14 +1744,33 @@ namespace Oxide.Plugins
             return $"{ts.Seconds} сек.";
         }
 
+        private string ResolveMenuImage(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source)) return null;
+            if (!source.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return source;
+            if (ProstojMenu == null)
+            {
+                if (ImageLibrary != null && Settings != null && Settings.InterfaceSettings != null &&
+                    string.Equals(source, Settings.InterfaceSettings.BucketURL, StringComparison.OrdinalIgnoreCase) &&
+                    (bool)ImageLibrary.Call("HasImage", "ProstojRUSTBucket"))
+                    return ImageLibrary.Call("GetImage", "ProstojRUSTBucket") as string;
+                return null;
+            }
+
+            var imageId = ProstojMenu.Call("API_GetImage", source) as string;
+            if (string.IsNullOrEmpty(imageId)) ProstojMenu.Call("API_CacheImage", source);
+            return imageId;
+        }
+
         private void InitializeIcon(BasePlayer player)
         {
             if (player == null || !Settings.InterfaceSettings.EnableStoreUI || !Settings.InterfaceSettings.BucketEnable) return;
 
             CuiHelper.DestroyUi(player, IconLayer);
             var container = new CuiElementContainer();
+            var cachedBucketId = ResolveMenuImage(Settings.InterfaceSettings.BucketURL);
 
-            if (Settings.InterfaceSettings.BucketURL.Contains("http") && ImageLibrary != null && (bool)ImageLibrary.Call("HasImage", "ProstojRUSTBucket"))
+            if (!string.IsNullOrEmpty(cachedBucketId))
             {
                 container.Add(new CuiElement
                 {
@@ -1445,7 +1779,7 @@ namespace Oxide.Plugins
                     DestroyUi = IconLayer,
                     Components =
                     {
-                        new CuiRawImageComponent { Png = (string) ImageLibrary.Call("GetImage", "ProstojRUSTBucket") },
+                        new CuiRawImageComponent { Png = cachedBucketId },
                         new CuiRectTransformComponent
                         {
                             AnchorMin = Settings.InterfaceSettings.BucketPosition.AnchorMin,
@@ -1925,7 +2259,7 @@ namespace Oxide.Plugins
                 catch (JsonException e)
                 {
 
-                    LogToFile("Errors", $"{DateTime.Now.ToShortTimeString()}| JsonError | Response: '{response}'", this);
+                    LogToFile("Errors", $"{DateTime.Now.ToShortTimeString()}| JsonError: '{e.Message}' | Response: '{response}'", this);
                     LogAction(null, " JSON Error! Saved to log!", true, true);
                     LogAction(null, $"-----------------------------", true);
                     SetReserveApiLink();
@@ -2095,3 +2429,4 @@ namespace Oxide.Plugins
         #endregion
     }
 }
+#pragma warning restore 0649

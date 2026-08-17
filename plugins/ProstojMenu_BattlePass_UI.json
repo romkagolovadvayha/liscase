@@ -1,0 +1,2797 @@
+[
+    {
+        "name":  "BP.Root",
+        "parent":  "Overlay",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.012 0.008 0.035 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           },
+                           {
+                               "type":  "NeedsCursor"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Frame",
+        "parent":  "BP.Root",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.99"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.035",
+                               "anchormax":  "0.965 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Sidebar",
+        "parent":  "BP.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.96"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.222 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Main",
+        "parent":  "BP.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.222 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Header",
+        "parent":  "BP.Main",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.95"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.865",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.BrandLogo",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/prostoj-logo-transparent.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.895",
+                               "anchormax":  "0.93 0.973",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.698",
+                               "anchormax":  "0.955 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Title",
+        "parent":  "BP.Nav.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "МАГАЗИН",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Meta",
+        "parent":  "BP.Nav.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОКУПКИ И ПРИВИЛЕГИИ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 0.13"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.621",
+                               "anchormax":  "0.955 0.688",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.Active",
+        "parent":  "BP.Nav.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.014 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Title",
+        "parent":  "BP.Nav.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "BATTLE PASS",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Meta",
+        "parent":  "BP.Nav.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СЕЗОННЫЕ НАГРАДЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.38 0.204 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.544",
+                               "anchormax":  "0.955 0.611",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Title",
+        "parent":  "BP.Nav.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КАЛЕНДАРЬ",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Meta",
+        "parent":  "BP.Nav.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВАЙПЫ И ОБНОВЛЕНИЯ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.467",
+                               "anchormax":  "0.955 0.534",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Title",
+        "parent":  "BP.Nav.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "МОЯ СТАТИСТИКА",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Meta",
+        "parent":  "BP.Nav.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПРОГРЕСС ИГРОКА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.390",
+                               "anchormax":  "0.955 0.457",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Title",
+        "parent":  "BP.Nav.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ТОП ИГРОКОВ",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Meta",
+        "parent":  "BP.Nav.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "РЕЙТИНГ ВАЙПА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.313",
+                               "anchormax":  "0.955 0.380",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Title",
+        "parent":  "BP.Nav.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КЛАНЫ",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Meta",
+        "parent":  "BP.Nav.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КОМАНДЫ СЕРВЕРА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6",
+        "parent":  "BP.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.236",
+                               "anchormax":  "0.955 0.303",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Title",
+        "parent":  "BP.Nav.6",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОДДЕРЖКА",
+                               "fontSize":  13,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.72 0.69 0.75 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.43",
+                               "anchormax":  "0.94 0.86",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Meta",
+        "parent":  "BP.Nav.6",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СВЯЗАТЬСЯ С АДМИНИСТРАЦИЕЙ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.12",
+                               "anchormax":  "0.94 0.45",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.AvatarFrame",
+        "parent":  "BP.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.24",
+                               "anchormax":  "0.085 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Avatar",
+        "parent":  "BP.AvatarFrame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://prostoj.store/uploads/avatar/steam/76561199409778021.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.055",
+                               "anchormax":  "0.945 0.945",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.User",
+        "parent":  "BP.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ROMAN",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.105 0.49",
+                               "anchormax":  "0.56 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Server",
+        "parent":  "BP.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "PROSTOJ #1  •  MAX3",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.105 0.18",
+                               "anchormax":  "0.56 0.5",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Balance",
+        "parent":  "BP.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.745 0.22",
+                               "anchormax":  "0.945 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Balance.Value",
+        "parent":  "BP.Balance",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "1 250",
+                               "fontSize":  19,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.08 0.18",
+                               "anchormax":  "0.70 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Balance.Coin",
+        "parent":  "BP.Balance",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/coin-hd.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.18",
+                               "anchormax":  "0.90 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Content",
+        "parent":  "BP.Main",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.03 0.04",
+                               "anchormax":  "0.97 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero",
+        "parent":  "BP.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.51",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Copy",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.88"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.57 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Title",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "SEASON 1",
+                               "fontSize":  39,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.69",
+                               "anchormax":  "0.56 0.93",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Desc",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВЫПОЛНЯЙТЕ ЗАДАНИЯ ПО ПОРЯДКУ\nИ ЗАБЕРИТЕ ФИНАЛЬНУЮ НАГРАДУ СЕЗОНА",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.78 0.74 0.82 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.038 0.49",
+                               "anchormax":  "0.55 0.70",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Progress",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПРОГРЕСС СЕЗОНА",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.038 0.34",
+                               "anchormax":  "0.40 0.43",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Percent",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "35%",
+                               "fontSize":  15,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.43 0.33",
+                               "anchormax":  "0.55 0.44",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Track",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 1 1 0.10"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.038 0.275",
+                               "anchormax":  "0.55 0.315",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Fill",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.038 0.275",
+                               "anchormax":  "0.217 0.315",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Count",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "7 / 20 ОСНОВНЫХ ЗАДАНИЙ",
+                               "fontSize":  10,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.038 0.17",
+                               "anchormax":  "0.55 0.255",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.Medal",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.webp",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.82 0.48",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Hero.MedalLabel",
+        "parent":  "BP.Hero",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "МЕДАЛЬ СЕЗОНА",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.973 0.702 0.302 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.76 0.35",
+                               "anchormax":  "0.99 0.47",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Track",
+        "parent":  "BP.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.005",
+                               "anchormax":  "1 0.485",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Track.Title",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "НАГРАДЫ ПО ПОРЯДКУ",
+                               "fontSize":  15,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.005 0.865",
+                               "anchormax":  "0.56 0.985",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Track.Meta",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "40 ЭТАПОВ  •  ОСНОВНОЙ ПУТЬ И VIP-НАГРАДЫ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.005 0.79",
+                               "anchormax":  "0.70 0.875",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.005 0.035",
+                               "anchormax":  "0.160 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Accent",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.561 0.561 0.561 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Type",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАДАНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Num",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "01",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.RewardSurface",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Reward",
+        "parent":  "BP.Task.0.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/coin-hd.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Name",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "УБЕЙТЕ 25 ИГРОКОВ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.0.Status",
+        "parent":  "BP.Task.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВЫПОЛНЕНО",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.231 0.796 0.498 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.171 0.035",
+                               "anchormax":  "0.326 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Accent",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.561 0.561 0.561 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Type",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАДАНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Num",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "02",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.RewardSurface",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Reward",
+        "parent":  "BP.Task.1.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.webp",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Name",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ДОБУДЬТЕ 50 000 ДЕРЕВА",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.1.Status",
+        "parent":  "BP.Task.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВЫПОЛНЕНО",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.231 0.796 0.498 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.180 0.102 0.231 0.98"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.337 0.035",
+                               "anchormax":  "0.492 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Accent",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Type",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАДАНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Num",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "03",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.RewardSurface",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Reward",
+        "parent":  "BP.Task.2.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/coin-hd.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Name",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПРОВЕДИТЕ 10 ЧАСОВ В ИГРЕ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.2.Status",
+        "parent":  "BP.Task.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "12 / 25",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.38 0.204 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.503 0.035",
+                               "anchormax":  "0.658 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Accent",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.561 0.561 0.561 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Type",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАДАНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Num",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "04",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.RewardSurface",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Reward",
+        "parent":  "BP.Task.3.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.webp",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Name",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "УНИЧТОЖЬТЕ 5 ТАНКОВ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.3.Status",
+        "parent":  "BP.Task.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАКРЫТО",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.098 0.063 0.176 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.669 0.035",
+                               "anchormax":  "0.824 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Accent",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.561 0.561 0.561 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Type",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАДАНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Num",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "05",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.RewardSurface",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Reward",
+        "parent":  "BP.Task.4.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/coin-hd.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Name",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОСЕТИТЕ TELEGRAM",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.4.Status",
+        "parent":  "BP.Task.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЗАКРЫТО",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.561 0.561 0.561 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5",
+        "parent":  "BP.Track",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.149 0.106 0.125 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.835 0.035",
+                               "anchormax":  "0.990 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Accent",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.973 0.702 0.302 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.982",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Type",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "VIP",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.973 0.702 0.302 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.86",
+                               "anchormax":  "0.58 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Num",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "06",
+                               "fontSize":  17,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.84",
+                               "anchormax":  "0.94 0.975",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.RewardSurface",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.031 0.008 0.141 0.58"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.39",
+                               "anchormax":  "0.80 0.827",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Reward",
+        "parent":  "BP.Task.5.RewardSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.webp",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0.13",
+                               "anchormax":  "0.87 0.87",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Name",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "VIP-НАГРАДА",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.925 0.894 0.953 1",
+                               "align":  "UpperLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.255",
+                               "anchormax":  "0.94 0.375",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Task.5.Status",
+        "parent":  "BP.Task.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ТРЕБУЕТСЯ VIP",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.973 0.702 0.302 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.065",
+                               "anchormax":  "0.94 0.155",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon",
+        "parent":  "BP.Nav.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.BagLeft",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.18",
+                               "anchormax":  "0.32 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.BagRight",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.68 0.18",
+                               "anchormax":  "0.76 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.BagBottom",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.18",
+                               "anchormax":  "0.76 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.BagTop",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.60",
+                               "anchormax":  "0.76 0.69",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.HandleLeft",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.36 0.65",
+                               "anchormax":  "0.44 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.HandleRight",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.56 0.65",
+                               "anchormax":  "0.64 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.0.Icon.HandleTop",
+        "parent":  "BP.Nav.0.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.36 0.76",
+                               "anchormax":  "0.64 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon",
+        "parent":  "BP.Nav.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.204 0.13"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.TicketLeft",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.25",
+                               "anchormax":  "0.27 0.75",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.TicketRight",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.25",
+                               "anchormax":  "0.82 0.75",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.TicketTop",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.22 0.67",
+                               "anchormax":  "0.78 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.TicketBottom",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.22 0.24",
+                               "anchormax":  "0.78 0.33",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.Spine",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.47 0.34",
+                               "anchormax":  "0.53 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.StarTop",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.42 0.53",
+                               "anchormax":  "0.58 0.61",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.1.Icon.StarBottom",
+        "parent":  "BP.Nav.1.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.42 0.39",
+                               "anchormax":  "0.58 0.47",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon",
+        "parent":  "BP.Nav.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Left",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.18",
+                               "anchormax":  "0.28 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Right",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.72 0.18",
+                               "anchormax":  "0.80 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Bottom",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.18",
+                               "anchormax":  "0.80 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Top",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.68",
+                               "anchormax":  "0.80 0.77",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Rule",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.54",
+                               "anchormax":  "0.76 0.62",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.BindLeft",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.72",
+                               "anchormax":  "0.42 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.BindRight",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.58 0.72",
+                               "anchormax":  "0.66 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Day1",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.36",
+                               "anchormax":  "0.43 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.2.Icon.Day2",
+        "parent":  "BP.Nav.2.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.57 0.36",
+                               "anchormax":  "0.66 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Icon",
+        "parent":  "BP.Nav.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Icon.Base",
+        "parent":  "BP.Nav.3.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.18",
+                               "anchormax":  "0.82 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Icon.Bar1",
+        "parent":  "BP.Nav.3.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.27",
+                               "anchormax":  "0.38 0.48",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Icon.Bar2",
+        "parent":  "BP.Nav.3.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.45 0.27",
+                               "anchormax":  "0.59 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.3.Icon.Bar3",
+        "parent":  "BP.Nav.3.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.66 0.27",
+                               "anchormax":  "0.80 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon",
+        "parent":  "BP.Nav.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon.Base",
+        "parent":  "BP.Nav.4.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.16 0.18",
+                               "anchormax":  "0.84 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon.Second",
+        "parent":  "BP.Nav.4.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.27",
+                               "anchormax":  "0.39 0.55",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon.First",
+        "parent":  "BP.Nav.4.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.40 0.27",
+                               "anchormax":  "0.61 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon.Third",
+        "parent":  "BP.Nav.4.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.62 0.27",
+                               "anchormax":  "0.82 0.44",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.4.Icon.Cap",
+        "parent":  "BP.Nav.4.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.45 0.84",
+                               "anchormax":  "0.56 0.91",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon",
+        "parent":  "BP.Nav.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon.Pole",
+        "parent":  "BP.Nav.5.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.25 0.16",
+                               "anchormax":  "0.34 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon.FlagTop",
+        "parent":  "BP.Nav.5.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.67",
+                               "anchormax":  "0.78 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon.FlagMid",
+        "parent":  "BP.Nav.5.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.52",
+                               "anchormax":  "0.68 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon.FlagTip",
+        "parent":  "BP.Nav.5.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.61 0.60",
+                               "anchormax":  "0.78 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.5.Icon.Base",
+        "parent":  "BP.Nav.5.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.16 0.16",
+                               "anchormax":  "0.52 0.25",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon",
+        "parent":  "BP.Nav.6",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Left",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.28",
+                               "anchormax":  "0.27 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Right",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.28",
+                               "anchormax":  "0.82 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Top",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.69",
+                               "anchormax":  "0.82 0.79",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Bottom",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.27",
+                               "anchormax":  "0.68 0.36",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Tail",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.18",
+                               "anchormax":  "0.72 0.36",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Dot1",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.32 0.48",
+                               "anchormax":  "0.40 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Dot2",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.48 0.48",
+                               "anchormax":  "0.56 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Nav.6.Icon.Dot3",
+        "parent":  "BP.Nav.6.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.64 0.48",
+                               "anchormax":  "0.72 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Header.Close",
+        "parent":  "BP.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui close"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.957 0.34",
+                               "anchormax":  "0.987 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "BP.Header.Close.Icon",
+        "parent":  "BP.Header.Close",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "sprite":  "assets/icons/close.png",
+                               "color":  "0.925 0.894 0.953 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5 0.5",
+                               "anchormax":  "0.5 0.5",
+                               "offsetmin":  "-12 -12",
+                               "offsetmax":  "12 12"
+                           }
+                       ]
+    }
+]

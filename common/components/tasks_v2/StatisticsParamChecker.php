@@ -4,9 +4,11 @@ namespace common\components\tasks_v2;
 
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
+use common\models\statistics\StatisticsArchive;
 use common\models\tasks_v2\TaskV2;
 use common\models\user\User;
 use Yii;
+use yii\db\Query;
 use yii\helpers\Json;
 
 /**
@@ -76,20 +78,18 @@ class StatisticsParamChecker implements TaskCheckerInterface
         $serverId = (int)($params['server_id'] ?? 0);
         $sumAllServers = !empty($params['sum_all_servers']);
         $startDate = $startDate ?: '2025-12-04';
-        $currentValue = 0;
 
         if ($sumAllServers) {
-            $servers = Servers::find()
+            $serverTags = Servers::find()
+                ->select('tag')
                 ->andWhere(['NOT IN', 'status', [Servers::STATUS_CLOSED]])
                 ->orderBy(['sort' => SORT_ASC])
-                ->all();
-            foreach ($servers as $server) {
-                $currentValue += $this->getStatsSum(
-                    $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate),
-                    $statKeys
-                );
-            }
-            return $currentValue;
+                ->column();
+
+            return $this->getStatsSum(
+                $this->getPlayerStatsSinceDate($serverTags, $user->steam_id, $startDate),
+                $statKeys
+            );
         }
 
         if ($serverId > 0) {
@@ -105,7 +105,7 @@ class StatisticsParamChecker implements TaskCheckerInterface
         }
 
         return $this->getStatsSum(
-            $this->getPlayerStatsSinceDate($server, $user->steam_id, $startDate),
+            $this->getPlayerStatsSinceDate([$server->tag], $user->steam_id, $startDate),
             $statKeys
         );
     }
@@ -122,17 +122,40 @@ class StatisticsParamChecker implements TaskCheckerInterface
         return is_array($decoded) ? $decoded : [];
     }
 
-    private function getPlayerStatsSinceDate(Servers $server, string $steamId, string $startDate): array
+    /**
+     * Returns cumulative statistics from every wipe that overlaps the tracked
+     * period. A wipe that started before the Battle Pass still has to be
+     * included: the personal baseline removes everything earned before the
+     * task was unlocked. Finished wipes live in statistics_archive, so both
+     * tables must participate to keep progress from dropping after a wipe.
+     *
+     * @param string[] $serverTags
+     */
+    private function getPlayerStatsSinceDate(array $serverTags, string $steamId, string $startDate): array
     {
-        $statistics = Statistics::find()
-            ->select(['key', 'SUM(value) as value'])
-            ->andWhere(['steam_id' => $steamId])
-            ->andWhere(['server_tag' => $server->tag])
-            ->andWhere("SUBSTRING_INDEX(wipe, '/', 1) >= :startDate", [':startDate' => $startDate])
+        $serverTags = array_values(array_unique(array_filter(array_map('trim', $serverTags))));
+        if ($serverTags === []) {
+            return [];
+        }
+
+        $buildSourceQuery = static function (string $tableName) use ($steamId, $serverTags, $startDate): Query {
+            return (new Query())
+                ->select(['key', 'value'])
+                ->from($tableName)
+                ->andWhere(['steam_id' => $steamId])
+                ->andWhere(['server_tag' => $serverTags])
+                ->andWhere("SUBSTRING_INDEX(wipe, '/', -1) >= :startDate", [':startDate' => $startDate]);
+        };
+
+        $combined = $buildSourceQuery(Statistics::tableName())
+            ->union($buildSourceQuery(StatisticsArchive::tableName()), true);
+
+        $statistics = (new Query())
+            ->select(['key', 'SUM(CAST(value AS SIGNED)) as value'])
+            ->from(['battle_pass_statistics' => $combined])
             ->groupBy('key')
             ->indexBy('key')
-            ->asArray()
-            ->all();
+            ->all(Statistics::getDb());
 
         $result = [];
         foreach ($statistics as $key => $item) {

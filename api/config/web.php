@@ -307,6 +307,13 @@ $config = [
                 'v1/rust-plugin-chat/welcome/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/welcome',
                 'v1/rust-plugin-chat/help/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/help',
 
+                // Unified in-game menu snapshot (protected by the Rust server secret)
+                ['pattern' => 'v1/rust-menu/snapshot', 'route' => 'v1/rust-menu/snapshot', 'verb' => ['GET', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/battlepass', 'route' => 'v1/rust-menu/battlepass', 'verb' => ['GET', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/battlepass/tasks/<id:\d+>/check', 'route' => 'v1/rust-menu/battlepass-check', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/support', 'route' => 'v1/rust-menu/support', 'verb' => ['GET', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/support/messages', 'route' => 'v1/rust-menu/support-send', 'verb' => ['POST', 'OPTIONS']],
+
                 // Legacy API магазина ProstojRUST (?secret=&method=…)
                 'v1/rust-legacy-store' => 'v1/rust-legacy-store/index',
 

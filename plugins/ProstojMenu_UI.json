@@ -1,0 +1,4453 @@
+[
+    {
+        "name":  "ProstojMenu.Root",
+        "parent":  "Overlay",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.012 0.008 0.035 0.88",
+                               "material":  "assets/content/ui/uibackgroundblur.mat"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           },
+                           {
+                               "type":  "NeedsCursor"
+                           },
+                           {
+                               "type":  "NeedsKeyboard"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame",
+        "parent":  "ProstojMenu.Root",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.025 0.012 0.075 0.99"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.035",
+                               "anchormax":  "0.965 0.965",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Artwork",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/prostoj-command-center-v2.jpg",
+                               "color":  "1 1 1 0.78"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Shade",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.015 0.008 0.050 0.42"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.BorderTop",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.996",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.BorderWarm",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.70 0.996",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.040 0.026 0.085 0.90"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.222 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.018 0.010 0.055 0.55"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.222 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header",
+        "parent":  "ProstojMenu.Root.Frame.Main",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.025 0.015 0.067 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0.865",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content",
+        "parent":  "ProstojMenu.Root.Frame.Main",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.010 0.006 0.035 0.34"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.03 0.04",
+                               "anchormax":  "0.97 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.BrandLogo",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/prostoj-logo-transparent.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.07 0.895",
+                               "anchormax":  "0.93 0.973",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.07 0.05 0.12 0.35"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.698",
+                               "anchormax":  "0.955 0.765",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.IconBg",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.12 0.09 0.18 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.L",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.18",
+                               "anchormax":  "0.32 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.R",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.68 0.18",
+                               "anchormax":  "0.76 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.B",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.18",
+                               "anchormax":  "0.76 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.T",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.60",
+                               "anchormax":  "0.76 0.69",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HL",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.36 0.65",
+                               "anchormax":  "0.44 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HR",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.56 0.65",
+                               "anchormax":  "0.64 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon.HT",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.36 0.76",
+                               "anchormax":  "0.64 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "МАГАЗИН",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПОКУПКИ И ПРИВИЛЕГИИ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.store.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.store",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab store"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 0.13"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.544",
+                               "anchormax":  "0.955 0.611",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Accent",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.IconBg",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 0.22"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.L",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.18",
+                               "anchormax":  "0.28 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.R",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.72 0.18",
+                               "anchormax":  "0.80 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.B",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.18",
+                               "anchormax":  "0.80 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.T",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.20 0.68",
+                               "anchormax":  "0.80 0.77",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.Rule",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.54",
+                               "anchormax":  "0.76 0.62",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BL",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.72",
+                               "anchormax":  "0.42 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.BR",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.58 0.72",
+                               "anchormax":  "0.66 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.D1",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.36",
+                               "anchormax":  "0.43 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon.D2",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.380 0.204 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.57 0.36",
+                               "anchormax":  "0.66 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КАЛЕНДАРЬ",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.98 0.95 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВАЙПЫ И ОБНОВЛЕНИЯ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.380 0.204 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab calendar"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.07 0.05 0.12 0.35"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.467",
+                               "anchormax":  "0.955 0.534",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.IconBg",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.12 0.09 0.18 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.B",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.18",
+                               "anchormax":  "0.82 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.A",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.24 0.27",
+                               "anchormax":  "0.38 0.48",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.C",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.45 0.27",
+                               "anchormax":  "0.59 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon.D",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.66 0.27",
+                               "anchormax":  "0.80 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "МОЯ СТАТИСТИКА",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПРОГРЕСС ИГРОКА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.stats",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab stats"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.07 0.05 0.12 0.35"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.390",
+                               "anchormax":  "0.955 0.457",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.IconBg",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.12 0.09 0.18 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.B",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.16 0.18",
+                               "anchormax":  "0.84 0.27",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.S",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.27",
+                               "anchormax":  "0.39 0.55",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.F",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.40 0.27",
+                               "anchormax":  "0.61 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.T",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.62 0.27",
+                               "anchormax":  "0.82 0.44",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon.C",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.45 0.84",
+                               "anchormax":  "0.56 0.91",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ТОП ИГРОКОВ",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "РЕЙТИНГ ВАЙПА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.top.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.top",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab top"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.07 0.05 0.12 0.35"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.313",
+                               "anchormax":  "0.955 0.380",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.IconBg",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.12 0.09 0.18 0.70"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.P",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.25 0.16",
+                               "anchormax":  "0.34 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FT",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.67",
+                               "anchormax":  "0.78 0.84",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.FM",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.34 0.52",
+                               "anchormax":  "0.68 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.Tip",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.61 0.60",
+                               "anchormax":  "0.78 0.68",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon.B",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.69 0.63 0.78 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.16 0.16",
+                               "anchormax":  "0.52 0.25",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КЛАНЫ",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КОМАНДЫ СЕРВЕРА",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.clans",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab clans"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Footer",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "PROSTOJ #1\nОНЛАЙН 184 / 250",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.62 0.57 0.70 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.055",
+                               "anchormax":  "0.92 0.13",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.AvatarFrame",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.24",
+                               "anchormax":  "0.085 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.AvatarSurface",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header.AvatarFrame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.180 0.102 0.231 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.055 0.055",
+                               "anchormax":  "0.945 0.945",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.AvatarImage",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header.AvatarSurface",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "https://prostoj.store/uploads/avatar/steam/76561199409778021.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.Title",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ROMAN",
+                               "fontSize":  18,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.96 0.93 0.98 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.105 0.52",
+                               "anchormax":  "0.70 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.Server",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "PROSTOJ #1 • MAX 3 • VANILLA+",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-regular.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.105 0.16",
+                               "anchormax":  "0.70 0.52",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.Balance",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.745 0.22",
+                               "anchormax":  "0.945 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.Balance.Value",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header.Balance",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "12 450",
+                               "fontSize":  19,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.97 0.94 0.99 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.08 0.18",
+                               "anchormax":  "0.70 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Header.Balance.Coin",
+        "parent":  "ProstojMenu.Root.Frame.Main.Header.Balance",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.RawImage",
+                               "url":  "http://127.0.0.1:3001/images/rust-menu/coin-hd.png",
+                               "color":  "1 1 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.18",
+                               "anchormax":  "0.90 0.82",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Close",
+        "parent":  "ProstojMenu.Root.Frame",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui close"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.967 0.911",
+                               "anchormax":  "0.990 0.953",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Close.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Close",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.90 0.86 0.93 1",
+                               "sprite":  "assets/icons/close.png"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5 0.5",
+                               "anchormax":  "0.5 0.5",
+                               "offsetmin":  "-12 -12",
+                               "offsetmax":  "12 12"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Eyebrow",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "РАСПИСАНИЕ СЕРВЕРА",
+                               "fontSize":  10,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.380 0.204 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.900",
+                               "anchormax":  "0.40 0.955",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Heading",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "КАЛЕНДАРЬ ВАЙПОВ",
+                               "fontSize":  25,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.97 0.94 0.99 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.835",
+                               "anchormax":  "0.53 0.915",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Subheading",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "Все вайпы и обновления — как на странице сервера",
+                               "fontSize":  11,
+                               "font":  "robotocondensed-regular.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.795",
+                               "anchormax":  "0.63 0.845",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.MonthBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.05 0.035 0.10 0.78"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.68 0.820",
+                               "anchormax":  "0.965 0.930",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Prev",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.MonthBar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui calendar_prev"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.03 0.12",
+                               "anchormax":  "0.18 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Prev.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Prev",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "‹",
+                               "fontSize":  24,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.76 0.70 0.82 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Month",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.MonthBar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "АВГУСТ 2026",
+                               "fontSize":  16,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.96 0.93 0.98 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0",
+                               "anchormax":  "0.82 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Next",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.MonthBar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui calendar_next"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.82 0.12",
+                               "anchormax":  "0.97 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Next.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Next",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "›",
+                               "fontSize":  24,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.76 0.70 0.82 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.018 0.012 0.055 0.74"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.105",
+                               "anchormax":  "0.965 0.785",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПН",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.905",
+                               "anchormax":  "0.1415 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВТ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.905",
+                               "anchormax":  "0.2831 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.2",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СР",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.905",
+                               "anchormax":  "0.4247 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.3",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ЧТ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.905",
+                               "anchormax":  "0.5663 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.4",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ПТ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.905",
+                               "anchormax":  "0.7079 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.5",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СБ",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.905",
+                               "anchormax":  "0.8495 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Week.6",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВС",
+                               "fontSize":  9,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.54 0.49 0.61 1",
+                               "align":  "MiddleCenter"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.905",
+                               "anchormax":  "0.9911 0.987",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.7590",
+                               "anchormax":  "0.1415 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.0.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "27",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.7590",
+                               "anchormax":  "0.2831 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.1.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "28",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.2",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.7590",
+                               "anchormax":  "0.4247 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.2.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "29",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.3",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.7590",
+                               "anchormax":  "0.5663 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.3.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "30",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.4",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.7590",
+                               "anchormax":  "0.7079 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.4.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.4",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "31",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.5",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.7590",
+                               "anchormax":  "0.8495 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.5.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.5",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "1",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.6",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.7590",
+                               "anchormax":  "0.9911 0.8950",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.6.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.6",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "2",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.7",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.6135",
+                               "anchormax":  "0.1415 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.7.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.7",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "3",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.8",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.6135",
+                               "anchormax":  "0.2831 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.8.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.8",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "4",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.9",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.6135",
+                               "anchormax":  "0.4247 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.9.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.9",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "5",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.06 0.04 0.105 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.6135",
+                               "anchormax":  "0.5663 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10.EventBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.20 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10.TopLine",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.20 0.75"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.018 0.975",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "6",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10.Event",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.10",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ГЛОБАЛЬНЫЙ ВАЙП",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.38 0.20 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.15",
+                               "anchormax":  "0.94 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.11",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.6135",
+                               "anchormax":  "0.7079 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.11.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.11",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "7",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.12",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.6135",
+                               "anchormax":  "0.8495 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.12.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.12",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "8",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.13",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.6135",
+                               "anchormax":  "0.9911 0.7495",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.13.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.13",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "9",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.14",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.4680",
+                               "anchormax":  "0.1415 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.14.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.14",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "10",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.15",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.4680",
+                               "anchormax":  "0.2831 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.15.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.15",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "11",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.16",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.4680",
+                               "anchormax":  "0.4247 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.16.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.16",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "12",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.06 0.04 0.105 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.4680",
+                               "anchormax":  "0.5663 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17.EventBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.25 0.55 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17.TopLine",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.25 0.55 0.75 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.018 0.975",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "13",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17.Event",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.17",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ОБНОВЛЕНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.25 0.55 1 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.15",
+                               "anchormax":  "0.94 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.18",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.4680",
+                               "anchormax":  "0.7079 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.18.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.18",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "14",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.19",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.4680",
+                               "anchormax":  "0.8495 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.19.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.19",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "15",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.20",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.4680",
+                               "anchormax":  "0.9911 0.6040",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.20.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.20",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "16",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.3225",
+                               "anchormax":  "0.1415 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.TodayTop",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 1",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 -2",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.TodayBottom",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 0",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 2"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.TodayLeft",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "2 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.TodayRight",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "1 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "-2 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "17",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21.Today",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.21",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СЕГОДНЯ",
+                               "fontSize":  7,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.922 0.047 0.208 1",
+                               "align":  "MiddleRight"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.52 0.64",
+                               "anchormax":  "0.93 0.91",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.22",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.3225",
+                               "anchormax":  "0.2831 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.22.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.22",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "18",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.23",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.3225",
+                               "anchormax":  "0.4247 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.23.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.23",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "19",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.06 0.04 0.105 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.3225",
+                               "anchormax":  "0.5663 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24.EventBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.31 0.78 0.51 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24.TopLine",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.31 0.78 0.51 0.75"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.018 0.975",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "20",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24.Event",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.24",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВАЙП КАРТЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.31 0.78 0.51 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.15",
+                               "anchormax":  "0.94 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.25",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.3225",
+                               "anchormax":  "0.7079 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.25.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.25",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "21",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.26",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.3225",
+                               "anchormax":  "0.8495 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.26.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.26",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "22",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.27",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.3225",
+                               "anchormax":  "0.9911 0.4585",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.27.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.27",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "23",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.28",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.1770",
+                               "anchormax":  "0.1415 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.28.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.28",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "24",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.29",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.1770",
+                               "anchormax":  "0.2831 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.29.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.29",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "25",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.30",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.1770",
+                               "anchormax":  "0.4247 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.30.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.30",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "26",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.06 0.04 0.105 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.1770",
+                               "anchormax":  "0.5663 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31.EventBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.20 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31.TopLine",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.20 0.75"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.018 0.975",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "27",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31.Event",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.31",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ГЛОБАЛЬНЫЙ ВАЙП",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "1 0.38 0.20 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.15",
+                               "anchormax":  "0.94 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.32",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.1770",
+                               "anchormax":  "0.7079 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.32.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.32",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "28",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.06 0.04 0.105 0.94"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.1770",
+                               "anchormax":  "0.8495 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33.EventBar",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.31 0.78 0.51 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "0.018 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33.TopLine",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.31 0.78 0.51 0.75"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.018 0.975",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "29",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33.Event",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.33",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВАЙП КАРТЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.31 0.78 0.51 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.15",
+                               "anchormax":  "0.94 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.34",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.1770",
+                               "anchormax":  "0.9911 0.3130",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.34.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.34",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "30",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.35",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.0080 0.0315",
+                               "anchormax":  "0.1415 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.35.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.35",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "31",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.78 0.87 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.36",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.1496 0.0315",
+                               "anchormax":  "0.2831 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.36.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.36",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "1",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.37",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.2912 0.0315",
+                               "anchormax":  "0.4247 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.37.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.37",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "2",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.38",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.4328 0.0315",
+                               "anchormax":  "0.5663 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.38.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.38",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "3",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.39",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.5744 0.0315",
+                               "anchormax":  "0.7079 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.39.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.39",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "4",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.40",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.7160 0.0315",
+                               "anchormax":  "0.8495 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.40.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.40",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "5",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.41",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.045 0.030 0.085 0.82"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.8576 0.0315",
+                               "anchormax":  "0.9911 0.1675",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.41.Number",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Calendar.Day.41",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "6",
+                               "fontSize":  12,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.30 0.27 0.35 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.09 0.61",
+                               "anchormax":  "0.42 0.94",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.0",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.03 0.02 0.07 0.66"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.035 0.035",
+                               "anchormax":  "0.255 0.083",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.0.Dot",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "1 0.38 0.20 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.34",
+                               "anchormax":  "0.095 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.0.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.0",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ГЛОБАЛЬНЫЙ ВАЙП",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0",
+                               "anchormax":  "0.96 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.1",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.03 0.02 0.07 0.66"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.285 0.035",
+                               "anchormax":  "0.485 0.083",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.1.Dot",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.25 0.55 1 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.34",
+                               "anchormax":  "0.095 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.1.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.1",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ОБНОВЛЕНИЕ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0",
+                               "anchormax":  "0.96 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.2",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.03 0.02 0.07 0.66"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.515 0.035",
+                               "anchormax":  "0.715 0.083",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.2.Dot",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.31 0.78 0.51 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.34",
+                               "anchormax":  "0.095 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.2.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.2",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "ВАЙП КАРТЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0",
+                               "anchormax":  "0.96 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.3",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.03 0.02 0.07 0.66"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.745 0.035",
+                               "anchormax":  "0.965 0.083",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.3.Dot",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.922 0.047 0.208 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.06 0.34",
+                               "anchormax":  "0.095 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Main.Content.Legend.3.Text",
+        "parent":  "ProstojMenu.Root.Frame.Main.Content.Legend.3",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СЕГОДНЯ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.60 0.55 0.68 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.13 0",
+                               "anchormax":  "0.96 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.621",
+                               "anchormax":  "0.955 0.688",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "BATTLE PASS",
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  "СЕЗОННЫЕ НАГРАДЫ",
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab battlepass"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketLeft",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.25",
+                               "anchormax":  "0.27 0.75",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketRight",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.25",
+                               "anchormax":  "0.82 0.75",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketTop",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.22 0.67",
+                               "anchormax":  "0.78 0.76",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.TicketBottom",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.22 0.24",
+                               "anchormax":  "0.78 0.33",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.Spine",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.47 0.34",
+                               "anchormax":  "0.53 0.66",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarTop",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.42 0.53",
+                               "anchormax":  "0.58 0.61",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon.StarBottom",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.battlepass.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.42 0.39",
+                               "anchormax":  "0.58 0.47",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0 0 0 0"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.045 0.236",
+                               "anchormax":  "0.955 0.303",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Title",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  null,
+                               "fontSize":  14,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.82 0.77 0.88 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.44",
+                               "anchormax":  "0.94 0.88",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Meta",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Text",
+                               "text":  null,
+                               "fontSize":  8,
+                               "font":  "robotocondensed-bold.ttf",
+                               "color":  "0.47 0.42 0.56 1",
+                               "align":  "MiddleLeft"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.245 0.10",
+                               "anchormax":  "0.94 0.46",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Button",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Button",
+                               "color":  "0 0 0 0",
+                               "command":  "prostojmenu.ui tab support"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0 0",
+                               "anchormax":  "1 1",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.18 0.102 0.231 0.72"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.075 0.17",
+                               "anchormax":  "0.187 0.83",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Left",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.28",
+                               "anchormax":  "0.27 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Right",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.73 0.28",
+                               "anchormax":  "0.82 0.78",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Top",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.69",
+                               "anchormax":  "0.82 0.79",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Bottom",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.18 0.27",
+                               "anchormax":  "0.68 0.36",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Tail",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.60 0.18",
+                               "anchormax":  "0.72 0.36",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot1",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.32 0.48",
+                               "anchormax":  "0.40 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot2",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.48 0.48",
+                               "anchormax":  "0.56 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    },
+    {
+        "name":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon.Dot3",
+        "parent":  "ProstojMenu.Root.Frame.Sidebar.Nav.support.Icon",
+        "components":  [
+                           {
+                               "type":  "UnityEngine.UI.Image",
+                               "color":  "0.62 0.59 0.66 1"
+                           },
+                           {
+                               "type":  "RectTransform",
+                               "anchormin":  "0.64 0.48",
+                               "anchormax":  "0.72 0.57",
+                               "offsetmin":  "0 0",
+                               "offsetmax":  "0 0"
+                           }
+                       ]
+    }
+]
