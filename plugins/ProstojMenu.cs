@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.10")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.11")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -2465,7 +2465,6 @@ namespace Oxide.Plugins
 
             var ticketsRoot = Content + ".Support.Tickets";
             AddPanel(ui, Content + ".Body", ticketsRoot, "0 0.035", "0.27 0.82", "0.098 0.063 0.176 0.88");
-            AddPanel(ui, ticketsRoot, ticketsRoot + ".Rail", "0 0", "0.012 1", Accent);
             AddLabel(ui, ticketsRoot, ticketsRoot + ".Title", "0.07 0.915", "0.93 0.98", "ОБРАЩЕНИЯ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
             AddLabel(ui, ticketsRoot, ticketsRoot + ".Hint", "0.07 0.86", "0.93 0.92", "ИСТОРИЯ ДИАЛОГОВ", 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
