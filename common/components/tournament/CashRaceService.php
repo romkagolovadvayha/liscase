@@ -18,6 +18,7 @@ use Yii;
 final class CashRaceService
 {
     public const PREVIEW_STEAM_ID = '76561198394504608';
+    private const LEADERBOARD_CACHE_TTL = 10;
 
     public static function canPreview(?User $user, ?CashRaceTournament $config = null): bool
     {
@@ -82,18 +83,27 @@ final class CashRaceService
         try {
             $score = self::score($tournament, $user);
             $models = [];
+            $rows = [];
+            $now = time();
+            $issuedAt = date('Y-m-d H:i:s', $now);
             foreach ($uuids as $uuid) {
-                $token = new CashRaceKeyToken([
+                $attributes = [
                     'token_uuid' => $uuid, 'tournament_id' => $tournament->id, 'server_id' => $server->id,
                     'user_id' => $user->id, 'steam_id' => (string)$user->steam_id,
-                    'state' => CashRaceKeyToken::STATE_HELD, 'issued_at' => date('Y-m-d H:i:s'),
-                ]);
-                if (!$token->save()) throw new \RuntimeException(json_encode($token->errors, JSON_UNESCAPED_UNICODE));
-                $models[] = $token;
+                    'state' => CashRaceKeyToken::STATE_HELD, 'issued_at' => $issuedAt,
+                    'created_at' => $now, 'updated_at' => $now,
+                ];
+                $models[] = new CashRaceKeyToken($attributes);
+                $rows[] = array_values($attributes);
             }
+            Yii::$app->db->createCommand()->batchInsert(CashRaceKeyToken::tableName(), [
+                'token_uuid', 'tournament_id', 'server_id', 'user_id', 'steam_id',
+                'state', 'issued_at', 'created_at', 'updated_at',
+            ], $rows)->execute();
             CashRaceScore::updateAllCounters(['keys_found' => count($models)], ['id' => $score->id]);
-            CashRaceScore::updateAll(['last_found_at' => date('Y-m-d H:i:s'), 'updated_at' => time()], ['id' => $score->id]);
+            CashRaceScore::updateAll(['last_found_at' => $issuedAt, 'updated_at' => $now], ['id' => $score->id]);
             $tx->commit();
+            self::invalidateLeaderboard((int)$tournament->id);
             return $models;
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -120,6 +130,7 @@ final class CashRaceService
                 CashRaceScore::updateAllCounters(['keys_lost' => $count], ['id' => $score->id]);
             }
             $tx->commit();
+            if ($count > 0) self::invalidateLeaderboard((int)$config->tournament_id);
             return $count;
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -199,6 +210,7 @@ final class CashRaceService
             CashRaceScore::updateAll(['last_deposited_at' => date('Y-m-d H:i:s'), 'updated_at' => time()], ['id' => $score->id]);
             $score->refresh();
             $tx->commit();
+            self::invalidateLeaderboard((int)$config->tournament_id);
             return ['count' => $count, 'total' => (int)$score->keys_deposited, 'duplicate' => false];
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -227,6 +239,7 @@ final class CashRaceService
             $config->awards_issued_at = date('Y-m-d H:i:s');
             $config->save(false);
             $tx->commit();
+            self::invalidateLeaderboard((int)$config->tournament_id);
             return self::leaderboard((int)$config->tournament_id, 3);
         } catch (\Throwable $e) {
             $tx->rollBack();
@@ -236,22 +249,38 @@ final class CashRaceService
 
     public static function leaderboard(int $tournamentId, int $limit = 20): array
     {
-        $rows = CashRaceScore::find()->where(['tournament_id' => $tournamentId])
-            ->with('user')->orderBy(['keys_deposited' => SORT_DESC, 'last_deposited_at' => SORT_ASC, 'user_id' => SORT_ASC])
-            ->limit(max(1, min(100, $limit)))->all();
-        $items = [];
-        foreach ($rows as $index => $row) {
-            $items[] = [
-                'position' => $row->position ?: $index + 1,
-                'steam_id' => (string)$row->steam_id,
-                'username' => $row->user ? (string)$row->user->username : 'Игрок',
-                'avatar' => $row->user ? (string)$row->user->avatar : '',
-                'keys_found' => (int)$row->keys_found,
-                'keys_lost' => (int)$row->keys_lost,
-                'keys_deposited' => (int)$row->keys_deposited,
-            ];
-        }
-        return $items;
+        $loader = static function () use ($tournamentId): array {
+            $rows = CashRaceScore::find()->where(['tournament_id' => $tournamentId])
+                ->with('user')->orderBy(['keys_deposited' => SORT_DESC, 'last_deposited_at' => SORT_ASC, 'user_id' => SORT_ASC])
+                ->limit(100)->all();
+            $items = [];
+            foreach ($rows as $index => $row) {
+                $items[] = [
+                    'position' => $row->position ?: $index + 1,
+                    'steam_id' => (string)$row->steam_id,
+                    'username' => $row->user ? (string)$row->user->username : 'Игрок',
+                    'avatar' => $row->user ? (string)$row->user->avatar : '',
+                    'keys_found' => (int)$row->keys_found,
+                    'keys_lost' => (int)$row->keys_lost,
+                    'keys_deposited' => (int)$row->keys_deposited,
+                ];
+            }
+            return $items;
+        };
+        $items = Yii::$app->has('cache')
+            ? Yii::$app->cache->getOrSet(self::leaderboardCacheKey($tournamentId), $loader, self::LEADERBOARD_CACHE_TTL)
+            : $loader();
+        return array_slice($items, 0, max(1, min(100, $limit)));
+    }
+
+    private static function invalidateLeaderboard(int $tournamentId): void
+    {
+        if (Yii::$app->has('cache')) Yii::$app->cache->delete(self::leaderboardCacheKey($tournamentId));
+    }
+
+    private static function leaderboardCacheKey(int $tournamentId): array
+    {
+        return [self::class, 'leaderboard', $tournamentId];
     }
 
     public static function validUuid($value): bool

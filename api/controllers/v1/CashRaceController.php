@@ -46,8 +46,9 @@ class CashRaceController extends BaseApiController
         $user = $steamId ? User::find()->where(['steam_id' => $steamId])->one() : null;
         $serverAdmin = !empty($body['server_admin']) || Yii::$app->request->get('server_admin') === '1';
         $eligible = $user instanceof User && CashRaceService::canPlayerParticipate($user, $config, $serverAdmin);
+        $compact = Yii::$app->request->get('compact') === '1' && !$steamId;
         $this->finalizeIfEnded($config);
-        $data = $this->payload($config, $eligible ? $user : null, 8);
+        $data = $this->payload($config, $eligible ? $user : null, 8, $compact);
         $data['available'] = true;
         $data['eligible'] = $eligible;
         $data['poll_after'] = 30;
@@ -97,17 +98,19 @@ class CashRaceController extends BaseApiController
         return $this->successResponse($result);
     }
 
-    private function payload(CashRaceTournament $config, ?User $user, int $leaderboardLimit = 20): array
+    private function payload(CashRaceTournament $config, ?User $user, int $leaderboardLimit = 20, bool $compact = false): array
     {
         $t = $config->tournament;
-        $terminal = CashRaceTerminalSession::find()->where([
-            'tournament_id' => $t->id, 'server_id' => $t->server_id,
-            'status' => CashRaceTerminalSession::STATUS_ACTIVE,
-        ])->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])->orderBy(['id' => SORT_DESC])->one();
+        $terminal = $compact ? null : CashRaceTerminalSession::find()->where([
+                'tournament_id' => $t->id, 'server_id' => $t->server_id,
+                'status' => CashRaceTerminalSession::STATUS_ACTIVE,
+            ])->andWhere(['>', 'expires_at', date('Y-m-d H:i:s')])->orderBy(['id' => SORT_DESC])->one();
         $score = $user ? CashRaceScore::findOne(['tournament_id' => $t->id, 'user_id' => $user->id]) : null;
         $rewards = [];
-        foreach ($t->rewards as $reward) {
-            $rewards[] = ['place' => (int)$reward->place, 'title' => $reward->title, 'subtitle' => $reward->subtitle, 'image' => $reward->getImageUrl()];
+        if (!$compact) {
+            foreach ($t->rewards as $reward) {
+                $rewards[] = ['place' => (int)$reward->place, 'title' => $reward->title, 'subtitle' => $reward->subtitle, 'image' => $reward->getImageUrl()];
+            }
         }
         return [
             'id' => (int)$t->id, 'slug' => $t->slug, 'title' => $t->title,
@@ -141,7 +144,7 @@ class CashRaceController extends BaseApiController
                 'position' => $score && $score->position ? (int)$score->position : null,
             ] : null,
             'rewards' => $rewards,
-            'leaderboard' => CashRaceService::leaderboard((int)$t->id, $leaderboardLimit),
+            'leaderboard' => $compact ? [] : CashRaceService::leaderboard((int)$t->id, $leaderboardLimit),
         ];
     }
 

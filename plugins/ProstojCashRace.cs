@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojCashRace", "Prostoj Team", "1.0.0")]
+    [Info("ProstojCashRace", "Prostoj Team", "1.0.1")]
     [Description("Private-preview Cash Race tournament module for ProstojMenu")]
     public class ProstojCashRace : RustPlugin
     {
@@ -30,6 +30,7 @@ namespace Oxide.Plugins
         private bool statusRequestRunning;
         private bool firstActivePoll = true;
         private readonly Dictionary<ulong, StatusData> playerStatus = new Dictionary<ulong, StatusData>();
+        private readonly Dictionary<ulong, float> playerStatusFetchedAt = new Dictionary<ulong, float>();
         private readonly HashSet<ulong> playerRequests = new HashSet<ulong>();
 
         private class Configuration
@@ -209,10 +210,12 @@ namespace Oxide.Plugins
         {
             if (player == null || !IsPreviewPlayer(player)) return false;
             StatusData snapshot;
-            playerStatus.TryGetValue(player.userID, out snapshot);
-            if (snapshot == null) snapshot = status;
+            var hasPlayerSnapshot = playerStatus.TryGetValue(player.userID, out snapshot) && snapshot != null;
+            var isFresh = hasPlayerSnapshot && playerStatusFetchedAt.ContainsKey(player.userID)
+                && UnityEngine.Time.realtimeSinceStartup - playerStatusFetchedAt[player.userID] < 15f;
+            if (!hasPlayerSnapshot) snapshot = status;
             DrawMenu(player, parent, snapshot);
-            RequestPlayerStatus(player, true);
+            if (!isFresh) RequestPlayerStatus(player, true);
             return true;
         }
 
@@ -227,7 +230,7 @@ namespace Oxide.Plugins
         {
             if (statusRequestRunning || string.IsNullOrWhiteSpace(config.ApiUrl) || string.IsNullOrWhiteSpace(config.ServerTag)) return;
             statusRequestRunning = true;
-            var url = config.ApiUrl + "/plugin/status?server_tag=" + Uri.EscapeDataString(config.ServerTag);
+            var url = config.ApiUrl + "/plugin/status?compact=1&server_tag=" + Uri.EscapeDataString(config.ServerTag);
             webrequest.Enqueue(url, null, (code, response) =>
             {
                 statusRequestRunning = false;
@@ -262,6 +265,7 @@ namespace Oxide.Plugins
                 ApiEnvelope<StatusData> envelope;
                 if (!TryEnvelope(code, response, out envelope) || envelope.Data == null) return;
                 playerStatus[userId] = envelope.Data;
+                playerStatusFetchedAt[userId] = UnityEngine.Time.realtimeSinceStartup;
                 if (redraw && player.IsConnected && IsMenuTabActive(player))
                     ProstojMenu?.Call("API_RefreshTab", player);
             }, this, RequestMethod.GET, Headers(), 12f);
@@ -569,6 +573,7 @@ namespace Oxide.Plugins
         {
             if (player == null) return;
             playerStatus.Remove(player.userID);
+            playerStatusFetchedAt.Remove(player.userID);
             playerRequests.Remove(player.userID);
             CuiHelper.DestroyUi(player, UiRoot);
             if (status != null && status.PreviewOnly && !BasePlayer.activePlayerList.Any(candidate => candidate != player && candidate.IsConnected && IsPreviewPlayer(candidate)))

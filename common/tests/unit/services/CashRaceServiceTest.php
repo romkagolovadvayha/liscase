@@ -72,6 +72,8 @@ final class CashRaceServiceTest extends TestCase
             'monument_name' => 'Test monument',
             'position' => '1,2,3',
         ]);
+        $beforeDeposit = CashRaceService::leaderboard((int)$tournament->id, 8);
+        self::assertSame(0, $beforeDeposit[0]['keys_deposited']);
         $depositUuid = self::uuid();
         $first = CashRaceService::deposit($config, $server, $users[0], $depositUuid, $terminal->session_uuid, $held);
         self::assertSame(2, $first['count']);
@@ -79,6 +81,8 @@ final class CashRaceServiceTest extends TestCase
         $retry = CashRaceService::deposit($config, $server, $users[0], $depositUuid, $terminal->session_uuid, $held);
         self::assertSame(2, $retry['count']);
         self::assertTrue($retry['duplicate']);
+        $afterDeposit = CashRaceService::leaderboard((int)$tournament->id, 8);
+        self::assertSame(2, $afterDeposit[0]['keys_deposited']);
 
         $score = CashRaceService::score($tournament, $users[0]);
         self::assertSame(3, (int)$score->keys_found);
