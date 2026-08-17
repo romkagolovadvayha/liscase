@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.9")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.10")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -2501,8 +2501,12 @@ namespace Oxide.Plugins
             AddLabel(ui, dialogRoot + ".Header", dialogRoot + ".Header.Meta", "0.035 0.08", "0.72 0.44",
                 active != null ? (string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase) ? "ДИАЛОГ ОТКРЫТ  •  ОТВЕТ ОБНОВЛЯЕТСЯ АВТОМАТИЧЕСКИ" : "ОБРАЩЕНИЕ ЗАКРЫТО") : "ОПИШИТЕ ВОПРОС ОДНИМ СООБЩЕНИЕМ",
                 9, active == null || string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase) ? Success : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddButton(ui, dialogRoot + ".Header", dialogRoot + ".Header.Refresh", "0.92 0.18", "0.985 0.82", "0 0 0 0",
-                "prostojmenu.ui support_refresh", "↻", 23, view.SupportLoading ? AccentWarm : TextSecondary);
+            var refreshRoot = dialogRoot + ".Header.Refresh";
+            AddPanel(ui, dialogRoot + ".Header", refreshRoot, "0.92 0.18", "0.985 0.82", "0 0 0 0");
+            AddSquareRawImage(ui, refreshRoot, refreshRoot + ".Icon", "0.5 0.5", 10f,
+                ImageUrl("rust-menu/icons/action-refresh.png"), view.SupportLoading ? "1 0.43 0.31 1" : "1 1 1 0.56");
+            AddButton(ui, refreshRoot, refreshRoot + ".Hit", "0 0", "1 1", "0 0 0 0",
+                "prostojmenu.ui support_refresh", string.Empty, 1, TextMain);
             if (active != null && string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase))
                 AddButton(ui, dialogRoot + ".Header", dialogRoot + ".Header.Close", "0.73 0.22", "0.90 0.78",
                     view.SupportClosing ? BgTertiary : "0.860 0.420 0.480 0.16", view.SupportClosing ? string.Empty : "prostojmenu.ui support_close",
@@ -2625,6 +2629,7 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));
             EnsureImage(ImageUrl("user-stats/wood.png"));
