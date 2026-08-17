@@ -666,7 +666,7 @@ namespace Oxide.Plugins
             }
             var theme = ProstojMenu?.Call("API_GetTheme") as Dictionary<string, string>;
             var themeName = theme != null && theme.ContainsKey("name") ? theme["name"] : "prostoj";
-            var heroUrl = config.AssetsUrl + (themeName == "moscow77" ? "/hero-moscow.jpg" : "/hero-prostoj.jpg");
+            var heroUrl = config.AssetsUrl + (themeName == "moscow77" ? "/hero-moscow-cui.jpg" : "/hero-prostoj-cui.jpg");
             var imageId = GetImage(heroUrl);
             var hero = parent + ".CashRace.Hero";
             AddPanel(ui, parent, hero, "0 0.50", "1 1", "0.02 0.025 0.027 0.88");
@@ -726,8 +726,8 @@ namespace Oxide.Plugins
         private void CacheImages()
         {
             if (ProstojMenu == null) return;
-            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-prostoj.jpg");
-            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-moscow.jpg");
+            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-prostoj-cui.jpg");
+            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-moscow-cui.jpg");
             ProstojMenu.Call("API_CacheImage", "https://prostoj.store/images/rust-menu/icons/nav-tournament.png");
         }
 
