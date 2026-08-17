@@ -105,15 +105,47 @@ class BattlePassController extends TasksController
     }
 
     /**
-     * Reuses the exact website payload for trusted in-game integrations.
-     * Authentication remains the caller's responsibility; RustMenu validates
-     * the server secret and resolves the Steam user before calling this method.
+     * Reuses the website payload for the in-game integration, replacing only
+     * reward artwork with real PNG thumbnails supported by Rust's Unity build.
      */
     public function buildRustMenuPayload(BattlePassSeason $season, ?User $user): array
     {
-        return $user instanceof User
+        $payload = $user instanceof User
             ? $this->buildPayload($season, $user)
             : $this->buildPublicPayload($season);
+
+        foreach (['freeTasks', 'vipTasks'] as $taskGroup) {
+            if (empty($payload[$taskGroup]) || !is_array($payload[$taskGroup])) {
+                continue;
+            }
+
+            foreach ($payload[$taskGroup] as &$task) {
+                if (!empty($task['reward_item']['image'])) {
+                    $task['reward_item']['image'] = $this->rustCompatibleDropImageUrl(
+                        (string)$task['reward_item']['image']
+                    );
+                }
+            }
+            unset($task);
+        }
+
+        if (!empty($payload['season']['finalReward']['item']['image'])) {
+            $payload['season']['finalReward']['item']['image'] = $this->rustCompatibleDropImageUrl(
+                (string)$payload['season']['finalReward']['item']['image']
+            );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Original drop files can contain WebP bytes behind a .png filename. The
+     * generated 100 px variants are encoded as genuine PNG and are large
+     * enough for the in-game Battle Pass cards.
+     */
+    private function rustCompatibleDropImageUrl(string $url): string
+    {
+        return str_replace('/uploads/drop/', '/uploads/drop100/', $url);
     }
 
     public function actionDetail($id)
