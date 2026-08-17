@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.8")]
+    [Info("ProstojRUST", "prostoj.store", "0.7.9")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -1260,7 +1260,9 @@ namespace Oxide.Plugins
                 // or the square web fallback vertically.
                 MenuAddPanel(ui, root, root + ".ImageBg", "0.04 0.16", "0.42 0.84", "0.031 0.008 0.141 0.75");
 
-                if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
+                // An item id is authoritative: render the client's native Rust item
+                // sprite and never replace it with the website image.
+                if (item.ItemID != 0)
                 {
                     ui.Add(new CuiElement
                     {
@@ -1606,7 +1608,9 @@ namespace Oxide.Plugins
                     Image = { Color = "0.12 0.12 0.12 0.85" }
                 }, contentRoot, itemRoot, itemRoot);
 
-                if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
+                // Keep /store consistent with the integrated menu: website artwork
+                // is only a fallback for rewards without a Rust item id.
+                if (item.ItemID != 0)
                 {
                     content.Add(new CuiElement
                     {
