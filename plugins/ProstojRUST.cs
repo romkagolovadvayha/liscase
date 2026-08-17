@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.7")]
+    [Info("ProstojRUST", "prostoj.store", "0.7.8")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -1255,7 +1255,10 @@ namespace Oxide.Plugins
                 MenuAddPanel(ui, MenuStoreLayer + ".Grid", root, MenuF(xMin, yMin), MenuF(xMax, yMax), "0.18 0.102 0.231 1");
                 // Compact cards stay horizontal: the item keeps a square visual slot on
                 // the left, while the name and amount remain readable on the right.
-                MenuAddPanel(ui, root, root + ".ImageBg", "0.04 0.13", "0.42 0.87", "0.031 0.008 0.141 0.75");
+                // At 1920x1080 an integrated card is wider than it is tall. Keep the
+                // artwork surface square so Unity does not stretch native Rust icons
+                // or the square web fallback vertically.
+                MenuAddPanel(ui, root, root + ".ImageBg", "0.04 0.16", "0.42 0.84", "0.031 0.008 0.141 0.75");
 
                 if (Settings.InterfaceSettings.LoadSpriteImages && item.ItemID != 0)
                 {
