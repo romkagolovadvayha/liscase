@@ -17,14 +17,12 @@ use common\models\wipe_calendar\WipeCalendarEvent;
 use common\components\queue\support\BeforeMessageJob;
 use Yii;
 use yii\web\BadRequestHttpException;
-use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 
 /**
- * Read-only aggregate used by the in-game ProstojMenu plugin.
- *
- * The endpoint requires the Rust server secret because the response contains
- * the player's personal store balance. Public website APIs stay unchanged.
+ * Aggregate used by the in-game ProstojMenu plugin.
+ * Requests are resolved by the configured server tag or IP/port; a server
+ * secret is intentionally not required for this API.
  */
 class RustMenuController extends BaseApiController
 {
@@ -32,7 +30,7 @@ class RustMenuController extends BaseApiController
     {
         [$server, $steamId] = $this->authenticatePlayerRequest();
 
-        // Opening the trusted in-game menu also selects the server on the
+        // Opening the in-game menu also selects the server on the
         // website. Do this before the snapshot cache lookup so a cached menu
         // response cannot leave the account attached to a different server.
         $user = User::find()
@@ -85,9 +83,8 @@ class RustMenuController extends BaseApiController
     }
 
     /**
-     * Keep the website's selected server aligned with the trusted Rust server.
-     * The server secret is verified before this method is reached, and the
-     * write only happens on an actual mismatch.
+     * Keep the website's selected server aligned with the requested Rust
+     * server. The write only happens on an actual mismatch.
      */
     private function syncUserServer(?User $user, Servers $server): void
     {
@@ -344,12 +341,6 @@ class RustMenuController extends BaseApiController
             trim((string) $request->get('server_ip', '')),
             (int) $request->get('server_port', 0)
         );
-        $providedSecret = (string) $request->headers->get(
-            'X-Rust-Server-Secret',
-            (string) $request->get('secret', '')
-        );
-        $this->assertServerSecret($server, $providedSecret);
-
         return [$server, $steamId];
     }
 
@@ -658,14 +649,6 @@ class RustMenuController extends BaseApiController
         }
 
         return $server;
-    }
-
-    private function assertServerSecret(Servers $server, string $provided): void
-    {
-        $expected = trim((string) $server->secret_key);
-        if ($expected === '' || $provided === '' || !hash_equals($expected, $provided)) {
-            throw new ForbiddenHttpException('Invalid Rust server secret.');
-        }
     }
 
     private function buildPlayer(?User $user, string $steamId, array $stats): array

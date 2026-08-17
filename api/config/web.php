@@ -307,7 +307,7 @@ $config = [
                 'v1/rust-plugin-chat/welcome/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/welcome',
                 'v1/rust-plugin-chat/help/<serverTag:[\w-]+>' => 'v1/rust-plugin-chat/help',
 
-                // Unified in-game menu snapshot (protected by the Rust server secret)
+                // Unified in-game menu API (server is resolved by tag or IP/port)
                 ['pattern' => 'v1/rust-menu/snapshot', 'route' => 'v1/rust-menu/snapshot', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/battlepass', 'route' => 'v1/rust-menu/battlepass', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/battlepass/tasks/<id:\d+>/check', 'route' => 'v1/rust-menu/battlepass-check', 'verb' => ['POST', 'OPTIONS']],
