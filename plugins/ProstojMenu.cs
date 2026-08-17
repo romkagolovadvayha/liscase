@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.0.8")]
+    [Info("ProstojMenu", "Prostoj Team", "2.0.9")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1587,13 +1587,12 @@ namespace Oxide.Plugins
             // a RawImage. Cover only that empty padding; the visible logo ends left
             // of this mask, so its proportions and artwork remain unchanged.
             AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.824 0.9033", "0.834 0.9647", "0.098 0.063 0.176 0.94");
-            AddLabel(ui, Sidebar, Sidebar + ".Section", "0.07 0.825", "0.93 0.855", "РАЗДЕЛЫ", 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
         }
 
         private void AddNavigation(CuiElementContainer ui, PlayerView view)
         {
             var ordered = tabs.Values.OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).Take(7).ToList();
-            var top = 0.805f;
+            var top = 0.855f;
             var height = ordered.Count > 5 ? 0.067f : 0.078f;
             const float gap = 0.01f;
             for (var index = 0; index < ordered.Count; index++)
