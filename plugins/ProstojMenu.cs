@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.2.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.3.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -66,7 +66,10 @@ namespace Oxide.Plugins
         private readonly Dictionary<string, CachedImage> cachedImages = new Dictionary<string, CachedImage>(StringComparer.Ordinal);
         private readonly Dictionary<string, CachedCalendarMonth> cachedCalendarMonths = new Dictionary<string, CachedCalendarMonth>(StringComparer.Ordinal);
         private readonly System.Collections.Generic.Queue<CachedImage> pendingImages = new System.Collections.Generic.Queue<CachedImage>();
+        private readonly System.Collections.Generic.Queue<ulong> pendingSnapshotPrefetches = new System.Collections.Generic.Queue<ulong>();
+        private readonly HashSet<ulong> queuedSnapshotPrefetches = new HashSet<ulong>();
         private int activeImageDownloads;
+        private int activeSnapshotPrefetches;
         private bool imageRefreshScheduled;
         private bool imageShellRefreshRequired;
         private bool imageCacheReady;
@@ -97,6 +100,15 @@ namespace Oxide.Plugins
 
             [JsonProperty("Snapshot cache seconds")]
             public int CacheSeconds = 30;
+
+            [JsonProperty("Prefetch snapshots for online players")]
+            public bool PrefetchOnlinePlayers = true;
+
+            [JsonProperty("Online snapshot prefetch delay seconds")]
+            public float PrefetchDelaySeconds = 12f;
+
+            [JsonProperty("Maximum simultaneous snapshot prefetches")]
+            public int MaxConcurrentPrefetches = 1;
 
             [JsonProperty("Require permission")]
             public bool RequirePermission;
@@ -485,6 +497,8 @@ namespace Oxide.Plugins
             }
 
             settings.CacheSeconds = Mathf.Clamp(settings.CacheSeconds, 10, 300);
+            settings.PrefetchDelaySeconds = Mathf.Clamp(settings.PrefetchDelaySeconds, 5f, 120f);
+            settings.MaxConcurrentPrefetches = Mathf.Clamp(settings.MaxConcurrentPrefetches, 1, 4);
             settings.ApiUrl = (settings.ApiUrl ?? string.Empty).Trim();
             settings.SupportApiUrl = (settings.SupportApiUrl ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(settings.SupportApiUrl) && settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase))
@@ -526,11 +540,25 @@ namespace Oxide.Plugins
             PreloadMenuImages();
             PumpImageQueue();
 
-            if (settings.ServerSecret == "CHANGE_ME" || string.IsNullOrWhiteSpace(settings.ServerSecret))
-                PrintWarning("Configure 'Rust server secret' before expecting personal menu data.");
             // A short scheduler tick lets every player keep an independent,
             // jittered polling deadline instead of hitting the API in one burst.
             timer.Every(2f, PollSupportViews);
+            timer.Every(1f, PumpSnapshotPrefetches);
+            if (settings.PrefetchOnlinePlayers)
+            {
+                timer.Once(settings.PrefetchDelaySeconds, () =>
+                {
+                    foreach (var player in BasePlayer.activePlayerList)
+                        QueueSnapshotPrefetch(player);
+                });
+            }
+        }
+
+        private void OnPlayerConnected(BasePlayer player)
+        {
+            if (!settings.PrefetchOnlinePlayers || player == null) return;
+            var jitter = (float)(player.userID % 8UL);
+            timer.Once(settings.PrefetchDelaySeconds + jitter, () => QueueSnapshotPrefetch(player));
         }
 
         private void Unload()
@@ -538,6 +566,8 @@ namespace Oxide.Plugins
             imageCacheUnloading = true;
             imageCacheReady = false;
             pendingImages.Clear();
+            pendingSnapshotPrefetches.Clear();
+            queuedSnapshotPrefetches.Clear();
             foreach (var player in BasePlayer.activePlayerList)
                 CuiHelper.DestroyUi(player, Root);
             views.Clear();
@@ -548,6 +578,7 @@ namespace Oxide.Plugins
         private void OnPlayerDisconnected(BasePlayer player, string reason)
         {
             views.Remove(player.userID);
+            queuedSnapshotPrefetches.Remove(player.userID);
         }
 
         private void OnPluginUnloaded(Plugin plugin)
@@ -945,21 +976,67 @@ namespace Oxide.Plugins
             CuiHelper.DestroyUi(player, Root);
         }
 
-        private void FetchSnapshot(BasePlayer player, PlayerView view, bool force)
+        private void QueueSnapshotPrefetch(BasePlayer player)
+        {
+            if (!settings.PrefetchOnlinePlayers || player == null || !player.IsConnected) return;
+            if (settings.RequirePermission && !permission.UserHasPermission(player.UserIDString, PermissionUse)) return;
+
+            PlayerView view;
+            if (views.TryGetValue(player.userID, out view))
+            {
+                if (view.Open || view.Loading) return;
+                if (view.Snapshot != null &&
+                    (DateTime.UtcNow - view.LoadedAtUtc).TotalSeconds < settings.CacheSeconds)
+                    return;
+            }
+            if (!queuedSnapshotPrefetches.Add(player.userID)) return;
+            pendingSnapshotPrefetches.Enqueue(player.userID);
+        }
+
+        private void PumpSnapshotPrefetches()
+        {
+            if (!settings.PrefetchOnlinePlayers || imageCacheUnloading) return;
+            while (activeSnapshotPrefetches < settings.MaxConcurrentPrefetches && pendingSnapshotPrefetches.Count > 0)
+            {
+                var userId = pendingSnapshotPrefetches.Dequeue();
+                queuedSnapshotPrefetches.Remove(userId);
+                var player = BasePlayer.FindByID(userId);
+                if (player == null || !player.IsConnected) continue;
+
+                PlayerView view;
+                if (!views.TryGetValue(userId, out view))
+                {
+                    view = new PlayerView();
+                    views[userId] = view;
+                }
+                if (view.Open || view.Loading || (view.Snapshot != null &&
+                    (DateTime.UtcNow - view.LoadedAtUtc).TotalSeconds < settings.CacheSeconds))
+                    continue;
+
+                FetchSnapshot(player, view, false, true);
+            }
+        }
+
+        private void FetchSnapshot(BasePlayer player, PlayerView view, bool force, bool silent = false)
         {
             if (view.Loading) return;
             if (string.IsNullOrWhiteSpace(settings.ApiUrl))
             {
                 view.Error = "API меню не настроен";
-                RenderContent(player, view);
+                if (!silent) RenderContent(player, view);
                 return;
             }
 
             view.Loading = true;
             view.Error = null;
             var requestVersion = ++view.RequestVersion;
-            RenderHeader(player, view);
-            RenderContent(player, view);
+            if (silent)
+                activeSnapshotPrefetches++;
+            else
+            {
+                RenderHeader(player, view);
+                RenderContent(player, view);
+            }
 
             var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString);
             if (!string.IsNullOrEmpty(settings.ServerTag))
@@ -980,6 +1057,8 @@ namespace Oxide.Plugins
 
             webrequest.Enqueue(url, null, (code, response) =>
             {
+                if (silent && activeSnapshotPrefetches > 0)
+                    activeSnapshotPrefetches--;
                 PlayerView current;
                 if (!views.TryGetValue(player.userID, out current) || current.RequestVersion != requestVersion)
                     return;

@@ -30,19 +30,27 @@ class RustMenuController extends BaseApiController
     {
         [$server, $steamId] = $this->authenticatePlayerRequest();
 
-        // Opening the in-game menu also selects the server on the
-        // website. Do this before the snapshot cache lookup so a cached menu
-        // response cannot leave the account attached to a different server.
+        $cacheKey = 'api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v6');
+        $cached = Yii::$app->cache->get($cacheKey);
+        if (is_array($cached)) {
+            // A cache hit only needs these two columns to preserve immediate
+            // website server selection. Avoid hydrating the wide user row on
+            // the hottest request path.
+            $user = User::find()
+                ->select(['id', 'server_id'])
+                ->andWhere(['steam_id' => $steamId])
+                ->one();
+            $this->syncUserServer($user, $server);
+
+            return $this->successResponse($cached, ['cached' => true]);
+        }
+
+        // Opening the in-game menu also selects the server on the website.
+        // Cache misses need the full model for the player payload.
         $user = User::find()
             ->andWhere(['steam_id' => $steamId])
             ->one();
         $this->syncUserServer($user, $server);
-
-        $cacheKey = 'api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v6');
-        $cached = Yii::$app->cache->get($cacheKey);
-        if (is_array($cached)) {
-            return $this->successResponse($cached, ['cached' => true]);
-        }
 
         $wipe = $server->currentWipe();
         $stats = $this->buildPlayerStats($server, $steamId, $wipe);
@@ -686,6 +694,13 @@ class RustMenuController extends BaseApiController
 
     private function buildPlayerStats(Servers $server, string $steamId, string $wipe): array
     {
+        $cacheKey = 'api_rust_menu_player_stats_v1_'
+            . md5((int) $server->id . '|' . $steamId . '|' . $wipe);
+        $cached = Yii::$app->cache->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
         try {
             $rows = Statistics::getPlayerStats($server, $steamId, $wipe);
         } catch (\Throwable $e) {
@@ -736,7 +751,7 @@ class RustMenuController extends BaseApiController
             ];
         }
 
-        return [
+        $result = [
             'kills' => $kills,
             'deaths' => $deaths,
             'kd' => $deaths > 0 ? round($kills / $deaths, 2) : (float) $kills,
@@ -759,6 +774,12 @@ class RustMenuController extends BaseApiController
                 1
             ),
         ];
+        // Statistics uploads are five-minute aggregates. A one-minute
+        // formatted cache is therefore fresher than the source cadence while
+        // removing repeated image lookup and mapping work after prefetches.
+        Yii::$app->cache->set($cacheKey, $result, 60);
+
+        return $result;
     }
 
     private function buildSupportSummary(?User $user): array
