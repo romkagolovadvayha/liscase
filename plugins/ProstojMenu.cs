@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.2")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.3")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1906,7 +1906,8 @@ namespace Oxide.Plugins
                 catch (Exception exception)
                 {
                     PrintWarning("Tab '" + tab.Key + "' failed: " + exception.Message);
-                    RenderEmptyState(player, "МОДУЛЬ НЕДОСТУПЕН", "Плагин вкладки вернул ошибку.", Danger);
+                    RenderEmptyState(player, "МОДУЛЬ НЕДОСТУПЕН", "Плагин вкладки вернул ошибку.", Danger,
+                        NavigationIconUrl(NormalizeIcon(tab.Key, tab.Glyph)));
                 }
                 return;
             }
@@ -1925,12 +1926,14 @@ namespace Oxide.Plugins
 
             if (view.Snapshot == null && view.Loading)
             {
-                RenderEmptyState(player, "ЗАГРУЖАЕМ ДАННЫЕ", "Синхронизируем профиль, вайпы и рейтинги…", AccentWarm);
+                RenderEmptyState(player, "ЗАГРУЖАЕМ ДАННЫЕ", "Синхронизируем профиль, вайпы и рейтинги…", AccentWarm,
+                    NavigationIconUrl(NormalizeIcon(view.ActiveTab, view.ActiveTab)));
                 return;
             }
             if (view.Snapshot == null && !string.IsNullOrEmpty(view.Error))
             {
-                RenderEmptyState(player, "ДАННЫЕ НЕДОСТУПНЫ", view.Error + "\nПопробуйте обновить меню через несколько секунд.", Danger);
+                RenderEmptyState(player, "ДАННЫЕ НЕДОСТУПНЫ", view.Error + "\nПопробуйте обновить меню через несколько секунд.", Danger,
+                    NavigationIconUrl(NormalizeIcon(view.ActiveTab, view.ActiveTab)));
                 return;
             }
 
