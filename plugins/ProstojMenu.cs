@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.1")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -668,6 +668,33 @@ namespace Oxide.Plugins
         private object API_CacheImage(string url)
         {
             return EnsureImage(url) != null;
+        }
+
+        // Shared visual tokens keep connected plugin tabs in the same theme as
+        // the shell without duplicating the theme selector in every plugin.
+        private object API_GetTheme()
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["name"] = useMoscowVisualTheme ? "moscow77" : "prostoj",
+                ["bg_main"] = ThemeColor(BgMain),
+                ["bg_secondary"] = ThemeColor(BgSecondary),
+                ["bg_tertiary"] = ThemeColor(BgTertiary),
+                ["bg_raised"] = ThemeColor(BgRaised),
+                ["bg_image"] = ThemeColor("0.031 0.008 0.141 0.73"),
+                ["bg_disabled"] = ThemeColor("0.18 0.102 0.231 0.35"),
+                ["text_main"] = ThemeColor(TextMain),
+                ["text_secondary"] = ThemeColor(TextSecondary),
+                ["border"] = ThemeColor(Border),
+                ["accent"] = ThemeColor(AccentWarm),
+                ["accent_primary"] = ThemeColor(Accent),
+                ["accent_soft"] = ThemeColor("1 0.38 0.204 0.12"),
+                ["danger"] = ThemeColor(Danger),
+                ["danger_soft"] = ThemeColor("0.922 0.047 0.208 0.58"),
+                ["success"] = ThemeColor(Success),
+                ["warning"] = ThemeColor(Warning),
+                ["gold"] = ThemeColor(Gold)
+            };
         }
 
         private void RedrawOpenViews(string key)

@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.7.6")]
+    [Info("ProstojRUST", "prostoj.store", "0.7.7")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -364,6 +364,7 @@ namespace Oxide.Plugins
         private const string MenuStoreLayer = "ProstojMenu.Content.Store";
         private readonly Dictionary<ulong, string> menuStoreParents = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, int> menuStorePages = new Dictionary<ulong, int>();
+        private static readonly Dictionary<string, string> MenuThemeTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private string MainApiLink => NormalizeLegacyShopRoot(Settings?.APISettings?.LegacyShopApiRoot);
         private string ReserveApiLink
         {
@@ -512,6 +513,7 @@ namespace Oxide.Plugins
         private int TryImageCounter = 0;
         private void OnServerInitialized()
         {
+            RefreshMenuTheme();
             RegisterMenuTab();
             BaseRequest = MainApiLink + BaseRequestParams;
             if (Settings.APISettings.ServerID != "0" && Settings.APISettings.ServerID != "UNDEFINED")
@@ -690,6 +692,7 @@ namespace Oxide.Plugins
             if (plugin != null && plugin.Name == "ProstojMenu")
             {
                 ProstojMenu = plugin;
+                RefreshMenuTheme();
                 RegisterMenuTab();
                 if (Settings != null && Settings.InterfaceSettings != null &&
                     Settings.InterfaceSettings.BucketURL.Contains("http"))
@@ -703,12 +706,26 @@ namespace Oxide.Plugins
         private void OnPluginUnloaded(Plugin plugin)
         {
             if (plugin != null && plugin.Name == "ProstojMenu")
+            {
                 ProstojMenu = null;
+                MenuThemeTokens.Clear();
+            }
         }
 
         private void RegisterMenuTab()
         {
             ProstojMenu?.Call("API_RegisterTab", this, "store", "МАГАЗИН", "SHOP", 10);
+        }
+
+        private void RefreshMenuTheme()
+        {
+            MenuThemeTokens.Clear();
+            if (ProstojMenu == null) return;
+
+            var tokens = ProstojMenu.Call("API_GetTheme") as Dictionary<string, string>;
+            if (tokens == null) return;
+            foreach (var entry in tokens)
+                MenuThemeTokens[entry.Key] = entry.Value;
         }
 
         private void OnPlayerDisconnected(BasePlayer player, string reason)
@@ -1327,17 +1344,44 @@ namespace Oxide.Plugins
 
         private static void MenuAddPanel(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string color)
         {
-            ui.Add(new CuiPanel { Image = { Color = color }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+            ui.Add(new CuiPanel { Image = { Color = MenuThemeColor(color) }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
         }
 
         private static void MenuAddLabel(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string text, int size, string color, TextAnchor align, string font)
         {
-            ui.Add(new CuiLabel { Text = { Text = text ?? string.Empty, FontSize = size, Color = color, Align = align, Font = font }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+            ui.Add(new CuiLabel { Text = { Text = text ?? string.Empty, FontSize = size, Color = MenuThemeColor(color), Align = align, Font = font }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
         }
 
         private static void MenuAddButton(CuiElementContainer ui, string parent, string name, string anchorMin, string anchorMax, string color, string command, string text, int size, string textColor)
         {
-            ui.Add(new CuiButton { Button = { Color = color, Command = command }, Text = { Text = text ?? string.Empty, FontSize = size, Color = textColor, Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+            ui.Add(new CuiButton { Button = { Color = MenuThemeColor(color), Command = command }, Text = { Text = text ?? string.Empty, FontSize = size, Color = MenuThemeColor(textColor), Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = anchorMin, AnchorMax = anchorMax } }, parent, name, name);
+        }
+
+        private static string MenuThemeColor(string color)
+        {
+            switch (color)
+            {
+                case "0.098 0.063 0.176 1": return MenuThemeToken("bg_secondary", color);
+                case "0.18 0.102 0.231 1": return MenuThemeToken("bg_tertiary", color);
+                case "0.18 0.102 0.231 0.35": return MenuThemeToken("bg_disabled", color);
+                case "0.031 0.008 0.141 0.75": return MenuThemeToken("bg_image", color);
+                case "0.925 0.894 0.953 1": return MenuThemeToken("text_main", color);
+                case "0.561 0.561 0.561 1": return MenuThemeToken("text_secondary", color);
+                case "1 0.38 0.204 1": return MenuThemeToken("accent", color);
+                case "1 0.38 0.204 0.12": return MenuThemeToken("accent_soft", color);
+                case "0.922 0.047 0.208 1": return MenuThemeToken("accent_primary", color);
+                case "0.922 0.047 0.208 0.58": return MenuThemeToken("danger_soft", color);
+                case "0.945 0.42 0.478 1": return MenuThemeToken("danger", color);
+                default: return color;
+            }
+        }
+
+        private static string MenuThemeToken(string key, string fallback)
+        {
+            string value;
+            return MenuThemeTokens.TryGetValue(key, out value) && !string.IsNullOrWhiteSpace(value)
+                ? value
+                : fallback;
         }
 
         private static string MenuF(float x, float y) => x.ToString("0.####", CultureInfo.InvariantCulture) + " " + y.ToString("0.####", CultureInfo.InvariantCulture);
