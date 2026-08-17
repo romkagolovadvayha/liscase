@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.1.3")]
+    [Info("ProstojMenu", "Prostoj Team", "2.1.4")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1626,16 +1626,16 @@ namespace Oxide.Plugins
         {
             if (useMoscowVisualTheme)
             {
-                AddFittedRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.5 0.934", 100f, 30.5f,
+                AddFittedRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.5 0.934", 70f, 21.35f,
                     BrandLogoUrl(), "1 1 1 1");
                 return;
             }
 
-            AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.17 0.9033", "0.83 0.9647",
+            AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.269 0.9125", "0.731 0.9555",
                 BrandLogoUrl(), "1 1 1 1");
             // Rust may sample a colored texel into the transparent right padding of
             // the Prostoj RawImage. Cover only that empty padding.
-            AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.824 0.9033", "0.834 0.9647", "0.098 0.063 0.176 0.94");
+            AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.727 0.9125", "0.734 0.9555", "0.098 0.063 0.176 0.94");
         }
 
         private void AddNavigation(CuiElementContainer ui, PlayerView view)
