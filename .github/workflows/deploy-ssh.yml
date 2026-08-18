@@ -234,6 +234,32 @@ jobs:
             "$PHP_BIN" "$COMPOSER_BIN" install --no-interaction --no-dev --optimize-autoloader
             "$PHP_BIN" -d default_socket_timeout=28800 yii migrate --interactive=0
             if [ -f supervisor.deploy.conf ]; then
+              # Environment secrets edited on Windows may contain CRLF. Normalize first so
+              # section-level validation below behaves identically on every target.
+              tr -d '\r' < supervisor.deploy.conf > supervisor.deploy.conf.__lf__
+              mv -f supervisor.deploy.conf.__lf__ supervisor.deploy.conf
+              # Monitoring agents are optional. Do not leave permanent FATAL entries when
+              # their binaries are not installed on a particular server.
+              for _optional_program in loki promtail; do
+                if [ ! -x "/usr/local/bin/${_optional_program}" ]; then
+                  sed -i "/^\[program:${_optional_program}\]$/,/^$/d" supervisor.deploy.conf
+                fi
+              done
+              # Keep the first of byte-identical duplicate program sections. Conflicting
+              # duplicates are unsafe: fail before replacing the currently working config.
+              awk -v RS='' -v ORS='\n\n' '
+                /^\[program:/ {
+                  name = $1
+                  if (name in seen) {
+                    if (body[name] != $0) exit 42
+                    next
+                  }
+                  seen[name] = 1
+                  body[name] = $0
+                }
+                { print }
+              ' supervisor.deploy.conf > supervisor.deploy.conf.__deduplicated__
+              mv -f supervisor.deploy.conf.__deduplicated__ supervisor.deploy.conf
               # Replace PHP both in direct commands (`command=php yii ...`) and
               # in wrapped commands (`command=bash -c '... /usr/bin/php ...'`).
               sed -i -E "s#(^|[=;&|[:space:]])(/usr/bin/php|/opt/php[0-9]+/bin/php|php)([[:space:]])#\\1${PHP_BIN}\\3#g" supervisor.deploy.conf
