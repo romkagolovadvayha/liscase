@@ -234,7 +234,13 @@ jobs:
             "$PHP_BIN" "$COMPOSER_BIN" install --no-interaction --no-dev --optimize-autoloader
             "$PHP_BIN" -d default_socket_timeout=28800 yii migrate --interactive=0
             if [ -f supervisor.deploy.conf ]; then
-              sed -i -E "s#^(command=)(php|/usr/bin/php|/opt/php[0-9]+/bin/php)([[:space:]])#\\1${PHP_BIN}\\3#" supervisor.deploy.conf
+              # Replace PHP both in direct commands (`command=php yii ...`) and
+              # in wrapped commands (`command=bash -c '... /usr/bin/php ...'`).
+              sed -i -E "s#(^|[=;&|[:space:]])(/usr/bin/php|/opt/php[0-9]+/bin/php|php)([[:space:]])#\\1${PHP_BIN}\\3#g" supervisor.deploy.conf
+              if grep -Eq '(^|[=;&|[:space:]])(/usr/bin/php|php)([[:space:]])' supervisor.deploy.conf; then
+                echo "::error::Supervisor config still contains a legacy PHP command"
+                exit 1
+              fi
               SUPERVISOR_FN='${{ secrets.DEPLOY_SUPERVISOR_CONF_FILENAME || vars.DEPLOY_SUPERVISOR_CONF_FILENAME }}'
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
               sudo mv -f supervisor.deploy.conf "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
