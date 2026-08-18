@@ -257,6 +257,9 @@ $rewardMeta = [
         ]) ?>
 
         <?php if (!$model->isNewRecord): ?>
+            <?= Html::a('<i class="fas fa-users" aria-hidden="true"></i> Игроки и ключи', ['players', 'id' => $model->id], [
+                'class' => 'ds-btn ds-btn--secondary cash-race-form__players',
+            ]) ?>
             <div class="cash-race-form__runtime-actions">
                 <?= Html::a('<i class="fas fa-play" aria-hidden="true"></i> Запустить сейчас', ['start', 'id' => $model->id], [
                     'class' => 'ds-btn ds-btn--success',

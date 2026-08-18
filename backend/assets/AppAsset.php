@@ -13,7 +13,7 @@ class AppAsset extends AssetBundle
     public $sourcePath = '@backend/assets/sources';
 
     public $css = [
-        'scss/main.min.css?v=2.5',
+        'scss/main.min.css?v=2.6',
     ];
 
     public $js = [

@@ -17,9 +17,9 @@ class CashRaceForm extends TournamentForm
     public $drop_max = 2;
     public $key_shortname = 'keycard_green';
     public $key_skin_id = 0;
-    public $terminal_active_seconds = 900;
+    public $terminal_active_seconds = 1200;
     public $terminal_cooldown_min_seconds = 1200;
-    public $terminal_cooldown_max_seconds = 2400;
+    public $terminal_cooldown_max_seconds = 1200;
     public $terminal_prefab = 'assets/prefabs/deployable/vendingmachine/vendingmachine.deployed.prefab';
     public $allowed_monuments_text = '';
 

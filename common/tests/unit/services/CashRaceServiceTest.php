@@ -89,6 +89,12 @@ final class CashRaceServiceTest extends TestCase
         self::assertSame(1, (int)$score->keys_lost);
         self::assertSame(2, (int)$score->keys_deposited);
 
+        $updated = CashRaceService::updateScoreByAdmin($config, $score, 12, 2, 7);
+        self::assertSame(12, (int)$updated->keys_found);
+        self::assertSame(2, (int)$updated->keys_lost);
+        self::assertSame(7, (int)$updated->keys_deposited);
+        self::assertSame(7, CashRaceService::leaderboard((int)$tournament->id, 8)[0]['keys_deposited']);
+
         $foreign = self::uuid();
         CashRaceService::mint($config, $server, $users[0], [$foreign]);
         $this->expectException(\DomainException::class);

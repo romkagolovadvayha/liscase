@@ -219,6 +219,61 @@ final class CashRaceService
         }
     }
 
+    public static function updateScoreByAdmin(CashRaceTournament $config, CashRaceScore $score, int $keysFound, int $keysLost, int $keysDeposited): CashRaceScore
+    {
+        if ($config->awards_issued_at) throw new \DomainException('TOURNAMENT_ALREADY_AWARDED');
+        if ((int)$score->tournament_id !== (int)$config->tournament_id) throw new \DomainException('SCORE_TOURNAMENT_MISMATCH');
+        foreach ([$keysFound, $keysLost, $keysDeposited] as $value) {
+            if ($value < 0 || $value > 1000000) throw new \DomainException('INVALID_SCORE_VALUE');
+        }
+        $tx = Yii::$app->db->beginTransaction();
+        try {
+            $driver = Yii::$app->db->driverName;
+            if ($driver === 'mysql' || $driver === 'pgsql') {
+                Yii::$app->db->createCommand(
+                    'SELECT id FROM ' . CashRaceScore::tableName() . ' WHERE id = :id FOR UPDATE',
+                    [':id' => (int)$score->id]
+                )->queryScalar();
+            }
+
+            $lockedScore = CashRaceScore::findOne([
+                'id' => (int)$score->id,
+                'tournament_id' => (int)$config->tournament_id,
+            ]);
+            if (!$lockedScore) throw new \DomainException('SCORE_NOT_FOUND');
+
+            $heldKeys = (int)CashRaceKeyToken::find()->where([
+                'tournament_id' => (int)$config->tournament_id,
+                'user_id' => (int)$lockedScore->user_id,
+                'state' => CashRaceKeyToken::STATE_HELD,
+            ])->count();
+            if ($keysLost + $keysDeposited + $heldKeys > $keysFound) {
+                throw new \DomainException('SCORE_TOTAL_EXCEEDS_FOUND');
+            }
+
+            $lockedScore->keys_found = $keysFound;
+            $lockedScore->keys_lost = $keysLost;
+            $lockedScore->keys_deposited = $keysDeposited;
+            $lockedScore->position = null;
+            $lockedScore->last_found_at = $keysFound > 0
+                ? ($lockedScore->last_found_at ?: date('Y-m-d H:i:s'))
+                : null;
+            $lockedScore->last_deposited_at = $keysDeposited > 0
+                ? ($lockedScore->last_deposited_at ?: date('Y-m-d H:i:s'))
+                : null;
+            $lockedScore->updated_at = time();
+            if (!$lockedScore->save()) throw new \RuntimeException(json_encode($lockedScore->errors, JSON_UNESCAPED_UNICODE));
+
+            CashRaceScore::updateAll(['position' => null], ['tournament_id' => (int)$config->tournament_id]);
+            $tx->commit();
+            self::invalidateLeaderboard((int)$config->tournament_id);
+            return $lockedScore;
+        } catch (\Throwable $e) {
+            if ($tx->isActive) $tx->rollBack();
+            throw $e;
+        }
+    }
+
     public static function finalize(CashRaceTournament $config): array
     {
         if ($config->awards_issued_at) return self::leaderboard((int)$config->tournament_id, 3);

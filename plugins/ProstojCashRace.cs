@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojCashRace", "Prostoj Team", "1.0.1")]
+    [Info("ProstojCashRace", "Prostoj Team", "1.0.7")]
     [Description("Private-preview Cash Race tournament module for ProstojMenu")]
     public class ProstojCashRace : RustPlugin
     {
@@ -25,6 +25,7 @@ namespace Oxide.Plugins
         private StatusData status;
         private BaseEntity terminalEntity;
         private string terminalUuid;
+        private string lastMonumentKey;
         private Timer pollTimer;
         private Timer terminalTimer;
         private bool statusRequestRunning;
@@ -39,6 +40,9 @@ namespace Oxide.Plugins
             [JsonProperty("Server tag")] public string ServerTag = "classic14x2";
             [JsonProperty("Private preview Steam ID")] public string PrivateSteamId = PreviewSteamId;
             [JsonProperty("Status poll seconds")] public float PollSeconds = 30f;
+            [JsonProperty("Key item shortname override (empty = API)")] public string KeyItemShortnameOverride = "door.key";
+            [JsonProperty("Reset previously tracked keys once")] public bool ResetTrackedKeysOnce;
+            [JsonProperty("Terminal cooldown override seconds (0 = API)")] public int TerminalCooldownOverrideSeconds = 1200;
             [JsonProperty("Website assets URL")] public string AssetsUrl = "https://prostoj.store/images/cash-race";
             [JsonProperty("Chat prefix")] public string ChatPrefix = "<color=#72b883>[ДЕНЕЖНАЯ ГОНКА]</color>";
             [JsonProperty("Debug logging")] public bool Debug;
@@ -169,11 +173,27 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
+            ResetTrackedKeysIfRequested();
             RegisterMenuTab();
             CacheImages();
             PollStatus();
             pollTimer = timer.Every(Mathf.Clamp(config.PollSeconds, 15f, 120f), PollStatus);
             timer.Every(60f, FlushPendingLost);
+        }
+
+        private void ResetTrackedKeysIfRequested()
+        {
+            if (!config.ResetTrackedKeysOnce) return;
+            foreach (var ownerGroup in storedData.BoundKeys.Values
+                .Where(key => key != null && !string.IsNullOrWhiteSpace(key.Token))
+                .GroupBy(key => key.OwnerId))
+            {
+                QueueLost(ownerGroup.Key.ToString(), ownerGroup.Select(key => key.Token).Distinct().ToList());
+            }
+            storedData.BoundKeys.Clear();
+            config.ResetTrackedKeysOnce = false;
+            SaveData();
+            SaveConfig();
         }
 
         private void Unload()
@@ -239,6 +259,9 @@ namespace Oxide.Plugins
                 var wasActive = IsActive;
                 status = envelope.Data;
                 if (status != null && status.Mechanics == null) status.Mechanics = new MechanicsData();
+                if (config.Debug && status != null)
+                    Puts("Status: phase=" + status.Phase + ", terminalActive=" + status.Mechanics.TerminalActiveSeconds
+                        + "s, cooldown=" + status.Mechanics.TerminalCooldownMinSeconds + "-" + status.Mechanics.TerminalCooldownMaxSeconds + "s");
                 if (IsActive && (!wasActive || firstActivePoll))
                 {
                     firstActivePoll = false;
@@ -282,10 +305,10 @@ namespace Oxide.Plugins
             if (UnityEngine.Random.value > Mathf.Clamp01(mechanics.DropChance)) return;
             var min = Mathf.Max(1, mechanics.DropMin);
             var max = Mathf.Max(min, mechanics.DropMax);
-            MintKeys(player, UnityEngine.Random.Range(min, max + 1));
+            MintKeys(player, UnityEngine.Random.Range(min, max + 1), entity.transform.position);
         }
 
-        private void MintKeys(BasePlayer player, int amount)
+        private void MintKeys(BasePlayer player, int amount, Vector3 dropPosition)
         {
             var tokens = Enumerable.Range(0, Mathf.Clamp(amount, 1, 10)).Select(_ => Guid.NewGuid().ToString()).ToList();
             var body = JsonConvert.SerializeObject(new
@@ -303,30 +326,44 @@ namespace Oxide.Plugins
                     if (player.IsConnected) player.ChatMessage(config.ChatPrefix + " Не удалось зарегистрировать найденный ключ. Попробуйте следующую бочку.");
                     return;
                 }
-                foreach (var token in tokens) GiveBoundKey(player, token);
-                SaveData();
-                if (player.IsConnected)
+                var given = 0;
+                foreach (var token in tokens)
                 {
-                    player.ChatMessage(config.ChatPrefix + " Вы нашли " + tokens.Count + " " + Word(tokens.Count, "персональный ключ", "персональных ключа", "персональных ключей") + ". Берегите их до терминала!");
-                    RequestPlayerStatus(player, false);
+                    if (DropBoundKey(player, token, dropPosition)) given++;
                 }
+                SaveData();
+                if (player.IsConnected && given > 0) RequestPlayerStatus(player, false);
             });
         }
 
-        private void GiveBoundKey(BasePlayer player, string token)
+        private bool DropBoundKey(BasePlayer player, string token, Vector3 dropPosition)
         {
             var mechanics = status?.Mechanics ?? new MechanicsData();
-            var item = ItemManager.CreateByName(string.IsNullOrWhiteSpace(mechanics.KeyShortname) ? "keycard_green" : mechanics.KeyShortname, 1, mechanics.KeySkinId);
+            var shortname = string.IsNullOrWhiteSpace(config.KeyItemShortnameOverride)
+                ? (string.IsNullOrWhiteSpace(mechanics.KeyShortname) ? "door.key" : mechanics.KeyShortname)
+                : config.KeyItemShortnameOverride.Trim();
+            var skinId = string.IsNullOrWhiteSpace(config.KeyItemShortnameOverride) ? mechanics.KeySkinId : 0UL;
+            var item = ItemManager.CreateByName(shortname, 1, skinId);
             if (item == null)
             {
-                PrintError("Could not create key item '" + mechanics.KeyShortname + "'.");
+                PrintError("Could not create key item '" + shortname + "'.");
                 QueueLost(player.UserIDString, new List<string> { token });
-                return;
+                return false;
             }
             item.name = "Ключ денежной гонки";
             item.text = "Персональный ключ: принадлежит " + player.displayName;
             storedData.BoundKeys[item.uid.Value] = new BoundKey { Token = token, OwnerId = player.userID, TournamentId = status.Id };
-            if (!player.inventory.GiveItem(item)) item.Drop(player.transform.position + Vector3.up, Vector3.zero);
+
+            var offset = new Vector3(UnityEngine.Random.Range(-0.45f, 0.45f), 0.45f, UnityEngine.Random.Range(-0.45f, 0.45f));
+            var dropped = item.Drop(dropPosition + offset, Vector3.up * 0.35f);
+            if (dropped != null) return true;
+
+            storedData.BoundKeys.Remove(item.uid.Value);
+            item.Remove();
+            QueueLost(player.UserIDString, new List<string> { token });
+            if (player.IsConnected)
+                player.ChatMessage(config.ChatPrefix + " Ключ зарегистрирован, но предмет не удалось создать. Попробуйте следующую бочку.");
+            return false;
         }
 
         private object CanAcceptItem(ItemContainer container, Item item)
@@ -419,9 +456,11 @@ namespace Oxide.Plugins
                 return;
             }
             var mechanics = status.Mechanics ?? new MechanicsData();
-            var delay = firstDelay ?? UnityEngine.Random.Range(
-                Mathf.Max(60, mechanics.TerminalCooldownMinSeconds),
-                Mathf.Max(61, mechanics.TerminalCooldownMaxSeconds + 1));
+            var delay = firstDelay ?? (config.TerminalCooldownOverrideSeconds > 0
+                ? Mathf.Max(60, config.TerminalCooldownOverrideSeconds)
+                : UnityEngine.Random.Range(
+                    Mathf.Max(60, mechanics.TerminalCooldownMinSeconds),
+                    Mathf.Max(61, mechanics.TerminalCooldownMaxSeconds + 1)));
             terminalTimer = timer.Once(Mathf.Max(5f, delay), SpawnTerminal);
         }
 
@@ -449,17 +488,26 @@ namespace Oxide.Plugins
             entity.enableSaving = false;
             entity.OwnerID = 0;
             entity.Spawn();
-            var vending = entity as VendingMachine;
-            if (vending != null) vending.shopName = "ДЕНЕЖНАЯ ГОНКА";
             terminalEntity = entity;
             terminalUuid = Guid.NewGuid().ToString();
-            var monumentName = FriendlyMonumentName(monument);
+            var grid = MapHelper.PositionToString(position);
+            var locationLabel = "Квадрат " + grid;
+            var vending = entity as VendingMachine;
+            if (vending != null)
+            {
+                SetTerminalName(vending, grid);
+                NextTick(() =>
+                {
+                    if (vending != null && !vending.IsDestroyed) SetTerminalName(vending, grid);
+                });
+            }
+            var duration = Mathf.Max(60, status.Mechanics?.TerminalActiveSeconds ?? 900);
             var body = JsonConvert.SerializeObject(new
             {
                 server_tag = config.ServerTag,
                 session_uuid = terminalUuid,
                 monument_key = monument.name,
-                monument_name = monumentName,
+                monument_name = locationLabel,
                 position = string.Format(CultureInfo.InvariantCulture, "{0:0.0},{1:0.0},{2:0.0}", position.x, position.y, position.z)
             });
             Post("/plugin/terminal/open", body, (code, response) =>
@@ -471,15 +519,23 @@ namespace Oxide.Plugins
                     ScheduleTerminal(60f);
                     return;
                 }
-                var announcement = config.ChatPrefix + " Терминал появился на РТ <color=#f0d4a5>" + monumentName + "</color>! Он будет активен ограниченное время.";
+                var activeMinutes = Mathf.CeilToInt(duration / 60f);
+                var announcement = config.ChatPrefix + " Терминал появился в квадрате <color=#f0d4a5>" + grid
+                    + "</color>! Он будет активен " + activeMinutes + " "
+                    + Word(activeMinutes, "минуту", "минуты", "минут") + ".";
                 if (status.PreviewOnly)
                 {
                     foreach (var previewPlayer in BasePlayer.activePlayerList.Where(IsPreviewPlayer)) previewPlayer.ChatMessage(announcement);
                 }
                 else PrintToChat(announcement);
-                var duration = Mathf.Max(60, status.Mechanics?.TerminalActiveSeconds ?? 900);
                 terminalTimer = timer.Once(duration, () => StopTerminal(false));
             });
+        }
+
+        private void SetTerminalName(VendingMachine vending, string grid)
+        {
+            vending.shopName = "Терминал денежной гонки • " + grid;
+            vending.SendNetworkUpdateImmediate();
         }
 
         private bool TryTerminalPosition(out MonumentInfo chosen, out Vector3 position)
@@ -488,6 +544,8 @@ namespace Oxide.Plugins
             position = Vector3.zero;
             var allowed = status?.Mechanics?.AllowedMonuments ?? new List<string>();
             var candidates = TerrainMeta.Path.Monuments.Where(m => m != null && IsSafeMonument(m, allowed)).OrderBy(_ => UnityEngine.Random.value).ToList();
+            if (candidates.Count > 1 && !string.IsNullOrEmpty(lastMonumentKey))
+                candidates = candidates.Where(m => !string.Equals(m.name, lastMonumentKey, StringComparison.OrdinalIgnoreCase)).ToList();
             foreach (var monument in candidates)
             {
                 for (var attempt = 0; attempt < 10; attempt++)
@@ -501,6 +559,7 @@ namespace Oxide.Plugins
                     if (Physics.CheckSphere(hit.point + Vector3.up, 1.2f, LayerMask.GetMask("Construction", "Deployed", "Vehicle_Large"))) continue;
                     chosen = monument;
                     position = hit.point + Vector3.up * 0.05f;
+                    lastMonumentKey = monument.name;
                     return true;
                 }
             }
@@ -517,6 +576,35 @@ namespace Oxide.Plugins
 
         private string FriendlyMonumentName(MonumentInfo monument)
         {
+            var key = (monument?.name ?? string.Empty).ToLowerInvariant();
+            if (key.Contains("arctic_research_base")) return "Арктическая исследовательская база";
+            if (key.Contains("desert_military_base")) return "Пустынная военная база";
+            if (key.Contains("launch_site")) return "Космодром";
+            if (key.Contains("military_tunnel")) return "Военные туннели";
+            if (key.Contains("missile_silo")) return "Ракетная шахта";
+            if (key.Contains("water_treatment_plant")) return "Водоочистная станция";
+            if (key.Contains("powerplant")) return "Электростанция";
+            if (key.Contains("trainyard")) return "Железнодорожное депо";
+            if (key.Contains("airfield")) return "Аэродром";
+            if (key.Contains("satellite_dish")) return "Спутниковые антенны";
+            if (key.Contains("sewer_branch")) return "Канализационный отвод";
+            if (key.Contains("sphere_tank") || key.Contains("dome")) return "Сфера";
+            if (key.Contains("junkyard")) return "Свалка";
+            if (key.Contains("harbor")) return "Порт";
+            if (key.Contains("supermarket")) return "Супермаркет";
+            if (key.Contains("gas_station")) return "Заправка";
+            if (key.Contains("warehouse")) return "Заброшенный склад";
+            if (key.Contains("lighthouse")) return "Маяк";
+            if (key.Contains("mining_quarry")) return "Горнодобывающий карьер";
+            if (key.Contains("ferry_terminal")) return "Паромный терминал";
+            if (key.Contains("observatory")) return "Обсерватория";
+            if (key.Contains("large_barn")) return "Большая конюшня";
+            if (key.Contains("stables")) return "Конюшни";
+            if (key.Contains("ranch")) return "Ранчо";
+            if (key.Contains("power_sub")) return "Электрическая подстанция";
+            if (key.Contains("water_well")) return "Колодец";
+            if (key.Contains("radtown_small")) return "Заброшенный город";
+            if (key.Contains("swamp")) return "Болото";
             var phrase = monument?.displayPhrase?.translated;
             if (!string.IsNullOrWhiteSpace(phrase)) return phrase;
             var raw = (monument?.name ?? "РТ").Split('/').Last().Replace('_', ' ').Replace('-', ' ');

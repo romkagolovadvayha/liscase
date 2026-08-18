@@ -538,6 +538,11 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
     min-height: var(--cash-race-icon-lg);
   }
 
+  &__players {
+    grid-column: 1 / -1;
+    min-height: var(--cash-race-icon-lg);
+  }
+
   &__runtime-actions {
     display: grid;
     grid-column: 1 / -1;
@@ -869,6 +874,410 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
   .cash-race-form .ds-select,
   .cash-race-form .ds-textarea {
     transition: none !important;
+  }
+}
+
+// Список участников денежной гонки и ручная корректировка статистики.
+.cash-race-players-page {
+  --cash-race-players-avatar: 2.5rem;
+  --cash-race-players-input: 5.5rem;
+  display: grid;
+  gap: $ds-spacing-4;
+  width: 100%;
+  padding: $ds-spacing-4;
+
+  @media (min-width: $ds-breakpoint-md) {
+    gap: $ds-spacing-5;
+    padding: $ds-spacing-6;
+  }
+}
+
+.cash-race-players-hero {
+  display: flex;
+  flex-direction: column;
+  gap: $ds-spacing-4;
+  padding: $ds-spacing-5;
+  background: $ds-bg-secondary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-lg;
+
+  @media (min-width: $ds-breakpoint-xl) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__copy {
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-4;
+    min-width: 0;
+
+    h1 {
+      margin: 0 0 $ds-spacing-1;
+      color: $ds-text-primary;
+      font-size: $ds-font-size-2xl;
+      font-weight: $ds-font-weight-semibold;
+      line-height: $ds-line-height-tight;
+    }
+
+    p:last-child {
+      max-width: 64ch;
+      margin: 0;
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-sm;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: $ds-height-xl;
+    height: $ds-height-xl;
+    color: $ds-warning-light;
+    background: rgba($ds-warning, 0.14);
+    border: 1px solid rgba($ds-warning-light, 0.22);
+    border-radius: $ds-radius-lg;
+    font-size: $ds-font-size-xl;
+  }
+
+  &__eyebrow {
+    margin: 0 0 $ds-spacing-1 !important;
+    color: $ds-warning-light !important;
+    font-size: $ds-font-size-xs !important;
+    font-weight: $ds-font-weight-semibold;
+    letter-spacing: $ds-letter-spacing-wide;
+    text-transform: uppercase;
+  }
+}
+
+.cash-race-players-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+  overflow: hidden;
+  background: $ds-bg-primary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+
+  @media (min-width: $ds-breakpoint-md) {
+    min-width: 24rem;
+  }
+
+  > div {
+    display: grid;
+    gap: $ds-spacing-0_5;
+    padding: $ds-spacing-3 $ds-spacing-4;
+    text-align: center;
+
+    & + div {
+      border-left: 1px solid $ds-border-color;
+    }
+  }
+
+  strong {
+    color: $ds-text-primary;
+    font-size: $ds-font-size-xl;
+    font-weight: $ds-font-weight-semibold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    color: $ds-text-secondary;
+    font-size: $ds-font-size-xs;
+  }
+}
+
+.cash-race-players-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: $ds-spacing-3;
+  padding: $ds-spacing-3 $ds-spacing-4;
+  color: $ds-text-secondary;
+  background: rgba($ds-primary, 0.1);
+  border: 1px solid rgba($ds-primary-light, 0.22);
+  border-radius: $ds-radius-md;
+
+  > i {
+    flex: 0 0 auto;
+    margin-top: $ds-spacing-1;
+    color: $ds-primary-light;
+  }
+
+  p {
+    margin: 0;
+    font-size: $ds-font-size-sm;
+    line-height: $ds-line-height-normal;
+  }
+
+  strong {
+    color: $ds-text-primary;
+  }
+}
+
+.cash-race-players-panel {
+  min-width: 0;
+  overflow: hidden;
+  background: $ds-bg-secondary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-lg;
+
+  &__toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: $ds-spacing-4;
+    padding: $ds-spacing-4;
+    background: $ds-bg-tertiary;
+    border-bottom: 1px solid $ds-border-color;
+
+    @media (min-width: $ds-breakpoint-lg) {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h2 {
+      margin: 0 0 $ds-spacing-1;
+      color: $ds-text-primary;
+      font-size: $ds-font-size-lg;
+      font-weight: $ds-font-weight-semibold;
+    }
+
+    p {
+      margin: 0;
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-xs;
+    }
+  }
+
+  &__pagination {
+    display: flex;
+    justify-content: center;
+    padding: $ds-spacing-4;
+    background: $ds-bg-tertiary;
+    border-top: 1px solid $ds-border-color;
+
+    .pagination {
+      margin: 0;
+    }
+  }
+}
+
+.cash-race-players-search {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $ds-spacing-2;
+
+  > i {
+    position: absolute;
+    top: 50%;
+    left: $ds-spacing-3;
+    z-index: 1;
+    color: $ds-text-secondary;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .ds-input {
+    flex: 1 1 14rem;
+    min-width: 0;
+    padding-left: $ds-spacing-8;
+  }
+}
+
+.cash-race-players-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.cash-race-players-table {
+  width: 100%;
+  min-width: 68rem;
+  border-collapse: collapse;
+  color: $ds-text-primary;
+
+  th {
+    padding: $ds-spacing-3;
+    color: $ds-text-secondary;
+    background: $ds-bg-primary;
+    border-bottom: 1px solid $ds-border-color;
+    font-size: $ds-font-size-xs;
+    font-weight: $ds-font-weight-semibold;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: $ds-spacing-3;
+    border-bottom: 1px solid $ds-border-color;
+    font-size: $ds-font-size-sm;
+    vertical-align: middle;
+  }
+
+  tbody tr {
+    transition: background-color $ds-transition-fast;
+
+    &:hover {
+      background: rgba($ds-bg-hover, 0.45);
+    }
+
+    &:last-child td {
+      border-bottom: 0;
+    }
+  }
+
+  time {
+    color: $ds-text-secondary;
+    font-size: $ds-font-size-xs;
+    white-space: nowrap;
+  }
+
+  &__action {
+    width: 1%;
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.cash-race-player-cell {
+  display: flex;
+  align-items: center;
+  gap: $ds-spacing-3;
+  min-width: 15rem;
+
+  img,
+  &__fallback {
+    width: var(--cash-race-players-avatar);
+    height: var(--cash-race-players-avatar);
+    flex: 0 0 auto;
+    border-radius: $ds-radius-md;
+  }
+
+  img {
+    object-fit: cover;
+    background: $ds-bg-tertiary;
+    border: 1px solid $ds-border-color-light;
+  }
+
+  &__fallback {
+    display: grid;
+    place-items: center;
+    color: $ds-text-secondary;
+    background: $ds-bg-tertiary;
+    border: 1px solid $ds-border-color;
+  }
+
+  > span:last-child {
+    display: grid;
+    min-width: 0;
+  }
+
+  strong {
+    overflow: hidden;
+    color: $ds-text-primary;
+    font-weight: $ds-font-weight-semibold;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    color: $ds-text-secondary;
+    font-family: $ds-font-family-mono;
+    font-size: $ds-font-size-xs;
+  }
+}
+
+.cash-race-score-input {
+  width: var(--cash-race-players-input);
+  padding-inline: $ds-spacing-2;
+  font-variant-numeric: tabular-nums;
+
+  &--accent {
+    border-color: rgba($ds-warning-light, 0.34) !important;
+
+    &:focus {
+      border-color: $ds-warning-light !important;
+      box-shadow: 0 0 0 $ds-spacing-1 rgba($ds-warning, 0.16) !important;
+    }
+  }
+}
+
+.cash-race-score-accent {
+  color: $ds-warning-light;
+}
+
+.cash-race-score-locked {
+  display: inline-grid;
+  place-items: center;
+  width: $ds-height-sm;
+  height: $ds-height-sm;
+  color: $ds-text-secondary;
+  background: $ds-bg-tertiary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+}
+
+.cash-race-players-empty {
+  padding: $ds-spacing-12 !important;
+  text-align: center;
+
+  i,
+  strong,
+  span {
+    display: block;
+  }
+
+  i {
+    margin-bottom: $ds-spacing-3;
+    color: $ds-warning-light;
+    font-size: $ds-font-size-2xl;
+  }
+
+  strong {
+    margin-bottom: $ds-spacing-1;
+    color: $ds-text-primary;
+  }
+
+  span {
+    color: $ds-text-secondary;
+    font-size: $ds-font-size-sm;
+  }
+}
+
+@media (max-width: ($ds-breakpoint-sm - 1px)) {
+  .cash-race-players-hero {
+    &__copy {
+      align-items: flex-start;
+    }
+
+    &__icon {
+      width: $ds-height-lg;
+      height: $ds-height-lg;
+    }
+  }
+
+  .cash-race-players-summary {
+    > div {
+      padding-inline: $ds-spacing-2;
+    }
+
+    strong {
+      font-size: $ds-font-size-lg;
+    }
+  }
+
+  .cash-race-players-search {
+    .ds-btn {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-race-players-table tbody tr {
+    transition: none;
   }
 }
 
