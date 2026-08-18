@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.4.7")]
+    [Info("ProstojMenu", "Prostoj Team", "2.4.8")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -333,6 +333,7 @@ namespace Oxide.Plugins
             [JsonProperty("is_own")] public bool IsOwn;
             [JsonProperty("is_staff")] public bool IsStaff;
             [JsonProperty("author")] public string Author;
+            [JsonProperty("steam_id")] public string SteamId;
             [JsonProperty("avatar")] public string Avatar;
             [JsonProperty("message")] public string Message;
             [JsonProperty("created_at")] public string CreatedAt;
@@ -1968,9 +1969,9 @@ namespace Oxide.Plugins
                 ? snapshot.Player.Username
                 : player.displayName;
 
-            var avatarUrl = snapshot != null && snapshot.Player != null
-                ? (snapshot.Player.Avatar ?? string.Empty).Trim()
-                : string.Empty;
+            var avatarSteamId = snapshot != null && snapshot.Player != null && !string.IsNullOrWhiteSpace(snapshot.Player.SteamId)
+                ? snapshot.Player.SteamId
+                : player.UserIDString;
             var cleanPlayerName = CleanText(playerName).Trim();
             var playerInitial = string.IsNullOrEmpty(cleanPlayerName)
                 ? "?"
@@ -1979,9 +1980,7 @@ namespace Oxide.Plugins
             AddPanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.035 0.24", "0.085 0.76", "0 0 0 0");
             AddOffsetPanel(ui, Header + ".AvatarFrame", Header + ".AvatarSurface",
                 "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
-            if (!string.IsNullOrEmpty(avatarUrl))
-                AddRawImage(ui, Header + ".AvatarSurface", Header + ".AvatarImage", "0 0", "1 1", avatarUrl, "1 1 1 1");
-            else
+            if (!TryAddSteamAvatar(ui, Header + ".AvatarSurface", Header + ".AvatarImage", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
                 AddLabel(ui, Header + ".AvatarSurface", Header + ".AvatarInitial", "0 0", "1 1", playerInitial, 20, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Accent, 2f);
 
@@ -2371,14 +2370,14 @@ namespace Oxide.Plugins
             AddPanel(ui, Content + ".Body", portrait, "0 0.055", "0.295 0.855", "0.031 0.008 0.141 0.58");
             AddPanel(ui, portrait, portrait + ".Glow", "0.02 0.02", "0.98 0.52", "0.922 0.047 0.208 0.13");
             var playerProfile = snapshot != null ? snapshot.Player : null;
-            var avatarUrl = playerProfile != null ? (playerProfile.Avatar ?? string.Empty).Trim() : string.Empty;
+            var avatarSteamId = playerProfile != null && !string.IsNullOrWhiteSpace(playerProfile.SteamId)
+                ? playerProfile.SteamId
+                : player.UserIDString;
             var playerName = playerProfile != null ? Safe(playerProfile.Username).ToUpperInvariant() : "RUST PLAYER";
             var playerInitial = string.IsNullOrWhiteSpace(playerName) ? "?" : playerName.Substring(0, 1);
             AddPanel(ui, portrait, portrait + ".AvatarFrame", "0.08 0.39", "0.92 0.90", Accent);
             AddPanel(ui, portrait + ".AvatarFrame", portrait + ".AvatarSurface", "0.018 0.018", "0.982 0.982", BgTertiary);
-            if (!string.IsNullOrEmpty(avatarUrl))
-                AddRawImage(ui, portrait + ".AvatarSurface", portrait + ".AvatarImage", "0 0", "1 1", avatarUrl, "1 1 1 1");
-            else
+            if (!TryAddSteamAvatar(ui, portrait + ".AvatarSurface", portrait + ".AvatarImage", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
                 AddLabel(ui, portrait + ".AvatarSurface", portrait + ".AvatarInitial", "0 0", "1 1", playerInitial, 58, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, portrait, portrait + ".Status", "0.07 0.26", "0.93 0.34", "АКТИВНЫЙ ИГРОК", 9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
             AddPanel(ui, portrait, portrait + ".Info", "0.05 0.035", "0.95 0.225", "0.031 0.008 0.141 0.88");
@@ -2542,9 +2541,7 @@ namespace Oxide.Plugins
                     AddPanel(ui, rowRoot, rowRoot + ".AvatarFrame", "0.045 0.205", "0.183 0.795", "0 0 0 0");
                     AddOffsetPanel(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarSurface",
                         "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
-                    if (!string.IsNullOrWhiteSpace(row.Avatar))
-                        AddRawImage(ui, rowRoot + ".AvatarSurface", rowRoot + ".Avatar", "0 0", "1 1", row.Avatar, "1 1 1 1");
-                    else
+                    if (!TryAddSteamAvatar(ui, rowRoot + ".AvatarSurface", rowRoot + ".Avatar", "0 0", "1 1", row.SteamId, "1 1 1 1"))
                         AddLabel(ui, rowRoot + ".AvatarSurface", rowRoot + ".Initial", "0 0", "1 1", PlayerInitial(row.Username), 13, TextMain, TextAnchor.MiddleCenter, FontBold);
                     AddOutline(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarBorder", medal, 2f);
                     if (row.Status == true)
@@ -2698,15 +2695,13 @@ namespace Oxide.Plugins
                 var xMax = message.IsOwn ? 0.90f : 0.79f;
                 var avatarXMin = message.IsOwn ? 0.914f : 0.018f;
                 var avatarXMax = message.IsOwn ? 0.982f : 0.086f;
-                var avatarUrl = message.Avatar;
-                if (message.IsOwn && string.IsNullOrWhiteSpace(avatarUrl) && view.Snapshot != null && view.Snapshot.Player != null)
-                    avatarUrl = view.Snapshot.Player.Avatar;
+                var avatarSteamId = message.SteamId;
+                if (message.IsOwn && string.IsNullOrWhiteSpace(avatarSteamId) && view.Snapshot != null && view.Snapshot.Player != null)
+                    avatarSteamId = view.Snapshot.Player.SteamId;
                 AddPanel(ui, dialogRoot, bubble + ".AvatarFrame", F(avatarXMin, yMin + 0.008f), F(avatarXMax, yMax - 0.008f), "0 0 0 0");
                 AddOffsetPanel(ui, bubble + ".AvatarFrame", bubble + ".AvatarSurface",
                     "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
-                if (!string.IsNullOrWhiteSpace(avatarUrl))
-                    AddRawImage(ui, bubble + ".AvatarSurface", bubble + ".Avatar", "0 0", "1 1", avatarUrl, "1 1 1 1");
-                else
+                if (!TryAddSteamAvatar(ui, bubble + ".AvatarSurface", bubble + ".Avatar", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
                     AddLabel(ui, bubble + ".AvatarSurface", bubble + ".AvatarInitial", "0 0", "1 1", PlayerInitial(message.Author), 16, TextMain, TextAnchor.MiddleCenter, FontBold);
                 AddOutline(ui, bubble + ".AvatarFrame", bubble + ".AvatarBorder", message.IsOwn ? Accent : AccentWarm, 2f);
                 AddPanel(ui, dialogRoot, bubble, F(xMin, yMin), F(xMax, yMax), message.IsOwn ? "0.922 0.047 0.208 0.16" : BgRaised);
@@ -3187,6 +3182,24 @@ namespace Oxide.Plugins
                     new CuiRectTransformComponent { AnchorMin = anchorMin, AnchorMax = anchorMax }
                 }
             });
+        }
+
+        private static bool TryAddSteamAvatar(CuiElementContainer container, string parent, string name,
+            string anchorMin, string anchorMax, string steamId, string color)
+        {
+            ulong parsed;
+            if (string.IsNullOrWhiteSpace(steamId) || !ulong.TryParse(steamId, out parsed) || parsed == 0) return false;
+            container.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { SteamId = parsed.ToString(CultureInfo.InvariantCulture), Color = ThemeColor(color) },
+                    new CuiRectTransformComponent { AnchorMin = anchorMin, AnchorMax = anchorMax }
+                }
+            });
+            return true;
         }
 
         private void AddSquareRawImage(CuiElementContainer container, string parent, string name, string anchor, float halfSizePixels, string url, string color)

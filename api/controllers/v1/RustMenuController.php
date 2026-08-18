@@ -575,6 +575,7 @@ class RustMenuController extends BaseApiController
             'author' => $isOwn
                 ? (string) $viewer->username
                 : ($isSystem ? 'Система' : 'Поддержка • ' . (string) ($message->user->username ?? 'Администратор')),
+            'steam_id' => $message->user ? (string) $message->user->steam_id : null,
             'avatar' => $message->user ? (string) $message->user->getAvatar() : null,
             'message' => $this->plainSupportText((string) $message->message),
             'created_at' => $this->formatDateTime((string) $message->created_at),
