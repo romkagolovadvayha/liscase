@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojCashRace", "Prostoj Team", "1.0.7")]
+    [Info("ProstojCashRace", "Prostoj Team", "1.0.8")]
     [Description("Private-preview Cash Race tournament module for ProstojMenu")]
     public class ProstojCashRace : RustPlugin
     {
@@ -30,6 +30,8 @@ namespace Oxide.Plugins
         private Timer terminalTimer;
         private bool statusRequestRunning;
         private bool firstActivePoll = true;
+        private bool menuTabRegistered;
+        private bool assetsRequested;
         private readonly Dictionary<ulong, StatusData> playerStatus = new Dictionary<ulong, StatusData>();
         private readonly Dictionary<ulong, float> playerStatusFetchedAt = new Dictionary<ulong, float>();
         private readonly HashSet<ulong> playerRequests = new HashSet<ulong>();
@@ -174,8 +176,6 @@ namespace Oxide.Plugins
         private void OnServerInitialized()
         {
             ResetTrackedKeysIfRequested();
-            RegisterMenuTab();
-            CacheImages();
             PollStatus();
             pollTimer = timer.Every(Mathf.Clamp(config.PollSeconds, 15f, 120f), PollStatus);
             timer.Every(60f, FlushPendingLost);
@@ -203,7 +203,7 @@ namespace Oxide.Plugins
             foreach (var player in BasePlayer.activePlayerList) CuiHelper.DestroyUi(player, UiRoot);
             if (terminalEntity != null && !terminalEntity.IsDestroyed) terminalEntity.Kill();
             if (!string.IsNullOrEmpty(terminalUuid)) CloseTerminalApi(false);
-            ProstojMenu?.Call("API_UnregisterTab", this, "tournament");
+            UnregisterMenuTab();
             SaveData();
         }
 
@@ -213,22 +213,38 @@ namespace Oxide.Plugins
             {
                 ProstojMenu = plugin;
                 RegisterMenuTab();
-                CacheImages();
+                if (status != null && status.Available) CacheImagesOnce();
             }
         }
 
         private void OnPluginUnloaded(Plugin plugin)
         {
-            if (plugin != null && plugin.Name == "ProstojMenu") ProstojMenu = null;
+            if (plugin != null && plugin.Name == "ProstojMenu")
+            {
+                ProstojMenu = null;
+                menuTabRegistered = false;
+            }
         }
 
-        private void RegisterMenuTab() => ProstojMenu?.Call("API_RegisterTab", this, "tournament", "ТУРНИР", "KEY", 25);
+        private void RegisterMenuTab()
+        {
+            if (menuTabRegistered || ProstojMenu == null || status == null || !status.Available) return;
+            ProstojMenu.Call("API_RegisterTab", this, "tournament", "ТУРНИР", "KEY", 25);
+            menuTabRegistered = true;
+        }
 
-        private object ProstojMenu_CanView(BasePlayer player) => IsPreviewPlayer(player);
+        private void UnregisterMenuTab()
+        {
+            if (!menuTabRegistered) return;
+            ProstojMenu?.Call("API_UnregisterTab", this, "tournament");
+            menuTabRegistered = false;
+        }
+
+        private object ProstojMenu_CanView(BasePlayer player) => status != null && status.Available && IsPreviewPlayer(player);
 
         private object ProstojMenu_Render(BasePlayer player, string parent, int page)
         {
-            if (player == null || !IsPreviewPlayer(player)) return false;
+            if (player == null || status == null || !status.Available || !IsPreviewPlayer(player)) return false;
             StatusData snapshot;
             var hasPlayerSnapshot = playerStatus.TryGetValue(player.userID, out snapshot) && snapshot != null;
             var isFresh = hasPlayerSnapshot && playerStatusFetchedAt.ContainsKey(player.userID)
@@ -259,6 +275,17 @@ namespace Oxide.Plugins
                 var wasActive = IsActive;
                 status = envelope.Data;
                 if (status != null && status.Mechanics == null) status.Mechanics = new MechanicsData();
+                if (status != null && status.Available)
+                {
+                    RegisterMenuTab();
+                    CacheImagesOnce();
+                }
+                else
+                {
+                    playerStatus.Clear();
+                    playerStatusFetchedAt.Clear();
+                    UnregisterMenuTab();
+                }
                 if (config.Debug && status != null)
                     Puts("Status: phase=" + status.Phase + ", terminalActive=" + status.Mechanics.TerminalActiveSeconds
                         + "s, cooldown=" + status.Mechanics.TerminalCooldownMinSeconds + "-" + status.Mechanics.TerminalCooldownMaxSeconds + "s");
@@ -274,6 +301,13 @@ namespace Oxide.Plugins
                     StopTerminal(false);
                 }
             }, this, RequestMethod.GET, Headers(), 12f);
+        }
+
+        private void CacheImagesOnce()
+        {
+            if (assetsRequested || ProstojMenu == null) return;
+            assetsRequested = true;
+            CacheImages();
         }
 
         private void RequestPlayerStatus(BasePlayer player, bool redraw)

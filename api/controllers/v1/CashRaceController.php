@@ -42,6 +42,10 @@ class CashRaceController extends BaseApiController
         [$server, $body] = $this->pluginContext();
         $config = CashRaceService::findCurrent((int)$server->id);
         if (!$config) return $this->successResponse(['available' => false, 'poll_after' => 60]);
+        if ($config->tournament->getPublicPhase() === Tournament::PHASE_PAST) {
+            $this->finalizeIfEnded($config);
+            return $this->successResponse(['available' => false, 'poll_after' => 60]);
+        }
         $steamId = preg_replace('/\D+/', '', (string)($body['steam_id'] ?? Yii::$app->request->get('steam_id', '')));
         $user = $steamId ? User::find()->where(['steam_id' => $steamId])->one() : null;
         $serverAdmin = !empty($body['server_admin']) || Yii::$app->request->get('server_admin') === '1';
