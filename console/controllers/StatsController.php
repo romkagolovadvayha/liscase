@@ -137,39 +137,44 @@ class StatsController extends Controller
                 $chunkLog("чанк {$n}/{$totalChunks}: SUM по всем ключам для " . count($chunk) . " steam_id…");
             }
 
-            $q2 = (new Query())
-                ->select(['steam_id', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
-                ->from($tn)
-                ->where(['steam_id' => $chunk]);
-            if ($isPerServerBuild) {
-                $q2->andWhere(['server_tag' => $serverTag]);
-            }
-            $rows = $q2->groupBy(['steam_id', 'key'])->all();
-            $rowCount = count($rows);
-
             $batchParams = [];
-            foreach ($rows as $row) {
-                $sid = $row['steam_id'];
-                $batchParams[$sid][$row['key']] = (int) $row['sum'];
-            }
-            unset($rows);
-
             $bySteamServer = [];
-            if (!$isPerServerBuild) {
+            if ($isPerServerBuild) {
+                $rows = (new Query())
+                    ->select(['steam_id', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
+                    ->from($tn)
+                    ->where(['steam_id' => $chunk])
+                    ->andWhere(['server_tag' => $serverTag])
+                    ->groupBy(['steam_id', 'key'])
+                    ->all();
+                $rowCount = count($rows);
+                foreach ($rows as $row) {
+                    $sid = (string) $row['steam_id'];
+                    $batchParams[$sid][$row['key']] = (int) $row['sum'];
+                }
+                unset($rows);
+            } else {
+                // Глобальные суммы получаем из той же выборки по серверам. Раньше перед ней
+                // выполнялся второй GROUP BY по тем же steam_id, удваивая чтение statistics.
                 $q3 = (new Query())
                     ->select(['steam_id', 'server_tag', 'key', 'sum' => 'SUM(CAST([[value]] AS SIGNED))'])
                     ->from($tn)
                     ->where(['steam_id' => $chunk])
                     ->groupBy(['steam_id', 'server_tag', 'key']);
                 $rowsByServer = $q3->all();
+                $rowCount = count($rowsByServer);
                 foreach ($rowsByServer as $row) {
                     $sidKey = (string) $row['steam_id'];
+                    $key = (string) $row['key'];
+                    $sum = (int) $row['sum'];
+                    $batchParams[$sidKey][$key] = ($batchParams[$sidKey][$key] ?? 0) + $sum;
+
                     $stag = trim((string) ($row['server_tag'] ?? ''));
                     if ($stag === '') {
                         continue;
                     }
                     $stagNorm = mb_strtolower($stag, 'UTF-8');
-                    $bySteamServer[$sidKey][$stagNorm][$row['key']] = (int) $row['sum'];
+                    $bySteamServer[$sidKey][$stagNorm][$key] = $sum;
                 }
                 unset($rowsByServer);
             }
