@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.4.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.4.7")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -33,6 +33,7 @@ namespace Oxide.Plugins
         private const string PermissionUse = "prostojmenu.use";
         private const string ImageCacheDirectory = "ProstojMenu/Images";
         private const int MaxConcurrentImageDownloads = 3;
+        private const float FileStorageStartupGuardSeconds = 180f;
         private const string StoreCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
         private const string ProstojMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v3.jpg";
         private const string MoscowMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/moscow77-command-center-v1.jpg";
@@ -70,7 +71,9 @@ namespace Oxide.Plugins
         private readonly HashSet<ulong> queuedSnapshotPrefetches = new HashSet<ulong>();
         private int activeImageDownloads;
         private int activeSnapshotPrefetches;
+        private DateTime imageCacheAllowedAtUtc = DateTime.MaxValue;
         private bool imageRefreshScheduled;
+        private bool imageCacheDeferredStartupScheduled;
         private bool imageShellRefreshRequired;
         private bool imageCacheReady;
         private bool imageCacheUnloading;
@@ -527,6 +530,7 @@ namespace Oxide.Plugins
 
         private void Init()
         {
+            imageCacheAllowedAtUtc = DateTime.UtcNow.AddSeconds(FileStorageStartupGuardSeconds);
             permission.RegisterPermission(PermissionUse, this);
             cmd.AddChatCommand(settings.ChatCommand, this, nameof(ChatOpenMenu));
             RegisterBuiltInTabs();
@@ -534,11 +538,7 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized(bool initial)
         {
-            imageCacheReady = true;
             imageCacheUnloading = false;
-            EnsureImageCacheDirectory();
-            PreloadMenuImages();
-            PumpImageQueue();
 
             // A short scheduler tick lets every player keep an independent,
             // jittered polling deadline instead of hitting the API in one burst.
@@ -565,6 +565,7 @@ namespace Oxide.Plugins
         {
             imageCacheUnloading = true;
             imageCacheReady = false;
+            imageCacheDeferredStartupScheduled = false;
             pendingImages.Clear();
             pendingSnapshotPrefetches.Clear();
             queuedSnapshotPrefetches.Clear();
@@ -944,6 +945,10 @@ namespace Oxide.Plugins
 
         private void OpenMenu(BasePlayer player, string requestedTab, bool forceRefresh)
         {
+            // A real player can only open the menu after Rust has completed
+            // world/save initialization, so FileStorage is safe from here on.
+            StartImageCache();
+
             var key = NormalizeKey(requestedTab);
             MenuTab requested;
             if (!tabs.TryGetValue(key, out requested) || !CanViewTab(player, requested)) key = "calendar";
@@ -2808,6 +2813,32 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("user-stats/gold.png"));
         }
 
+        private void StartImageCache()
+        {
+            if (imageCacheUnloading || imageCacheReady)
+                return;
+
+            var remainingStartupGuard = (float)(imageCacheAllowedAtUtc - DateTime.UtcNow).TotalSeconds;
+            if (remainingStartupGuard > 0f)
+            {
+                if (!imageCacheDeferredStartupScheduled)
+                {
+                    imageCacheDeferredStartupScheduled = true;
+                    timer.Once(remainingStartupGuard + 1f, () =>
+                    {
+                        imageCacheDeferredStartupScheduled = false;
+                        StartImageCache();
+                    });
+                }
+                return;
+            }
+
+            imageCacheReady = true;
+            EnsureImageCacheDirectory();
+            PreloadMenuImages();
+            PumpImageQueue();
+        }
+
         private string ResolveImage(string url)
         {
             var image = EnsureImage(url);
@@ -2843,7 +2874,10 @@ namespace Oxide.Plugins
             };
             cachedImages[url] = image;
 
-            if (TryLoadImageFromDisk(image))
+            // Do not even call a method that can reach FileStorage during the
+            // startup guard. Mono may run beforefieldinit static constructors
+            // while JIT-compiling the call, before StorePng's own guard runs.
+            if (imageCacheReady && DateTime.UtcNow >= imageCacheAllowedAtUtc && TryLoadImageFromDisk(image))
                 return image;
 
             pendingImages.Enqueue(image);
@@ -2937,7 +2971,8 @@ namespace Oxide.Plugins
 
         private bool TryLoadImageFromDisk(CachedImage image)
         {
-            if (image == null || string.IsNullOrEmpty(image.LocalPath) || !File.Exists(image.LocalPath))
+            if (!imageCacheReady || DateTime.UtcNow < imageCacheAllowedAtUtc ||
+                image == null || string.IsNullOrEmpty(image.LocalPath) || !File.Exists(image.LocalPath))
                 return false;
 
             try
@@ -2963,7 +2998,13 @@ namespace Oxide.Plugins
 
         private string StorePng(byte[] bytes)
         {
-            if (bytes == null || bytes.Length == 0 || FileStorage.server == null || CommunityEntity.ServerInstance == null)
+            // Keep this readiness check before the first FileStorage reference:
+            // merely reading FileStorage.server runs its static initializer.
+            if (DateTime.UtcNow < imageCacheAllowedAtUtc ||
+                !imageCacheReady || bytes == null || bytes.Length == 0)
+                return null;
+
+            if (FileStorage.server == null)
                 return null;
 
             return FileStorage.server.Store(bytes, FileStorage.Type.png, CommunityEntity.ServerInstance.net.ID).ToString(CultureInfo.InvariantCulture);
