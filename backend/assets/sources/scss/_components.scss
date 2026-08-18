@@ -396,7 +396,8 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
 .admin-content-wrapper .content-no-padding .tasks-v2-create,
 .admin-content-wrapper .content-no-padding .tasks-v2-update,
 .admin-content-wrapper .content-no-padding .tasks-v2-form-wrap,
-.admin-content-wrapper .content-no-padding .tasks-v2-form {
+.admin-content-wrapper .content-no-padding .tasks-v2-form,
+.admin-content-wrapper .content-no-padding .cash-race-form {
   flex: 1 1 0;
   min-height: 0;
   display: flex;
@@ -422,6 +423,452 @@ main:has(.admin-content-wrapper .content-no-padding) .admin-content-wrapper {
       align-self: stretch;
       border-left: 1px solid hsl(0, 0%, 15.3%);
     }
+  }
+}
+
+// Денежная гонка: плотная рабочая форма с отдельной панелью запуска.
+.cash-race-form {
+  --cash-race-accent: #{$ds-warning-light};
+  --cash-race-content-width: 70rem;
+  --cash-race-sidebar-width: 22.5rem;
+  --cash-race-icon-lg: 2.625rem;
+  --cash-race-icon-md: 2.125rem;
+  --cash-race-checkbox-size: 1.125rem;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  background: $ds-bg-primary;
+
+  @media (min-width: $ds-breakpoint-lg) {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  &__content {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: $ds-spacing-4;
+
+    @media (min-width: $ds-breakpoint-md) {
+      padding: $ds-spacing-6;
+    }
+
+    @media (min-width: $ds-breakpoint-lg) {
+      overflow-y: auto;
+    }
+  }
+
+  &__intro {
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-4;
+    max-width: var(--cash-race-content-width);
+    margin: 0 auto $ds-spacing-4;
+    padding: $ds-spacing-4;
+    color: $ds-text-primary;
+    background: rgba($ds-warning, 0.08);
+    border: 1px solid rgba($ds-warning-light, 0.24);
+    border-radius: $ds-radius-lg;
+
+    h2 {
+      margin: 0 0 $ds-spacing-1;
+      font-size: $ds-font-size-lg;
+      font-weight: $ds-font-weight-semibold;
+      line-height: $ds-line-height-tight;
+    }
+
+    p {
+      max-width: 72ch;
+      margin: 0;
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-sm;
+      line-height: $ds-line-height-normal;
+    }
+  }
+
+  &__intro-icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: var(--cash-race-icon-lg);
+    height: var(--cash-race-icon-lg);
+    color: var(--cash-race-accent);
+    background: rgba($ds-warning, 0.16);
+    border-radius: $ds-radius-md;
+    font-size: $ds-font-size-lg;
+  }
+
+  &__sidebar {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 0;
+    border-top: 1px solid $ds-border-color;
+    border-left: 0;
+
+    @media (min-width: $ds-breakpoint-lg) {
+      width: var(--cash-race-sidebar-width);
+      border-top: 0;
+      border-left: 1px solid $ds-border-color;
+    }
+  }
+
+  &__sidebar-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: $ds-spacing-4;
+
+    @media (min-width: $ds-breakpoint-lg) {
+      overflow-y: auto;
+    }
+  }
+
+  &__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: $ds-spacing-2;
+    padding: $ds-spacing-4;
+    background: $ds-bg-tertiary;
+    border-top: 1px solid $ds-border-color;
+  }
+
+  &__save,
+  &__cancel {
+    min-height: var(--cash-race-icon-lg);
+  }
+
+  &__runtime-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $ds-spacing-2;
+    padding-top: $ds-spacing-2;
+    border-top: 1px solid $ds-border-color;
+
+    .ds-btn {
+      min-width: 0;
+      padding-inline: $ds-spacing-2;
+    }
+  }
+}
+
+.cash-race-section {
+  max-width: var(--cash-race-content-width);
+  margin: 0 auto $ds-spacing-4;
+  overflow: hidden;
+  background: $ds-bg-secondary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-lg;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-3;
+    padding: $ds-spacing-4;
+    background: $ds-bg-tertiary;
+    border-bottom: 1px solid $ds-border-color;
+
+    h3 {
+      margin: 0 0 $ds-spacing-0_5;
+      color: $ds-text-primary;
+      font-size: $ds-font-size-base;
+      font-weight: $ds-font-weight-semibold;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    p {
+      margin: 0;
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-xs;
+      line-height: $ds-line-height-normal;
+    }
+  }
+
+  &__icon {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: var(--cash-race-icon-md);
+    height: var(--cash-race-icon-md);
+    color: var(--cash-race-accent);
+    background: rgba($ds-warning, 0.12);
+    border: 1px solid rgba($ds-warning-light, 0.16);
+    border-radius: $ds-radius-md;
+  }
+
+  &__body {
+    display: grid;
+    gap: $ds-spacing-4;
+    padding: $ds-spacing-4;
+
+    @media (min-width: $ds-breakpoint-md) {
+      padding: $ds-spacing-5;
+    }
+  }
+}
+
+.cash-race-copy-grid,
+.cash-race-fields-grid,
+.cash-race-technical-grid,
+.cash-race-date-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: $ds-spacing-3;
+}
+
+.cash-race-copy-grid {
+  @media (min-width: $ds-breakpoint-md) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.cash-race-fields-grid--three {
+  @media (min-width: $ds-breakpoint-md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.cash-race-technical-grid {
+  padding: $ds-spacing-4;
+  background: rgba($ds-bg-primary, 0.55);
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+
+  @media (min-width: $ds-breakpoint-md) {
+    grid-template-columns: minmax(0, 1.2fr) minmax(8.75rem, 0.65fr) minmax(0, 1.35fr);
+  }
+}
+
+.cash-race-field {
+  min-width: 0;
+  margin: 0;
+
+  > label,
+  .control-label {
+    display: block;
+    margin: 0 0 $ds-spacing-1_5;
+    color: $ds-text-secondary;
+    font-size: $ds-font-size-xs;
+    font-weight: $ds-font-weight-medium;
+    line-height: $ds-line-height-normal;
+  }
+
+  .help-block,
+  .form-text {
+    display: block;
+    margin: $ds-spacing-1_5 0 0;
+    color: $ds-text-secondary;
+    font-size: $ds-font-size-xs;
+    line-height: $ds-line-height-normal;
+  }
+
+  .invalid-feedback,
+  .help-block-error {
+    display: block;
+    margin-top: $ds-spacing-1;
+    color: $ds-danger-light;
+    font-size: $ds-font-size-xs;
+  }
+
+  textarea {
+    min-height: 7rem !important;
+  }
+}
+
+.cash-race-mono-input {
+  font-family: $ds-font-family-mono !important;
+  font-size: $ds-font-size-xs !important;
+}
+
+.cash-race-preview-toggle {
+  padding: $ds-spacing-3 $ds-spacing-4;
+  background: rgba($ds-primary, 0.08);
+  border: 1px solid rgba($ds-primary-light, 0.18);
+  border-radius: $ds-radius-md;
+
+  .cash-race-field {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: $ds-spacing-1 $ds-spacing-3;
+
+    > label {
+      grid-column: 2;
+      margin: 0;
+      color: $ds-text-primary;
+      font-size: $ds-font-size-sm;
+      cursor: pointer;
+    }
+
+    .form-text,
+    .help-block {
+      grid-column: 2;
+      margin: 0;
+    }
+  }
+
+  &__input {
+    grid-row: 1 / span 2;
+    width: var(--cash-race-checkbox-size);
+    height: var(--cash-race-checkbox-size);
+    margin: 0;
+    accent-color: $ds-primary-light;
+    cursor: pointer;
+  }
+}
+
+.cash-race-sidebar-section {
+  padding-bottom: $ds-spacing-4;
+
+  & + & {
+    padding-top: $ds-spacing-4;
+    border-top: 1px solid $ds-border-color;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $ds-spacing-3;
+    margin-bottom: $ds-spacing-4;
+
+    > span {
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      width: var(--cash-race-icon-md);
+      height: var(--cash-race-icon-md);
+      color: var(--cash-race-accent);
+      background: rgba($ds-warning, 0.12);
+      border-radius: $ds-radius-md;
+    }
+
+    h3 {
+      margin: 0 0 $ds-spacing-0_5;
+      color: $ds-text-primary;
+      font-size: $ds-font-size-sm;
+      font-weight: $ds-font-weight-semibold;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    p {
+      margin: 0;
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-xs;
+      line-height: $ds-line-height-tight;
+    }
+  }
+
+  .ds-select-wrapper + .cash-race-field-label,
+  .cash-race-field + .cash-race-field-label {
+    margin-top: $ds-spacing-3;
+  }
+}
+
+.cash-race-field-label {
+  display: block;
+  margin: 0 0 $ds-spacing-1_5;
+  color: $ds-text-secondary;
+  font-size: $ds-font-size-xs;
+  font-weight: $ds-font-weight-medium;
+}
+
+.cash-race-date-grid {
+  margin-top: $ds-spacing-3;
+}
+
+.cash-race-rewards {
+  display: grid;
+  gap: $ds-spacing-2;
+  margin-top: $ds-spacing-3;
+}
+
+.cash-race-reward {
+  display: grid;
+  grid-template-columns: var(--cash-race-icon-md) minmax(0, 1fr);
+  gap: $ds-spacing-3;
+  padding: $ds-spacing-3;
+  background: $ds-bg-secondary;
+  border: 1px solid $ds-border-color;
+  border-radius: $ds-radius-md;
+
+  &__place {
+    display: grid;
+    place-items: center;
+    width: var(--cash-race-icon-md);
+    height: var(--cash-race-icon-md);
+    color: $ds-text-primary;
+    background: $ds-bg-hover;
+    border: 1px solid $ds-border-color-light;
+    border-radius: $ds-radius-full;
+    font-weight: $ds-font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__fields {
+    display: grid;
+    min-width: 0;
+    gap: $ds-spacing-2;
+
+    > strong {
+      color: $ds-text-secondary;
+      font-size: $ds-font-size-xs;
+      font-weight: $ds-font-weight-semibold;
+    }
+  }
+
+  &--gold .cash-race-reward__place {
+    color: $ds-warning-light;
+    background: rgba($ds-warning, 0.16);
+    border-color: rgba($ds-warning-light, 0.28);
+  }
+
+  &--silver .cash-race-reward__place {
+    color: $ds-text-primary;
+    background: rgba($ds-text-secondary, 0.16);
+    border-color: rgba($ds-text-secondary, 0.32);
+  }
+
+  &--bronze .cash-race-reward__place {
+    color: lighten($ds-warning, 24%);
+    background: rgba($ds-warning-dark, 0.2);
+    border-color: rgba($ds-warning, 0.32);
+  }
+}
+
+@media (max-width: ($ds-breakpoint-sm - 1px)) {
+  .cash-race-form {
+    &__intro {
+      align-items: flex-start;
+    }
+
+    &__actions {
+      grid-template-columns: 1fr;
+    }
+
+    &__runtime-actions,
+    &__cancel {
+      grid-column: 1;
+    }
+
+    &__runtime-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-race-form .ds-btn,
+  .cash-race-form .ds-input,
+  .cash-race-form .ds-select,
+  .cash-race-form .ds-textarea {
+    transition: none !important;
   }
 }
 
