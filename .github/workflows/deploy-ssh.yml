@@ -200,6 +200,10 @@ jobs:
               exit 1
             fi
             COMPOSER_BIN=$(command -v composer)
+            # Do not inherit stale machine-wide GitHub OAuth credentials. Composer's
+            # regular download cache remains available through its XDG cache path.
+            export COMPOSER_HOME="$DEPLOY_ROOT/.composer-deploy"
+            mkdir -p "$COMPOSER_HOME"
             "$PHP_BIN" -v
             BRANCH="${{ github.ref_name }}"
             DEPLOY_GIT_CLONE_URL='${{ secrets.DEPLOY_GIT_CLONE_URL || vars.DEPLOY_GIT_CLONE_URL }}'
