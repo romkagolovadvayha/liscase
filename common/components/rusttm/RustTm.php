@@ -26,7 +26,21 @@ class RustTm
             $url .= '&date=' . $date;
         }
         $response = Yii::$app->curl->get($url);
-        return json_decode($response, 1);
+        $decoded = json_decode((string)$response, true);
+        if (!is_array($decoded)) {
+            Yii::warning(
+                'RustTm history invalid JSON: ' . json_last_error_msg() . ' (len=' . strlen((string)$response) . ')',
+                __METHOD__
+            );
+            return ['data' => []];
+        }
+
+        if (!isset($decoded['data']) || !is_array($decoded['data'])) {
+            Yii::warning('RustTm history response has no data array', __METHOD__);
+            $decoded['data'] = [];
+        }
+
+        return $decoded;
     }
 
     /**
