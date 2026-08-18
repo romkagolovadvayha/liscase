@@ -307,10 +307,10 @@ class StatsController extends Controller
         foreach ($totals as $sid => $sum) {
             if ($isPerServerBuild) {
                 if ($sum > $threshold) {
-                    $result[] = $sid;
+                    $result[] = (string) $sid;
                 }
             } elseif ($sum >= $threshold) {
-                $result[] = $sid;
+                $result[] = (string) $sid;
             }
         }
 
