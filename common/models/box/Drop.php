@@ -594,7 +594,7 @@ class Drop extends ActiveRecord
     }
 
     public function blockedTime() {
-        return strtotime($this->blocked_at);
+        return empty($this->blocked_at) ? false : strtotime($this->blocked_at);
     }
 
     /**

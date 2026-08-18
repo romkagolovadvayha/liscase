@@ -1,0 +1,17 @@
+{
+    "name": "consik/yii2-websocket",
+    "description": "PHP 8 compatible maintenance copy of the Consik Yii2 WebSocket component",
+    "version": "1.1.0",
+    "type": "yii2-extension",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "yiisoft/yii2": "^2.0.55",
+        "cboden/ratchet": "0.4.x-dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "consik\\yii2websocket\\": "src/"
+        }
+    }
+}

@@ -209,7 +209,6 @@ class RustAdmin extends Component
         if ($method === 'POST') {
             $body = json_encode($payload ?: [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             if ($body === false) {
-                curl_close($handle);
                 throw new \RuntimeException('Cannot encode Rust Admin request');
             }
             $headers[] = 'Content-Type: application/json';
@@ -221,7 +220,6 @@ class RustAdmin extends Component
         $raw = curl_exec($handle);
         $status = (int)curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
         $error = curl_error($handle);
-        curl_close($handle);
         if ($raw === false) {
             throw new \RuntimeException('Rust Admin network error: ' . $error);
         }

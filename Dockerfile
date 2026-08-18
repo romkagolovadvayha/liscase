@@ -1,10 +1,14 @@
 # Multi-stage build для оптимизации размера образа
-FROM php:7.4-fpm AS base
+FROM php:8.5-fpm AS base
 
 # Установка системных зависимостей
 RUN apt-get update && apt-get install -y \
     git \
     curl \
+    libcurl4-openssl-dev \
+    libfreetype6-dev \
+    libicu-dev \
+    libjpeg62-turbo-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -17,7 +21,8 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Установка PHP расширений
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql mysqli mbstring exif pcntl bcmath curl ftp gd intl zip
 
 # Установка Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -27,6 +32,7 @@ WORKDIR /var/www/html
 
 # Копирование composer файлов
 COPY composer.json composer.lock ./
+COPY packages ./packages
 
 # Установка зависимостей
 RUN composer install --no-dev --optimize-autoloader --no-scripts

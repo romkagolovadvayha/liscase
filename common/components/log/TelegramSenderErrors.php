@@ -152,7 +152,7 @@ class TelegramSenderErrors extends Target
         }
 
         $wrapAsCode = $config['wrapAsCode'];
-        is_callable($wrapAsCode) && $wrapAsCode = (boolean)call_user_func($wrapAsCode, $message);
+        is_callable($wrapAsCode) && $wrapAsCode = (bool)call_user_func($wrapAsCode, $message);
 
         if ($wrapAsCode) {
             $value = "<code>" . $value . "</code>";

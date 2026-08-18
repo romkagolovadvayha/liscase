@@ -193,6 +193,14 @@ jobs:
             set -euo pipefail
             DEPLOY_ROOT="${{ env.DEPLOY_PATH_REMOTE }}"
             cd "$DEPLOY_ROOT" || { echo "::error::Не удалось выполнить cd в DEPLOY_PATH=$DEPLOY_ROOT"; exit 1; }
+            PHP_BIN='${{ secrets.DEPLOY_PHP_BIN || vars.DEPLOY_PHP_BIN }}'
+            PHP_BIN="${PHP_BIN:-/opt/php85/bin/php}"
+            if [ ! -x "$PHP_BIN" ]; then
+              echo "::error::PHP 8.5 binary not found or not executable: $PHP_BIN"
+              exit 1
+            fi
+            COMPOSER_BIN=$(command -v composer)
+            "$PHP_BIN" -v
             BRANCH="${{ github.ref_name }}"
             DEPLOY_GIT_CLONE_URL='${{ secrets.DEPLOY_GIT_CLONE_URL || vars.DEPLOY_GIT_CLONE_URL }}'
             if [ ! -d .git ]; then
@@ -219,9 +227,10 @@ jobs:
             chmod 777 frontend/web/minify backend/web/minify api/runtime api/runtime/logs api/web/assets 2>/dev/null || true
             export YII_ENV=prod
             export YII_DEBUG=0
-            composer install --no-interaction --no-dev --optimize-autoloader
-            php -d default_socket_timeout=28800 yii migrate --interactive=0
+            "$PHP_BIN" "$COMPOSER_BIN" install --no-interaction --no-dev --optimize-autoloader
+            "$PHP_BIN" -d default_socket_timeout=28800 yii migrate --interactive=0
             if [ -f supervisor.deploy.conf ]; then
+              sed -i -E "s#^(command=)(php|/usr/bin/php|/opt/php[0-9]+/bin/php)([[:space:]])#\\1${PHP_BIN}\\3#" supervisor.deploy.conf
               SUPERVISOR_FN='${{ secrets.DEPLOY_SUPERVISOR_CONF_FILENAME || vars.DEPLOY_SUPERVISOR_CONF_FILENAME }}'
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
               sudo mv -f supervisor.deploy.conf "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
@@ -240,6 +249,7 @@ jobs:
             set +e
             if [ -f deploy.crontab ]; then
               tr -d '\r' < deploy.crontab > deploy.crontab.__lf__ && mv -f deploy.crontab.__lf__ deploy.crontab
+              sed -i -E "s#(^|[;&|[:space:]])(/usr/bin/php|/opt/php[0-9]+/bin/php|php)([[:space:]])#\\1${PHP_BIN}\\3#g" deploy.crontab
               CRON_ROOT='${{ secrets.DEPLOY_CRONTAB_ROOT || vars.DEPLOY_CRONTAB_ROOT }}'
               CRON_ROOT_NORM=$(printf '%s' "$CRON_ROOT" | tr '[:upper:]' '[:lower:]')
               if [ "$CRON_ROOT_NORM" = "1" ] || [ "$CRON_ROOT_NORM" = "true" ] || [ "$CRON_ROOT_NORM" = "yes" ]; then

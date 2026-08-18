@@ -220,5 +220,6 @@ if (YII_ENV_DEV && class_exists(\yii\debug\Module::class)) {
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
 }
-$config['params']['homePage'] = $_SERVER['REQUEST_SCHEME'] . '://' . $_SERVER['HTTP_HOST'];
+$requestScheme = $_SERVER['REQUEST_SCHEME'] ?? (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
+$config['params']['homePage'] = $requestScheme . '://' . $_SERVER['HTTP_HOST'];
 return $config;

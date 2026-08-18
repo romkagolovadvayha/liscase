@@ -122,7 +122,6 @@ class CobaltLabAffiliateChecker implements TaskCheckerInterface
         $response = curl_exec($ch);
         $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($response === false || $curlError !== '') {
             Yii::warning('CobaltLabAffiliateChecker cURL error: ' . $curlError, __METHOD__);

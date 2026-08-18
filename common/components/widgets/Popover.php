@@ -10,7 +10,7 @@ class Popover extends \yii\bootstrap5\Widget
     public $content;
     public $cssClass = 'info-popover-icon';
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 

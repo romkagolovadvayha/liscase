@@ -46,7 +46,6 @@ class TelegramRedFlag
             Yii::error('empty telegram query answer ' . curl_error($ch), __METHOD__);
         }
 
-        curl_close($ch);
 
         return json_decode($answer, true);
     }

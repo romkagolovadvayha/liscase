@@ -403,21 +403,17 @@ class MapList extends \yii\db\ActiveRecord
                 
                 if ($content === false || !empty($error)) {
                     Yii::warning("Attempt " . ($attemptNumber + 1) . " failed to download map file from URL: {$url}, map ID: {$mapId}, error: {$error}", __METHOD__);
-                    curl_close($ch);
                     continue;
                 }
                 
                 if ($httpCode >= 200 && $httpCode < 300) {
                     if (!empty($content)) {
-                        curl_close($ch);
                         return $content;
                     } else {
                         Yii::warning("Attempt " . ($attemptNumber + 1) . " downloaded empty file from URL: {$url}, map ID: {$mapId}, HTTP code: {$httpCode}", __METHOD__);
-                        curl_close($ch);
                     }
                 } else {
                     Yii::warning("Attempt " . ($attemptNumber + 1) . " failed with HTTP code {$httpCode} from URL: {$url}, map ID: {$mapId}", __METHOD__);
-                    curl_close($ch);
                     
                     // Для 5xx ошибок делаем повторные попытки, для 4xx - сразу возвращаем false
                     if ($httpCode >= 400 && $httpCode < 500) {
@@ -426,7 +422,6 @@ class MapList extends \yii\db\ActiveRecord
                 }
             } catch (\Exception $e) {
                 if ($ch !== null) {
-                    curl_close($ch);
                 }
                 Yii::warning("Attempt " . ($attemptNumber + 1) . " exception when downloading map file from URL: {$url}, map ID: {$mapId}, error: " . $e->getMessage(), __METHOD__);
             }

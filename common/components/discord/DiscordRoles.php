@@ -48,7 +48,6 @@ class DiscordRoles extends Component
             $lastBody = (string)curl_exec($ch);
             $lastHttpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $lastCurlError = curl_error($ch);
-            curl_close($ch);
 
             if ($lastHttpCode >= 200 && $lastHttpCode < 300) {
                 return ['httpCode' => $lastHttpCode, 'body' => $lastBody, 'curlError' => $lastCurlError];
@@ -293,7 +292,6 @@ class DiscordRoles extends Component
             
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
             
             if ($httpCode >= 200 && $httpCode < 300) {
                 $role = json_decode($response, true);

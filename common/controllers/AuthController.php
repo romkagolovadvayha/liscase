@@ -209,7 +209,6 @@ class AuthController extends WebController
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}", __METHOD__);
@@ -234,7 +233,6 @@ class AuthController extends WebController
 
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
@@ -374,7 +372,6 @@ class AuthController extends WebController
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Twitch OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
@@ -396,7 +393,6 @@ class AuthController extends WebController
         ]);
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         if ($httpCode !== 200) {
             Yii::error("Twitch API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Twitch.'));
@@ -539,7 +535,6 @@ class AuthController extends WebController
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Kick OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
@@ -560,7 +555,6 @@ class AuthController extends WebController
         ]);
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         if ($httpCode !== 200) {
             Yii::error("Kick API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
             Yii::$app->session->setFlash('error', Yii::t('common', 'Ошибка при получении данных пользователя Kick.'));
@@ -952,7 +946,6 @@ class AuthController extends WebController
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
 
             if ($httpCode === 204 || $httpCode === 200) {
                 return true;

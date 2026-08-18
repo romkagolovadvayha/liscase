@@ -36,7 +36,6 @@ class TelegramController extends Controller
         TelegramCurlProxy::applyFromSettings($ch);
         $raw = curl_exec($ch);
         $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
         $body = json_decode($raw, true) ?: [];
 
         return [

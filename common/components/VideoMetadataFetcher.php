@@ -214,7 +214,6 @@ class VideoMetadataFetcher
         }
         $raw = curl_exec($ch);
         $err = curl_error($ch);
-        curl_close($ch);
         if ($raw === false || $err !== '') {
             return null;
         }

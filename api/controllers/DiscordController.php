@@ -98,7 +98,6 @@ class DiscordController extends Controller
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::$app->telegramChats->sendMessage("Discord OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}, cURL Error: {$curlError}, redirectUri: {$redirectUri}");
@@ -128,7 +127,6 @@ class DiscordController extends Controller
 
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Discord API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
@@ -219,4 +217,3 @@ class DiscordController extends Controller
         return $this->redirect($redirectTo);
     }
 }
-

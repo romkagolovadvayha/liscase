@@ -88,7 +88,6 @@ class TwitchController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Twitch OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
@@ -117,7 +116,6 @@ class TwitchController extends Controller
         ]);
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Twitch API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);

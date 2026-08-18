@@ -3,6 +3,7 @@
 namespace common\tests\unit\services;
 
 use common\services\battle_pass\BattlePassRewardAllocator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -14,9 +15,7 @@ final class BattlePassRewardAllocatorTest extends TestCase
             . '/common/services/battle_pass/BattlePassRewardAllocator.php';
     }
 
-    /**
-     * @dataProvider catalogueSizes
-     */
+    #[DataProvider('catalogueSizes')]
     public function testAlwaysAllocatesExactlyOneHundredRewards(
         int $regularCount,
         int $setCount,
@@ -40,7 +39,7 @@ final class BattlePassRewardAllocatorTest extends TestCase
         ));
     }
 
-    public function catalogueSizes(): array
+    public static function catalogueSizes(): array
     {
         return [
             'minimum set catalogue' => [79, 3, 1],

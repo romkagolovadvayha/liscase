@@ -91,7 +91,6 @@ class KickController extends Controller
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/x-www-form-urlencoded']);
         $tokenResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Kick OAuth token error: HTTP {$httpCode}, Response: {$tokenResponse}", __METHOD__);
@@ -119,7 +118,6 @@ class KickController extends Controller
         ]);
         $userResponse = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode !== 200) {
             Yii::error("Kick API user error: HTTP {$httpCode}, Response: {$userResponse}", __METHOD__);
@@ -225,7 +223,6 @@ class KickController extends Controller
             }
             $body = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
             if ($httpCode === 200 && !empty($body)) {
                 break;
             }

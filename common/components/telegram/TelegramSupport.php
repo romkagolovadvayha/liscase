@@ -67,7 +67,6 @@ class TelegramSupport
             Yii::error('empty telegram query answer ' . curl_error($ch));
         }
 
-        curl_close($ch);
 
         return json_decode($answer, true);
     }

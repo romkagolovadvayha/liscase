@@ -145,12 +145,10 @@ class VkWidgetController extends Controller
             
             if (curl_errno($ch)) {
                 $error = curl_error($ch);
-                curl_close($ch);
                 Yii::error("CURL error during image upload: {$error}", 'vk-widget');
                 throw new \Exception('CURL error: ' . $error);
             }
             
-            curl_close($ch);
             
             Yii::info("VK upload server response: HTTP {$httpCode}, response: " . substr($response, 0, 200), 'vk-widget');
             

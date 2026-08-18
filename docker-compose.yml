@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   php:
-    image: yiisoftware/yii2-php:7.4-apache
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: liscase-php:8.5-apache
     container_name: liscase-dev
     volumes:
       - ~/.composer-docker/cache:/root/.composer/cache:delegated

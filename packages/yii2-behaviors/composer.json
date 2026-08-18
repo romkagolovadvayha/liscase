@@ -1,0 +1,17 @@
+{
+    "name": "yii2mod/yii2-behaviors",
+    "description": "PHP 8 compatible maintenance copy of yii2mod behaviors used by yii2-comments",
+    "version": "2.0.1",
+    "type": "yii2-extension",
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "yiisoft/yii2": "^2.0.55",
+        "nesbot/carbon": "^2.72 || ^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "yii2mod\\behaviors\\": "src/"
+        }
+    }
+}

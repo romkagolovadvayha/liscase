@@ -14,12 +14,12 @@
     },
     "minimum-stability": "stable",
     "require": {
-        "php": ">=7.4.0",
-        "yiisoft/yii2": "~2.0.45",
-        "yiisoft/yii2-bootstrap5": "2.0.3",
+        "php": "^8.5",
+        "yiisoft/yii2": "^2.0.55",
+        "yiisoft/yii2-bootstrap5": "^2.0.51",
         "yiisoft/yii2-symfonymailer": "~2.0.3",
         "creocoder/yii2-nested-sets": "^0.9.0",
-        "yiisoft/yii2-queue": "^2.3",
+        "yiisoft/yii2-queue": "^2.3.8",
         "npm-asset/bootstrap-icons": "^1.10",
         "ext-json": "*",
         "ext-ftp": "*",
@@ -31,20 +31,22 @@
         "kartik-v/yii2-grid": "^3.5",
         "kartik-v/yii2-bootstrap5-dropdown": "^1.0",
         "kartik-v/yii2-date-range": "^1.7",
-        "nizsheanez/yii2-asset-converter": "^2.0",
+        "scssphp/scssphp": "^2.0",
         "bower-asset/slick-carousel": "^1.8",
         "lajax/yii2-language-picker": "^1.2",
         "google/cloud-translate": "1.12",
         "demondogsl/yii2-translate-manager": "^1.0",
-        "consik/yii2-websocket": "^1.0",
+        "consik/yii2-websocket": "^1.1",
+        "cboden/ratchet": "0.4.x-dev#e621c6c40bf684bbbb877102416ad5303d05a9cc",
+        "ratchet/rfc6455": "^0.4.0",
+        "react/promise": "^3.3",
         "romkagolovadvayha/php-source-query-class": "dev-master",
         "lavrentiev/yii2-toastr": "dev-master",
         "hail812/yii2-adminlte3": "^1.1",
         "yii2mod/yii2-comments": "^2.0",
-        "tectalic/openai": "^1.6",
         "orhanerday/open-ai": "^5.2",
         "batdan/midjourney-api-php": "^2.1",
-        "2amigos/yii2-tinymce-widget": "*",
+        "2amigos/yii2-tinymce-widget": "1.1.3",
         "kartik-v/yii2-widget-fileinput": "dev-master",
         "kartik-v/yii2-sortable": "dev-master",
         "yiisoft/yii2-imagine": "^2.3",
@@ -74,17 +76,17 @@
         "yiisoft/yii2-debug": "~2.1.0",
         "yiisoft/yii2-gii": "~2.2.0",
         "yiisoft/yii2-faker": "~2.0.0",
-        "symfony/browser-kit": "^6.0",
+        "symfony/browser-kit": "^7.4",
         "zircote/swagger-php": "^4.8",
         "doctrine/annotations": "^2.0",
-        "codeception/codeception": "^5.0",
+        "codeception/codeception": "^5.3",
         "codeception/module-yii2": "^2.0",
-        "codeception/module-asserts": "^2.0",
-        "codeception/module-rest": "^2.0",
-        "codeception/module-filesystem": "^2.0"
+        "codeception/module-asserts": "^3.3",
+        "codeception/module-rest": "^3.4",
+        "codeception/module-filesystem": "^3.0"
     },
     "config": {
-        "platform-check": false,
+        "platform-check": true,
         "allow-plugins": {
             "yiisoft/yii2-composer": true,
             "php-http/discovery": true
@@ -124,6 +126,20 @@
         }
     },
     "repositories": [
+        {
+            "type": "path",
+            "url": "packages/yii2-behaviors",
+            "options": {
+                "symlink": false
+            }
+        },
+        {
+            "type": "path",
+            "url": "packages/yii2-websocket",
+            "options": {
+                "symlink": false
+            }
+        },
         {
             "type": "composer",
             "url": "https://asset-packagist.org"

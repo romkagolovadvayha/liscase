@@ -134,7 +134,6 @@ class UserController extends Controller
             $imageData = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
-            curl_close($ch);
 
             if ($imageData !== false && $httpCode === 200 && !empty($imageData)) {
                 if (file_exists($filePath)) {

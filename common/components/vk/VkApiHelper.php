@@ -469,7 +469,6 @@ class VkApiHelper extends \yii\base\Component
             $imageContent = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
 
             if ($imageContent === false || $httpCode !== 200 || !empty($curlError)) {
                 Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}", __METHOD__);
@@ -491,7 +490,6 @@ class VkApiHelper extends \yii\base\Component
 
             $uploadResult = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
             unlink($tempFile);
 
             if ($httpCode !== 200 || empty($uploadResult)) {
@@ -566,7 +564,6 @@ class VkApiHelper extends \yii\base\Component
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
             $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-            curl_close($ch);
 
             if ($imageContent === false || $httpCode !== 200 || !empty($curlError)) {
                 Yii::error("VK: Failed to download image from {$photoUrl}, HTTP code: {$httpCode}, Error: {$curlError}, Content-Type: {$contentType}", __METHOD__);
@@ -686,7 +683,6 @@ class VkApiHelper extends \yii\base\Component
             $uploadResult = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $curlError = curl_error($ch);
-            curl_close($ch);
             
             // Удаляем временный файл только после успешной загрузки
             if (file_exists($tempFile)) {
@@ -781,7 +777,6 @@ class VkApiHelper extends \yii\base\Component
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             $error = curl_error($ch);
-            curl_close($ch);
 
             if ($response === false || !empty($error)) {
                 Yii::error("VK API error: {$error}", __METHOD__);
@@ -825,4 +820,3 @@ class VkApiHelper extends \yii\base\Component
         }
     }
 }
-

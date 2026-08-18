@@ -29,7 +29,7 @@ use common\models\servers\ServersRulesCategory;
 
         <?= $form->field($model, 'no_numbering', ['options' => ['class' => 'mb-2'], 'template' => '{input}{label}{error}{hint}'])->checkbox([
             'label' => Yii::t('common', 'Без нумерации правил'),
-        ])->hint(Yii::t('common', 'Если включено, правила в этой категории не будут иметь нумерацию (например, для категории «Команды на сервере»)') ?>
+        ])->hint(Yii::t('common', 'Если включено, правила в этой категории не будут иметь нумерацию (например, для категории «Команды на сервере»)')) ?>
 
         <div class="mt-3 flex flex-wrap gap-2 items-center">
             <?= Html::submitButton(Yii::t('common', 'Сохранить'), ['class' => 'ds-btn ds-btn--primary']) ?>

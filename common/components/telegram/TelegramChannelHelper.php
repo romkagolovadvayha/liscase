@@ -116,7 +116,6 @@ class TelegramChannelHelper extends \yii\base\Component
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if (empty($response)) {
             Yii::error("Telegram: Empty response, HTTP code: {$httpCode}, Error: {$curlError}", __METHOD__);

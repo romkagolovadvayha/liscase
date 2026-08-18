@@ -90,8 +90,12 @@ if (Yii::$app->user->isGuest || !$userData['blocked']) {
     ]);
 }
 
-$link = $_SERVER['REQUEST_SCHEME'] . '://' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
-$linkEn = $_SERVER['REQUEST_SCHEME'] . '://' . 'en.' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
+$requestScheme = $_SERVER['HTTP_X_FORWARDED_PROTO']
+    ?? $_SERVER['REQUEST_SCHEME']
+    ?? (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http');
+$requestScheme = trim(explode(',', $requestScheme)[0]);
+$link = $requestScheme . '://' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
+$linkEn = $requestScheme . '://' . 'en.' . Yii::$app->settings->get('site_domain') . $_SERVER['REQUEST_URI'];
 
 ?>
 
