@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.5.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.5.1")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -743,7 +743,10 @@ namespace Oxide.Plugins
                 ["server_port"] = ConVar.Server.port.ToString(CultureInfo.InvariantCulture),
                 ["skindrops_api_url"] = settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase)
                     ? settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/skindrops"
-                    : settings.ApiUrl.TrimEnd('/') + "/skindrops"
+                    : settings.ApiUrl.TrimEnd('/') + "/skindrops",
+                ["notifications_api_url"] = settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase)
+                    ? settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/notifications"
+                    : settings.ApiUrl.TrimEnd('/') + "/notifications"
             };
         }
 
@@ -1849,6 +1852,7 @@ namespace Oxide.Plugins
                 case "support": return ImageUrl("rust-menu/icons/nav-support.png");
                 case "tournament": return ImageUrl("rust-menu/icons/nav-tournament.png");
                 case "skindrops": return ImageUrl("rust-menu/icons/nav-skindrops.png");
+                case "notifications": return ImageUrl("rust-menu/icons/nav-notifications.png");
                 default: return null;
             }
         }
@@ -2816,6 +2820,7 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-tournament.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-skindrops.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-notifications.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));

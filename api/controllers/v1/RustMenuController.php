@@ -239,6 +239,73 @@ class RustMenuController extends BaseApiController
         return $this->successResponse($this->buildSkinDropsPayload($server, $steamId, true));
     }
 
+    /** Admin-only notification preferences for the in-game menu. */
+    public function actionNotifications()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $isServerAdmin = filter_var(
+            Yii::$app->request->get('server_admin', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        return $this->successResponse($this->buildNotificationsPayload($server, $steamId, $isServerAdmin));
+    }
+
+    /** Save only raid/ban delivery flags; profile and channel bindings are untouched. */
+    public function actionNotificationsSettings()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $isServerAdmin = filter_var(
+            Yii::$app->request->get('server_admin', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+        if (!$isServerAdmin) {
+            return $this->errorResponse('ADMIN_REQUIRED', 'Раздел доступен только администраторам сервера.', [], 403);
+        }
+
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        if (!$user) {
+            return $this->errorResponse('ACCOUNT_REQUIRED', 'Сначала войдите на сайт через Steam.', [], 403);
+        }
+
+        $body = Yii::$app->request->getBodyParams();
+        if (empty($body)) {
+            $body = json_decode((string) Yii::$app->request->getRawBody(), true) ?: [];
+        }
+        if (!array_key_exists('raid_notify', $body) || !array_key_exists('ban_notify', $body)) {
+            return $this->errorResponse(
+                'INVALID_SETTINGS',
+                'Передайте настройки уведомлений о рейдах и банах.',
+                [],
+                422
+            );
+        }
+
+        $raidNotify = filter_var($body['raid_notify'], FILTER_VALIDATE_BOOLEAN);
+        $banNotify = filter_var($body['ban_notify'], FILTER_VALIDATE_BOOLEAN);
+        $telegramConnected = !empty($user->telegram_chat_id) && empty($user->is_telegram_blocked);
+        $vkConnected = !empty($user->vk_id);
+        if (($raidNotify || $banNotify) && !$telegramConnected && !$vkConnected) {
+            return $this->errorResponse(
+                'CHANNEL_REQUIRED',
+                'Сначала привяжите Telegram-бота или бота ВКонтакте в профиле на сайте.',
+                [],
+                422
+            );
+        }
+
+        $user->raid_notify = $raidNotify ? 1 : 0;
+        $user->ban_notify = $banNotify ? 1 : 0;
+        if (!$user->save(false, ['raid_notify', 'ban_notify'])) {
+            Yii::error('RustMenu notification settings save failed for user ' . (int) $user->id, 'rust-menu');
+            return $this->errorResponse('SAVE_FAILED', 'Не удалось сохранить настройки уведомлений.', [], 500);
+        }
+
+        return $this->successResponse($this->buildNotificationsPayload($server, $steamId, true));
+    }
+
     /**
      * Returns the player's current support conversation and compact ticket history.
      * Uses the same Support models as the website, so staff replies are visible in game.
@@ -456,6 +523,52 @@ class RustMenuController extends BaseApiController
                 'trade_link' => $tradeLink !== '' ? $tradeLink : null,
                 'trade_link_completed' => $tradeLinkCompleted,
                 'all_completed' => $registered && $usernameCompleted && $tradeLinkCompleted,
+            ],
+        ];
+    }
+
+    private function buildNotificationsPayload(Servers $server, string $steamId, bool $isServerAdmin): array
+    {
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        $telegramConnected = $user !== null
+            && !empty($user->telegram_chat_id)
+            && empty($user->is_telegram_blocked);
+        $vkConnected = $user !== null && !empty($user->vk_id);
+        $deliveryReady = $telegramConnected || $vkConnected;
+
+        $telegramUsername = trim((string) (
+            Yii::$app->settings->get('telegram_personal_bot_username')
+            ?: Yii::$app->settings->get('tgbot_login')
+            ?: ''
+        ));
+        $telegramUsername = ltrim($telegramUsername, '@');
+        $vkLink = trim((string) (Yii::$app->settings->get('social_vk') ?? ''));
+
+        return [
+            'available' => true,
+            'eligible' => $isServerAdmin,
+            'registered' => $user !== null,
+            'can_manage' => $isServerAdmin && $user !== null && $deliveryReady,
+            'delivery_ready' => $deliveryReady,
+            'server' => [
+                'id' => (int) $server->id,
+                'tag' => (string) $server->tag,
+                'name' => (string) ($server->monitoring_name ?: $server->name),
+            ],
+            'channels' => [
+                'telegram' => [
+                    'connected' => $telegramConnected,
+                    'blocked' => $user !== null && !empty($user->telegram_chat_id) && !empty($user->is_telegram_blocked),
+                    'bot_username' => $telegramUsername !== '' ? $telegramUsername : null,
+                ],
+                'vk' => [
+                    'connected' => $vkConnected,
+                    'community_url' => $vkLink !== '' ? $vkLink : null,
+                ],
+            ],
+            'settings' => [
+                'raid_notify' => $user !== null && !empty($user->raid_notify),
+                'ban_notify' => $user !== null && !empty($user->ban_notify),
             ],
         ];
     }
