@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojNotifications", "Prostoj Team", "1.0.0")]
+    [Info("ProstojNotifications", "Prostoj Team", "1.0.1")]
     [Description("Admin-only raid and ban notification settings for ProstojMenu")]
     public class ProstojNotifications : RustPlugin
     {
@@ -231,9 +231,15 @@ namespace Oxide.Plugins
                 }
                 else
                 {
+                    var raidDirty = state.Status != null
+                        && (state.RaidDraft ?? state.Status.Settings?.RaidNotify ?? false)
+                            != (state.Status.Settings?.RaidNotify ?? false);
+                    var banDirty = state.Status != null
+                        && (state.BanDraft ?? state.Status.Settings?.BanNotify ?? false)
+                            != (state.Status.Settings?.BanNotify ?? false);
                     state.Status = envelope.Data;
-                    state.RaidDraft = envelope.Data.Settings?.RaidNotify ?? false;
-                    state.BanDraft = envelope.Data.Settings?.BanNotify ?? false;
+                    if (!raidDirty) state.RaidDraft = envelope.Data.Settings?.RaidNotify ?? false;
+                    if (!banDirty) state.BanDraft = envelope.Data.Settings?.BanNotify ?? false;
                     state.Error = null;
                     if (envelope.Data.Available && envelope.Data.Eligible) RegisterMenuTab();
                 }
