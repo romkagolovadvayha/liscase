@@ -435,7 +435,6 @@ class RustMenuController extends BaseApiController
                 $userDropIds[] = (int) $userDrop->id;
             }
 
-            $balance->recalculateBalance();
             $newBalance = (int) $balance->balanceCeil;
             $transaction->commit();
             Yii::$app->drop->clearCountBuy((int) $user->id);
@@ -466,12 +465,14 @@ class RustMenuController extends BaseApiController
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
         $this->requireRustMenuAdmin();
-        $user = $this->findRustMenuUser($steamId);
-        $balance = $user->getPersonalBalance();
-        $balance->recalculateBalance();
+        $userId = $this->findRustMenuUserId($steamId);
+        $balance = UserBalance::find()
+            ->select('balance')
+            ->andWhere(['user_id' => $userId, 'type' => UserBalance::TYPE_PERSONAL])
+            ->scalar();
 
         return $this->successResponse([
-            'balance' => (int) $balance->balanceCeil,
+            'balance' => (int) ceil((float) ($balance ?: 0)),
             'currency' => UserBalance::getCurrency(),
         ]);
     }
@@ -895,7 +896,10 @@ class RustMenuController extends BaseApiController
             foreach ($popularRows as $row) {
                 $popular[(int) $row['drop_id']] = (int) $row['purchases'];
             }
-            Yii::$app->cache->set('rust_menu_shop_popularity_v1', $popular, 600);
+            // Popularity is deliberately less volatile than the catalogue.
+            // One hourly aggregation avoids repeatedly scanning a large
+            // invoice history while keeping the order fresh enough for users.
+            Yii::$app->cache->set('rust_menu_shop_popularity_v1', $popular, 3600);
         }
 
         $rows = [];
@@ -978,6 +982,18 @@ class RustMenuController extends BaseApiController
             throw new \yii\web\ForbiddenHttpException('Сначала войдите на сайт через Steam.');
         }
         return $user;
+    }
+
+    private function findRustMenuUserId(string $steamId): int
+    {
+        $userId = (int) User::find()
+            ->select('id')
+            ->andWhere(['steam_id' => $steamId])
+            ->scalar();
+        if ($userId <= 0) {
+            throw new \yii\web\ForbiddenHttpException('Сначала войдите на сайт через Steam.');
+        }
+        return $userId;
     }
 
     private function jsonBody(): array

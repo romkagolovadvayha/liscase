@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojShop", "Prostoj Team", "1.0.0")]
+    [Info("ProstojShop", "Prostoj Team", "1.0.1")]
     [Description("Admin preview of the Prostoj store inside ProstojMenu")]
     public class ProstojShop : RustPlugin
     {
@@ -44,6 +44,7 @@ namespace Oxide.Plugins
             public bool TopupOpen;
             public int TopupAmount = 500;
             public bool TopupLoading;
+            public bool BalancePolling;
             public TopupData Topup;
             public bool TopupSuccess;
             public Timer BalanceTimer;
@@ -199,8 +200,16 @@ namespace Oxide.Plugins
         {
             if (!IsAllowedAdmin(player)) return false;
             var state = State(player.userID);
+            if (state.TopupOpen && TopupExpired(state))
+            {
+                state.Error = "Срок действия QR-кода истёк. Создайте новый.";
+                state.Topup = null;
+                StopBalancePoll(state);
+            }
             Draw(player, parent, state);
-            if (state.Shop == null && !state.Loading) RequestCatalog(player, true);
+            if (state.Shop == null && !state.Loading) RequestCatalog(player, false);
+            if (state.TopupOpen && state.Topup != null && !state.TopupSuccess && state.BalanceTimer == null && !TopupExpired(state))
+                StartBalancePoll(player, state);
             return true;
         }
 
@@ -291,14 +300,17 @@ namespace Oxide.Plugins
                     state.Error = ErrorText(response, "Магазин временно недоступен.");
                 else
                 {
-                    state.Shop = envelope.Data;
+                    var previousBalance = state.Shop != null ? state.Shop.Balance : -1;
                     state.Page = envelope.Data.Pagination != null ? envelope.Data.Pagination.Page : state.Page;
                     state.Error = null;
-                    CacheImages(envelope.Data.Products);
-                    ProstojMenu?.Call("API_UpdateBalance", player, envelope.Data.Balance);
+                    state.Shop = envelope.Data;
+                    var imagesPending = CacheImages(envelope.Data.Products);
+                    if (previousBalance != envelope.Data.Balance)
+                        ProstojMenu?.Call("API_UpdateBalance", player, envelope.Data.Balance);
+                    if (imagesPending)
+                        timer.Once(1.2f, () => { if (player != null && player.IsConnected && IsActive(player)) Refresh(player); });
                 }
                 if (redraw && IsActive(player)) Refresh(player);
-                if (state.Shop != null) timer.Once(1.2f, () => { if (player != null && player.IsConnected && IsActive(player)) Refresh(player); });
             }, this, RequestMethod.GET, Headers(false), 12f);
         }
 
@@ -386,22 +398,37 @@ namespace Oxide.Plugins
         {
             state.BalanceTimer?.Destroy();
             state.BalanceTimer = null;
+            state.BalancePolling = false;
         }
 
         private void PollBalance(BasePlayer player, PlayerState state)
         {
-            if (player == null || !player.IsConnected || !state.TopupOpen || state.Topup == null || state.TopupSuccess)
+            if (player == null || !player.IsConnected || !IsActive(player) || !state.TopupOpen || state.Topup == null || state.TopupSuccess)
             {
                 StopBalancePoll(state);
                 return;
             }
+            if (TopupExpired(state))
+            {
+                state.Error = "Срок действия QR-кода истёк. Создайте новый.";
+                state.Topup = null;
+                StopBalancePoll(state);
+                Refresh(player);
+                return;
+            }
+            if (state.BalancePolling) return;
+            state.BalancePolling = true;
+            var topup = state.Topup;
             webrequest.Enqueue(PlayerUrl(player, Endpoint() + "/balance"), null, (code, response) =>
             {
+                if (!ReferenceEquals(state.Topup, topup)) return;
+                state.BalancePolling = false;
                 ApiEnvelope<BalanceData> envelope;
                 if (!TryEnvelope(code, response, out envelope) || envelope.Data == null) return;
+                var balanceChanged = state.Shop == null || state.Shop.Balance != envelope.Data.Balance;
                 if (state.Shop != null) state.Shop.Balance = envelope.Data.Balance;
-                ProstojMenu?.Call("API_UpdateBalance", player, envelope.Data.Balance);
-                if (envelope.Data.Balance > state.Topup.InitialBalance)
+                if (balanceChanged) ProstojMenu?.Call("API_UpdateBalance", player, envelope.Data.Balance);
+                if (envelope.Data.Balance > topup.InitialBalance)
                 {
                     state.TopupSuccess = true;
                     StopBalancePoll(state);
@@ -575,12 +602,20 @@ namespace Oxide.Plugins
             if (!string.IsNullOrEmpty(png)) AddRawImage(ui, parent, "0.20 0.12", "0.80 0.88", png, "1 1 1 1");
         }
 
-        private void CacheImages(IEnumerable<ProductData> products)
+        private bool CacheImages(IEnumerable<ProductData> products)
         {
-            if (products == null) return;
+            if (products == null) return false;
+            var pending = false;
             foreach (var product in products)
-                if (product.RustId == 0 && !string.IsNullOrWhiteSpace(product.Image)) ProstojMenu?.Call("API_CacheImage", product.Image);
+            {
+                if (product.RustId != 0 || string.IsNullOrWhiteSpace(product.Image)) continue;
+                var png = ProstojMenu?.Call("API_GetImage", product.Image) as string;
+                if (string.IsNullOrEmpty(png)) pending = true;
+            }
+            return pending;
         }
+
+        private static bool TopupExpired(PlayerState state) => state.Topup != null && state.Topup.ExpiresAt > 0 && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= state.Topup.ExpiresAt;
 
         private PlayerState State(ulong userId)
         {
