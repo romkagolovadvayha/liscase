@@ -4,6 +4,11 @@ namespace api\controllers\v1;
 
 use common\helpers\StatsCacheHelper;
 use common\models\battle_pass\BattlePassSeason;
+use common\models\box\Category;
+use common\models\box\Drop;
+use common\models\box\DropBlocked;
+use common\models\box\DropDrop;
+use common\models\box\DropFavorite;
 use common\models\clan\Clan;
 use common\models\clan\ClanMember;
 use common\models\servers\Servers;
@@ -13,12 +18,15 @@ use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
 use common\models\user\User;
 use common\models\user\UserBalance;
+use common\models\user\UserDrop;
 use common\models\user\UserProfile;
+use common\models\invoice\Invoice;
 use common\models\wipe_calendar\WipeCalendarEvent;
 use common\components\queue\support\BeforeMessageJob;
 use Yii;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
+use yii\web\Response;
 
 /**
  * Aggregate used by the in-game ProstojMenu plugin.
@@ -306,6 +314,218 @@ class RustMenuController extends BaseApiController
         return $this->successResponse($this->buildNotificationsPayload($server, $steamId, true));
     }
 
+    /** Cached public catalogue plus the current admin's balance and favorites. */
+    public function actionShop()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $this->requireRustMenuAdmin();
+        $user = $this->findRustMenuUser($steamId);
+        $categoryId = max(0, (int) Yii::$app->request->get('category_id', 0));
+        $page = max(1, (int) Yii::$app->request->get('page', 1));
+        $pageSize = min(20, max(4, (int) Yii::$app->request->get('page_size', 8)));
+
+        return $this->successResponse($this->buildShopPayload($server, $user, $categoryId, $page, $pageSize));
+    }
+
+    /** Toggle a product in the website's existing favorites table. */
+    public function actionShopFavorite()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $this->requireRustMenuAdmin();
+        $user = $this->findRustMenuUser($steamId);
+        $body = $this->jsonBody();
+        $dropId = (int) ($body['drop_id'] ?? 0);
+        $drop = Drop::findOne($dropId);
+        if (!$drop || (int) $drop->market_status !== Drop::MARKET_STATUS_ACTIVE) {
+            return $this->errorResponse('PRODUCT_NOT_FOUND', 'Товар не найден или больше недоступен.', [], 404);
+        }
+
+        $favorite = filter_var($body['favorite'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $saved = $favorite
+            ? DropFavorite::addToFavorite((int) $user->id, $dropId)
+            : DropFavorite::removeFromFavorite((int) $user->id, $dropId);
+        if (!$saved) {
+            return $this->errorResponse('FAVORITE_SAVE_FAILED', 'Не удалось изменить избранное.', [], 500);
+        }
+
+        return $this->successResponse(['drop_id' => $dropId, 'favorite' => $favorite]);
+    }
+
+    /** Instant purchase using the same invoice and basket records as the website store. */
+    public function actionShopBuy()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $this->requireRustMenuAdmin();
+        $user = $this->findRustMenuUser($steamId);
+        $dropId = (int) ($this->jsonBody()['drop_id'] ?? 0);
+        $drop = Drop::findOne($dropId);
+        if (!$drop
+            || (int) $drop->status !== Drop::STATUS_ACTIVE
+            || (int) $drop->market_status !== Drop::MARKET_STATUS_ACTIVE
+            || (int) $drop->drop_type === Drop::TYPE_SELECT
+        ) {
+            return $this->errorResponse('PRODUCT_NOT_FOUND', 'Товар не найден или недоступен для покупки.', [], 404);
+        }
+        $block = $this->shopWipeBlock($drop, $server);
+        if ($block['blocked']) {
+            return $this->errorResponse('PRODUCT_BLOCKED', 'Товар временно закрыт вайп-блоком.', $block, 409);
+        }
+
+        $previousIdentity = Yii::$app->user->identity;
+        Yii::$app->user->setIdentity($user);
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $price = (int) $drop->getRealPrice(true);
+            $balance = $user->getPersonalBalance();
+            if ($price > (int) $balance->balanceCeil) {
+                $transaction->rollBack();
+                return $this->errorResponse(
+                    'INSUFFICIENT_BALANCE',
+                    'Недостаточно средств. Пополните баланс по QR-коду.',
+                    ['price' => $price, 'balance' => (int) $balance->balanceCeil],
+                    409
+                );
+            }
+
+            Invoice::createRecord(
+                (int) $user->id,
+                $price,
+                Invoice::TYPE_PAYMENT_MARKET_DROP,
+                null,
+                null,
+                (int) $drop->id,
+                Yii::t('common', 'Мгновенная покупка предмета "{PARAMS_PREDNAME}"', [
+                    'PARAMS_PREDNAME' => Yii::t('database', (string) $drop->name),
+                ])
+            );
+
+            $userDropIds = [];
+            if ((int) $drop->drop_type === Drop::TYPE_SET) {
+                $relations = DropDrop::find()->where(['parent_drop_id' => (int) $drop->id])->with('drop')->all();
+                foreach ($relations as $relation) {
+                    if (!$relation->drop) {
+                        continue;
+                    }
+                    $userDrop = UserDrop::createRecord(
+                        (int) $user->id,
+                        (int) $relation->drop_id,
+                        null,
+                        null,
+                        UserDrop::STATUS_ACTIVE,
+                        false,
+                        max(1, (int) ($relation->count ?? 1)),
+                        null,
+                        (int) $drop->id
+                    );
+                    $userDropIds[] = (int) $userDrop->id;
+                }
+            } else {
+                $userDrop = UserDrop::createRecord(
+                    (int) $user->id,
+                    (int) $drop->id,
+                    null,
+                    null,
+                    UserDrop::STATUS_ACTIVE,
+                    false,
+                    max(1, (int) ($drop->count ?? 1))
+                );
+                $userDropIds[] = (int) $userDrop->id;
+            }
+
+            $balance->recalculateBalance();
+            $newBalance = (int) $balance->balanceCeil;
+            $transaction->commit();
+            Yii::$app->drop->clearCountBuy((int) $user->id);
+            $this->invalidateRustMenuSnapshot($server, $steamId);
+
+            return $this->successResponse([
+                'purchased' => true,
+                'drop_id' => (int) $drop->id,
+                'price' => $price,
+                'new_balance' => $newBalance,
+                'basket_ids' => $userDropIds,
+                'message' => 'Товар куплен и добавлен в корзину.',
+            ]);
+        } catch (\Throwable $e) {
+            if ($transaction->isActive) {
+                $transaction->rollBack();
+            }
+            Yii::error('RustMenu shop purchase failed: ' . $e->getMessage(), 'rust-menu');
+            return $this->errorResponse('PURCHASE_FAILED', 'Не удалось завершить покупку.', [], 500);
+        } finally {
+            Yii::$app->user->setIdentity($previousIdentity);
+        }
+    }
+
+    /** Lightweight balance polling while the QR payment is open. */
+    public function actionShopBalance()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $this->requireRustMenuAdmin();
+        $user = $this->findRustMenuUser($steamId);
+        $balance = $user->getPersonalBalance();
+        $balance->recalculateBalance();
+
+        return $this->successResponse([
+            'balance' => (int) $balance->balanceCeil,
+            'currency' => UserBalance::getCurrency(),
+        ]);
+    }
+
+    /** Create a short-lived signed phone link and a first-party QR image URL. */
+    public function actionShopTopup()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $this->requireRustMenuAdmin();
+        $user = $this->findRustMenuUser($steamId);
+        $amount = (int) ($this->jsonBody()['amount'] ?? 0);
+        if ($amount < 50 || $amount > 50000) {
+            return $this->errorResponse('INVALID_AMOUNT', 'Введите сумму от 50 до 50 000 ₽.', [], 422);
+        }
+
+        $token = $this->createShopTopupToken($steamId, $amount);
+        $apiBase = rtrim((string) Yii::$app->request->hostInfo, '/');
+        $balance = $user->getPersonalBalance();
+        return $this->successResponse([
+            'amount' => $amount,
+            'initial_balance' => (int) $balance->balanceCeil,
+            'expires_at' => time() + 15 * 60,
+            'qr_url' => $apiBase . '/v1/rust-menu/shop/topup/qr?token=' . rawurlencode($token),
+        ]);
+    }
+
+    /** PNG is generated on our API; the Rust client downloads and caches it in FileStorage. */
+    public function actionShopTopupQr()
+    {
+        $payload = $this->validateShopTopupToken((string) Yii::$app->request->get('token', ''));
+        $siteBase = $this->shopSiteBaseUrl();
+        $url = $siteBase . '/payment/ingame?token=' . rawurlencode((string) Yii::$app->request->get('token', ''));
+        $qr = (new \Da\QrCode\QrCode($url))->setSize(360)->setMargin(14);
+
+        Yii::$app->response->format = Response::FORMAT_RAW;
+        Yii::$app->response->headers->set('Content-Type', 'image/png');
+        Yii::$app->response->headers->set('Cache-Control', 'private, max-age=900');
+        Yii::$app->response->headers->set('X-Topup-Expires', (string) $payload['expires']);
+        return $qr->writeString();
+    }
+
+    /** Public token verification for the phone landing page. */
+    public function actionShopTopupResolve()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        $payload = $this->validateShopTopupToken((string) Yii::$app->request->get('token', ''));
+        return $this->successResponse([
+            'steam_id' => (string) $payload['steam_id'],
+            'amount' => (int) $payload['amount'],
+            'expires_at' => (int) $payload['expires'],
+        ]);
+    }
+
     /**
      * Returns the player's current support conversation and compact ticket history.
      * Uses the same Support models as the website, so staff replies are visible in game.
@@ -571,6 +791,260 @@ class RustMenuController extends BaseApiController
                 'ban_notify' => $user !== null && !empty($user->ban_notify),
             ],
         ];
+    }
+
+    private function buildShopPayload(Servers $server, User $user, int $categoryId, int $page, int $pageSize): array
+    {
+        $catalog = $this->shopCatalogIndex();
+        $rows = $categoryId > 0
+            ? array_values(array_filter($catalog, static function (array $row) use ($categoryId): bool {
+                return (int) $row['category_id'] === $categoryId;
+            }))
+            : $catalog;
+        $total = count($rows);
+        $pages = max(1, (int) ceil($total / $pageSize));
+        $page = min($page, $pages);
+        $slice = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
+        $dropIds = array_map('intval', array_column($slice, 'id'));
+        $favoriteIds = empty($dropIds)
+            ? []
+            : array_map('intval', DropFavorite::find()
+                ->select('drop_id')
+                ->where(['user_id' => (int) $user->id, 'drop_id' => $dropIds])
+                ->column());
+        $favoriteMap = array_fill_keys($favoriteIds, true);
+        $dropMap = Drop::getDropListAll();
+        $images = Drop::productsImages();
+        $products = [];
+
+        $previousIdentity = Yii::$app->user->identity;
+        Yii::$app->user->setIdentity($user);
+        try {
+            foreach ($slice as $row) {
+                $drop = $dropMap[(int) $row['id']] ?? null;
+                if (!$drop) {
+                    continue;
+                }
+                $block = $this->shopWipeBlock($drop, $server);
+                $image = (string) ($images[(int) $drop->id]['150px'] ?? '');
+                if ($image === '' && $drop->imageOrig) {
+                    $image = (string) $drop->imageOrig->getImagePubUrl();
+                }
+                $products[] = [
+                    'id' => (int) $drop->id,
+                    'name' => Yii::t('database', (string) $drop->name),
+                    'price' => (int) $drop->getRealPrice(true),
+                    'image' => $image,
+                    'rust_id' => (int) ($drop->rust_id ?? 0),
+                    'count' => max(1, (int) ($drop->count ?? 1)),
+                    'category_id' => (int) ($drop->category_id ?? 0),
+                    'favorite' => isset($favoriteMap[(int) $drop->id]),
+                    'popular' => (int) $row['popularity'] > 0,
+                    'popularity' => (int) $row['popularity'],
+                    'blocked' => (bool) $block['blocked'],
+                    'blocked_seconds' => (int) $block['left_time'],
+                    'can_buy' => !$block['blocked'],
+                ];
+            }
+        } finally {
+            Yii::$app->user->setIdentity($previousIdentity);
+        }
+
+        $balance = $user->getPersonalBalance();
+        return [
+            'available' => true,
+            'eligible' => true,
+            'balance' => (int) $balance->balanceCeil,
+            'currency' => UserBalance::getCurrency(),
+            'categories' => $this->shopCategories(),
+            'products' => $products,
+            'pagination' => [
+                'page' => $page,
+                'page_size' => $pageSize,
+                'pages' => $pages,
+                'total' => $total,
+            ],
+            'sort' => 'popularity',
+            'catalog_cache_seconds' => 600,
+        ];
+    }
+
+    /**
+     * Shared catalogue order. Product IDs and global popularity are cached for
+     * every player; only the eight visible prices/favorites are personalized.
+     */
+    private function shopCatalogIndex(): array
+    {
+        $cacheKey = 'rust_menu_shop_catalog_index_v2';
+        $cached = Yii::$app->cache->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $popular = Yii::$app->cache->get('rust_menu_shop_popularity_v1');
+        if (!is_array($popular)) {
+            $since = date('Y-m-d H:i:s', time() - 90 * 86400);
+            $popularRows = Invoice::find()
+                ->select(['drop_id', 'COUNT(*) AS purchases'])
+                ->where(['type' => Invoice::TYPE_PAYMENT_MARKET_DROP])
+                ->andWhere(['IS NOT', 'drop_id', null])
+                ->andWhere(['>=', 'created_at', $since])
+                ->groupBy('drop_id')
+                ->asArray()
+                ->all();
+            $popular = [];
+            foreach ($popularRows as $row) {
+                $popular[(int) $row['drop_id']] = (int) $row['purchases'];
+            }
+            Yii::$app->cache->set('rust_menu_shop_popularity_v1', $popular, 600);
+        }
+
+        $rows = [];
+        foreach (Drop::getForMarket(false) as $drop) {
+            if ((int) $drop->status !== Drop::STATUS_ACTIVE || (int) $drop->drop_type === Drop::TYPE_SELECT) {
+                continue;
+            }
+            $rows[] = [
+                'id' => (int) $drop->id,
+                'category_id' => (int) ($drop->category_id ?? 0),
+                'sort' => (int) ($drop->sort ?? 0),
+                'popularity' => (int) ($popular[(int) $drop->id] ?? 0),
+            ];
+        }
+        usort($rows, static function (array $a, array $b): int {
+            return ($b['popularity'] <=> $a['popularity'])
+                ?: ($a['sort'] <=> $b['sort'])
+                ?: ($a['id'] <=> $b['id']);
+        });
+        Yii::$app->cache->set($cacheKey, $rows, 600);
+        return $rows;
+    }
+
+    private function shopCategories(): array
+    {
+        $cacheKey = 'rust_menu_shop_categories_v1';
+        $cached = Yii::$app->cache->get($cacheKey);
+        if (is_array($cached)) {
+            return $cached;
+        }
+        $result = [['id' => 0, 'name' => 'Популярное', 'tag' => 'popular']];
+        foreach (Category::find()->orderBy(['sort' => SORT_ASC, 'id' => SORT_ASC])->all() as $category) {
+            if (strtolower((string) ($category->tag ?? '')) === 'sets') {
+                continue;
+            }
+            $result[] = [
+                'id' => (int) $category->id,
+                'name' => Yii::t('database', (string) $category->name),
+                'tag' => (string) ($category->tag ?? ''),
+            ];
+        }
+        Yii::$app->cache->set($cacheKey, $result, 600);
+        return $result;
+    }
+
+    private function shopWipeBlock(Drop $drop, Servers $server): array
+    {
+        $leftTime = 0;
+        if (empty($drop->command) && !empty($drop->rust_id) && (int) $drop->rust_id > 0) {
+            $isBlueprint = (int) $drop->rust_id === -1580979675;
+            $cacheKey = 'wipe_block_left_time_' . (int) $server->id . '_' . (int) $drop->id . '_'
+                . (int) $drop->rust_id . '_' . ($isBlueprint ? '1' : '0');
+            $leftTime = (int) Yii::$app->cache->get($cacheKey);
+            if ($leftTime <= 0) {
+                $blockedAt = DropBlocked::getBlocked((int) $drop->id, (int) $server->id);
+                $leftTime = $blockedAt ? max(0, strtotime($blockedAt) - time()) : 0;
+            }
+        }
+        return [
+            'blocked' => $leftTime > 0,
+            'left_time' => $leftTime,
+        ];
+    }
+
+    private function requireRustMenuAdmin(): void
+    {
+        $isServerAdmin = filter_var(
+            Yii::$app->request->get('server_admin', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+        if (!$isServerAdmin) {
+            throw new \yii\web\ForbiddenHttpException('Раздел доступен только администраторам сервера.');
+        }
+    }
+
+    private function findRustMenuUser(string $steamId): User
+    {
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        if (!$user) {
+            throw new \yii\web\ForbiddenHttpException('Сначала войдите на сайт через Steam.');
+        }
+        return $user;
+    }
+
+    private function jsonBody(): array
+    {
+        $body = Yii::$app->request->getBodyParams();
+        if (empty($body)) {
+            $body = json_decode((string) Yii::$app->request->getRawBody(), true) ?: [];
+        }
+        return is_array($body) ? $body : [];
+    }
+
+    private function invalidateRustMenuSnapshot(Servers $server, string $steamId): void
+    {
+        Yii::$app->cache->delete('api_rust_menu_snapshot_' . md5($server->id . '|' . $steamId . '|v6'));
+    }
+
+    private function createShopTopupToken(string $steamId, int $amount): string
+    {
+        $payload = [
+            'steam_id' => $steamId,
+            'amount' => $amount,
+            'expires' => time() + 15 * 60,
+            'nonce' => Yii::$app->security->generateRandomString(10),
+        ];
+        $encoded = rtrim(strtr(base64_encode(json_encode($payload, JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+        $signature = hash_hmac('sha256', $encoded, $this->shopTopupSigningKey());
+        return $encoded . '.' . $signature;
+    }
+
+    private function validateShopTopupToken(string $token): array
+    {
+        $parts = explode('.', $token, 2);
+        if (count($parts) !== 2
+            || !preg_match('/^[A-Za-z0-9_-]+$/', $parts[0])
+            || !preg_match('/^[a-f0-9]{64}$/', $parts[1])
+            || !hash_equals(hash_hmac('sha256', $parts[0], $this->shopTopupSigningKey()), $parts[1])
+        ) {
+            throw new BadRequestHttpException('QR-код недействителен.');
+        }
+        $padded = strtr($parts[0], '-_', '+/');
+        $padded .= str_repeat('=', (4 - strlen($padded) % 4) % 4);
+        $payload = json_decode((string) base64_decode($padded, true), true);
+        if (!is_array($payload)
+            || !preg_match('/^\d{17}$/', (string) ($payload['steam_id'] ?? ''))
+            || (int) ($payload['amount'] ?? 0) < 50
+            || (int) ($payload['amount'] ?? 0) > 50000
+            || (int) ($payload['expires'] ?? 0) < time()
+        ) {
+            throw new BadRequestHttpException('Срок действия QR-кода истёк.');
+        }
+        return $payload;
+    }
+
+    private function shopTopupSigningKey(): string
+    {
+        $key = (string) (Yii::$app->params['rustMenuTopupSigningKey'] ?? Yii::$app->request->cookieValidationKey ?? '');
+        if ($key === '') {
+            throw new \RuntimeException('Rust menu top-up signing key is not configured.');
+        }
+        return $key;
+    }
+
+    private function shopSiteBaseUrl(): string
+    {
+        $host = strtolower((string) Yii::$app->request->hostName);
+        return strpos($host, 'moscow77') !== false ? 'https://moscow77.store' : 'https://prostoj.store';
     }
 
     private function validateSteamTradeLink(string $tradeLink): ?string

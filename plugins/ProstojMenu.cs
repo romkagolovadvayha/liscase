@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.5.1")]
+    [Info("ProstojMenu", "Prostoj Team", "2.6.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -746,7 +746,10 @@ namespace Oxide.Plugins
                     : settings.ApiUrl.TrimEnd('/') + "/skindrops",
                 ["notifications_api_url"] = settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase)
                     ? settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/notifications"
-                    : settings.ApiUrl.TrimEnd('/') + "/notifications"
+                    : settings.ApiUrl.TrimEnd('/') + "/notifications",
+                ["shop_api_url"] = settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase)
+                    ? settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/shop"
+                    : settings.ApiUrl.TrimEnd('/') + "/shop"
             };
         }
 
@@ -802,6 +805,18 @@ namespace Oxide.Plugins
         {
             if (player == null || string.IsNullOrWhiteSpace(message)) return false;
             ShowToast(player, message, kind);
+            return true;
+        }
+
+        private object API_UpdateBalance(BasePlayer player, int balance)
+        {
+            PlayerView view;
+            if (player == null || !views.TryGetValue(player.userID, out view) || !view.Open ||
+                view.Snapshot == null || view.Snapshot.Player == null)
+                return false;
+
+            view.Snapshot.Player.Balance = Math.Max(0, balance);
+            RenderHeader(player, view);
             return true;
         }
 
@@ -1845,6 +1860,7 @@ namespace Oxide.Plugins
             switch (icon)
             {
                 case "store": return ImageUrl("rust-menu/icons/nav-cart.png");
+                case "shop": return ImageUrl("rust-menu/icons/nav-shop.png");
                 case "battlepass": return ImageUrl("rust-menu/icons/nav-battlepass.png");
                 case "calendar": return ImageUrl("rust-menu/icons/nav-calendar.png");
                 case "stats": return ImageUrl("rust-menu/icons/nav-stats.png");
@@ -2813,6 +2829,7 @@ namespace Oxide.Plugins
             EnsureImage(BrandLogoUrl(), true);
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-shop.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"), true);
