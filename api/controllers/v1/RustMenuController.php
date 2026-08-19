@@ -13,6 +13,7 @@ use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
 use common\models\user\User;
 use common\models\user\UserBalance;
+use common\models\user\UserProfile;
 use common\models\wipe_calendar\WipeCalendarEvent;
 use common\components\queue\support\BeforeMessageJob;
 use Yii;
@@ -169,6 +170,73 @@ class RustMenuController extends BaseApiController
             Yii::$app->cache->delete($this->battlePassCacheKey($server, $steamId));
             Yii::$app->user->setIdentity($previousIdentity);
         }
+    }
+
+    /**
+     * Skin giveaway checklist for the in-game menu. Visibility additionally
+     * depends on the current server's skindrops flag and Rust admin status.
+     */
+    public function actionSkindrops()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $isServerAdmin = filter_var(
+            Yii::$app->request->get('server_admin', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId, $isServerAdmin));
+    }
+
+    /** Save only the Steam trade URL; all other profile fields remain untouched. */
+    public function actionSkindropsTradeLink()
+    {
+        Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
+        [$server, $steamId] = $this->authenticatePlayerRequest();
+        $isServerAdmin = filter_var(
+            Yii::$app->request->get('server_admin', false),
+            FILTER_VALIDATE_BOOLEAN
+        );
+        if (!$isServerAdmin) {
+            return $this->errorResponse('ADMIN_REQUIRED', 'Раздел доступен только администраторам сервера.', [], 403);
+        }
+        if (!Yii::$app->settings->get('section_skindrops') || !(bool) $server->skindrops) {
+            return $this->errorResponse('SKINDROPS_DISABLED', 'Раздача скинов выключена на этом сервере.', [], 404);
+        }
+
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        if (!$user) {
+            return $this->errorResponse('ACCOUNT_REQUIRED', 'Сначала войдите на сайт через Steam.', [], 403);
+        }
+
+        $body = Yii::$app->request->getBodyParams();
+        if (empty($body)) {
+            $body = json_decode((string) Yii::$app->request->getRawBody(), true) ?: [];
+        }
+        $tradeLink = trim((string) ($body['trade_link'] ?? ''));
+        $error = $this->validateSteamTradeLink($tradeLink);
+        if ($error !== null) {
+            return $this->errorResponse('INVALID_TRADE_LINK', $error, ['trade_link' => $error], 422);
+        }
+
+        $profile = $user->userProfile ?: new UserProfile(['user_id' => (int) $user->id]);
+        if ($profile->isNewRecord && empty($profile->name)) {
+            $profile->name = (string) $user->username;
+        }
+        $profile->trade_link = $tradeLink;
+        if ($profile->hasAttribute('skindrops')) {
+            $profile->skindrops = 1;
+        }
+        if ($profile->hasAttribute('skindrops_error')) {
+            $profile->skindrops_error = null;
+        }
+        if (!$profile->save(false)) {
+            Yii::error('RustMenu skindrops trade link save failed for user ' . (int) $user->id, 'rust-menu');
+            return $this->errorResponse('SAVE_FAILED', 'Не удалось сохранить трейд-ссылку.', [], 500);
+        }
+        $user->populateRelation('userProfile', $profile);
+
+        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId, true));
     }
 
     /**
@@ -343,6 +411,74 @@ class RustMenuController extends BaseApiController
             Yii::error('RustMenu support close failed: ' . $e->getMessage(), 'rust-menu');
             return $this->errorResponse('SUPPORT_CLOSE_FAILED', 'Не удалось закрыть обращение. Попробуйте ещё раз.', [], 500);
         }
+    }
+
+    private function buildSkinDropsPayload(Servers $server, string $steamId, bool $isServerAdmin): array
+    {
+        $available = (bool) Yii::$app->settings->get('section_skindrops') && (bool) $server->skindrops;
+        $prefix = trim((string) (Yii::$app->settings->get('skindrops_prefix') ?? ''));
+        $user = User::find()->andWhere(['steam_id' => $steamId])->one();
+        $profile = $user ? $user->userProfile : null;
+        $tradeLink = $profile ? trim((string) ($profile->trade_link ?? '')) : '';
+        $usernameCompleted = false;
+
+        if ($user && $prefix !== '') {
+            $prefixNormalized = mb_strtolower($prefix, 'UTF-8');
+            $names = [(string) $user->username];
+            if ($profile) {
+                $names[] = (string) $profile->name;
+            }
+            foreach ($names as $name) {
+                if ($name !== '' && mb_strpos(mb_strtolower($name, 'UTF-8'), $prefixNormalized) !== false) {
+                    $usernameCompleted = true;
+                    break;
+                }
+            }
+        }
+
+        $registered = $user !== null;
+        $tradeLinkCompleted = $tradeLink !== '';
+        return [
+            'available' => $available,
+            'eligible' => $available && $isServerAdmin,
+            'prefix' => $prefix,
+            'server' => [
+                'id' => (int) $server->id,
+                'tag' => (string) $server->tag,
+                'name' => (string) ($server->monitoring_name ?: $server->name),
+                'skindrops_enabled' => (bool) $server->skindrops,
+            ],
+            'user' => [
+                'registered' => $registered,
+                'username' => $user ? (string) $user->username : '',
+                'steam_id' => $steamId,
+                'username_completed' => $usernameCompleted,
+                'trade_link' => $tradeLink !== '' ? $tradeLink : null,
+                'trade_link_completed' => $tradeLinkCompleted,
+                'all_completed' => $registered && $usernameCompleted && $tradeLinkCompleted,
+            ],
+        ];
+    }
+
+    private function validateSteamTradeLink(string $tradeLink): ?string
+    {
+        if ($tradeLink === '' || mb_strlen($tradeLink, 'UTF-8') > 255) {
+            return 'Укажите полную Steam Trade URL длиной до 255 символов.';
+        }
+        $parts = parse_url($tradeLink);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+        $host = preg_replace('/^www\./', '', $host);
+        $path = rtrim((string) ($parts['path'] ?? ''), '/');
+        parse_str((string) ($parts['query'] ?? ''), $query);
+        if (($parts['scheme'] ?? '') !== 'https'
+            || $host !== 'steamcommunity.com'
+            || $path !== '/tradeoffer/new'
+            || empty($query['partner'])
+            || empty($query['token'])
+        ) {
+            return 'Ссылка должна иметь вид https://steamcommunity.com/tradeoffer/new/?partner=...&token=...';
+        }
+        return null;
     }
 
     private function authenticatePlayerRequest(): array

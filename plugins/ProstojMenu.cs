@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.4.8")]
+    [Info("ProstojMenu", "Prostoj Team", "2.4.9")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -731,6 +731,16 @@ namespace Oxide.Plugins
                 ["success"] = ThemeColor(Success),
                 ["warning"] = ThemeColor(Warning),
                 ["gold"] = ThemeColor(Gold)
+            };
+        }
+
+        private object API_GetServerIdentity()
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["server_tag"] = settings.ServerTag ?? string.Empty,
+                ["server_ip"] = ConVar.Server.ip ?? string.Empty,
+                ["server_port"] = ConVar.Server.port.ToString(CultureInfo.InvariantCulture)
             };
         }
 
@@ -1835,6 +1845,7 @@ namespace Oxide.Plugins
                 case "top": return ImageUrl("rust-menu/icons/nav-top.png");
                 case "support": return ImageUrl("rust-menu/icons/nav-support.png");
                 case "tournament": return ImageUrl("rust-menu/icons/nav-tournament.png");
+                case "skindrops": return ImageUrl("rust-menu/icons/nav-skindrops.png");
                 default: return null;
             }
         }
@@ -1849,6 +1860,7 @@ namespace Oxide.Plugins
             if (value.Contains("top") || value.Contains("rank") || value.Contains("leader")) return "top";
             if (value.Contains("clan") || value.Contains("team") || value.Contains("flag")) return "clans";
             if (value.Contains("support") || value.Contains("help") || value.Contains("chat")) return "support";
+            if (value.Contains("skin") || value.Contains("drop") || value.Contains("gift")) return "skindrops";
             if (value.Contains("key") || value.Contains("tournament") || value.Contains("race")) return "tournament";
             return "grid";
         }
@@ -1858,6 +1870,7 @@ namespace Oxide.Plugins
             switch ((key ?? string.Empty).ToLowerInvariant())
             {
                 case "tournament": return "КЛЮЧИ И ТЕРМИНАЛ";
+                case "skindrops": return "УСЛОВИЯ РАЗДАЧИ";
                 case "store": return "ВАШИ ПОКУПКИ";
                 case "battlepass": return "СЕЗОННЫЕ НАГРАДЫ";
                 case "calendar": return "ВАЙПЫ И ОБНОВЛЕНИЯ";
@@ -2799,6 +2812,7 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/nav-top.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-support.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-tournament.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-skindrops.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));

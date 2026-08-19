@@ -320,6 +320,8 @@ $config = [
                 ['pattern' => 'v1/rust-menu/snapshot', 'route' => 'v1/rust-menu/snapshot', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/battlepass', 'route' => 'v1/rust-menu/battlepass', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/battlepass/tasks/<id:\d+>/check', 'route' => 'v1/rust-menu/battlepass-check', 'verb' => ['POST', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/skindrops', 'route' => 'v1/rust-menu/skindrops', 'verb' => ['GET', 'OPTIONS']],
+                ['pattern' => 'v1/rust-menu/skindrops/trade-link', 'route' => 'v1/rust-menu/skindrops-trade-link', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/support', 'route' => 'v1/rust-menu/support', 'verb' => ['GET', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/support/messages', 'route' => 'v1/rust-menu/support-send', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/rust-menu/support/tickets/<number:\d+>/close', 'route' => 'v1/rust-menu/support-close', 'verb' => ['POST', 'OPTIONS']],
