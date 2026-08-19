@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojShop", "Prostoj Team", "1.0.4")]
+    [Info("ProstojShop", "Prostoj Team", "1.0.5")]
     [Description("Admin preview of the Prostoj store inside ProstojMenu")]
     public class ProstojShop : RustPlugin
     {
@@ -613,11 +613,22 @@ namespace Oxide.Plugins
         {
             if (product.RustId != 0 && ItemManager.FindItemDefinition(product.RustId) != null)
             {
-                ui.Add(new CuiElement { Name = name, Parent = parent, Components = { new CuiImageComponent { ItemId = product.RustId }, new CuiRectTransformComponent { AnchorMin = "0.12 0.14", AnchorMax = "0.88 0.86" } } });
+                AddSquareItemImage(ui, parent, name, product.RustId, 50f);
                 return;
             }
-            var png = ProstojMenu?.Call("API_GetImage", product.Image) as string;
-            if (!string.IsNullOrEmpty(png)) AddRawImage(ui, parent, "0.12 0.14", "0.88 0.86", png, "1 1 1 1");
+            var image = ProstojMenu?.Call("API_GetImageInfo", product.Image) as Dictionary<string, string>;
+            string png;
+            string widthValue;
+            string heightValue;
+            int width;
+            int height;
+            if (image != null
+                && image.TryGetValue("png", out png)
+                && image.TryGetValue("width", out widthValue)
+                && image.TryGetValue("height", out heightValue)
+                && int.TryParse(widthValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out width)
+                && int.TryParse(heightValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out height))
+                AddAspectFittedRawImage(ui, parent, name, png, width, height, 50f);
         }
 
         private bool CacheImages(IEnumerable<ProductData> products)
@@ -731,11 +742,55 @@ namespace Oxide.Plugins
         private static string Number(int value) => value.ToString("N0", CultureInfo.GetCultureInfo("ru-RU"));
         private static string Short(string value, int length) => string.IsNullOrEmpty(value) || value.Length <= length ? value ?? string.Empty : value.Substring(0, Math.Max(1, length - 1)) + "…";
         private static string A(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+        private static string F(float x, float y) => A(x) + " " + A(y);
 
         private static void AddPanel(CuiElementContainer ui, string parent, string name, string min, string max, string color) => ui.Add(new CuiPanel { Image = { Color = color }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent, name);
         private static void AddLabel(CuiElementContainer ui, string parent, string text, string min, string max, int size, string color, TextAnchor align, bool bold) => ui.Add(new CuiLabel { Text = { Text = text ?? string.Empty, FontSize = size, Color = color, Align = align, Font = bold ? "robotocondensed-bold.ttf" : "robotocondensed-regular.ttf" }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent);
         private static void AddButton(CuiElementContainer ui, string parent, string min, string max, string command, string text, string color, string textColor, bool enabled, int fontSize = 10) => ui.Add(new CuiButton { Button = { Color = enabled ? color : "0.09 0.10 0.10 0.72", Command = enabled ? command : string.Empty }, Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = enabled ? textColor : "0.42 0.44 0.43 1", Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent);
         private static void AddRawImage(CuiElementContainer ui, string parent, string min, string max, string png, string color) => ui.Add(new CuiElement { Parent = parent, Components = { new CuiRawImageComponent { Png = png, Color = color }, new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max } } });
+        private static void AddSquareItemImage(CuiElementContainer ui, string parent, string name, int itemId, float size)
+        {
+            var half = size * 0.5f;
+            ui.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
+                {
+                    new CuiImageComponent { ItemId = itemId },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = "0.5 0.5",
+                        AnchorMax = "0.5 0.5",
+                        OffsetMin = F(-half, -half),
+                        OffsetMax = F(half, half)
+                    }
+                }
+            });
+        }
+        private static void AddAspectFittedRawImage(CuiElementContainer ui, string parent, string name, string png, int sourceWidth, int sourceHeight, float maxSize)
+        {
+            if (string.IsNullOrEmpty(png) || sourceWidth <= 0 || sourceHeight <= 0) return;
+            var ratio = sourceWidth / (float) sourceHeight;
+            var width = ratio >= 1f ? maxSize : maxSize * ratio;
+            var height = ratio >= 1f ? maxSize / ratio : maxSize;
+            ui.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { Png = png, Color = "1 1 1 1" },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = "0.5 0.5",
+                        AnchorMax = "0.5 0.5",
+                        OffsetMin = F(width * -0.5f, height * -0.5f),
+                        OffsetMax = F(width * 0.5f, height * 0.5f)
+                    }
+                }
+            });
+        }
         private static void AddInput(CuiElementContainer ui, string parent, string text, string command, int limit, int size, string color) => ui.Add(new CuiElement { Parent = parent, Components = { new CuiInputFieldComponent { Text = text, Command = command, CharsLimit = limit, FontSize = size, Font = "robotocondensed-bold.ttf", Align = TextAnchor.MiddleCenter, Color = color, NeedsKeyboard = true }, new CuiRectTransformComponent { AnchorMin = "0.03 0.05", AnchorMax = "0.97 0.95" } } });
     }
 }

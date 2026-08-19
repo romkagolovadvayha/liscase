@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.6.3")]
+    [Info("ProstojMenu", "Prostoj Team", "2.6.4")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -185,6 +185,8 @@ namespace Oxide.Plugins
             public string Url;
             public string LocalPath;
             public string PngId;
+            public int Width;
+            public int Height;
             public CachedImageStatus Status;
             public bool RequiresShellRefresh;
         }
@@ -700,6 +702,20 @@ namespace Oxide.Plugins
         private object API_GetImage(string url)
         {
             return ResolveImage(url);
+        }
+
+        private object API_GetImageInfo(string url)
+        {
+            var image = EnsureImage(url);
+            if (image == null || image.Status != CachedImageStatus.Loaded || string.IsNullOrEmpty(image.PngId))
+                return null;
+
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["png"] = image.PngId,
+                ["width"] = Math.Max(1, image.Width).ToString(CultureInfo.InvariantCulture),
+                ["height"] = Math.Max(1, image.Height).ToString(CultureInfo.InvariantCulture)
+            };
         }
 
         private object API_CacheImage(string url)
@@ -2980,6 +2996,8 @@ namespace Oxide.Plugins
                         yield break;
                     }
 
+                    image.Width = Math.Max(1, texture.width);
+                    image.Height = Math.Max(1, texture.height);
                     SaveImageToDisk(image.LocalPath, bytes);
                     image.PngId = StorePng(bytes);
                     FinishImageDownload(image, !string.IsNullOrEmpty(image.PngId));
@@ -3022,6 +3040,13 @@ namespace Oxide.Plugins
                     return false;
                 }
 
+                int width;
+                int height;
+                if (TryReadPngDimensions(bytes, out width, out height))
+                {
+                    image.Width = width;
+                    image.Height = height;
+                }
                 image.PngId = StorePng(bytes);
                 image.Status = string.IsNullOrEmpty(image.PngId) ? CachedImageStatus.Pending : CachedImageStatus.Loaded;
                 return image.Status == CachedImageStatus.Loaded;
@@ -3108,6 +3133,17 @@ namespace Oxide.Plugins
             return bytes != null && bytes.Length > 8 &&
                    bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47 &&
                    bytes[4] == 0x0D && bytes[5] == 0x0A && bytes[6] == 0x1A && bytes[7] == 0x0A;
+        }
+
+        private static bool TryReadPngDimensions(byte[] bytes, out int width, out int height)
+        {
+            width = 0;
+            height = 0;
+            if (!IsPng(bytes) || bytes.Length < 24) return false;
+
+            width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+            height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+            return width > 0 && height > 0 && width <= 16384 && height <= 16384;
         }
 
         private void ScheduleImageRefresh(bool requiresShellRefresh = false)
