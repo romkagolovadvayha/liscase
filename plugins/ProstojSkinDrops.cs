@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.0")]
+    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.1")]
     [Description("Admin-only SkinDrops checklist and Steam trade-link editor for ProstojMenu")]
     public class ProstojSkinDrops : RustPlugin
     {
@@ -201,7 +201,7 @@ namespace Oxide.Plugins
             var state = GetState(player.userID);
             if (state.Loading || state.Saving) return;
             state.Loading = true;
-            var url = BuildPlayerUrl(player, config.ApiUrl);
+            var url = BuildPlayerUrl(player, ApiEndpoint());
             webrequest.Enqueue(url, null, (code, response) =>
             {
                 if (player == null) return;
@@ -235,7 +235,7 @@ namespace Oxide.Plugins
             state.Saving = true;
             state.Error = null;
             RefreshTab(player);
-            var url = BuildPlayerUrl(player, config.ApiUrl + "/trade-link");
+            var url = BuildPlayerUrl(player, ApiEndpoint() + "/trade-link");
             var body = JsonConvert.SerializeObject(new Dictionary<string, string> { ["trade_link"] = tradeLink });
             webrequest.Enqueue(url, body, (code, response) =>
             {
@@ -373,6 +373,17 @@ namespace Oxide.Plugins
                 query += "&server_ip=" + Uri.EscapeDataString(ip) + "&server_port=" + Uri.EscapeDataString(port);
             }
             return endpoint + (endpoint.Contains("?") ? "&" : "?") + query;
+        }
+
+        private string ApiEndpoint()
+        {
+            var identity = ProstojMenu?.Call("API_GetServerIdentity") as Dictionary<string, string>;
+            string endpoint;
+            return identity != null
+                && identity.TryGetValue("skindrops_api_url", out endpoint)
+                && !string.IsNullOrWhiteSpace(endpoint)
+                    ? endpoint.Trim().TrimEnd('/')
+                    : config.ApiUrl;
         }
 
         private bool TryEnvelope(int code, string response, out ApiEnvelope<StatusData> envelope)

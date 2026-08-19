@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.4.9")]
+    [Info("ProstojMenu", "Prostoj Team", "2.5.0")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -740,7 +740,10 @@ namespace Oxide.Plugins
             {
                 ["server_tag"] = settings.ServerTag ?? string.Empty,
                 ["server_ip"] = ConVar.Server.ip ?? string.Empty,
-                ["server_port"] = ConVar.Server.port.ToString(CultureInfo.InvariantCulture)
+                ["server_port"] = ConVar.Server.port.ToString(CultureInfo.InvariantCulture),
+                ["skindrops_api_url"] = settings.ApiUrl.EndsWith("/snapshot", StringComparison.OrdinalIgnoreCase)
+                    ? settings.ApiUrl.Substring(0, settings.ApiUrl.Length - "/snapshot".Length) + "/skindrops"
+                    : settings.ApiUrl.TrimEnd('/') + "/skindrops"
             };
         }
 
