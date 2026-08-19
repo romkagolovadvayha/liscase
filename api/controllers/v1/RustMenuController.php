@@ -505,13 +505,12 @@ class RustMenuController extends BaseApiController
         $payload = $this->validateShopTopupToken((string) Yii::$app->request->get('token', ''));
         $siteBase = $this->shopSiteBaseUrl();
         $url = $siteBase . '/payment/ingame?token=' . rawurlencode((string) Yii::$app->request->get('token', ''));
-        $qr = (new \Da\QrCode\QrCode($url))->setSize(360)->setMargin(14);
 
         Yii::$app->response->format = Response::FORMAT_RAW;
         Yii::$app->response->headers->set('Content-Type', 'image/png');
         Yii::$app->response->headers->set('Cache-Control', 'private, max-age=900');
         Yii::$app->response->headers->set('X-Topup-Expires', (string) $payload['expires']);
-        return $qr->writeString();
+        return $this->renderShopQrPng($url, 360);
     }
 
     /** Public token verification for the phone landing page. */
@@ -1039,6 +1038,47 @@ class RustMenuController extends BaseApiController
             throw new \RuntimeException('Rust menu top-up signing key is not configured.');
         }
         return $key;
+    }
+
+    /**
+     * Render directly from BaconQrCode's matrix with GD. The packaged PNG
+     * writer depends on Imagick, which is intentionally absent on lightweight
+     * API nodes; GD is already required by the site's image pipeline.
+     */
+    private function renderShopQrPng(string $value, int $targetSize): string
+    {
+        if (!function_exists('imagecreatetruecolor')) {
+            throw new \RuntimeException('GD is required to render the top-up QR code.');
+        }
+        $encoded = \BaconQrCode\Encoder\Encoder::encode(
+            $value,
+            \BaconQrCode\Common\ErrorCorrectionLevel::M(),
+            'UTF-8'
+        );
+        $matrix = $encoded->getMatrix();
+        $modules = $matrix->getWidth();
+        $quietZone = 4;
+        $scale = max(1, (int) floor($targetSize / ($modules + $quietZone * 2)));
+        $size = ($modules + $quietZone * 2) * $scale;
+        $image = imagecreatetruecolor($size, $size);
+        $white = imagecolorallocate($image, 255, 255, 255);
+        $black = imagecolorallocate($image, 12, 16, 16);
+        imagefill($image, 0, 0, $white);
+        for ($y = 0; $y < $modules; $y++) {
+            for ($x = 0; $x < $modules; $x++) {
+                if ($matrix->get($x, $y) !== 1) {
+                    continue;
+                }
+                $left = ($x + $quietZone) * $scale;
+                $top = ($y + $quietZone) * $scale;
+                imagefilledrectangle($image, $left, $top, $left + $scale - 1, $top + $scale - 1, $black);
+            }
+        }
+        ob_start();
+        imagepng($image, null, 6);
+        $png = (string) ob_get_clean();
+        imagedestroy($image);
+        return $png;
     }
 
     private function shopSiteBaseUrl(): string
