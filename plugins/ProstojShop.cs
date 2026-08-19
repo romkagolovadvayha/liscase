@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojShop", "Prostoj Team", "1.0.1")]
+    [Info("ProstojShop", "Prostoj Team", "1.0.4")]
     [Description("Admin preview of the Prostoj store inside ProstojMenu")]
     public class ProstojShop : RustPlugin
     {
@@ -18,6 +18,7 @@ namespace Oxide.Plugins
 
         private const string PreviewSteamId = "76561198394504608";
         private const string TabKey = "shop";
+        private const int ProductsPerPage = 16;
         private Configuration config;
         private bool registered;
         private readonly Dictionary<ulong, PlayerState> states = new Dictionary<ulong, PlayerState>();
@@ -26,7 +27,6 @@ namespace Oxide.Plugins
         {
             [JsonProperty("API URL")] public string ApiUrl = "https://api.prostoj.store/v1/rust-menu/shop";
             [JsonProperty("Private admin Steam ID")] public string PrivateAdminSteamId = PreviewSteamId;
-            [JsonProperty("Products per page")] public int PageSize = 8;
             [JsonProperty("Balance poll seconds")] public float BalancePollSeconds = 5f;
         }
 
@@ -40,6 +40,7 @@ namespace Oxide.Plugins
             public int RequestVersion;
             public int BusyDropId;
             public int PurchasedDropId;
+            public int PurchaseFeedbackVersion;
             public string Error;
             public bool TopupOpen;
             public int TopupAmount = 500;
@@ -48,6 +49,7 @@ namespace Oxide.Plugins
             public TopupData Topup;
             public bool TopupSuccess;
             public Timer BalanceTimer;
+            public Timer PurchaseFeedbackTimer;
         }
 
         private class ApiEnvelope<T>
@@ -138,7 +140,6 @@ namespace Oxide.Plugins
             try { config = Config.ReadObject<Configuration>() ?? new Configuration(); }
             catch { config = new Configuration(); PrintWarning("Invalid config was replaced with defaults."); }
             config.ApiUrl = (config.ApiUrl ?? string.Empty).Trim().TrimEnd('/');
-            config.PageSize = Mathf.Clamp(config.PageSize, 4, 12);
             config.BalancePollSeconds = Mathf.Clamp(config.BalancePollSeconds, 3f, 15f);
             SaveConfig();
         }
@@ -154,7 +155,11 @@ namespace Oxide.Plugins
 
         private void Unload()
         {
-            foreach (var state in states.Values) state.BalanceTimer?.Destroy();
+            foreach (var state in states.Values)
+            {
+                state.BalanceTimer?.Destroy();
+                state.PurchaseFeedbackTimer?.Destroy();
+            }
             states.Clear();
             if (registered) ProstojMenu?.Call("API_UnregisterTab", this, TabKey);
         }
@@ -227,7 +232,7 @@ namespace Oxide.Plugins
                     if (!TryInt(arg, 1, out value)) return;
                     state.CategoryId = Math.Max(0, value);
                     state.Page = 1;
-                    state.PurchasedDropId = 0;
+                    ClearPurchaseFeedback(state);
                     RequestCatalog(player, true);
                     break;
                 case "catprev":
@@ -241,7 +246,7 @@ namespace Oxide.Plugins
                 case "page":
                     if (!TryInt(arg, 1, out value)) return;
                     state.Page = Math.Max(1, value);
-                    state.PurchasedDropId = 0;
+                    ClearPurchaseFeedback(state);
                     RequestCatalog(player, true);
                     break;
                 case "favorite":
@@ -290,7 +295,7 @@ namespace Oxide.Plugins
             state.Error = null;
             var version = ++state.RequestVersion;
             if (redraw) Refresh(player);
-            var url = PlayerUrl(player, Endpoint()) + "&category_id=" + state.CategoryId + "&page=" + state.Page + "&page_size=" + config.PageSize;
+            var url = PlayerUrl(player, Endpoint()) + "&category_id=" + state.CategoryId + "&page=" + state.Page + "&page_size=" + ProductsPerPage;
             webrequest.Enqueue(url, null, (code, response) =>
             {
                 if (player == null || version != state.RequestVersion) return;
@@ -332,8 +337,11 @@ namespace Oxide.Plugins
                 {
                     product.Favorite = !expected;
                     state.Error = ErrorText(response, "Не удалось изменить избранное.");
+                    if (player != null && player.IsConnected && IsActive(player)) Refresh(player);
+                    return;
                 }
-                if (player != null && player.IsConnected && IsActive(player)) Refresh(player);
+                if (expected) state.Page = 1;
+                RequestCatalog(player, true);
             }, this, RequestMethod.POST, Headers(true), 12f);
         }
 
@@ -343,7 +351,7 @@ namespace Oxide.Plugins
             var product = state.Shop.Products.FirstOrDefault(x => x.Id == dropId);
             if (product == null || product.Blocked || product.Price > state.Shop.Balance) return;
             state.BusyDropId = dropId;
-            state.PurchasedDropId = 0;
+            ClearPurchaseFeedback(state);
             state.Error = null;
             Refresh(player);
             var body = JsonConvert.SerializeObject(new { drop_id = dropId });
@@ -356,7 +364,7 @@ namespace Oxide.Plugins
                 else
                 {
                     state.Shop.Balance = envelope.Data.NewBalance;
-                    state.PurchasedDropId = dropId;
+                    ShowPurchaseFeedback(player, state, dropId);
                     ProstojMenu?.Call("API_UpdateBalance", player, envelope.Data.NewBalance);
                 }
                 if (player != null && player.IsConnected && IsActive(player)) Refresh(player);
@@ -510,31 +518,41 @@ namespace Oxide.Plugins
                 AddLabel(ui, root + ".Empty", "Выберите другую категорию", "0.1 0.35", "0.9 0.47", 10, muted, TextAnchor.MiddleCenter, false);
                 return;
             }
-            for (var i = 0; i < products.Count && i < 8; i++)
+            const float gridTop = 0.735f;
+            const float gridBottom = 0.18f;
+            const float rowGap = 0.012f;
+            const float cardHeight = (gridTop - gridBottom - rowGap * 3f) / 4f;
+            for (var i = 0; i < products.Count && i < ProductsPerPage; i++)
             {
                 var product = products[i];
                 var col = i % 4;
                 var row = i / 4;
                 var x1 = 0.02f + col * 0.2425f;
                 var x2 = x1 + 0.2225f;
-                var y2 = row == 0 ? 0.735f : 0.445f;
-                var y1 = y2 - 0.27f;
+                var y2 = gridTop - row * (cardHeight + rowGap);
+                var y1 = y2 - cardHeight;
                 var card = root + ".Product." + product.Id;
                 AddPanel(ui, root, card, A(x1) + " " + A(y1), A(x2) + " " + A(y2), bg);
-                AddPanel(ui, card, card + ".ImageBg", "0.035 0.34", "0.965 0.965", raised);
+                AddPanel(ui, card, card + ".ImageBg", "0.025 0.10", "0.30 0.90", raised);
                 AddProductImage(ui, card + ".ImageBg", card + ".Image", product);
-                if (product.Popular) AddLabel(ui, card, "ПОПУЛЯРНО", "0.055 0.835", "0.50 0.94", 7, warm, TextAnchor.MiddleLeft, true);
-                AddButton(ui, card, "0.80 0.82", "0.94 0.94", "prostojshop.ui favorite " + product.Id, product.Favorite ? "★" : "☆", "0 0 0 0.42", product.Favorite ? warm : text, state.BusyDropId == 0);
-                AddLabel(ui, card, Short(product.Name, 27), "0.055 0.225", "0.945 0.33", 10, text, TextAnchor.MiddleLeft, true);
+                if (product.Popular) AddLabel(ui, card, "ХИТ", "0.045 0.72", "0.28 0.90", 6, warm, TextAnchor.MiddleLeft, true);
+                AddButton(ui, card, "0.83 0.68", "0.96 0.93", "prostojshop.ui favorite " + product.Id, product.Favorite ? "★" : "☆", "0 0 0 0.42", product.Favorite ? warm : text, state.BusyDropId == 0, 11);
+                AddLabel(ui, card, Short(product.Name, 24), "0.33 0.57", "0.82 0.91", 9, text, TextAnchor.MiddleLeft, true);
                 var amount = product.Count > 1 ? " ×" + product.Count : string.Empty;
-                AddLabel(ui, card, Number(product.Price) + " ₽" + amount, "0.055 0.08", "0.47 0.21", 11, text, TextAnchor.MiddleLeft, true);
+                AddLabel(ui, card, Number(product.Price) + " ₽" + amount, "0.33 0.34", "0.95 0.57", 9, text, TextAnchor.MiddleLeft, true);
                 var busy = state.BusyDropId == product.Id;
                 var bought = state.PurchasedDropId == product.Id;
                 var lacking = product.Price > state.Shop.Balance;
-                var label = busy ? "ПОКУПКА…" : bought ? "В КОРЗИНЕ" : product.Blocked ? "ВАЙП-БЛОК" : lacking ? "НЕ ХВАТАЕТ" : "КУПИТЬ";
-                var color = bought ? success : product.Blocked || lacking ? "0.20 0.22 0.22 0.95" : accent;
-                AddButton(ui, card, "0.50 0.055", "0.945 0.21", "prostojshop.ui buy " + product.Id, label, color, bought ? "0.05 0.12 0.08 1" : text,
-                    !busy && !bought && !product.Blocked && !lacking && state.BusyDropId == 0);
+                var label = busy ? "ПОКУПКА…" : product.Blocked ? "ВАЙП-БЛОК" : lacking ? "НЕ ХВАТАЕТ" : "КУПИТЬ";
+                var color = product.Blocked || lacking ? "0.20 0.22 0.22 0.95" : accent;
+                AddButton(ui, card, "0.33 0.07", "0.95 0.31", "prostojshop.ui buy " + product.Id, label, color, text,
+                    !busy && !product.Blocked && !lacking && state.BusyDropId == 0, 8);
+                if (bought)
+                {
+                    var overlay = card + ".Purchased";
+                    AddPanel(ui, card, overlay, "0 0", "1 1", WithAlpha(success, 0.72f));
+                    AddLabel(ui, overlay, "КУПЛЕНО", "0.08 0.25", "0.92 0.75", 15, text, TextAnchor.MiddleCenter, true);
+                }
             }
         }
 
@@ -595,11 +613,11 @@ namespace Oxide.Plugins
         {
             if (product.RustId != 0 && ItemManager.FindItemDefinition(product.RustId) != null)
             {
-                ui.Add(new CuiElement { Name = name, Parent = parent, Components = { new CuiImageComponent { ItemId = product.RustId }, new CuiRectTransformComponent { AnchorMin = "0.20 0.12", AnchorMax = "0.80 0.88" } } });
+                ui.Add(new CuiElement { Name = name, Parent = parent, Components = { new CuiImageComponent { ItemId = product.RustId }, new CuiRectTransformComponent { AnchorMin = "0.12 0.14", AnchorMax = "0.88 0.86" } } });
                 return;
             }
             var png = ProstojMenu?.Call("API_GetImage", product.Image) as string;
-            if (!string.IsNullOrEmpty(png)) AddRawImage(ui, parent, "0.20 0.12", "0.80 0.88", png, "1 1 1 1");
+            if (!string.IsNullOrEmpty(png)) AddRawImage(ui, parent, "0.12 0.14", "0.88 0.86", png, "1 1 1 1");
         }
 
         private bool CacheImages(IEnumerable<ProductData> products)
@@ -613,6 +631,28 @@ namespace Oxide.Plugins
                 if (string.IsNullOrEmpty(png)) pending = true;
             }
             return pending;
+        }
+
+        private void ShowPurchaseFeedback(BasePlayer player, PlayerState state, int dropId)
+        {
+            state.PurchaseFeedbackTimer?.Destroy();
+            state.PurchasedDropId = dropId;
+            var version = ++state.PurchaseFeedbackVersion;
+            state.PurchaseFeedbackTimer = timer.Once(3f, () =>
+            {
+                if (state.PurchaseFeedbackVersion != version) return;
+                state.PurchasedDropId = 0;
+                state.PurchaseFeedbackTimer = null;
+                if (player != null && player.IsConnected && IsActive(player)) Refresh(player);
+            });
+        }
+
+        private static void ClearPurchaseFeedback(PlayerState state)
+        {
+            state.PurchaseFeedbackTimer?.Destroy();
+            state.PurchaseFeedbackTimer = null;
+            state.PurchasedDropId = 0;
+            state.PurchaseFeedbackVersion++;
         }
 
         private static bool TopupExpired(PlayerState state) => state.Topup != null && state.Topup.ExpiresAt > 0 && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= state.Topup.ExpiresAt;
@@ -683,13 +723,18 @@ namespace Oxide.Plugins
         }
 
         private static string Theme(Dictionary<string, string> theme, string key, string fallback) { string value; return theme != null && theme.TryGetValue(key, out value) && !string.IsNullOrEmpty(value) ? value : fallback; }
+        private static string WithAlpha(string color, float alpha)
+        {
+            var parts = (color ?? string.Empty).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length >= 3 ? parts[0] + " " + parts[1] + " " + parts[2] + " " + A(Mathf.Clamp01(alpha)) : color;
+        }
         private static string Number(int value) => value.ToString("N0", CultureInfo.GetCultureInfo("ru-RU"));
         private static string Short(string value, int length) => string.IsNullOrEmpty(value) || value.Length <= length ? value ?? string.Empty : value.Substring(0, Math.Max(1, length - 1)) + "…";
         private static string A(float value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 
         private static void AddPanel(CuiElementContainer ui, string parent, string name, string min, string max, string color) => ui.Add(new CuiPanel { Image = { Color = color }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent, name);
         private static void AddLabel(CuiElementContainer ui, string parent, string text, string min, string max, int size, string color, TextAnchor align, bool bold) => ui.Add(new CuiLabel { Text = { Text = text ?? string.Empty, FontSize = size, Color = color, Align = align, Font = bold ? "robotocondensed-bold.ttf" : "robotocondensed-regular.ttf" }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent);
-        private static void AddButton(CuiElementContainer ui, string parent, string min, string max, string command, string text, string color, string textColor, bool enabled) => ui.Add(new CuiButton { Button = { Color = enabled ? color : "0.09 0.10 0.10 0.72", Command = enabled ? command : string.Empty }, Text = { Text = text ?? string.Empty, FontSize = 10, Color = enabled ? textColor : "0.42 0.44 0.43 1", Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent);
+        private static void AddButton(CuiElementContainer ui, string parent, string min, string max, string command, string text, string color, string textColor, bool enabled, int fontSize = 10) => ui.Add(new CuiButton { Button = { Color = enabled ? color : "0.09 0.10 0.10 0.72", Command = enabled ? command : string.Empty }, Text = { Text = text ?? string.Empty, FontSize = fontSize, Color = enabled ? textColor : "0.42 0.44 0.43 1", Align = TextAnchor.MiddleCenter, Font = "robotocondensed-bold.ttf" }, RectTransform = { AnchorMin = min, AnchorMax = max } }, parent);
         private static void AddRawImage(CuiElementContainer ui, string parent, string min, string max, string png, string color) => ui.Add(new CuiElement { Parent = parent, Components = { new CuiRawImageComponent { Png = png, Color = color }, new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max } } });
         private static void AddInput(CuiElementContainer ui, string parent, string text, string command, int limit, int size, string color) => ui.Add(new CuiElement { Parent = parent, Components = { new CuiInputFieldComponent { Text = text, Command = command, CharsLimit = limit, FontSize = size, Font = "robotocondensed-bold.ttf", Align = TextAnchor.MiddleCenter, Color = color, NeedsKeyboard = true }, new CuiRectTransformComponent { AnchorMin = "0.03 0.05", AnchorMax = "0.97 0.95" } } });
     }

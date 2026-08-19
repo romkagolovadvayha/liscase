@@ -323,7 +323,7 @@ class RustMenuController extends BaseApiController
         $user = $this->findRustMenuUser($steamId);
         $categoryId = max(0, (int) Yii::$app->request->get('category_id', 0));
         $page = max(1, (int) Yii::$app->request->get('page', 1));
-        $pageSize = min(20, max(4, (int) Yii::$app->request->get('page_size', 8)));
+        $pageSize = min(20, max(4, (int) Yii::$app->request->get('page_size', 16)));
 
         return $this->successResponse($this->buildShopPayload($server, $user, $categoryId, $page, $pageSize));
     }
@@ -801,18 +801,25 @@ class RustMenuController extends BaseApiController
                 return (int) $row['category_id'] === $categoryId;
             }))
             : $catalog;
+        $favoriteIds = array_map('intval', DropFavorite::find()
+            ->select('drop_id')
+            ->where(['user_id' => (int) $user->id])
+            ->column());
+        $favoriteMap = array_fill_keys($favoriteIds, true);
+        usort($rows, static function (array $left, array $right) use ($favoriteMap): int {
+            $favoriteOrder = (int) isset($favoriteMap[(int) $right['id']])
+                <=> (int) isset($favoriteMap[(int) $left['id']]);
+            if ($favoriteOrder !== 0) {
+                return $favoriteOrder;
+            }
+
+            return ((int) $right['popularity'] <=> (int) $left['popularity'])
+                ?: ((int) $left['id'] <=> (int) $right['id']);
+        });
         $total = count($rows);
         $pages = max(1, (int) ceil($total / $pageSize));
         $page = min($page, $pages);
         $slice = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
-        $dropIds = array_map('intval', array_column($slice, 'id'));
-        $favoriteIds = empty($dropIds)
-            ? []
-            : array_map('intval', DropFavorite::find()
-                ->select('drop_id')
-                ->where(['user_id' => (int) $user->id, 'drop_id' => $dropIds])
-                ->column());
-        $favoriteMap = array_fill_keys($favoriteIds, true);
         $dropMap = Drop::getDropListAll();
         $images = Drop::productsImages();
         $products = [];
@@ -864,14 +871,14 @@ class RustMenuController extends BaseApiController
                 'pages' => $pages,
                 'total' => $total,
             ],
-            'sort' => 'popularity',
+            'sort' => 'favorites_popularity',
             'catalog_cache_seconds' => 600,
         ];
     }
 
     /**
      * Shared catalogue order. Product IDs and global popularity are cached for
-     * every player; only the eight visible prices/favorites are personalized.
+     * every player; only visible prices/favorites are personalized.
      */
     private function shopCatalogIndex(): array
     {

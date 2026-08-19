@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.6.2")]
+    [Info("ProstojMenu", "Prostoj Team", "2.6.3")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1771,10 +1771,13 @@ namespace Oxide.Plugins
 
         private void AddNavigation(CuiElementContainer ui, BasePlayer player, PlayerView view)
         {
-            var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).Take(7).ToList();
-            var top = 0.855f;
-            var height = ordered.Count > 5 ? 0.067f : 0.078f;
-            const float gap = 0.01f;
+            var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).ToList();
+            const float top = 0.855f;
+            const float bottom = 0.155f;
+            var gap = ordered.Count > 8 ? 0.006f : 0.01f;
+            var preferredHeight = ordered.Count > 5 ? 0.067f : 0.078f;
+            var availableHeight = top - bottom - gap * Math.Max(0, ordered.Count - 1);
+            var height = ordered.Count > 0 ? Math.Min(preferredHeight, availableHeight / ordered.Count) : preferredHeight;
             for (var index = 0; index < ordered.Count; index++)
             {
                 var tab = ordered[index];
