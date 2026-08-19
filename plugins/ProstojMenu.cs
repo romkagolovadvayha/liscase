@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.6.0")]
+    [Info("ProstojMenu", "Prostoj Team", "2.6.1")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1860,7 +1860,7 @@ namespace Oxide.Plugins
             switch (icon)
             {
                 case "store": return ImageUrl("rust-menu/icons/nav-cart.png");
-                case "shop": return ImageUrl("rust-menu/icons/nav-shop.png");
+                case "shop": return ImageUrl("rust-menu/icons/nav-shop-v2.png");
                 case "battlepass": return ImageUrl("rust-menu/icons/nav-battlepass.png");
                 case "calendar": return ImageUrl("rust-menu/icons/nav-calendar.png");
                 case "stats": return ImageUrl("rust-menu/icons/nav-stats.png");
@@ -2829,7 +2829,7 @@ namespace Oxide.Plugins
             EnsureImage(BrandLogoUrl(), true);
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"), true);
-            EnsureImage(ImageUrl("rust-menu/icons/nav-shop.png"), true);
+            EnsureImage(ImageUrl("rust-menu/icons/nav-shop-v2.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-battlepass.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-calendar.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-stats.png"), true);
