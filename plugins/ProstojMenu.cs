@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "3.0.16")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.17")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -50,6 +50,7 @@ namespace Oxide.Plugins
         private const string BgSecondary = "0.259 0.247 0.220 0.92";
         private const string BgTertiary = "0.330 0.314 0.290 0.84";
         private const string BgRaised = "0.412 0.392 0.369 0.80";
+        private const string ProfileSurface = "0.330 0.314 0.290 0.42";
         private const string TextMain = "0.835 0.808 0.769 1";
         private const string TextSecondary = "0.650 0.625 0.590 1";
         private const string Border = "0.070 0.068 0.060 0.78";
@@ -1875,16 +1876,16 @@ namespace Oxide.Plugins
                 : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
 
             var root = Sidebar + ".Profile";
-            AddPanel(ui, Navigation, root, "0.055 0.137", "0.945 0.225", "0 0 0 0");
-            AddSquarePanel(ui, root, root + ".AvatarFrame", "0.13 0.5", 17f, "0 0 0 0");
+            AddPanel(ui, Navigation, root, "0.055 0.137", "0.945 0.225", ProfileSurface);
+            AddSquarePanel(ui, root, root + ".AvatarFrame", "0.11 0.5", 13f, "0 0 0 0");
             AddOffsetPanel(ui, root + ".AvatarFrame", root + ".AvatarSurface",
                 "0 0", "1 1", "1 1", "-1 -1", BgTertiary);
             if (!TryAddSteamAvatar(ui, root + ".AvatarSurface", root + ".Avatar", "0 0", "1 1", steamId, "1 1 1 1"))
                 AddLabel(ui, root + ".AvatarSurface", root + ".AvatarInitial", "0 0", "1 1", initial, 12, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddOutline(ui, root + ".AvatarFrame", root + ".AvatarBorder", Border, 1f);
-            AddLabel(ui, root, root + ".Name", "0.26 0.49", "0.98 0.86",
+            AddLabel(ui, root, root + ".Name", "0.22 0.47", "0.96 0.71",
                 CompactText(cleanPlayerName, 18).ToUpperInvariant(), 9, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, root, root + ".Server", "0.26 0.14", "0.98 0.51",
+            AddLabel(ui, root, root + ".Server", "0.22 0.305", "0.96 0.525",
                 CompactText(CleanText(serverName), 21), 7, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
         }
 
