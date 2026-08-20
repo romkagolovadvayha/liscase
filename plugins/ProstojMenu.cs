@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "3.0.17")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.18")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -860,7 +860,7 @@ namespace Oxide.Plugins
                 return false;
 
             view.Snapshot.Player.Balance = Math.Max(0, balance);
-            RenderHeader(player, view);
+            RenderNavigation(player, view);
             return true;
         }
 
@@ -1883,9 +1883,15 @@ namespace Oxide.Plugins
             if (!TryAddSteamAvatar(ui, root + ".AvatarSurface", root + ".Avatar", "0 0", "1 1", steamId, "1 1 1 1"))
                 AddLabel(ui, root + ".AvatarSurface", root + ".AvatarInitial", "0 0", "1 1", initial, 12, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddOutline(ui, root + ".AvatarFrame", root + ".AvatarBorder", Border, 1f);
-            AddLabel(ui, root, root + ".Name", "0.22 0.47", "0.96 0.71",
+            AddLabel(ui, root, root + ".Name", "0.22 0.71", "0.96 0.95",
                 CompactText(cleanPlayerName, 18).ToUpperInvariant(), 9, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, root, root + ".Server", "0.22 0.305", "0.96 0.525",
+            var balance = playerData != null ? FormatNumber(playerData.Balance) : "—";
+            AddSquarePanel(ui, root, root + ".BalanceCoin", "0.245 0.5", 5f, "0 0 0 0");
+            AddRawImage(ui, root + ".BalanceCoin", root + ".BalanceCoin.Image", "0 0", "1 1",
+                ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
+            AddLabel(ui, root, root + ".Balance", "0.29 0.38", "0.96 0.62",
+                balance + " ₽", 8, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, root, root + ".Server", "0.22 0.05", "0.96 0.29",
                 CompactText(CleanText(serverName), 21), 7, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
         }
 
@@ -2097,14 +2103,9 @@ namespace Oxide.Plugins
             var sectionTitle = tabs.TryGetValue(view.ActiveTab, out activeTab) && activeTab != null
                 ? CleanText(activeTab.Title).ToUpperInvariant()
                 : "МЕНЮ";
-            AddLabel(ui, Header + ".Dynamic", Header + ".SectionTitle", "0.025 0.18", "0.72 0.84",
+            AddLabel(ui, Header + ".Dynamic", Header + ".SectionTitle", "0.025 0.18", "0.90 0.84",
                 sectionTitle, 20, TextMain, TextAnchor.MiddleLeft, FontBold);
 
-            var snapshot = view.Snapshot;
-            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.75 0.22", "0.92 0.78", "0 0 0 0");
-            var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
-            AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 14, TextMain, TextAnchor.MiddleRight, FontBold);
-            AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.798 0.308", "0.912 0.692", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
             // Add last inside the dynamic header so later header renders cannot cover it.
             AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.948 0.34", "0.978 0.66",
                 "prostojmenu.ui close", "assets/icons/close.png", TextMain);
