@@ -10,8 +10,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojNotifications", "Prostoj Team", "1.0.4")]
-    [Description("Admin-only raid and ban notification settings for ProstojMenu")]
+    [Info("ProstojNotifications", "Prostoj Team", "1.0.5")]
+    [Description("Player raid and ban notification settings for ProstojMenu")]
     public class ProstojNotifications : RustPlugin
     {
         [PluginReference] private Plugin ProstojMenu;
@@ -451,13 +451,14 @@ namespace Oxide.Plugins
 
         private bool IsAllowedAdmin(BasePlayer player)
         {
-            return player != null && (player.net?.connection?.authLevel > 0 || player.UserIDString == (config.PrivateAdminSteamId ?? PreviewSteamId));
+            return player != null;
         }
 
         private string BuildPlayerUrl(BasePlayer player, string endpoint)
         {
             var identity = ProstojMenu?.Call("API_GetServerIdentity") as Dictionary<string, string>;
-            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString) + "&server_admin=1";
+            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString)
+                + "&server_admin=" + (player.net?.connection?.authLevel > 0 ? "1" : "0");
             string value;
             if (identity != null && identity.TryGetValue("server_tag", out value) && !string.IsNullOrWhiteSpace(value))
                 query += "&server_tag=" + Uri.EscapeDataString(value);

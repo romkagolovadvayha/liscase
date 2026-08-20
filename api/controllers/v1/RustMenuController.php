@@ -184,18 +184,13 @@ class RustMenuController extends BaseApiController
 
     /**
      * Skin giveaway checklist for the in-game menu. Visibility additionally
-     * depends on the current server's skindrops flag and Rust admin status.
+     * depends on the current server's skindrops flag.
      */
     public function actionSkindrops()
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $isServerAdmin = filter_var(
-            Yii::$app->request->get('server_admin', false),
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId, $isServerAdmin));
+        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId));
     }
 
     /** Save only the Steam trade URL; all other profile fields remain untouched. */
@@ -203,13 +198,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $isServerAdmin = filter_var(
-            Yii::$app->request->get('server_admin', false),
-            FILTER_VALIDATE_BOOLEAN
-        );
-        if (!$isServerAdmin) {
-            return $this->errorResponse('ADMIN_REQUIRED', 'Раздел доступен только администраторам сервера.', [], 403);
-        }
         if (!Yii::$app->settings->get('section_skindrops') || !(bool) $server->skindrops) {
             return $this->errorResponse('SKINDROPS_DISABLED', 'Раздача скинов выключена на этом сервере.', [], 404);
         }
@@ -246,20 +234,15 @@ class RustMenuController extends BaseApiController
         }
         $user->populateRelation('userProfile', $profile);
 
-        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId, true));
+        return $this->successResponse($this->buildSkinDropsPayload($server, $steamId));
     }
 
-    /** Admin-only notification preferences for the in-game menu. */
+    /** Player notification preferences for the in-game menu. */
     public function actionNotifications()
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $isServerAdmin = filter_var(
-            Yii::$app->request->get('server_admin', false),
-            FILTER_VALIDATE_BOOLEAN
-        );
-
-        return $this->successResponse($this->buildNotificationsPayload($server, $steamId, $isServerAdmin));
+        return $this->successResponse($this->buildNotificationsPayload($server, $steamId));
     }
 
     /** Save only raid/ban delivery flags; profile and channel bindings are untouched. */
@@ -267,13 +250,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $isServerAdmin = filter_var(
-            Yii::$app->request->get('server_admin', false),
-            FILTER_VALIDATE_BOOLEAN
-        );
-        if (!$isServerAdmin) {
-            return $this->errorResponse('ADMIN_REQUIRED', 'Раздел доступен только администраторам сервера.', [], 403);
-        }
 
         $user = User::find()->andWhere(['steam_id' => $steamId])->one();
         if (!$user) {
@@ -313,15 +289,14 @@ class RustMenuController extends BaseApiController
             return $this->errorResponse('SAVE_FAILED', 'Не удалось сохранить настройки уведомлений.', [], 500);
         }
 
-        return $this->successResponse($this->buildNotificationsPayload($server, $steamId, true));
+        return $this->successResponse($this->buildNotificationsPayload($server, $steamId));
     }
 
-    /** Cached public catalogue plus the current admin's balance and favorites. */
+    /** Cached public catalogue plus the current player's balance and favorites. */
     public function actionShop()
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $this->requireRustMenuAdmin();
         $user = $this->findRustMenuUser($steamId);
         $categoryId = max(0, (int) Yii::$app->request->get('category_id', 0));
         $page = max(1, (int) Yii::$app->request->get('page', 1));
@@ -336,7 +311,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $this->requireRustMenuAdmin();
         $user = $this->findRustMenuUser($steamId);
         $body = $this->jsonBody();
         $dropId = (int) ($body['drop_id'] ?? 0);
@@ -361,7 +335,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $this->requireRustMenuAdmin();
         $user = $this->findRustMenuUser($steamId);
         $dropId = (int) ($this->jsonBody()['drop_id'] ?? 0);
         $drop = Drop::findOne($dropId);
@@ -467,7 +440,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $this->requireRustMenuAdmin();
         $userId = $this->findRustMenuUserId($steamId);
         $balance = UserBalance::find()
             ->select('balance')
@@ -485,7 +457,6 @@ class RustMenuController extends BaseApiController
     {
         Yii::$app->response->headers->set('Cache-Control', 'private, no-store');
         [$server, $steamId] = $this->authenticatePlayerRequest();
-        $this->requireRustMenuAdmin();
         $user = $this->findRustMenuUser($steamId);
         $amount = (int) ($this->jsonBody()['amount'] ?? 0);
         if ($amount < 50 || $amount > 50000) {
@@ -703,7 +674,7 @@ class RustMenuController extends BaseApiController
         }
     }
 
-    private function buildSkinDropsPayload(Servers $server, string $steamId, bool $isServerAdmin): array
+    private function buildSkinDropsPayload(Servers $server, string $steamId): array
     {
         $available = (bool) Yii::$app->settings->get('section_skindrops') && (bool) $server->skindrops;
         $prefix = trim((string) (Yii::$app->settings->get('skindrops_prefix') ?? ''));
@@ -730,7 +701,7 @@ class RustMenuController extends BaseApiController
         $tradeLinkCompleted = $tradeLink !== '';
         return [
             'available' => $available,
-            'eligible' => $available && $isServerAdmin,
+            'eligible' => $available,
             'prefix' => $prefix,
             'server' => [
                 'id' => (int) $server->id,
@@ -750,7 +721,7 @@ class RustMenuController extends BaseApiController
         ];
     }
 
-    private function buildNotificationsPayload(Servers $server, string $steamId, bool $isServerAdmin): array
+    private function buildNotificationsPayload(Servers $server, string $steamId): array
     {
         $user = User::find()->andWhere(['steam_id' => $steamId])->one();
         $telegramConnected = $user !== null
@@ -769,9 +740,9 @@ class RustMenuController extends BaseApiController
 
         return [
             'available' => true,
-            'eligible' => $isServerAdmin,
+            'eligible' => true,
             'registered' => $user !== null,
-            'can_manage' => $isServerAdmin && $user !== null && $deliveryReady,
+            'can_manage' => $user !== null && $deliveryReady,
             'delivery_ready' => $deliveryReady,
             'server' => [
                 'id' => (int) $server->id,
@@ -977,17 +948,6 @@ class RustMenuController extends BaseApiController
             'blocked' => $leftTime > 0,
             'left_time' => $leftTime,
         ];
-    }
-
-    private function requireRustMenuAdmin(): void
-    {
-        $isServerAdmin = filter_var(
-            Yii::$app->request->get('server_admin', false),
-            FILTER_VALIDATE_BOOLEAN
-        );
-        if (!$isServerAdmin) {
-            throw new \yii\web\ForbiddenHttpException('Раздел доступен только администраторам сервера.');
-        }
     }
 
     private function findRustMenuUser(string $steamId): User

@@ -10,8 +10,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojShop", "Prostoj Team", "1.0.12")]
-    [Description("Admin preview of the Prostoj store inside ProstojMenu")]
+    [Info("ProstojShop", "Prostoj Team", "1.0.13")]
+    [Description("Prostoj store inside ProstojMenu")]
     public class ProstojShop : RustPlugin
     {
         [PluginReference] private Plugin ProstojMenu;
@@ -1022,7 +1022,7 @@ namespace Oxide.Plugins
             return state;
         }
 
-        private bool IsAllowedAdmin(BasePlayer player) => player != null && (player.net?.connection?.authLevel > 0 || player.UserIDString == (config.PrivateAdminSteamId ?? PreviewSteamId));
+        private bool IsAllowedAdmin(BasePlayer player) => player != null;
         private bool IsActive(BasePlayer player) { var value = ProstojMenu?.Call("API_IsTabActive", player, TabKey); return value is bool && (bool)value; }
         private void Refresh(BasePlayer player) { if (player != null && player.IsConnected && IsActive(player)) ProstojMenu?.Call("API_RefreshTab", player); }
 
@@ -1036,7 +1036,8 @@ namespace Oxide.Plugins
         private string PlayerUrl(BasePlayer player, string endpoint)
         {
             var identity = ProstojMenu?.Call("API_GetServerIdentity") as Dictionary<string, string>;
-            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString) + "&server_admin=1";
+            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString)
+                + "&server_admin=" + (player.net?.connection?.authLevel > 0 ? "1" : "0");
             string value;
             if (identity != null && identity.TryGetValue("server_tag", out value) && !string.IsNullOrWhiteSpace(value)) query += "&server_tag=" + Uri.EscapeDataString(value);
             else

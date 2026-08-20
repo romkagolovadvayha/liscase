@@ -24,16 +24,26 @@ class CashRaceController extends BaseApiController
         return $behaviors;
     }
 
-    /** Website payload. Private preview: staff and the configured Steam ID only. */
+    /** Website payload for every authenticated player while a race exists. */
     public function actionIndex()
     {
         $user = Yii::$app->user->identity;
         if (!$user instanceof User) throw new UnauthorizedHttpException('Войдите через Steam');
         $config = CashRaceService::findCurrent($user->server_id ? (int)$user->server_id : null, true) ?: CashRaceService::findCurrent(null, true);
         if (!$config) throw new NotFoundHttpException('Денежная гонка пока не запланирована');
-        if (!CashRaceService::canPreview($user, $config) && $config->preview_only) throw new NotFoundHttpException('Раздел пока недоступен');
         $this->finalizeIfEnded($config);
         return $this->successResponse($this->payload($config, $user));
+    }
+
+    /** Lightweight public flag used to hide the navigation item between races. */
+    public function actionAvailability()
+    {
+        $user = Yii::$app->user->identity;
+        $serverId = $user instanceof User && $user->server_id ? (int)$user->server_id : null;
+        $config = CashRaceService::findCurrent($serverId) ?: ($serverId !== null ? CashRaceService::findCurrent(null) : null);
+        $available = $config !== null && $config->tournament->getPublicPhase() !== Tournament::PHASE_PAST;
+
+        return $this->successResponse(['available' => $available]);
     }
 
     /** Lightweight server snapshot, cached by the Rust plugin between polls. */
@@ -125,7 +135,7 @@ class CashRaceController extends BaseApiController
             'ends_at_unix' => strtotime((string)$t->ends_at),
             'server' => ['id' => (int)$t->server_id, 'tag' => $t->server ? $t->server->tag : '', 'name' => $t->server ? $t->server->name : ''],
             'prize_pool_label' => $t->prize_pool_label, 'rules' => $t->rules_text,
-            'preview_only' => (bool)$config->preview_only,
+            'preview_only' => false,
             'mechanics' => [
                 'drop_chance' => (float)$config->drop_chance, 'drop_min' => (int)$config->drop_min, 'drop_max' => (int)$config->drop_max,
                 'key_shortname' => $config->key_shortname, 'key_skin_id' => (string)$config->key_skin_id,
@@ -181,7 +191,7 @@ class CashRaceController extends BaseApiController
         $steamId = preg_replace('/\D+/', '', (string)($body['steam_id'] ?? ''));
         $user = $steamId ? User::find()->where(['steam_id' => $steamId])->one() : null;
         if (!$user) throw new NotFoundHttpException('Игрок не найден');
-        if (!CashRaceService::canPlayerParticipate($user, $config, !empty($body['server_admin']))) throw new ForbiddenHttpException('Приватный тест недоступен');
+        if (!CashRaceService::canPlayerParticipate($user, $config, !empty($body['server_admin']))) throw new ForbiddenHttpException('Участие в турнире недоступно');
         return [$config, $user];
     }
 

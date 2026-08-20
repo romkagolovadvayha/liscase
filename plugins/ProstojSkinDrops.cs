@@ -10,8 +10,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.5")]
-    [Description("Admin-only SkinDrops checklist and Steam trade-link editor for ProstojMenu")]
+    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.6")]
+    [Description("SkinDrops checklist and Steam trade-link editor for ProstojMenu")]
     public class ProstojSkinDrops : RustPlugin
     {
         [PluginReference] private Plugin ProstojMenu;
@@ -353,13 +353,14 @@ namespace Oxide.Plugins
 
         private bool IsAllowedAdmin(BasePlayer player)
         {
-            return player != null && (player.net?.connection?.authLevel > 0 || player.UserIDString == (config.PrivateAdminSteamId ?? PreviewSteamId));
+            return player != null;
         }
 
         private string BuildPlayerUrl(BasePlayer player, string endpoint)
         {
             var identity = ProstojMenu?.Call("API_GetServerIdentity") as Dictionary<string, string>;
-            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString) + "&server_admin=1";
+            var query = "steam_id=" + Uri.EscapeDataString(player.UserIDString)
+                + "&server_admin=" + (player.net?.connection?.authLevel > 0 ? "1" : "0");
             string value;
             if (identity != null && identity.TryGetValue("server_tag", out value) && !string.IsNullOrWhiteSpace(value))
                 query += "&server_tag=" + Uri.EscapeDataString(value);

@@ -30,7 +30,7 @@ final class CashRaceService
 
     public static function canPlayerParticipate(User $user, CashRaceTournament $config, bool $serverAdmin = false): bool
     {
-        return !$config->preview_only || $serverAdmin || self::canPreview($user, $config);
+        return true;
     }
 
     public static function findCurrent(?int $serverId = null, bool $withRewards = false): ?CashRaceTournament

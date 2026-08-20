@@ -165,8 +165,9 @@ $config = [
                 'v1/tournaments/<slug:[\w-]+>' => 'v1/tournaments/view',
                 'v1/tournaments' => 'v1/tournaments/index',
 
-                // Cash Race (private preview on website; server actions are scoped to a configured server/player).
+                // Cash Race (public while scheduled; server actions remain scoped to a configured server/player).
                 'v1/cash-race' => 'v1/cash-race/index',
+                'v1/cash-race/availability' => 'v1/cash-race/availability',
                 'v1/cash-race/plugin/status' => 'v1/cash-race/plugin-status',
                 ['pattern' => 'v1/cash-race/plugin/mint', 'route' => 'v1/cash-race/plugin-mint', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/cash-race/plugin/lost', 'route' => 'v1/cash-race/plugin-lost', 'verb' => ['POST', 'OPTIONS']],

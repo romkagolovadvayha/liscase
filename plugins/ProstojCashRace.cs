@@ -11,8 +11,8 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojCashRace", "Prostoj Team", "1.0.13")]
-    [Description("Private-preview Cash Race tournament module for ProstojMenu")]
+    [Info("ProstojCashRace", "Prostoj Team", "1.0.14")]
+    [Description("Cash Race tournament module for ProstojMenu")]
     public class ProstojCashRace : RustPlugin
     {
         [PluginReference] private Plugin ProstojMenu;
@@ -257,7 +257,7 @@ namespace Oxide.Plugins
 
         private bool IsPreviewPlayer(BasePlayer player)
         {
-            return player != null && (player.net?.connection?.authLevel > 0 || player.UserIDString == (config.PrivateSteamId ?? PreviewSteamId));
+            return player != null;
         }
 
         private bool IsActive => status != null && status.Available && string.Equals(status.Phase, "active", StringComparison.OrdinalIgnoreCase);
