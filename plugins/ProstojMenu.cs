@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "3.0.19")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.20")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1883,16 +1883,16 @@ namespace Oxide.Plugins
             if (!TryAddSteamAvatar(ui, root + ".AvatarSurface", root + ".Avatar", "0 0", "1 1", steamId, "1 1 1 1"))
                 AddLabel(ui, root + ".AvatarSurface", root + ".AvatarInitial", "0 0", "1 1", initial, 12, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddOutline(ui, root + ".AvatarFrame", root + ".AvatarBorder", Border, 1f);
-            AddLabel(ui, root, root + ".Name", "0.22 0.50", "0.96 0.95",
+            AddLabel(ui, root, root + ".Name", "0.22 0.25", "0.96 0.95",
                 CompactText(cleanPlayerName, 18).ToUpperInvariant(), 9, TextMain, TextAnchor.MiddleLeft, FontBold);
             var balance = playerData != null ? FormatNumber(playerData.Balance) : "—";
-            AddLabel(ui, root, root + ".Server", "0.22 0.05", "0.65 0.50",
+            AddLabel(ui, root, root + ".Server", "0.22 0.05", "0.60 0.75",
                 CompactText(CleanText(serverName), 13), 7, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddSquarePanel(ui, root, root + ".BalanceCoin", "0.71 0.275", 5f, "0 0 0 0");
+            AddLabel(ui, root, root + ".Balance", "0.64 0.05", "0.88 0.75",
+                balance, 8, TextMain, TextAnchor.MiddleRight, FontBold);
+            AddSquarePanel(ui, root, root + ".BalanceCoin", "0.93 0.4", 5f, "0 0 0 0");
             AddRawImage(ui, root + ".BalanceCoin", root + ".BalanceCoin.Image", "0 0", "1 1",
                 ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
-            AddLabel(ui, root, root + ".Balance", "0.75 0.05", "0.96 0.50",
-                balance, 8, TextMain, TextAnchor.MiddleRight, FontBold);
         }
 
         private void AddSidebarStatus(CuiElementContainer ui, PlayerView view)
