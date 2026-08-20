@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojNotifications", "Prostoj Team", "1.0.1")]
+    [Info("ProstojNotifications", "Prostoj Team", "1.0.4")]
     [Description("Admin-only raid and ban notification settings for ProstojMenu")]
     public class ProstojNotifications : RustPlugin
     {
@@ -113,6 +113,7 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
+            CacheImages();
             RefreshAdmins();
             refreshTimer = timer.Every(config.RefreshSeconds, RefreshAdmins);
         }
@@ -138,6 +139,7 @@ namespace Oxide.Plugins
         {
             if (plugin == null || plugin.Name != "ProstojMenu") return;
             ProstojMenu = plugin;
+            CacheImages();
             RefreshAdmins();
         }
 
@@ -201,11 +203,9 @@ namespace Oxide.Plugins
                     if (!state.Status.CanManage || state.Saving) return;
                     var key = arg.Args.Length > 1 ? arg.Args[1].ToString().ToLowerInvariant() : string.Empty;
                     if (key == "raid") state.RaidDraft = !(state.RaidDraft ?? state.Status.Settings?.RaidNotify ?? false);
-                    if (key == "ban") state.BanDraft = !(state.BanDraft ?? state.Status.Settings?.BanNotify ?? false);
+                    else if (key == "ban") state.BanDraft = !(state.BanDraft ?? state.Status.Settings?.BanNotify ?? false);
+                    else return;
                     state.Error = null;
-                    RefreshTab(player);
-                    break;
-                case "save":
                     SaveSettings(player, state);
                     break;
                 case "refresh":
@@ -250,6 +250,8 @@ namespace Oxide.Plugins
         private void SaveSettings(BasePlayer player, PlayerState state)
         {
             if (state.Saving || state.Loading || state.Status == null || !state.Status.CanManage) return;
+            var previousRaid = state.Status.Settings?.RaidNotify ?? false;
+            var previousBan = state.Status.Settings?.BanNotify ?? false;
             state.Saving = true;
             state.Error = null;
             RefreshTab(player);
@@ -264,6 +266,8 @@ namespace Oxide.Plugins
                 ApiEnvelope<StatusData> envelope;
                 if (!TryEnvelope(code, response, out envelope) || envelope.Data == null)
                 {
+                    state.RaidDraft = previousRaid;
+                    state.BanDraft = previousBan;
                     state.Error = ReadError(response, "Не удалось сохранить настройки уведомлений.");
                     if (player.IsConnected && IsTabActive(player))
                     {
@@ -279,7 +283,6 @@ namespace Oxide.Plugins
                 if (player.IsConnected && IsTabActive(player))
                 {
                     RefreshTab(player);
-                    ShowToast(player, "Настройки уведомлений сохранены", "success");
                 }
             }, this, RequestMethod.POST, Headers(true), 12f);
         }
@@ -291,13 +294,14 @@ namespace Oxide.Plugins
             var theme = ProstojMenu?.Call("API_GetTheme") as Dictionary<string, string>;
             var bg = Theme(theme, "bg_secondary", "0.035 0.043 0.043 0.94");
             var raised = Theme(theme, "bg_raised", "0.060 0.071 0.070 0.96");
+            var muted = Theme(theme, "bg_tertiary", "0.330 0.314 0.290 1");
             var accent = Theme(theme, "accent_primary", "0.35 0.71 0.52 1");
             var success = Theme(theme, "success", "0.43 0.77 0.57 1");
             var warning = Theme(theme, "warning", "0.79 0.66 0.42 1");
             var danger = Theme(theme, "danger", "0.77 0.40 0.36 1");
             var textMain = Theme(theme, "text_main", "0.92 0.95 0.93 1");
             var textSecondary = Theme(theme, "text_secondary", "0.60 0.63 0.61 1");
-            AddPanel(ui, parent, root, "0 0", "1 1", "0.025 0.032 0.035 0.25");
+            AddPanel(ui, parent, root, "0 0", "1 1", "0 0 0 0");
 
             var status = state.Status;
             if (status == null)
@@ -314,94 +318,128 @@ namespace Oxide.Plugins
             var settings = status.Settings ?? new NotificationSettings();
             var raid = state.RaidDraft ?? settings.RaidNotify;
             var ban = state.BanDraft ?? settings.BanNotify;
-            var dirty = raid != settings.RaidNotify || ban != settings.BanNotify;
-
             var header = root + ".Header";
-            AddPanel(ui, root, header, "0.02 0.845", "0.98 0.975", bg);
-            AddPanel(ui, header, header + ".Rail", "0 0", "0.004 1", accent);
-            AddLabel(ui, header, "ЦЕНТР УВЕДОМЛЕНИЙ", "0.025 0.43", "0.62 0.91", 22, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, header, "Выберите события — сообщения придут во все подключённые каналы", "0.026 0.10", "0.70 0.44", 9, textSecondary, TextAnchor.MiddleLeft, false);
-            AddPanel(ui, header, header + ".Status", "0.76 0.22", "0.97 0.78", status.DeliveryReady ? "0.14 0.38 0.27 0.90" : "0.34 0.25 0.16 0.90");
-            AddLabel(ui, header, status.DeliveryReady ? "ДОСТАВКА ГОТОВА" : "КАНАЛЫ НЕ ПРИВЯЗАНЫ", "0.77 0.22", "0.96 0.78", 9, status.DeliveryReady ? success : warning, TextAnchor.MiddleCenter, true);
+            AddPanel(ui, root, header, "0 0.885", "1 1", bg);
+            AddLabel(ui, header, "УВЕДОМЛЕНИЯ В TELEGRAM И ВКОНТАКТЕ", "0.022 0.50", "0.62 0.88", 11, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, header, status.DeliveryReady ? "КАНАЛ ДОСТАВКИ ПОДКЛЮЧЁН" : "ПРИВЯЖИТЕ БОТА В ПРОФИЛЕ САЙТА", "0.022 0.14", "0.62 0.52", 8, status.DeliveryReady ? textSecondary : warning, TextAnchor.MiddleLeft, false);
+            AddLabel(ui, header, state.Saving ? "СОХРАНЯЕМ…" : "АВТОСОХРАНЕНИЕ", "0.72 0.20", "0.978 0.80", 9,
+                state.Saving ? accent : textSecondary, TextAnchor.MiddleRight, true);
 
             var channelPanel = root + ".Channels";
-            AddPanel(ui, root, channelPanel, "0.02 0.24", "0.42 0.82", bg);
-            AddLabel(ui, channelPanel, "КАНАЛЫ ДОСТАВКИ", "0.045 0.86", "0.75 0.96", 12, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, channelPanel, "Привязка выполняется один раз в профиле сайта", "0.045 0.78", "0.95 0.87", 8, textSecondary, TextAnchor.MiddleLeft, false);
-            AddChannelCard(ui, channelPanel, ".Telegram", "0.045 0.44", "0.955 0.74", "TG", "TELEGRAM-БОТ",
+            AddPanel(ui, root, channelPanel, "0 0.49", "1 0.875", bg);
+            AddLabel(ui, channelPanel, "КАНАЛЫ ДОСТАВКИ", "0.022 0.82", "0.75 0.97", 11, textMain, TextAnchor.MiddleLeft, true);
+            AddChannelCard(ui, channelPanel, ".Telegram", "0 0.43", "1 0.76", "social-telegram.png", "TELEGRAM-БОТ",
                 telegram.Connected, telegram.Blocked ? "БОТ ЗАБЛОКИРОВАН" : BotHint(telegram.BotUsername, "ОТКРОЙТЕ ПРОФИЛЬ НА САЙТЕ"),
                 raised, success, warning, textMain, textSecondary);
-            AddChannelCard(ui, channelPanel, ".Vk", "0.045 0.09", "0.955 0.39", "VK", "БОТ ВКОНТАКТЕ",
+            AddChannelCard(ui, channelPanel, ".Vk", "0 0.06", "1 0.39", "social-vk.png", "БОТ ВКОНТАКТЕ",
                 vk.Connected, VkHint(vk.CommunityUrl), raised, success, warning, textMain, textSecondary);
 
             var eventPanel = root + ".Events";
-            AddPanel(ui, root, eventPanel, "0.44 0.24", "0.98 0.82", bg);
-            AddLabel(ui, eventPanel, "КАКИЕ СОБЫТИЯ ОТПРАВЛЯТЬ", "0.035 0.86", "0.75 0.96", 12, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, eventPanel, status.DeliveryReady ? "Настройка действует одновременно для Telegram и ВКонтакте" : "Сначала подключите хотя бы один канал", "0.035 0.78", "0.95 0.87", 8, status.DeliveryReady ? textSecondary : warning, TextAnchor.MiddleLeft, false);
-            AddEventRow(ui, eventPanel, ".Raid", "0.035 0.45", "0.965 0.74", "R", "ОПОВЕЩЕНИЯ О РЕЙДАХ",
-                "Сообщим, когда вашу постройку начнут рейдить", raid, status.CanManage, "prostojnotifications.ui toggle raid",
-                raised, accent, textMain, textSecondary);
-            AddEventRow(ui, eventPanel, ".Ban", "0.035 0.10", "0.965 0.39", "!", "ОПОВЕЩЕНИЯ О БАНАХ",
-                "Сообщим о бане игрока, на которого вы пожаловались", ban, status.CanManage, "prostojnotifications.ui toggle ban",
-                raised, accent, textMain, textSecondary);
+            AddPanel(ui, root, eventPanel, "0 0.075", "1 0.48", bg);
+            AddLabel(ui, eventPanel, "СОБЫТИЯ", "0.022 0.83", "0.75 0.97", 11, textMain, TextAnchor.MiddleLeft, true);
+            AddEventRow(ui, eventPanel, ".Raid", "0 0.44", "1 0.77", "event-raid.png", "ОПОВЕЩЕНИЯ О РЕЙДАХ",
+                "Сообщим, когда вашу постройку начнут рейдить", raid, status.CanManage, !state.Saving, "prostojnotifications.ui toggle raid",
+                raised, muted, success, textMain, textSecondary);
+            AddEventRow(ui, eventPanel, ".Ban", "0 0.07", "1 0.40", "event-ban.png", "ОПОВЕЩЕНИЯ О БАНАХ",
+                "Сообщим о бане игрока, на которого вы пожаловались", ban, status.CanManage, !state.Saving, "prostojnotifications.ui toggle ban",
+                raised, muted, success, textMain, textSecondary);
 
             var footer = root + ".Footer";
-            AddPanel(ui, root, footer, "0.02 0.045", "0.98 0.205", bg);
-            AddPanel(ui, footer, footer + ".Rail", "0 0", "0.004 1", status.DeliveryReady ? accent : warning);
+            AddPanel(ui, root, footer, "0 0.005", "1 0.065", "0 0 0 0");
             var footerTitle = !status.Registered ? "НУЖЕН ПРОФИЛЬ НА САЙТЕ" : status.DeliveryReady ? "КАНАЛ ДОСТАВКИ ПОДКЛЮЧЁН" : "ПРИВЯЖИТЕ TELEGRAM ИЛИ ВКОНТАКТЕ";
             var footerNote = !status.Registered ? "Войдите на сайт через Steam" : status.DeliveryReady ? DeliveryLabel(telegram.Connected, vk.Connected) : "Профиль → Социальные сети → подключите бота";
-            AddLabel(ui, footer, footerTitle, "0.03 0.48", "0.68 0.83", 11, status.DeliveryReady ? textMain : warning, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, footer, footerNote, "0.03 0.16", "0.72 0.49", 8, textSecondary, TextAnchor.MiddleLeft, false);
-            AddButton(ui, footer, "0.77 0.20", "0.97 0.80", "prostojnotifications.ui save",
-                state.Saving ? "СОХРАНЕНИЕ…" : dirty ? "СОХРАНИТЬ" : "СОХРАНЕНО",
-                status.CanManage && dirty && !state.Saving ? accent : "0.18 0.20 0.19 1", textMain,
-                status.CanManage && dirty && !state.Saving);
-            if (!string.IsNullOrEmpty(state.Error))
-                AddLabel(ui, footer, Short(state.Error, 100), "0.03 0.01", "0.73 0.18", 8, danger, TextAnchor.MiddleLeft, false);
+            AddLabel(ui, footer, string.IsNullOrEmpty(state.Error) ? footerTitle + "  ·  " + footerNote : Short(state.Error, 100),
+                "0.022 0", "0.97 1", 8, !string.IsNullOrEmpty(state.Error) ? danger : status.DeliveryReady ? textSecondary : warning,
+                TextAnchor.MiddleLeft, false);
 
             CuiHelper.AddUi(player, ui);
         }
 
-        private static void AddChannelCard(CuiElementContainer ui, string parent, string suffix, string min, string max,
-            string mark, string title, bool connected, string hint, string raised, string success, string warning,
+        private void AddChannelCard(CuiElementContainer ui, string parent, string suffix, string min, string max,
+            string iconFile, string title, bool connected, string hint, string raised, string success, string warning,
             string textMain, string textSecondary)
         {
             var card = parent + suffix;
             AddPanel(ui, parent, card, min, max, raised);
-            AddPanel(ui, card, card + ".Mark", "0.035 0.20", "0.17 0.80", connected ? success : "0.13 0.15 0.15 1");
-            AddLabel(ui, card, mark, "0.035 0.20", "0.17 0.80", 12, textMain, TextAnchor.MiddleCenter, true);
-            AddLabel(ui, card, title, "0.21 0.48", "0.72 0.80", 10, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, card, connected ? "ПОДКЛЮЧЁН" : hint, "0.21 0.18", "0.86 0.48", 8, connected ? success : textSecondary, TextAnchor.MiddleLeft, false);
-            AddPanel(ui, card, card + ".Dot", "0.90 0.42", "0.93 0.58", connected ? success : warning);
+            AddCachedIcon(ui, card, card + ".Icon", iconFile, "0.052 0.5", 15f, connected ? success : textSecondary);
+            AddLabel(ui, card, title, "0.11 0.20", "0.55 0.80", 10, textMain, TextAnchor.MiddleLeft, true);
+            AddPanel(ui, card, card + ".State", "0.64 0.20", "0.978 0.80", connected ? "0.330 0.390 0.300 0.85" : "0.330 0.314 0.290 0.85");
+            AddLabel(ui, card, connected ? "ПОДКЛЮЧЁН" : hint, "0.66 0.20", "0.955 0.80", 8, connected ? success : textSecondary, TextAnchor.MiddleCenter, false);
         }
 
-        private static void AddEventRow(CuiElementContainer ui, string parent, string suffix, string min, string max,
-            string mark, string title, string note, bool active, bool enabled, string command, string raised,
-            string accent, string textMain, string textSecondary)
+        private void AddEventRow(CuiElementContainer ui, string parent, string suffix, string min, string max,
+            string iconFile, string title, string note, bool active, bool enabled, bool interactive, string command, string raised,
+            string muted, string success, string textMain, string textSecondary)
         {
             var row = parent + suffix;
             AddPanel(ui, parent, row, min, max, raised);
-            AddPanel(ui, row, row + ".Mark", "0.03 0.20", "0.14 0.80", active && enabled ? accent : "0.13 0.15 0.15 1");
-            AddLabel(ui, row, mark, "0.03 0.20", "0.14 0.80", 13, textMain, TextAnchor.MiddleCenter, true);
-            AddLabel(ui, row, title, "0.18 0.51", "0.70 0.80", 10, enabled ? textMain : "0.48 0.50 0.49 1", TextAnchor.MiddleLeft, true);
-            AddLabel(ui, row, note, "0.18 0.19", "0.74 0.50", 8, enabled ? textSecondary : "0.40 0.42 0.41 1", TextAnchor.MiddleLeft, false);
-            AddSwitch(ui, row, "0.79 0.31", "0.95 0.69", active, enabled, command, accent);
+            AddCachedIcon(ui, row, row + ".Icon", iconFile, "0.052 0.5", 15f, enabled ? textMain : textSecondary);
+            AddLabel(ui, row, title, "0.11 0.49", "0.69 0.82", 10, enabled ? textMain : "0.48 0.50 0.49 1", TextAnchor.MiddleLeft, true);
+            AddLabel(ui, row, note, "0.11 0.16", "0.69 0.49", 8, enabled ? textSecondary : "0.40 0.42 0.41 1", TextAnchor.MiddleLeft, false);
+            AddStateButton(ui, row, "0.79 0.26", "0.978 0.74", active, enabled && interactive, command, muted, success, textMain, textSecondary);
         }
 
-        private static void AddSwitch(CuiElementContainer ui, string parent, string min, string max, bool active, bool enabled, string command, string accent)
+        private static void AddStateButton(CuiElementContainer ui, string parent, string min, string max, bool active,
+            bool enabled, string command, string muted, string success, string textMain, string textSecondary)
         {
-            var name = parent + ".Switch";
-            AddPanel(ui, parent, name, min, max, enabled ? (active ? accent : "0.16 0.18 0.18 1") : "0.10 0.11 0.11 1");
-            AddPanel(ui, name, name + ".Knob", active ? "0.57 0.12" : "0.07 0.12", active ? "0.93 0.88" : "0.43 0.88", enabled ? "0.94 0.95 0.94 1" : "0.38 0.40 0.39 1");
-            if (enabled)
+            AddButton(ui, parent, min, max, command, active ? "ВКЛЮЧЕНО" : "ВЫКЛЮЧЕНО",
+                enabled ? (active ? success : muted) : muted,
+                enabled ? textMain : textSecondary, enabled);
+        }
+
+        private void CacheImages()
+        {
+            if (ProstojMenu == null) return;
+            foreach (var file in new[] { "event-raid.png", "event-ban.png", "social-telegram.png", "social-vk.png" })
+                ProstojMenu.Call("API_CacheImage", IconUrl(file));
+
+            // A hot reload can happen while the tab is already open. Give the
+            // shared downloader time to persist the PNGs, then repaint only
+            // players who are still looking at this module.
+            timer.Once(2.5f, () =>
             {
-                ui.Add(new CuiButton
+                foreach (var player in BasePlayer.activePlayerList.Where(IsAllowedAdmin))
+                    if (IsTabActive(player)) RefreshTab(player);
+            });
+        }
+
+        private string IconUrl(string file)
+        {
+            var relative = "rust-menu/icons/" + (file ?? string.Empty).TrimStart('/');
+            var themed = ProstojMenu?.Call("API_GetImageUrl", relative) as string;
+            var url = string.IsNullOrWhiteSpace(themed) ? "https://prostoj.store/images/" + relative : themed;
+            return url + (url.Contains("?") ? "&" : "?") + "v=1";
+        }
+
+        private string GetImage(string url)
+        {
+            var png = ProstojMenu?.Call("API_GetImage", url) as string;
+            if (string.IsNullOrEmpty(png)) ProstojMenu?.Call("API_CacheImage", url);
+            return png;
+        }
+
+        private void AddCachedIcon(CuiElementContainer ui, string parent, string name, string file, string anchor,
+            float halfSizePixels, string color)
+        {
+            var png = GetImage(IconUrl(file));
+            if (string.IsNullOrEmpty(png)) return;
+            var half = halfSizePixels.ToString("0.##", CultureInfo.InvariantCulture);
+            ui.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
                 {
-                    Button = { Color = "0 0 0 0", Command = command },
-                    RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" },
-                    Text = { Text = string.Empty }
-                }, name);
-            }
+                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = anchor,
+                        AnchorMax = anchor,
+                        OffsetMin = "-" + half + " -" + half,
+                        OffsetMax = half + " " + half
+                    }
+                }
+            });
         }
 
         private PlayerState GetState(ulong userId)

@@ -35,6 +35,8 @@ use yii\web\Response;
  */
 class RustMenuController extends BaseApiController
 {
+    private const SHOP_HIT_LIMIT = 6;
+
     public function actionSnapshot()
     {
         [$server, $steamId] = $this->authenticatePlayerRequest();
@@ -324,8 +326,9 @@ class RustMenuController extends BaseApiController
         $categoryId = max(0, (int) Yii::$app->request->get('category_id', 0));
         $page = max(1, (int) Yii::$app->request->get('page', 1));
         $pageSize = min(20, max(4, (int) Yii::$app->request->get('page_size', 16)));
+        $loadAll = filter_var(Yii::$app->request->get('all', false), FILTER_VALIDATE_BOOLEAN);
 
-        return $this->successResponse($this->buildShopPayload($server, $user, $categoryId, $page, $pageSize));
+        return $this->successResponse($this->buildShopPayload($server, $user, $categoryId, $page, $pageSize, $loadAll));
     }
 
     /** Toggle a product in the website's existing favorites table. */
@@ -793,10 +796,14 @@ class RustMenuController extends BaseApiController
         ];
     }
 
-    private function buildShopPayload(Servers $server, User $user, int $categoryId, int $page, int $pageSize): array
+    private function buildShopPayload(Servers $server, User $user, int $categoryId, int $page, int $pageSize, bool $loadAll = false): array
     {
         $catalog = $this->shopCatalogIndex();
-        $rows = $categoryId > 0
+        $hitIds = array_column(array_slice(array_values(array_filter($catalog, static function (array $row): bool {
+            return (int) $row['popularity'] > 0;
+        })), 0, self::SHOP_HIT_LIMIT), 'id');
+        $hitMap = array_fill_keys(array_map('intval', $hitIds), true);
+        $rows = !$loadAll && $categoryId > 0
             ? array_values(array_filter($catalog, static function (array $row) use ($categoryId): bool {
                 return (int) $row['category_id'] === $categoryId;
             }))
@@ -817,9 +824,9 @@ class RustMenuController extends BaseApiController
                 ?: ((int) $left['id'] <=> (int) $right['id']);
         });
         $total = count($rows);
-        $pages = max(1, (int) ceil($total / $pageSize));
-        $page = min($page, $pages);
-        $slice = array_slice($rows, ($page - 1) * $pageSize, $pageSize);
+        $pages = $loadAll ? 1 : max(1, (int) ceil($total / $pageSize));
+        $page = $loadAll ? 1 : min($page, $pages);
+        $slice = $loadAll ? $rows : array_slice($rows, ($page - 1) * $pageSize, $pageSize);
         $dropMap = Drop::getDropListAll();
         $images = Drop::productsImages();
         $products = [];
@@ -846,7 +853,7 @@ class RustMenuController extends BaseApiController
                     'count' => max(1, (int) ($drop->count ?? 1)),
                     'category_id' => (int) ($drop->category_id ?? 0),
                     'favorite' => isset($favoriteMap[(int) $drop->id]),
-                    'popular' => (int) $row['popularity'] > 0,
+                    'popular' => isset($hitMap[(int) $drop->id]),
                     'popularity' => (int) $row['popularity'],
                     'blocked' => (bool) $block['blocked'],
                     'blocked_seconds' => (int) $block['left_time'],
@@ -867,10 +874,11 @@ class RustMenuController extends BaseApiController
             'products' => $products,
             'pagination' => [
                 'page' => $page,
-                'page_size' => $pageSize,
+                'page_size' => $loadAll ? $total : $pageSize,
                 'pages' => $pages,
                 'total' => $total,
             ],
+            'catalog_complete' => $loadAll,
             'sort' => 'favorites_popularity',
             'catalog_cache_seconds' => 600,
         ];

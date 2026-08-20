@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.1")]
+    [Info("ProstojSkinDrops", "Prostoj Team", "1.0.5")]
     [Description("Admin-only SkinDrops checklist and Steam trade-link editor for ProstojMenu")]
     public class ProstojSkinDrops : RustPlugin
     {
@@ -97,6 +97,7 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
+            CacheImages();
             RefreshAdmins();
             refreshTimer = timer.Every(config.RefreshSeconds, RefreshAdmins);
         }
@@ -122,6 +123,7 @@ namespace Oxide.Plugins
         {
             if (plugin == null || plugin.Name != "ProstojMenu") return;
             ProstojMenu = plugin;
+            CacheImages();
             if (serverAvailable) RegisterMenuTab();
             RefreshAdmins();
         }
@@ -144,7 +146,6 @@ namespace Oxide.Plugins
             if (menuTabRegistered || ProstojMenu == null || !serverAvailable) return;
             ProstojMenu.Call("API_RegisterTab", this, "skindrops", "РАЗДАЧА СКИНОВ", "SKIN GIFT", 65);
             menuTabRegistered = true;
-            CacheAssets();
         }
 
         private void UnregisterMenuTab()
@@ -271,11 +272,10 @@ namespace Oxide.Plugins
             var raised = Theme(theme, "bg_raised", "0.060 0.071 0.070 0.96");
             var accent = Theme(theme, "accent_primary", "0.35 0.71 0.52 1");
             var success = Theme(theme, "success", "0.43 0.77 0.57 1");
-            var warning = Theme(theme, "warning", "0.79 0.66 0.42 1");
             var danger = Theme(theme, "danger", "0.77 0.40 0.36 1");
             var textMain = Theme(theme, "text_main", "0.92 0.95 0.93 1");
             var textSecondary = Theme(theme, "text_secondary", "0.60 0.63 0.61 1");
-            AddPanel(ui, parent, root, "0 0", "1 1", "0.025 0.032 0.035 0.25");
+            AddPanel(ui, parent, root, "0 0", "1 1", "0 0 0 0");
 
             var status = state.Status;
             if (status == null)
@@ -288,63 +288,60 @@ namespace Oxide.Plugins
 
             var user = status.User ?? new UserData();
             var header = root + ".Header";
-            AddPanel(ui, root, header, "0.02 0.845", "0.98 0.975", bg);
-            AddPanel(ui, header, header + ".Rail", "0 0", "0.004 1", accent);
-            AddLabel(ui, header, "РАЗДАЧА СКИНОВ", "0.025 0.43", "0.58 0.91", 22, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, header, "Выполните три условия — и участвуйте в автоматических розыгрышах", "0.026 0.10", "0.68 0.44", 9, textSecondary, TextAnchor.MiddleLeft, false);
-            AddPanel(ui, header, header + ".Ready", "0.76 0.22", "0.97 0.78", user.AllCompleted ? "0.14 0.38 0.27 0.90" : "0.34 0.25 0.16 0.90");
-            AddLabel(ui, header, user.AllCompleted ? "ВСЁ ГОТОВО" : "НУЖНА НАСТРОЙКА", "0.77 0.22", "0.96 0.78", 10, user.AllCompleted ? success : warning, TextAnchor.MiddleCenter, true);
+            AddPanel(ui, root, header, "0 0.90", "1 1", bg);
+            AddLabel(ui, header, "ВЫПОЛНИТЕ ТРИ УСЛОВИЯ ДЛЯ УЧАСТИЯ В АВТОМАТИЧЕСКИХ РОЗЫГРЫШАХ", "0.018 0.16", "0.70 0.84", 9, textSecondary, TextAnchor.MiddleLeft, false);
+            AddPanel(ui, header, header + ".Ready", "0.76 0.22", "0.97 0.78", user.AllCompleted ? "0.14 0.38 0.27 0.90" : "0.36 0.14 0.14 0.90");
+            AddLabel(ui, header, user.AllCompleted ? "ВСЁ ГОТОВО" : "НУЖНА НАСТРОЙКА", "0.77 0.22", "0.96 0.78", 10, user.AllCompleted ? success : danger, TextAnchor.MiddleCenter, true);
 
             var steps = root + ".Steps";
-            AddPanel(ui, root, steps, "0.02 0.365", "0.765 0.82", bg);
-            var imageId = GetImage(InstructionImageUrl(theme));
-            if (!string.IsNullOrEmpty(imageId)) AddPng(ui, steps, imageId, "0.015 0.025", "0.985 0.975", "1 1 1 0.90");
+            AddPanel(ui, root, steps, "0 0.34", "0.76 0.895", bg);
             var done = new[] { user.UsernameCompleted, user.Registered, user.TradeLinkCompleted };
             var titles = new[] { "ДОБАВЬТЕ ПРИПИСКУ", "ОТКРОЙТЕ ПРОФИЛЬ", "УКАЖИТЕ TRADE URL" };
-            var notes = new[] { "В нике должна быть «" + Safe(status.Prefix) + "»", "Войдите на сайт через Steam", "Ссылка нужна для отправки приза" };
+            var notes = new[] { "В нике должна быть «" + Safe(status.Prefix) + "»", "Откройте свой профиль в Steam", "Ссылка нужна для отправки приза" };
+            var icons = new[] { "skindrops-name-prefix.png", "skindrops-steam-profile.png", "skindrops-trade-link.png?v=2" };
             for (var i = 0; i < 3; i++)
             {
-                var xMin = 0.015f + i * 0.3233f;
-                var xMax = xMin + 0.3233f;
+                var xMin = i * 0.3335f + 0.012f;
+                var xMax = (i + 1) * 0.3335f - 0.012f;
                 var card = steps + ".Step" + i;
-                AddPanel(ui, steps, card, F(xMin, 0.025f), F(xMax, 0.975f), "0 0 0 0");
-                AddPanel(ui, card, card + ".Shade", "0.02 0.02", "0.98 0.30", "0.018 0.024 0.024 0.91");
-                AddPanel(ui, card, card + ".Status", "0.07 0.82", "0.28 0.95", done[i] ? success : warning);
+                AddPanel(ui, steps, card, F(xMin, 0.04f), F(xMax, 0.96f), raised);
+                AddPanel(ui, card, card + ".Status", "0.07 0.82", "0.28 0.95", raised);
                 AddLabel(ui, card, done[i] ? "ГОТОВО" : "ШАГ " + (i + 1), "0.07 0.82", "0.28 0.95", 8, textMain, TextAnchor.MiddleCenter, true);
-                AddLabel(ui, card, titles[i], "0.06 0.16", "0.94 0.29", 10, textMain, TextAnchor.MiddleCenter, true);
-                AddLabel(ui, card, notes[i], "0.06 0.04", "0.94 0.16", 8, textSecondary, TextAnchor.MiddleCenter, false);
+                AddCachedIcon(ui, card, card + ".Icon", icons[i], "0.5 0.57", 25f, done[i] ? success : danger);
+                AddLabel(ui, card, titles[i], "0.06 0.20", "0.94 0.34", 10, textMain, TextAnchor.MiddleCenter, true);
+                AddLabel(ui, card, notes[i], "0.08 0.07", "0.92 0.20", 8, textSecondary, TextAnchor.MiddleCenter, false);
             }
 
             var summary = root + ".Summary";
-            AddPanel(ui, root, summary, "0.785 0.365", "0.98 0.82", bg);
-            AddSteamAvatar(ui, summary, player.UserIDString, "0.33 0.69", "0.67 0.91", "1 1 1 1");
+            AddPanel(ui, root, summary, "0.765 0.34", "1 0.895", bg);
+            AddSteamAvatar(ui, summary, player.UserIDString, "0.5 0.80", 38f, "1 1 1 1");
             AddLabel(ui, summary, Short(string.IsNullOrEmpty(user.Username) ? player.displayName : user.Username, 20), "0.08 0.57", "0.92 0.69", 13, textMain, TextAnchor.MiddleCenter, true);
             AddLabel(ui, summary, Safe(status.Prefix), "0.08 0.48", "0.92 0.58", 9, accent, TextAnchor.MiddleCenter, true);
-            AddChecklistRow(ui, summary, "0.09 0.34", "0.91 0.45", "ПРИПИСКА В НИКЕ", user.UsernameCompleted, success, warning, textMain);
-            AddChecklistRow(ui, summary, "0.09 0.21", "0.91 0.32", "ПРОФИЛЬ STEAM", user.Registered, success, warning, textMain);
-            AddChecklistRow(ui, summary, "0.09 0.08", "0.91 0.19", "TRADE URL", user.TradeLinkCompleted, success, warning, textMain);
+            AddChecklistRow(ui, summary, "0.09 0.34", "0.91 0.45", "ПРИПИСКА В НИКЕ", "skindrops-name-prefix.png", user.UsernameCompleted, raised, success, danger, textMain);
+            AddChecklistRow(ui, summary, "0.09 0.21", "0.91 0.32", "ПРОФИЛЬ STEAM", "skindrops-steam-profile.png", user.Registered, raised, success, danger, textMain);
+            AddChecklistRow(ui, summary, "0.09 0.08", "0.91 0.19", "TRADE URL", "skindrops-trade-link.png?v=2", user.TradeLinkCompleted, raised, success, danger, textMain);
 
             var form = root + ".Form";
-            AddPanel(ui, root, form, "0.02 0.045", "0.98 0.335", bg);
-            AddPanel(ui, form, form + ".Rail", "0 0", "0.004 1", accent);
-            AddLabel(ui, form, "STEAM TRADE URL", "0.03 0.68", "0.50 0.88", 11, textMain, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, form, "Steam → Инвентарь → Предложения обмена → Кто может отправлять мне предложения?", "0.03 0.51", "0.90 0.70", 9, textSecondary, TextAnchor.MiddleLeft, false);
+            AddPanel(ui, root, form, "0 0.035", "1 0.335", bg);
+            AddLabel(ui, form, "STEAM TRADE URL", "0.015 0.68", "0.50 0.88", 11, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, form, "Steam → Инвентарь → Предложения обмена → Кто может отправлять мне предложения?", "0.015 0.51", "0.90 0.70", 9, textSecondary, TextAnchor.MiddleLeft, false);
             var field = form + ".Field";
-            AddPanel(ui, form, field, "0.03 0.16", "0.79 0.48", raised);
+            AddPanel(ui, form, field, "0.015 0.16", "0.80 0.48", raised);
             AddInput(ui, field, field + ".Input", "0.025 0.08", "0.975 0.92", state.Draft ?? user.TradeLink ?? string.Empty, "prostojskindrops.ui input", 255, 11, textMain);
-            AddButton(ui, form, "0.81 0.16", "0.97 0.48", "prostojskindrops.ui save", state.Saving ? "СОХРАНЕНИЕ…" : "СОХРАНИТЬ", state.Saving ? "0.18 0.20 0.19 1" : accent, textMain);
+            AddButton(ui, form, "0.815 0.16", "0.985 0.48", "prostojskindrops.ui save", state.Saving ? "СОХРАНЕНИЕ…" : "СОХРАНИТЬ", state.Saving ? "0.18 0.20 0.19 1" : accent, textMain);
             if (!string.IsNullOrEmpty(state.Error))
-                AddLabel(ui, form, Short(state.Error, 110), "0.03 0.01", "0.97 0.14", 8, danger, TextAnchor.MiddleLeft, false);
+                AddLabel(ui, form, Short(state.Error, 110), "0.015 0.01", "0.985 0.14", 8, danger, TextAnchor.MiddleLeft, false);
             CuiHelper.AddUi(player, ui);
         }
 
-        private static void AddChecklistRow(CuiElementContainer ui, string parent, string min, string max, string label, bool done, string success, string warning, string text)
+        private void AddChecklistRow(CuiElementContainer ui, string parent, string min, string max, string label, string iconFile, bool done, string raised, string success, string danger, string text)
         {
             var row = parent + ".Check." + label.Replace(" ", string.Empty);
-            AddPanel(ui, parent, row, min, max, "0.06 0.071 0.070 0.96");
-            AddPanel(ui, row, row + ".Dot", "0.06 0.30", "0.12 0.70", done ? success : warning);
-            AddLabel(ui, row, label, "0.17 0", "0.75 1", 8, text, TextAnchor.MiddleLeft, true);
-            AddLabel(ui, row, done ? "✓" : "—", "0.78 0", "0.93 1", 11, done ? success : warning, TextAnchor.MiddleRight, true);
+            AddPanel(ui, parent, row, min, max, raised);
+            var stateColor = done ? success : danger;
+            AddCachedIcon(ui, row, row + ".StepIcon", iconFile, "0.105 0.5", 7f, stateColor);
+            AddLabel(ui, row, label, "0.18 0", "0.75 1", 8, text, TextAnchor.MiddleLeft, true);
+            AddCachedIcon(ui, row, row + ".StateIcon", done ? "status-check.png" : "status-cross.png", "0.865 0.5", 7f, stateColor);
         }
 
         private PlayerState GetState(ulong userId)
@@ -421,25 +418,6 @@ namespace Oxide.Plugins
         private void RefreshTab(BasePlayer player) => ProstojMenu?.Call("API_RefreshTab", player);
         private void ShowToast(BasePlayer player, string message, string kind) => ProstojMenu?.Call("API_ShowToast", player, message, kind);
 
-        private void CacheAssets()
-        {
-            ProstojMenu?.Call("API_CacheImage", InstructionImageUrl(ProstojMenu?.Call("API_GetTheme") as Dictionary<string, string>));
-        }
-
-        private string InstructionImageUrl(Dictionary<string, string> theme)
-        {
-            string name;
-            var domain = theme != null && theme.TryGetValue("name", out name) && name == "moscow77" ? "https://moscow77.store" : "https://prostoj.store";
-            return domain + "/images/skindrops/rust-menu-instructions.jpg";
-        }
-
-        private string GetImage(string url)
-        {
-            var id = ProstojMenu?.Call("API_GetImage", url) as string;
-            if (string.IsNullOrEmpty(id)) ProstojMenu?.Call("API_CacheImage", url);
-            return id;
-        }
-
         private static string Theme(Dictionary<string, string> theme, string key, string fallback)
         {
             string value;
@@ -449,6 +427,56 @@ namespace Oxide.Plugins
         private static string Safe(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Replace("<", string.Empty).Replace(">", string.Empty);
         private static string Short(string value, int length) => string.IsNullOrEmpty(value) || value.Length <= length ? value ?? string.Empty : value.Substring(0, Math.Max(1, length - 1)) + "…";
         private static string F(float x, float y) => x.ToString("0.###", CultureInfo.InvariantCulture) + " " + y.ToString("0.###", CultureInfo.InvariantCulture);
+
+        private void CacheImages()
+        {
+            if (ProstojMenu == null) return;
+            foreach (var file in new[] { "skindrops-name-prefix.png", "skindrops-steam-profile.png", "skindrops-trade-link.png?v=2", "status-check.png", "status-cross.png" })
+                ProstojMenu.Call("API_CacheImage", SidebarIconUrl(file));
+
+            timer.Once(2.5f, () =>
+            {
+                foreach (var player in BasePlayer.activePlayerList.Where(IsAllowedAdmin))
+                    if (IsTabActive(player)) RefreshTab(player);
+            });
+        }
+
+        private string SidebarIconUrl(string file)
+        {
+            var relative = "rust-menu/icons/" + (file ?? string.Empty).TrimStart('/');
+            var themed = ProstojMenu?.Call("API_GetImageUrl", relative) as string;
+            return string.IsNullOrWhiteSpace(themed) ? "https://prostoj.store/images/" + relative : themed;
+        }
+
+        private string GetImage(string url)
+        {
+            var png = ProstojMenu?.Call("API_GetImage", url) as string;
+            if (string.IsNullOrEmpty(png)) ProstojMenu?.Call("API_CacheImage", url);
+            return png;
+        }
+
+        private void AddCachedIcon(CuiElementContainer ui, string parent, string name, string file, string center, float halfSizePixels, string color)
+        {
+            var png = GetImage(SidebarIconUrl(file));
+            if (string.IsNullOrEmpty(png)) return;
+            var half = Mathf.Max(1f, halfSizePixels).ToString("0.###", CultureInfo.InvariantCulture);
+            ui.Add(new CuiElement
+            {
+                Name = name,
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = center,
+                        AnchorMax = center,
+                        OffsetMin = "-" + half + " -" + half,
+                        OffsetMax = half + " " + half
+                    }
+                }
+            });
+        }
 
         private static void AddPanel(CuiElementContainer ui, string parent, string name, string min, string max, string color)
         {
@@ -488,23 +516,25 @@ namespace Oxide.Plugins
             });
         }
 
-        private static void AddPng(CuiElementContainer ui, string parent, string png, string min, string max, string color)
-        {
-            ui.Add(new CuiElement
-            {
-                Parent = parent,
-                Components = { new CuiRawImageComponent { Png = png, Color = color }, new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max } }
-            });
-        }
-
-        private static void AddSteamAvatar(CuiElementContainer ui, string parent, string steamId, string min, string max, string color)
+        private static void AddSteamAvatar(CuiElementContainer ui, string parent, string steamId, string center, float halfSizePixels, string color)
         {
             ulong parsed;
             if (!ulong.TryParse(steamId, out parsed)) return;
+            var half = Mathf.Max(1f, halfSizePixels).ToString("0.###", CultureInfo.InvariantCulture);
             ui.Add(new CuiElement
             {
                 Parent = parent,
-                Components = { new CuiRawImageComponent { SteamId = parsed.ToString(CultureInfo.InvariantCulture), Color = color }, new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max } }
+                Components =
+                {
+                    new CuiRawImageComponent { SteamId = parsed.ToString(CultureInfo.InvariantCulture), Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = center,
+                        AnchorMax = center,
+                        OffsetMin = "-" + half + " -" + half,
+                        OffsetMax = half + " " + half
+                    }
+                }
             });
         }
     }

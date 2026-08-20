@@ -11,7 +11,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojCashRace", "Prostoj Team", "1.0.8")]
+    [Info("ProstojCashRace", "Prostoj Team", "1.0.13")]
     [Description("Private-preview Cash Race tournament module for ProstojMenu")]
     public class ProstojCashRace : RustPlugin
     {
@@ -783,58 +783,116 @@ namespace Oxide.Plugins
         private void DrawMenu(BasePlayer player, string parent, StatusData snapshot)
         {
             var ui = new CuiElementContainer();
-            AddPanel(ui, parent, parent + ".CashRace", "0 0", "1 1", "0.025 0.032 0.035 0.25");
+            var root = parent + ".CashRace";
+            AddPanel(ui, parent, root, "0 0", "1 1", "0 0 0 0");
             if (snapshot == null || !snapshot.Available)
             {
-                AddLabel(ui, parent, "ДЕНЕЖНАЯ ГОНКА", "0.08 0.58", "0.92 0.72", 30, "0.92 0.91 0.88 1", TextAnchor.MiddleCenter, true);
-                AddLabel(ui, parent, "Проверяем расписание турнира…", "0.08 0.45", "0.92 0.58", 13, "0.62 0.61 0.59 1", TextAnchor.MiddleCenter, false);
+                AddLabel(ui, root, "ДЕНЕЖНАЯ ГОНКА", "0.08 0.58", "0.92 0.72", 30, "0.92 0.91 0.88 1", TextAnchor.MiddleCenter, true);
+                AddLabel(ui, root, "Проверяем расписание турнира…", "0.08 0.45", "0.92 0.58", 13, "0.62 0.61 0.59 1", TextAnchor.MiddleCenter, false);
                 CuiHelper.AddUi(player, ui);
                 return;
             }
+
             var theme = ProstojMenu?.Call("API_GetTheme") as Dictionary<string, string>;
-            var themeName = theme != null && theme.ContainsKey("name") ? theme["name"] : "prostoj";
-            var heroUrl = config.AssetsUrl + (themeName == "moscow77" ? "/hero-moscow-cui.jpg" : "/hero-prostoj-cui.jpg");
-            var imageId = GetImage(heroUrl);
-            var hero = parent + ".CashRace.Hero";
-            AddPanel(ui, parent, hero, "0 0.50", "1 1", "0.02 0.025 0.027 0.88");
-            if (!string.IsNullOrEmpty(imageId)) AddPng(ui, hero, imageId, "0 0", "1 1", "1 1 1 0.64");
-            AddPanel(ui, hero, hero + ".Shade", "0 0", "0.62 1", "0.02 0.025 0.027 0.82");
-            AddLabel(ui, hero, "ПРИВАТНЫЙ ТУРНИР  •  ДЕНЕЖНАЯ ГОНКА", "0.035 0.80", "0.60 0.92", 11, "0.45 0.78 0.62 1", TextAnchor.MiddleLeft, true);
-            AddLabel(ui, hero, Safe(snapshot.Title).ToUpperInvariant(), "0.035 0.56", "0.62 0.82", 35, "0.92 0.95 0.93 1", TextAnchor.MiddleLeft, true);
-            AddLabel(ui, hero, Wrap(Safe(snapshot.Description), 64, 3), "0.038 0.38", "0.58 0.59", 11, "0.70 0.72 0.70 1", TextAnchor.UpperLeft, false);
+            var success = ThemeToken(theme, "success", "0.43 0.77 0.57 1");
+            var warning = ThemeToken(theme, "warning", "0.79 0.66 0.42 1");
+            var danger = ThemeToken(theme, "danger", "0.77 0.40 0.36 1");
+            var textMain = ThemeToken(theme, "text_main", "0.92 0.95 0.93 1");
+            var textSecondary = ThemeToken(theme, "text_secondary", "0.60 0.63 0.61 1");
+            var surface = ThemeToken(theme, "bg_secondary", "0.205 0.195 0.175 0.80");
+            var raised = ThemeToken(theme, "bg_raised", "0.350 0.330 0.295 0.66");
+            var gold = ThemeToken(theme, "gold", "0.88 0.67 0.39 1");
+            var terminalActive = snapshot.Terminal != null && snapshot.Terminal.Active;
             var target = snapshot.Phase == "upcoming" ? snapshot.StartsAtUnix : snapshot.EndsAtUnix;
             var remaining = Math.Max(0, target - DateTimeOffset.UtcNow.ToUnixTimeSeconds());
-            AddLabel(ui, hero, snapshot.Phase == "upcoming" ? "СТАРТ ЧЕРЕЗ" : snapshot.Phase == "active" ? "ФИНИШ ЧЕРЕЗ" : "ТУРНИР ЗАВЕРШЁН", "0.038 0.25", "0.25 0.35", 9, "0.62 0.61 0.59 1", TextAnchor.MiddleLeft, true);
-            AddLabel(ui, hero, FormatDuration(remaining), "0.038 0.09", "0.55 0.27", 27, "0.92 0.95 0.93 1", TextAnchor.MiddleLeft, true);
-            var playerData = snapshot.Player ?? new PlayerData();
-            AddMetric(ui, hero, hero + ".Deposited", "0.65 0.12", "0.76 0.36", "СДАНО", playerData.KeysDeposited.ToString(), "0.45 0.78 0.62 1");
-            AddMetric(ui, hero, hero + ".Found", "0.77 0.12", "0.88 0.36", "НАЙДЕНО", playerData.KeysFound.ToString(), "0.80 0.66 0.48 1");
-            AddMetric(ui, hero, hero + ".Place", "0.89 0.12", "0.98 0.36", "МЕСТО", playerData.Position.HasValue ? "#" + playerData.Position.Value : "—", "0.92 0.95 0.93 1");
 
-            var lower = parent + ".CashRace.Lower";
-            AddPanel(ui, parent, lower, "0 0", "1 0.49", "0.02 0.025 0.027 0.92");
-            var terminalActive = snapshot.Terminal != null && snapshot.Terminal.Active;
-            AddPanel(ui, lower, lower + ".TerminalRail", "0.02 0.86", "0.025 0.98", terminalActive ? "0.28 0.72 0.50 1" : "0.65 0.45 0.30 1");
-            AddLabel(ui, lower, terminalActive ? "ТЕРМИНАЛ АКТИВЕН  •  " + Safe(snapshot.Terminal.MonumentName).ToUpperInvariant() : "ТЕРМИНАЛ СКРЫТ  •  ЖДИТЕ ОБЪЯВЛЕНИЕ В ЧАТЕ", "0.035 0.86", "0.66 0.98", 11, terminalActive ? "0.45 0.78 0.62 1" : "0.78 0.60 0.43 1", TextAnchor.MiddleLeft, true);
-            AddLabel(ui, lower, "КАК ЭТО РАБОТАЕТ", "0.035 0.72", "0.47 0.83", 13, "0.92 0.95 0.93 1", TextAnchor.MiddleLeft, true);
-            var steps = new[] { "1  РАЗБЕЙТЕ БОЧКУ\nНайдите персональный ключ", "2  БЕРЕГИТЕ КЛЮЧ\nПосле смерти он исчезнет", "3  НАЙДИТЕ ТЕРМИНАЛ\nРТ объявят в игровом чате", "4  СДАЙТЕ КЛЮЧИ\nБольше ключей — выше место" };
-            for (var i = 0; i < steps.Length; i++)
-            {
-                var xMin = 0.035f + i * 0.238f;
-                var xMax = xMin + 0.218f;
-                AddPanel(ui, lower, lower + ".Step" + i, F(xMin, 0.35f), F(xMax, 0.68f), "0.07 0.09 0.09 0.92");
-                AddLabel(ui, lower + ".Step" + i, steps[i], "0.07 0.12", "0.93 0.88", 10, "0.77 0.78 0.75 1", TextAnchor.MiddleLeft, true);
-            }
-            AddLabel(ui, lower, "ТОП ИГРОКОВ", "0.035 0.19", "0.30 0.30", 12, "0.92 0.95 0.93 1", TextAnchor.MiddleLeft, true);
+            var header = root + ".Header";
+            AddPanel(ui, root, header, "0 0.89", "1 1", surface);
+            AddLabel(ui, header, Short(Safe(snapshot.Title), 34).ToUpperInvariant(), "0.025 0.45", "0.48 0.9", 18, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, header, "ПРИЗОВОЙ ФОНД  ·  " + Safe(snapshot.PrizePoolLabel), "0.025 0.10", "0.50 0.46", 9, textSecondary, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, header, snapshot.Phase == "upcoming" ? "ДО СТАРТА" : snapshot.Phase == "active" ? "ДО ФИНИША" : "ЗАВЕРШЁН", "0.57 0.18", "0.70 0.82", 8, textSecondary, TextAnchor.MiddleRight, true);
+            AddLabel(ui, header, FormatDuration(remaining), "0.715 0.20", "0.83 0.86", 18, textMain, TextAnchor.MiddleCenter, true);
+            AddPanel(ui, header, header + ".StatusDot", "0.85 0.42", "0.862 0.58", terminalActive ? success : warning);
+            AddLabel(ui, header, terminalActive ? "ТЕРМИНАЛ ОТКРЫТ" : "ТЕРМИНАЛ СКРЫТ", "0.875 0.18", "0.985 0.82", 9,
+                terminalActive ? success : textSecondary, TextAnchor.MiddleLeft, true);
+
+            var guide = root + ".Guide";
+            AddPanel(ui, root, guide, "0 0.255", "0.575 0.875", surface);
+            AddLabel(ui, guide, "КАК УЧАСТВОВАТЬ", "0.04 0.90", "0.50 0.98", 12, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, guide, Wrap(Safe(snapshot.Description), 68, 2), "0.04 0.83", "0.96 0.90", 9, textSecondary, TextAnchor.UpperLeft, false);
+            AddInstructionRow(ui, guide, guide + ".Step0", "0.04 0.69", "0.96 0.82", "nav-tournament.png",
+                "ИЩИТЕ КЛЮЧИ", "Разбивайте бочки во время турнира.", warning, raised, textMain, textSecondary);
+            AddInstructionRow(ui, guide, guide + ".Step1", "0.04 0.532", "0.96 0.662", "cashrace-keep-key.png",
+                "НЕ ТЕРЯЙТЕ ИХ", "Ключи личные и исчезают после смерти.", warning, raised, textMain, textSecondary);
+            AddInstructionRow(ui, guide, guide + ".Step2", "0.04 0.374", "0.96 0.504", "cashrace-wait-terminal.png",
+                "ДОЖДИТЕСЬ ТЕРМИНАЛА", "Квадрат его появления придёт в чат.", terminalActive ? success : textSecondary, raised, textMain, textSecondary);
+            AddInstructionRow(ui, guide, guide + ".Step3", "0.04 0.216", "0.96 0.346", "cashrace-deposit-key.png",
+                "ЗАРЕГИСТРИРУЙТЕ КЛЮЧИ", "Побеждает игрок, сдавший больше всех.", success, raised, textMain, textSecondary);
+
+            var ranking = root + ".Ranking";
+            AddPanel(ui, root, ranking, "0.585 0.255", "1 0.875", surface);
+            AddLabel(ui, ranking, "ТОП-5 ИГРОКОВ", "0.055 0.90", "0.58 0.98", 12, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, ranking, "КЛЮЧИ", "0.72 0.90", "0.94 0.98", 8, textSecondary, TextAnchor.MiddleRight, true);
             var leaders = snapshot.Leaderboard ?? new List<LeaderboardData>();
-            for (var i = 0; i < Math.Min(4, leaders.Count); i++)
+            var podiumColors = new[] { gold, textSecondary, warning };
+            for (var i = 0; i < 5; i++)
             {
+                var yMax = 0.82f - i * 0.158f;
+                var yMin = yMax - 0.13f;
+                var rowName = ranking + ".Row" + i;
+                var podium = i < 3;
+                AddPanel(ui, ranking, rowName, F(0.04f, yMin), F(0.96f, yMax), raised);
+                if (podium) AddPanel(ui, rowName, rowName + ".Rail", "0 0", "0.012 1", podiumColors[i]);
+                if (i >= leaders.Count)
+                {
+                    AddLabel(ui, rowName, "МЕСТО СВОБОДНО", "0.10 0.1", "0.90 0.9", 9, textSecondary, TextAnchor.MiddleCenter, false);
+                    continue;
+                }
+
                 var row = leaders[i];
-                var xMin = 0.035f + i * 0.238f;
-                AddLabel(ui, lower, (i + 1) + ".  " + Safe(row.Username), F(xMin, 0.05f), F(xMin + 0.16f, 0.18f), 10, "0.73 0.74 0.72 1", TextAnchor.MiddleLeft, true);
-                AddLabel(ui, lower, row.KeysDeposited.ToString(), F(xMin + 0.16f, 0.05f), F(xMin + 0.218f, 0.18f), 13, i == 0 ? "0.83 0.67 0.36 1" : "0.45 0.78 0.62 1", TextAnchor.MiddleRight, true);
+                AddLabel(ui, rowName, (i + 1).ToString(CultureInfo.InvariantCulture), "0.045 0.1", "0.145 0.9", 12,
+                    podium ? podiumColors[i] : textSecondary, TextAnchor.MiddleCenter, true);
+                AddSteamAvatar(ui, rowName, row.SteamId, "0.205 0.5", 16f, "1 1 1 1");
+                AddLabel(ui, rowName, Short(Safe(row.Username), 17), "0.285 0.15", "0.74 0.85", 10, textMain, TextAnchor.MiddleLeft, true);
+                AddLabel(ui, rowName, row.KeysDeposited.ToString(CultureInfo.InvariantCulture), "0.76 0.12", "0.93 0.88", 14, podium ? podiumColors[i] : textMain, TextAnchor.MiddleRight, true);
             }
+
+            var playerData = snapshot.Player ?? new PlayerData();
+            var profile = root + ".Player";
+            AddPanel(ui, root, profile, "0 0.035", "1 0.235", surface);
+            AddSteamAvatar(ui, profile, player.UserIDString, "0.055 0.5", 25f, "1 1 1 1");
+            AddLabel(ui, profile, "ВАШ РЕЗУЛЬТАТ", "0.105 0.57", "0.30 0.84", 8, textSecondary, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, profile, Short(Safe(string.IsNullOrEmpty(playerData.Username) ? player.displayName : playerData.Username), 22), "0.105 0.22", "0.30 0.60", 13, textMain, TextAnchor.MiddleLeft, true);
+            AddPlayerMetric(ui, profile, profile + ".Found", "0.32 0.18", "0.475 0.82", "НАЙДЕНО", playerData.KeysFound.ToString(CultureInfo.InvariantCulture), warning, raised);
+            AddPlayerMetric(ui, profile, profile + ".Lost", "0.49 0.18", "0.645 0.82", "ПОТЕРЯНО", playerData.KeysLost.ToString(CultureInfo.InvariantCulture), danger, raised);
+            AddPlayerMetric(ui, profile, profile + ".Deposited", "0.66 0.18", "0.815 0.82", "СДАНО", playerData.KeysDeposited.ToString(CultureInfo.InvariantCulture), success, raised);
+            AddPlayerMetric(ui, profile, profile + ".Place", "0.83 0.18", "0.965 0.82", "МЕСТО", playerData.Position.HasValue ? "#" + playerData.Position.Value : "—", textMain, raised);
             CuiHelper.AddUi(player, ui);
+        }
+
+        private void AddInstructionRow(CuiElementContainer ui, string parent, string name, string min, string max,
+            string iconFile, string title, string description, string iconColor, string panelColor, string textMain, string textSecondary)
+        {
+            AddPanel(ui, parent, name, min, max, panelColor);
+            var iconPng = GetImage(SidebarIconUrl(iconFile));
+            if (!string.IsNullOrEmpty(iconPng))
+                AddFixedPng(ui, name, iconPng, "0.08 0.5", 14f, iconColor);
+            AddLabel(ui, name, title, "0.16 0.50", "0.95 0.86", 10, textMain, TextAnchor.MiddleLeft, true);
+            AddLabel(ui, name, description, "0.16 0.12", "0.95 0.52", 9, textSecondary, TextAnchor.MiddleLeft, false);
+        }
+
+        private string SidebarIconUrl(string file)
+        {
+            var relative = "rust-menu/icons/" + (file ?? string.Empty).TrimStart('/');
+            var themed = ProstojMenu?.Call("API_GetImageUrl", relative) as string;
+            return string.IsNullOrWhiteSpace(themed) ? "https://prostoj.store/images/" + relative : themed;
+        }
+
+        private void AddPlayerMetric(CuiElementContainer ui, string parent, string name, string min, string max, string label, string value, string color, string panelColor)
+        {
+            AddPanel(ui, parent, name, min, max, panelColor);
+            AddLabel(ui, name, label, "0.08 0.60", "0.92 0.88", 8, "0.53 0.57 0.54 1", TextAnchor.MiddleCenter, true);
+            AddLabel(ui, name, value, "0.08 0.12", "0.92 0.63", 18, color, TextAnchor.MiddleCenter, true);
         }
 
         private void AddMetric(CuiElementContainer ui, string parent, string name, string min, string max, string label, string value, string color)
@@ -853,9 +911,10 @@ namespace Oxide.Plugins
         private void CacheImages()
         {
             if (ProstojMenu == null) return;
-            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-prostoj-cui.jpg");
-            ProstojMenu.Call("API_CacheImage", config.AssetsUrl + "/hero-moscow-cui.jpg");
-            ProstojMenu.Call("API_CacheImage", "https://prostoj.store/images/rust-menu/icons/nav-tournament.png");
+            ProstojMenu.Call("API_CacheImage", SidebarIconUrl("nav-tournament.png"));
+            ProstojMenu.Call("API_CacheImage", SidebarIconUrl("cashrace-keep-key.png"));
+            ProstojMenu.Call("API_CacheImage", SidebarIconUrl("cashrace-wait-terminal.png"));
+            ProstojMenu.Call("API_CacheImage", SidebarIconUrl("cashrace-deposit-key.png"));
         }
 
         private string GetImage(string url)
@@ -893,6 +952,18 @@ namespace Oxide.Plugins
         private void SaveData() => Interface.Oxide.DataFileSystem.WriteObject(DataFileName, storedData);
 
         private static string Safe(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Replace("<", "").Replace(">", "");
+
+        private static string ThemeToken(Dictionary<string, string> theme, string key, string fallback)
+        {
+            string value;
+            return theme != null && theme.TryGetValue(key, out value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
+        }
+
+        private static string Short(string value, int length)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length <= length) return value ?? string.Empty;
+            return value.Substring(0, Math.Max(1, length - 1)) + "…";
+        }
 
         private static string Wrap(string value, int width, int lines)
         {
@@ -964,6 +1035,48 @@ namespace Oxide.Plugins
                 {
                     new CuiRawImageComponent { Png = png, Color = color },
                     new CuiRectTransformComponent { AnchorMin = min, AnchorMax = max }
+                }
+            });
+        }
+
+        private static void AddFixedPng(CuiElementContainer ui, string parent, string png, string center, float halfSizePixels, string color)
+        {
+            var half = Mathf.Max(1f, halfSizePixels).ToString("0.###", CultureInfo.InvariantCulture);
+            ui.Add(new CuiElement
+            {
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { Png = png, Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = center,
+                        AnchorMax = center,
+                        OffsetMin = "-" + half + " -" + half,
+                        OffsetMax = half + " " + half
+                    }
+                }
+            });
+        }
+
+        private static void AddSteamAvatar(CuiElementContainer ui, string parent, string steamId, string center, float halfSizePixels, string color)
+        {
+            ulong parsed;
+            if (!ulong.TryParse(steamId, NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed) || parsed == 0) return;
+            var half = Mathf.Max(1f, halfSizePixels).ToString("0.###", CultureInfo.InvariantCulture);
+            ui.Add(new CuiElement
+            {
+                Parent = parent,
+                Components =
+                {
+                    new CuiRawImageComponent { SteamId = parsed.ToString(CultureInfo.InvariantCulture), Color = color },
+                    new CuiRectTransformComponent
+                    {
+                        AnchorMin = center,
+                        AnchorMax = center,
+                        OffsetMin = "-" + half + " -" + half,
+                        OffsetMax = half + " " + half
+                    }
                 }
             });
         }

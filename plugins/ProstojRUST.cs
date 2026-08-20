@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.8.1")]
+    [Info("ProstojRUST", "prostoj.store", "0.8.3")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -357,6 +357,7 @@ namespace Oxide.Plugins
         private Dictionary<ulong, List<int>> playersBasketCache = new Dictionary<ulong, List<int>>();
         private readonly Dictionary<ulong, List<WItem>> playerBaskets = new Dictionary<ulong, List<WItem>>();
         private readonly HashSet<ulong> menuBasketRequests = new HashSet<ulong>();
+        private readonly Dictionary<ulong, int> menuBasketVersions = new Dictionary<ulong, int>();
         private HashSet<ulong> ListBannedCommandUserID = new HashSet<ulong>();
         private Timer TimerCheckInstant;
         private const string StoreLayer = "ProstojRUST.Store";
@@ -674,6 +675,7 @@ namespace Oxide.Plugins
             menuStoreParents.Clear();
             menuStorePages.Clear();
             menuBasketRequests.Clear();
+            menuBasketVersions.Clear();
             playerBaskets.Clear();
 
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
@@ -735,6 +737,7 @@ namespace Oxide.Plugins
             menuStoreParents.Remove(player.userID);
             menuStorePages.Remove(player.userID);
             menuBasketRequests.Remove(player.userID);
+            menuBasketVersions.Remove(player.userID);
             playerBaskets.Remove(player.userID);
             playersBasketCache.Remove(player.userID);
             Delays.ItemList.Remove(player.userID);
@@ -1146,6 +1149,28 @@ namespace Oxide.Plugins
             return true;
         }
 
+        // Called by ProstojShop after a successful purchase. If the basket has
+        // already been rendered, refresh its cache in the background. Otherwise
+        // invalidate the cache so the first cart visit fetches current products.
+        private object API_RefreshBasket(BasePlayer player)
+        {
+            if (player == null || !player.IsConnected) return false;
+
+            int version;
+            menuBasketVersions.TryGetValue(player.userID, out version);
+            menuBasketVersions[player.userID] = version + 1;
+
+            if (!menuStoreParents.ContainsKey(player.userID))
+            {
+                playerBaskets.Remove(player.userID);
+                return true;
+            }
+
+            var page = menuStorePages.ContainsKey(player.userID) ? menuStorePages[player.userID] : 0;
+            RequestMenuBasket(player, page);
+            return true;
+        }
+
         private bool IsMenuStoreActive(BasePlayer player)
         {
             if (player == null || ProstojMenu == null || !menuStoreParents.ContainsKey(player.userID)) return false;
@@ -1159,6 +1184,8 @@ namespace Oxide.Plugins
             if (player == null || !menuStoreParents.TryGetValue(player.userID, out parent)) return;
             var userId = player.userID;
             if (!menuBasketRequests.Add(userId)) return;
+            int requestVersion;
+            menuBasketVersions.TryGetValue(userId, out requestVersion);
             page = Math.Max(0, page);
             menuStorePages[player.userID] = page;
             // Keep the current grid visible during background refreshes. Replacing it
@@ -1170,9 +1197,20 @@ namespace Oxide.Plugins
             Request($"&method=basket&basket=true&steam_id={player.UserIDString}", (code, response) =>
             {
                 menuBasketRequests.Remove(userId);
-                if (player == null || !player.IsConnected || !IsMenuStoreActive(player)) return;
+                if (player == null || !player.IsConnected) return;
+
+                int currentVersion;
+                menuBasketVersions.TryGetValue(userId, out currentVersion);
+                if (requestVersion != currentVersion)
+                {
+                    RequestMenuBasket(player, menuStorePages.ContainsKey(userId) ? menuStorePages[userId] : page);
+                    return;
+                }
+
+                var cartActive = IsMenuStoreActive(player);
                 if (code != 200 || string.IsNullOrEmpty(response))
                 {
+                    if (!cartActive) return;
                     if (hasCachedBasket)
                     {
                         ShowNotify(player, "Не удалось обновить покупки");
@@ -1190,6 +1228,7 @@ namespace Oxide.Plugins
                 catch (Exception exception)
                 {
                     PrintWarning("Store basket response parse failed: " + exception.Message);
+                    if (!cartActive) return;
                     if (hasCachedBasket)
                     {
                         ShowNotify(player, "Не удалось обновить покупки");
@@ -1200,6 +1239,7 @@ namespace Oxide.Plugins
                 }
                 if (data == null || !data.ContainsKey("result") || data["result"]?.ToString() != "success")
                 {
+                    if (!cartActive) return;
                     if (hasCachedBasket)
                     {
                         ShowNotify(player, "Не удалось обновить покупки");
@@ -1223,7 +1263,7 @@ namespace Oxide.Plugins
                 }
 
                 playerBaskets[player.userID] = newItems;
-                DrawMenuStore(player, page, false);
+                if (cartActive) DrawMenuStore(player, page, false);
             }, player);
         }
 
@@ -1247,11 +1287,7 @@ namespace Oxide.Plugins
 
             var ui = new CuiElementContainer();
             MenuAddPanel(ui, parent, MenuStoreLayer, "0 0", "1 1", "0 0 0 0");
-            MenuAddLabel(ui, MenuStoreLayer, MenuStoreLayer + ".Title", "0 0.89", "0.62 1", "КОРЗИНА", 24, "0.925 0.894 0.953 1", TextAnchor.MiddleLeft, "robotocondensed-bold.ttf");
-            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Badge", "0.77 0.9", "1 0.98", "1 0.38 0.204 0.12");
-            MenuAddLabel(ui, MenuStoreLayer + ".Badge", MenuStoreLayer + ".Badge.Text", "0.05 0", "0.95 1", basket.Count + " ПОКУПОК В КОРЗИНЕ", 10, "1 0.38 0.204 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
-
-            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Grid", "0 0.115", "1 0.875", "0.098 0.063 0.176 1");
+            MenuAddPanel(ui, MenuStoreLayer, MenuStoreLayer + ".Grid", "0 0.115", "1 1", "0.098 0.063 0.176 1");
             for (var i = 0; i < pageItems.Count; i++)
             {
                 var item = pageItems[i];
