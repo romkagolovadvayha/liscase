@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "3.0.15")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.16")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1796,7 +1796,7 @@ namespace Oxide.Plugins
         {
             var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).ToList();
             const float top = 0.985f;
-            const float bottom = 0.155f;
+            const float bottom = 0.235f;
             var gap = 0.0015f;
             var preferredHeight = ordered.Count > 8 ? 0.057f : 0.063f;
             var availableHeight = top - bottom - gap * Math.Max(0, ordered.Count - 1);
@@ -1835,6 +1835,7 @@ namespace Oxide.Plugins
                 }
             }
 
+            AddSidebarProfile(ui, player, view);
             AddSidebarStatus(ui, view);
         }
 
@@ -1852,6 +1853,39 @@ namespace Oxide.Plugins
                 PrintWarning("Tab visibility check failed for '" + tab.Key + "': " + exception.Message);
                 return false;
             }
+        }
+
+        private void AddSidebarProfile(CuiElementContainer ui, BasePlayer player, PlayerView view)
+        {
+            var snapshot = view.Snapshot;
+            var playerData = snapshot != null ? snapshot.Player : null;
+            var serverData = snapshot != null ? snapshot.Server : null;
+            var playerName = playerData != null && !string.IsNullOrWhiteSpace(playerData.Username)
+                ? playerData.Username
+                : player.displayName;
+            var steamId = playerData != null && !string.IsNullOrWhiteSpace(playerData.SteamId)
+                ? playerData.SteamId
+                : player.UserIDString;
+            var serverName = serverData != null && !string.IsNullOrWhiteSpace(serverData.Name)
+                ? serverData.Name
+                : ConVar.Server.hostname;
+            var cleanPlayerName = CleanText(playerName).Trim();
+            var initial = string.IsNullOrEmpty(cleanPlayerName)
+                ? "?"
+                : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
+
+            var root = Sidebar + ".Profile";
+            AddPanel(ui, Navigation, root, "0.055 0.137", "0.945 0.225", "0 0 0 0");
+            AddSquarePanel(ui, root, root + ".AvatarFrame", "0.13 0.5", 17f, "0 0 0 0");
+            AddOffsetPanel(ui, root + ".AvatarFrame", root + ".AvatarSurface",
+                "0 0", "1 1", "1 1", "-1 -1", BgTertiary);
+            if (!TryAddSteamAvatar(ui, root + ".AvatarSurface", root + ".Avatar", "0 0", "1 1", steamId, "1 1 1 1"))
+                AddLabel(ui, root + ".AvatarSurface", root + ".AvatarInitial", "0 0", "1 1", initial, 12, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddOutline(ui, root + ".AvatarFrame", root + ".AvatarBorder", Border, 1f);
+            AddLabel(ui, root, root + ".Name", "0.26 0.49", "0.98 0.86",
+                CompactText(cleanPlayerName, 18).ToUpperInvariant(), 9, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, root, root + ".Server", "0.26 0.14", "0.98 0.51",
+                CompactText(CleanText(serverName), 21), 7, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
         }
 
         private void AddSidebarStatus(CuiElementContainer ui, PlayerView view)
@@ -2062,36 +2096,11 @@ namespace Oxide.Plugins
             var sectionTitle = tabs.TryGetValue(view.ActiveTab, out activeTab) && activeTab != null
                 ? CleanText(activeTab.Title).ToUpperInvariant()
                 : "МЕНЮ";
-            AddLabel(ui, Header + ".Dynamic", Header + ".SectionTitle", "0.025 0.18", "0.52 0.84",
+            AddLabel(ui, Header + ".Dynamic", Header + ".SectionTitle", "0.025 0.18", "0.72 0.84",
                 sectionTitle, 20, TextMain, TextAnchor.MiddleLeft, FontBold);
 
             var snapshot = view.Snapshot;
-            var serverName = snapshot != null && snapshot.Server != null && !string.IsNullOrEmpty(snapshot.Server.Name)
-                ? snapshot.Server.Name
-                : ConVar.Server.hostname;
-            var playerName = snapshot != null && snapshot.Player != null && !string.IsNullOrEmpty(snapshot.Player.Username)
-                ? snapshot.Player.Username
-                : player.displayName;
-
-            var avatarSteamId = snapshot != null && snapshot.Player != null && !string.IsNullOrWhiteSpace(snapshot.Player.SteamId)
-                ? snapshot.Player.SteamId
-                : player.UserIDString;
-            var cleanPlayerName = CleanText(playerName).Trim();
-            var playerInitial = string.IsNullOrEmpty(cleanPlayerName)
-                ? "?"
-                : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
-
-            AddSquarePanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.5985 0.5", 23f, "0 0 0 0");
-            AddOffsetPanel(ui, Header + ".AvatarFrame", Header + ".AvatarSurface",
-                "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
-            if (!TryAddSteamAvatar(ui, Header + ".AvatarSurface", Header + ".AvatarImage", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
-                AddLabel(ui, Header + ".AvatarSurface", Header + ".AvatarInitial", "0 0", "1 1", playerInitial, 17, TextMain, TextAnchor.MiddleCenter, FontBold);
-            AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Border, 1f);
-
-            AddLabel(ui, Header + ".Dynamic", Header + ".Title", "0.65 0.45", "0.785 0.82", cleanPlayerName.ToUpperInvariant(), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.65 0.20", "0.785 0.52", CleanText(serverName), 8, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-
-            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.79 0.22", "0.92 0.78", "0 0 0 0");
+            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.75 0.22", "0.92 0.78", "0 0 0 0");
             var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
             AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 14, TextMain, TextAnchor.MiddleRight, FontBold);
             AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.798 0.308", "0.912 0.692", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
@@ -3577,6 +3586,7 @@ namespace Oxide.Plugins
         private static string F(float x, float y) => x.ToString("0.####", CultureInfo.InvariantCulture) + " " + y.ToString("0.####", CultureInfo.InvariantCulture);
         private static string CleanText(string value) => (value ?? string.Empty).Replace("<", "‹").Replace(">", "›");
         private static string Safe(string value) => string.IsNullOrWhiteSpace(value) ? "—" : CleanText(value.Trim());
+
         private static string PlayerInitial(string value)
         {
             var clean = CleanText(value).Trim();
