@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "3.0.20")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.21")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -1797,7 +1797,7 @@ namespace Oxide.Plugins
         {
             var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).ToList();
             const float top = 0.985f;
-            const float bottom = 0.235f;
+            const float bottom = 0.206f;
             var gap = 0.0015f;
             var preferredHeight = ordered.Count > 8 ? 0.057f : 0.063f;
             var availableHeight = top - bottom - gap * Math.Max(0, ordered.Count - 1);
@@ -1876,21 +1876,21 @@ namespace Oxide.Plugins
                 : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
 
             var root = Sidebar + ".Profile";
-            AddPanel(ui, Navigation, root, "0.055 0.137", "0.945 0.225", ProfileSurface);
+            AddPanel(ui, Navigation, root, "0.055 0.137", "0.945 0.196", ProfileSurface);
             AddSquarePanel(ui, root, root + ".AvatarFrame", "0.11 0.5", 13f, "0 0 0 0");
             AddOffsetPanel(ui, root + ".AvatarFrame", root + ".AvatarSurface",
                 "0 0", "1 1", "1 1", "-1 -1", BgTertiary);
             if (!TryAddSteamAvatar(ui, root + ".AvatarSurface", root + ".Avatar", "0 0", "1 1", steamId, "1 1 1 1"))
                 AddLabel(ui, root + ".AvatarSurface", root + ".AvatarInitial", "0 0", "1 1", initial, 12, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddOutline(ui, root + ".AvatarFrame", root + ".AvatarBorder", Border, 1f);
-            AddLabel(ui, root, root + ".Name", "0.22 0.25", "0.96 0.95",
+            AddLabel(ui, root, root + ".Name", "0.22 0.35", "0.96 0.95",
                 CompactText(cleanPlayerName, 18).ToUpperInvariant(), 9, TextMain, TextAnchor.MiddleLeft, FontBold);
             var balance = playerData != null ? FormatNumber(playerData.Balance) : "—";
-            AddLabel(ui, root, root + ".Server", "0.22 0.05", "0.60 0.75",
+            AddLabel(ui, root, root + ".Server", "0.22 0.05", "0.60 0.65",
                 CompactText(CleanText(serverName), 13), 7, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddLabel(ui, root, root + ".Balance", "0.64 0.05", "0.88 0.75",
+            AddLabel(ui, root, root + ".Balance", "0.64 0.05", "0.88 0.65",
                 balance, 8, TextMain, TextAnchor.MiddleRight, FontBold);
-            AddSquarePanel(ui, root, root + ".BalanceCoin", "0.93 0.4", 5f, "0 0 0 0");
+            AddSquarePanel(ui, root, root + ".BalanceCoin", "0.93 0.35", 5f, "0 0 0 0");
             AddRawImage(ui, root + ".BalanceCoin", root + ".BalanceCoin.Image", "0 0", "1 1",
                 ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
         }
