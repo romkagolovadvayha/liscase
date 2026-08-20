@@ -5,9 +5,9 @@ using System.Collections.Generic;
 
 namespace Oxide.Plugins
 {
-    [Info("Remover Tool", "GPT-5 Codex", "1.0.0")]
+    [Info("RemoverToolEntity", "GPT-5 Codex", "1.0.0")]
     [Description("Удаляет строительные блоки правой кнопкой мыши киянкой при авторизации в шкафу.")]
-    public class RemoverTool : RustPlugin
+    public class RemoverToolEntity : RustPlugin
     {
         private const string HammerShortName = "hammer";
         private const float MaxRemoveDistance = 5f;

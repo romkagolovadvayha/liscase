@@ -9,7 +9,7 @@ use yii\web\Controller;
 use yii\web\Response;
 
 /**
- * Плоский JSON для WipeInfo / WelcomeMessages / HelpText (как на сайте, без обёртки v1).
+ * Плоский JSON для WipeCommand / WelcomeMessages / HelpText (как на сайте, без обёртки v1).
  */
 class RustPluginChatController extends Controller
 {

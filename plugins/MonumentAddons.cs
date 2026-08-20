@@ -290,7 +290,7 @@ namespace Oxide.Plugins
             });
         }
 
-        // This hook is exposed by plugin: Remover Tool (RemoverTool).
+        // This hook is exposed by plugin: RemoverToolEntity.
         private object canRemove(BasePlayer player, BaseEntity entity)
         {
             if (_componentTracker.IsAddonComponent(entity))

@@ -14,9 +14,9 @@ using Color = UnityEngine.Color;
 
 namespace Oxide.Plugins
 {
-    [Info("Wipe Info", "Prostoj", "1.0.1")]
+    [Info("WipeCommand", "Prostoj", "1.0.1")]
     [Description("Adds the ablity to see wipe cycles")]
-    public class WipeInfo : RustPlugin
+    public class WipeCommand : RustPlugin
     {
 		private Configuration config;
 		public class Configuration
@@ -63,7 +63,7 @@ namespace Oxide.Plugins
                 // Получаем IP и порт сервера
                 String serverIp = ConVar.Server.ip;
                 Int32 serverPort = ConVar.Server.port;
-                String pluginName = Name; // "WipeInfo"
+                String pluginName = Name; // "WipeCommand"
 
                 string cfgBase = string.IsNullOrWhiteSpace(config.RustPluginConfigApiBase)
                     ? "https://api.prostoj.store/v1/rust-plugin-config"
