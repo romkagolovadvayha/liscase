@@ -41,6 +41,26 @@ class SaveStatsJob extends BaseObject implements JobInterface
             if (empty($server)) {
                 return;
             }
+
+            // Persist the lightweight server snapshot before dispatching the heavy
+            // parts of the payload. Any downstream queue failure must not prevent
+            // online/status data from being refreshed.
+            $server->players = (int) $request['server']['online'];
+            if ($server->players > 50) {
+                $server->players += 5;
+            }
+            $server->joined = (int) $request['server']['join'];
+            $server->queued = (int) $request['server']['queue'];
+            $server->updated_at = date('Y-m-d H:i:s');
+            $server->status = Servers::STATUS_ACTIVE;
+            $server->updateAttributes([
+                'players',
+                'joined',
+                'queued',
+                'updated_at',
+                'status',
+            ]);
+
             $wipeDate = $server->currentWipe();
             Yii::$app->queueParams->push(new UpdateStatsUsersJob([
                                                                      'users' => $request['users'],
@@ -112,18 +132,6 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 Yii::$app->telegramReports->sendMessage("SaveStatsJob:" . $e->getLine() . ":" . $e->getMessage());
                 throw $e;
             }
-
-
-            $server->players = $request['server']['online'];
-            if ($request['server']['online'] > 50) {
-                $server->players = $request['server']['online'] + 5;
-            }
-            $server->joined = $request['server']['join'];
-            $server->queued = $request['server']['queue'];
-            $server->updated_at = date('Y-m-d H:i:s');
-            $server->status = Servers::STATUS_ACTIVE;
-            $server->save();
-
             // Сохраняем статистику в историю (обновляем или создаем запись для текущего часа)
             try {
                 ServersStatisticsHistory::saveOrUpdateHourlyStats(

@@ -10,7 +10,7 @@ $this->params['page'] = 'rules';
 
 \frontend\assets\LastDropAsset::register($this);
 
-$commands = json_decode($server->commands, 1);
+$commands = $server->getCommandsList();
 
 /** @var Servers[] $servers */
 $servers = Servers::find()

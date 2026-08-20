@@ -224,7 +224,11 @@ $selectedTags = $model->isNewRecord ? [] : $model->getTagIds();
                     </div>
                     <div>
                         <label class="text-xs text-gray-400 mb-1 block"><?= $model->getAttributeLabel('commands') ?></label>
-                        <?= $form->field($model, 'commands', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput(['class' => 'ds-input w-full text-sm', 'placeholder' => 'Через запятую']) ?>
+                        <?= $form->field($model, 'commands', ['options' => ['class' => 'mb-0'], 'template' => '{input}{error}'])->textInput([
+                            'class' => 'ds-input w-full text-sm',
+                            'placeholder' => 'Через запятую',
+                            'value' => implode(', ', $model->getCommandsList()),
+                        ]) ?>
                     </div>
                 </div>
             </div>

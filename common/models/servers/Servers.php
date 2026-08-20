@@ -57,7 +57,7 @@ use yii\helpers\ArrayHelper;
  * @property int    $clans_enabled Система кланов (1 = включена)
  * @property bool   $secret_map
  * @property int    $wargm_id
- * @property string $commands
+ * @property array|string|null $commands
  * @property string $discord_token
  * @property int    $sort
  * @property string $updated_at
@@ -215,7 +215,9 @@ class Servers extends \common\components\base\ActiveRecord
     {
         $rules = [
             [['name', 'status', 'wipe', 'next_wipe', 'global_wipe', 'wipe_type', 'max', 'tag', 'monitoring_name', 'monitoring_description', 'min_map_size', 'max_map_size'], 'required'],
-            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'commands', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
+            [['description', 'name', 'ip', 'text_ip', 'rcon_password', 'discord_token', 'rules', 'map', 'tag', 'monitoring_name', 'monitoring_description', 'game_mode', 'monitoring_tags', 'wipe_server_name', 'wipe_server_description', 'secret_key', 'ftp_host', 'ftp_login', 'ftp_password', 'ftp_root_path'], 'string'],
+            [['commands'], 'filter', 'filter' => [self::class, 'normalizeCommands']],
+            [['commands'], 'each', 'rule' => ['string']],
             [['sort', 'status', 'wipe_type', 'wipe_weekday', 'port', 'query', 'rcon', 'skindrops', 'is_store', 'hidden_store', 'team_limit', 'max', 'wargm_id', 'min_map_size', 'max_map_size', 'map_list_id', 'ftp_port'], 'integer'],
             [['wipe_weekday'], 'in', 'range' => [1, 2, 3, 4, 5, 6, 7]],
             [['wipe_weekday'], 'default', 'value' => 5],
@@ -233,6 +235,53 @@ class Servers extends \common\components\base\ActiveRecord
         }
 
         return $rules;
+    }
+
+    /**
+     * Normalize the JSON-backed commands attribute for forms and legacy rows.
+     *
+     * @param mixed $value
+     * @return string[]
+     */
+    public static function normalizeCommands($value): array
+    {
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '') {
+                return [];
+            }
+
+            $decoded = json_decode($trimmed, true);
+            $value = is_array($decoded)
+                ? $decoded
+                : preg_split('/[\r\n,]+/', $trimmed);
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $commands = [];
+        foreach ($value as $command) {
+            if (!is_scalar($command)) {
+                continue;
+            }
+
+            $command = trim((string) $command);
+            if ($command !== '') {
+                $commands[$command] = $command;
+            }
+        }
+
+        return array_values($commands);
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getCommandsList(): array
+    {
+        return self::normalizeCommands($this->commands);
     }
 
     /**

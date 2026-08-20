@@ -105,7 +105,7 @@ class InfoController extends Controller
         "<color={$color}>/time</color> - Current time server" . PHP_EOL .
         "<color={$color}>/pm</color> - Private message";
 
-        $commands = json_decode($server->commands, 1);
+        $commands = $server->getCommandsList();
         if (in_array('remove', $commands)) {
             $result['ru'] .= PHP_EOL . "<color={$color}>/remove</color> - Удаление обьектов";
             $result['en'] .= PHP_EOL . "<color={$color}>/remove</color> - Remove objects";

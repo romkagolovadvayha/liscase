@@ -211,7 +211,7 @@ class ServersController extends WebController
         if (empty($server)) {
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден!'));
         }
-        $commands = json_decode($server->commands, 1);
+        $commands = $server->getCommandsList();
         $this->view->title = Yii::t('common', 'Правила сервера') . " " . Yii::t('database', $server->name);
         $this->view->params['page'] = 'rules';
         $this->view->params['meta_description'] = Yii::t('common', "Правила сервера {PARAM_SERVER_NAME_SHORT}. Узнайте все ограничения и возможности на серверах, чтобы не попасть в блокировку.", [

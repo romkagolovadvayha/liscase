@@ -108,10 +108,7 @@ final class RustPluginChatJsonBuilder
         "<color={$color}>/time</color> - Current time server" . PHP_EOL .
         "<color={$color}>/pm</color> - Private message";
 
-        $commands = json_decode($server->commands, true);
-        if (!is_array($commands)) {
-            $commands = [];
-        }
+        $commands = $server->getCommandsList();
         if (in_array('remove', $commands, true)) {
             $result['ru'] .= PHP_EOL . "<color={$color}>/remove</color> - Удаление обьектов";
             $result['en'] .= PHP_EOL . "<color={$color}>/remove</color> - Remove objects";
