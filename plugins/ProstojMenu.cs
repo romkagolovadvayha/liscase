@@ -18,7 +18,7 @@ using UnityEngine.Networking;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojMenu", "Prostoj Team", "2.6.4")]
+    [Info("ProstojMenu", "Prostoj Team", "3.0.15")]
     [Description("Unified Prostoj in-game menu with pluggable tabs and website data.")]
     public class ProstojMenu : RustPlugin
     {
@@ -30,32 +30,41 @@ namespace Oxide.Plugins
         private const string Header = Main + ".Header";
         private const string Content = Main + ".Content";
         private const string Toast = Frame + ".Toast";
+        private const float SidebarWidth = 0.1725f;
+        private const float SidebarContentGap = 0.005f;
         private const string PermissionUse = "prostojmenu.use";
         private const string ImageCacheDirectory = "ProstojMenu/Images";
         private const int MaxConcurrentImageDownloads = 3;
+        private const int MaxAutomaticImageRetries = 4;
         private const float FileStorageStartupGuardSeconds = 180f;
         private const string StoreCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
         private const string ProstojMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v3.jpg";
         private const string MoscowMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/moscow77-command-center-v1.jpg";
-        private const string ProstojLogoImageUrl = "https://prostoj.store/images/rust-menu/prostoj-logo-transparent.png";
-        private const string MoscowLogoImageUrl = "https://prostoj.store/images/rust-menu/moscow77-logo.png";
         private const string LegacyMenuBackgroundImageUrl = "https://prostoj.store/images/rust-menu/prostoj-command-center-v2.jpg";
         private static bool useMoscowVisualTheme;
 
-        private const string BgMain = "0.031 0.008 0.141 0.985";       // #080224
-        private const string BgSecondary = "0.098 0.063 0.176 1";     // #19102d
-        private const string BgTertiary = "0.180 0.102 0.231 1";      // #2e1a3b
-        private const string BgRaised = "0.133 0.086 0.216 1";
-        private const string TextMain = "0.925 0.894 0.953 1";        // #ece4f3
-        private const string TextSecondary = "0.561 0.561 0.561 1";   // #8f8f8f
-        private const string Border = "0.243 0.196 0.286 1";          // #3e3249
-        private const string Accent = "0.860 0.220 0.330 1";          // softer brand red
-        private const string AccentWarm = "0.900 0.430 0.310 1";      // muted warm orange
+        // Shared CUI design tokens. Neutral translucent surfaces mirror the
+        // lightweight in-game reference; only the selected navigation row is branded.
+        private const string Scrim = "0.020 0.020 0.018 0.62";
+        private const string BgMain = "0.259 0.247 0.220 0.94";
+        private const string BgSecondary = "0.259 0.247 0.220 0.92";
+        private const string BgTertiary = "0.330 0.314 0.290 0.84";
+        private const string BgRaised = "0.412 0.392 0.369 0.80";
+        private const string TextMain = "0.835 0.808 0.769 1";
+        private const string TextSecondary = "0.650 0.625 0.590 1";
+        private const string Border = "0.070 0.068 0.060 0.78";
+        // Actions stay neutral like the reference. Only the active navigation
+        // item is brand-coloured (red for Prostoj, emerald for Moscow).
+        private const string Accent = "0.412 0.392 0.369 1";
+        private const string AccentWarm = "0.520 0.495 0.455 1";
+        private const string AccentSoft = "0.412 0.392 0.369 0.20";
+        private const string AccentActive = "0.860 0.220 0.330 0.88";
+        private const string AccentActiveBorder = "0.860 0.220 0.330 1";
         private const string Success = "0.340 0.720 0.540 1";
         private const string Warning = "0.820 0.660 0.400 1";
         private const string Danger = "0.860 0.420 0.480 1";
         private const string Gold = "0.880 0.670 0.390 1";
-        private const string FrameBorder = "0.580 0.240 0.340 0.88";  // subdued wine border
+        private const string FrameBorder = "0.070 0.068 0.060 0.92";
         private const string Silver = "0.706 0.706 0.706 1";
         private const string Bronze = "0.686 0.451 0.333 1";
         private const string FontRegular = "robotocondensed-regular.ttf";
@@ -189,6 +198,8 @@ namespace Oxide.Plugins
             public int Height;
             public CachedImageStatus Status;
             public bool RequiresShellRefresh;
+            public int FailureCount;
+            public DateTime RetryAtUtc;
         }
 
         private class CachedCalendarMonth
@@ -533,7 +544,11 @@ namespace Oxide.Plugins
 
         private void Init()
         {
-            imageCacheAllowedAtUtc = DateTime.UtcNow.AddSeconds(FileStorageStartupGuardSeconds);
+            // On a real server boot FileStorage must not be touched until the
+            // world is ready. OnPlugin hot reloads are distinguished later by
+            // OnServerInitialized(initial), so do not start a new three-minute
+            // blackout here on every edit/reload.
+            imageCacheAllowedAtUtc = DateTime.MaxValue;
             permission.RegisterPermission(PermissionUse, this);
             cmd.AddChatCommand(settings.ChatCommand, this, nameof(ChatOpenMenu));
             RegisterBuiltInTabs();
@@ -542,6 +557,10 @@ namespace Oxide.Plugins
         private void OnServerInitialized(bool initial)
         {
             imageCacheUnloading = false;
+            imageCacheAllowedAtUtc = initial
+                ? DateTime.UtcNow.AddSeconds(FileStorageStartupGuardSeconds)
+                : DateTime.UtcNow;
+            StartImageCache();
 
             // A short scheduler tick lets every player keep an independent,
             // jittered polling deadline instead of hitting the API in one burst.
@@ -613,6 +632,7 @@ namespace Oxide.Plugins
                 if (player != null && player.IsConnected)
                 {
                     RenderNavigation(player, view);
+                    RenderHeader(player, view);
                     RenderContent(player, view);
                 }
             }
@@ -723,6 +743,11 @@ namespace Oxide.Plugins
             return EnsureImage(url) != null;
         }
 
+        private object API_GetImageUrl(string relativePath)
+        {
+            return ImageUrl(relativePath);
+        }
+
         // Shared visual tokens keep connected plugin tabs in the same theme as
         // the shell without duplicating the theme selector in every plugin.
         private object API_GetTheme()
@@ -734,16 +759,17 @@ namespace Oxide.Plugins
                 ["bg_secondary"] = ThemeColor(BgSecondary),
                 ["bg_tertiary"] = ThemeColor(BgTertiary),
                 ["bg_raised"] = ThemeColor(BgRaised),
-                ["bg_image"] = ThemeColor("0.031 0.008 0.141 0.73"),
-                ["bg_disabled"] = ThemeColor("0.18 0.102 0.231 0.35"),
+                ["bg_image"] = ThemeColor("0.259 0.247 0.220 0.78"),
+                ["bg_disabled"] = ThemeColor("0.330 0.314 0.290 0.38"),
                 ["text_main"] = ThemeColor(TextMain),
                 ["text_secondary"] = ThemeColor(TextSecondary),
                 ["border"] = ThemeColor(Border),
                 ["accent"] = ThemeColor(AccentWarm),
                 ["accent_primary"] = ThemeColor(Accent),
-                ["accent_soft"] = ThemeColor("1 0.38 0.204 0.12"),
+                ["accent_soft"] = ThemeColor(AccentSoft),
+                ["accent_active"] = ThemeColor(AccentActive),
                 ["danger"] = ThemeColor(Danger),
-                ["danger_soft"] = ThemeColor("0.922 0.047 0.208 0.58"),
+                ["danger_soft"] = ThemeColor("0.860 0.420 0.480 0.24"),
                 ["success"] = ThemeColor(Success),
                 ["warning"] = ThemeColor(Warning),
                 ["gold"] = ThemeColor(Gold)
@@ -783,6 +809,7 @@ namespace Oxide.Plugins
                 if (player != null && player.IsConnected)
                 {
                     RenderNavigation(player, view);
+                    RenderHeader(player, view);
                     RenderContent(player, view);
                 }
             }
@@ -867,6 +894,7 @@ namespace Oxide.Plugins
                     view.ActiveTab = key;
                     view.Page = 0;
                     RenderNavigation(player, view);
+                    RenderHeader(player, view);
                     RenderContent(player, view);
                     if (string.Equals(key, "support", StringComparison.OrdinalIgnoreCase))
                         FetchSupport(player, view, false);
@@ -1733,27 +1761,22 @@ namespace Oxide.Plugins
             {
                 CursorEnabled = true,
                 KeyboardEnabled = true,
-                Image = { Color = ThemeColor("0.012 0.008 0.035 0.86"), Material = "assets/content/ui/uibackgroundblur.mat" },
+                Image = { Color = ThemeColor(Scrim), Material = "assets/content/ui/uibackgroundblur.mat" },
                 RectTransform = { AnchorMin = "0 0", AnchorMax = "1 1" }
             }, "Overlay", Root, Root);
 
-            AddPanel(ui, Root, Frame, "0.035 0.035", "0.965 0.965", BgMain);
-            if (!string.IsNullOrEmpty(settings.BackgroundImageUrl))
-                AddRawImage(ui, Frame, Frame + ".Artwork", "0 0", "1 1", settings.BackgroundImageUrl, "1 1 1 0.78");
-            AddPanel(ui, Frame, Frame + ".ArtworkShade", "0 0", "1 1", "0.025 0.008 0.09 0.42");
-            AddPanel(ui, Frame, Sidebar, "0 0", "0.222 1", "0.098 0.063 0.176 0.94");
-            AddPanel(ui, Frame, Main, "0.222 0", "1 1", "0.031 0.008 0.141 0.73");
+            AddPanel(ui, Root, Frame, "0.095 0.09", "0.905 0.91", "0 0 0 0");
+            AddPanel(ui, Frame, Sidebar, "0 0", F(SidebarWidth, 1f), BgSecondary);
+            // A narrow transparent gutter separates navigation from content,
+            // matching the lightweight Performance-style shell.
+            AddPanel(ui, Frame, Main, F(SidebarWidth + SidebarContentGap, 0f), "1 1", BgMain);
             // Keep the header inside the frame's top and right borders. Anchoring it
             // at exactly 1 1 could round a few pixels beyond the window in Rust CUI.
-            AddPanel(ui, Main, Header, "0 0.865", "0.996 0.996", "0.098 0.063 0.176 0.90");
-            AddPanel(ui, Main, Content, "0.03 0.04", "0.97 0.83", "0 0 0 0");
+            AddPanel(ui, Main, Header, "0 0.895", "0.998 0.998", BgSecondary);
+            AddPanel(ui, Main, Content, "0.018 0.02", "0.982 0.875", "0 0 0 0");
 
-            AddBrand(ui);
             AddPanel(ui, Sidebar, Navigation, "0 0", "1 1", "0 0 0 0");
             AddNavigation(ui, player, view);
-            // Draw the frame last so the sidebar, artwork and main surface cannot
-            // cover individual sides. Pixel offsets keep all four edges identical.
-            AddOutline(ui, Frame, Frame + ".Border", FrameBorder, 2f);
             CuiHelper.AddUi(player, ui);
 
             RenderHeader(player, view);
@@ -1769,29 +1792,13 @@ namespace Oxide.Plugins
             CuiHelper.AddUi(player, ui);
         }
 
-        private void AddBrand(CuiElementContainer ui)
-        {
-            if (useMoscowVisualTheme)
-            {
-                AddFittedRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.5 0.934", 70f, 21.35f,
-                    BrandLogoUrl(), "1 1 1 1");
-                return;
-            }
-
-            AddRawImage(ui, Sidebar, Sidebar + ".BrandLogo", "0.269 0.9125", "0.731 0.9555",
-                BrandLogoUrl(), "1 1 1 1");
-            // Rust may sample a colored texel into the transparent right padding of
-            // the Prostoj RawImage. Cover only that empty padding.
-            AddPanel(ui, Sidebar, Sidebar + ".BrandLogoEdgeMask", "0.727 0.9125", "0.734 0.9555", "0.098 0.063 0.176 0.94");
-        }
-
         private void AddNavigation(CuiElementContainer ui, BasePlayer player, PlayerView view)
         {
             var ordered = tabs.Values.Where(tab => CanViewTab(player, tab)).OrderBy(tab => tab.Order).ThenBy(tab => tab.Title).ToList();
-            const float top = 0.855f;
+            const float top = 0.985f;
             const float bottom = 0.155f;
-            var gap = ordered.Count > 8 ? 0.006f : 0.01f;
-            var preferredHeight = ordered.Count > 5 ? 0.067f : 0.078f;
+            var gap = 0.0015f;
+            var preferredHeight = ordered.Count > 8 ? 0.057f : 0.063f;
             var availableHeight = top - bottom - gap * Math.Max(0, ordered.Count - 1);
             var height = ordered.Count > 0 ? Math.Min(preferredHeight, availableHeight / ordered.Count) : preferredHeight;
             for (var index = 0; index < ordered.Count; index++)
@@ -1801,17 +1808,29 @@ namespace Oxide.Plugins
                 var yMin = yMax - height;
                 var active = string.Equals(tab.Key, view.ActiveTab, StringComparison.OrdinalIgnoreCase);
                 var root = Sidebar + ".Nav." + tab.Key;
-                AddButton(ui, Navigation, root, F(0f, yMin), F(1f, yMax), active ? "1 0.38 0.204 0.10" : "0 0 0 0",
+                // Only the stronger border overhangs the sidebar. The active fill,
+                // hit area, icon and text remain strictly inside the navigation grid.
+                if (active)
+                {
+                    const float borderX = 0.008f;
+                    const float borderY = 0.003f;
+                    AddPanel(ui, Navigation, root + ".Active.Border.Left", F(-0.025f, yMin), F(borderX, yMax), AccentActiveBorder);
+                    AddPanel(ui, Navigation, root + ".Active.Border.Right", F(1f - borderX, yMin), F(1.02f, yMax), AccentActiveBorder);
+                    AddPanel(ui, Navigation, root + ".Active.Border.Top", F(borderX, yMax - borderY), F(1f - borderX, yMax), AccentActiveBorder);
+                    AddPanel(ui, Navigation, root + ".Active.Border.Bottom", F(borderX, yMin), F(1f - borderX, yMin + borderY), AccentActiveBorder);
+                    AddPanel(ui, Navigation, root + ".Active.Fill", F(borderX, yMin + borderY), F(1f - borderX, yMax - borderY), AccentActive);
+                }
+                AddButton(ui, Navigation, root, F(0f, yMin), F(1f, yMax), "0 0 0 0",
                     "prostojmenu.ui tab " + tab.Key, string.Empty, 1, TextMain);
                 AddNavigationIcon(ui, root, tab, active);
-                AddLabel(ui, root, root + ".Text", "0.304 0.43", "0.90 0.86", tab.Title, 14, active ? TextMain : "0.72 0.69 0.75 1", TextAnchor.MiddleLeft, FontBold);
-                AddLabel(ui, root, root + ".Meta", "0.304 0.12", "0.90 0.45", NavigationMeta(tab.Key), 9, active ? AccentWarm : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+                AddLabel(ui, root, root + ".Text", "0.205 0", "0.91 1", tab.Title, 12,
+                    active ? TextMain : "0.78 0.76 0.72 1", TextAnchor.MiddleLeft, FontBold);
                 var supportUnread = view.Support != null
                     ? view.Support.UnreadCount
                     : view.Snapshot != null && view.Snapshot.Support != null ? view.Snapshot.Support.UnreadCount : 0;
                 if (string.Equals(tab.Key, "support", StringComparison.OrdinalIgnoreCase) && supportUnread > 0)
                 {
-                    AddPanel(ui, root, root + ".Unread", "0.809 0.52", "0.90 0.86", Accent);
+                    AddPanel(ui, root, root + ".Unread", "0.809 0.33", "0.90 0.67", Accent);
                     AddLabel(ui, root + ".Unread", root + ".Unread.Text", "0 0", "1 1", supportUnread >= 100 ? "99+" : supportUnread.ToString(CultureInfo.InvariantCulture), 9, TextMain, TextAnchor.MiddleCenter, FontBold);
                 }
             }
@@ -1840,38 +1859,56 @@ namespace Oxide.Plugins
             var snapshot = view.Snapshot;
             var hasServer = snapshot != null && snapshot.Server != null;
             var root = Sidebar + ".Status";
-            AddPanel(ui, Navigation, root, "0.07 0.032", "0.93 0.137", "0.031 0.008 0.141 0.46");
-            AddPanel(ui, root, root + ".Rail", "0 0", "0.012 1", hasServer ? Success : Warning);
-            AddPanel(ui, root, root + ".Dot", "0.06 0.68", "0.085 0.79", hasServer ? Success : Warning);
-            AddLabel(ui, root, root + ".State", "0.11 0.58", "0.86 0.9", hasServer ? "СЕРВЕР ОНЛАЙН" : "СИНХРОНИЗАЦИЯ", 9, hasServer ? Success : Warning, TextAnchor.MiddleLeft, FontBold);
+            AddPanel(ui, Navigation, root, "0.055 0.028", "0.945 0.13", "0 0 0 0");
+            AddPanel(ui, root, root + ".Dot", "0.055 0.68", "0.078 0.79", hasServer ? Success : Warning);
+            AddLabel(ui, root, root + ".State", "0.105 0.58", "0.90 0.9", hasServer ? "СЕРВЕР ОНЛАЙН" : "СИНХРОНИЗАЦИЯ", 9, TextMain, TextAnchor.MiddleLeft, FontBold);
             var online = hasServer ? snapshot.Server.Players + " / " + snapshot.Server.MaxPlayers + " ИГРОКОВ" : "ДАННЫЕ ЗАГРУЖАЮТСЯ";
-            AddLabel(ui, root, root + ".Online", "0.06 0.28", "0.94 0.59", online, 10, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddLabel(ui, root, root + ".Online", "0.055 0.28", "0.945 0.59", online, 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
-            AddPanel(ui, root, root + ".OnlineTrack", "0.06 0.1", "0.94 0.18", "1 1 1 0.10");
+            AddPanel(ui, root, root + ".OnlineTrack", "0.055 0.1", "0.945 0.18", "1 1 1 0.10");
             var onlineRatio = hasServer && snapshot.Server.MaxPlayers > 0
                 ? Mathf.Clamp01((float) snapshot.Server.Players / snapshot.Server.MaxPlayers)
                 : 0f;
             if (onlineRatio > 0f)
             {
                 var onlineColor = onlineRatio >= 0.95f ? Danger : onlineRatio >= 0.85f ? AccentWarm : Success;
-                AddPanel(ui, root, root + ".OnlineFill", "0.06 0.1", F(0.06f + 0.88f * onlineRatio, 0.18f), onlineColor);
+                AddPanel(ui, root, root + ".OnlineFill", "0.055 0.1", F(0.055f + 0.89f * onlineRatio, 0.18f), onlineColor);
             }
         }
 
         private void AddNavigationIcon(CuiElementContainer ui, string parent, MenuTab tab, bool active)
         {
             var root = parent + ".Icon";
-            var color = active ? AccentWarm : "0.62 0.59 0.66 1";
+            var color = active ? TextMain : "0.68 0.66 0.62 1";
             // The icon canvas and the source images are square, so the original
             // proportions survive at every supported resolution.
-            AddPanel(ui, parent, root, "0.113 0.17", "0.215 0.83", active ? "1 0.38 0.204 0.13" : "0.18 0.102 0.231 0.72");
+            AddPanel(ui, parent, root, "0.055 0.17", "0.157 0.83", "0 0 0 0");
 
             var icon = NormalizeIcon(tab.Key, tab.Glyph);
             var imageUrl = NavigationIconUrl(icon);
-            if (!string.IsNullOrWhiteSpace(imageUrl))
-                AddRawImage(ui, root, root + ".Image", "0.12 0.12", "0.88 0.88", imageUrl, color);
-            else
-                AddGridIcon(ui, root, color);
+            if (!string.IsNullOrWhiteSpace(imageUrl) &&
+                AddRawImage(ui, root, root + ".Image", "0.12 0.12", "0.88 0.88", imageUrl, color))
+                return;
+
+            // Never leave a blank gutter while a first-run download is in
+            // progress. The cached website PNG replaces this fallback as soon
+            // as it becomes available.
+            AddNavigationFallbackIcon(ui, root, icon, color);
+        }
+
+        private static void AddNavigationFallbackIcon(CuiElementContainer ui, string root, string icon, string color)
+        {
+            switch (icon)
+            {
+                case "store": AddStoreIcon(ui, root, color); break;
+                case "battlepass": AddBattlePassIcon(ui, root, color); break;
+                case "calendar": AddCalendarIcon(ui, root, color); break;
+                case "stats": AddStatsIcon(ui, root, color); break;
+                case "top": AddTopIcon(ui, root, color); break;
+                case "clans": AddClansIcon(ui, root, color); break;
+                case "support": AddSupportIcon(ui, root, color); break;
+                default: AddGridIcon(ui, root, color); break;
+            }
         }
 
         private string NavigationIconUrl(string icon)
@@ -1894,8 +1931,13 @@ namespace Oxide.Plugins
 
         private static string NormalizeIcon(string key, string glyph)
         {
-            var value = ((glyph ?? string.Empty) + " " + (key ?? string.Empty)).ToLowerInvariant();
-            if (value.Contains("cart") || value.Contains("basket") || value.Contains("shop") || value.Contains("store")) return "store";
+            var normalizedKey = (key ?? string.Empty).Trim().ToLowerInvariant();
+            if (normalizedKey == "shop") return "shop";
+            if (normalizedKey == "store") return "store";
+
+            var value = ((glyph ?? string.Empty) + " " + normalizedKey).ToLowerInvariant();
+            if (value.Contains("cart") || value.Contains("basket")) return "store";
+            if (value.Contains("shop") || value.Contains("market")) return "shop";
             if (value.Contains("pass") || value.Contains("season") || value.Contains("task")) return "battlepass";
             if (value.Contains("wipe") || value.Contains("calendar")) return "calendar";
             if (value.Contains("stat") || value.Contains("chart")) return "stats";
@@ -2016,6 +2058,13 @@ namespace Oxide.Plugins
             var ui = new CuiElementContainer();
             AddPanel(ui, Header, Header + ".Dynamic", "0 0", "1 1", "0 0 0 0");
 
+            MenuTab activeTab;
+            var sectionTitle = tabs.TryGetValue(view.ActiveTab, out activeTab) && activeTab != null
+                ? CleanText(activeTab.Title).ToUpperInvariant()
+                : "МЕНЮ";
+            AddLabel(ui, Header + ".Dynamic", Header + ".SectionTitle", "0.025 0.18", "0.52 0.84",
+                sectionTitle, 20, TextMain, TextAnchor.MiddleLeft, FontBold);
+
             var snapshot = view.Snapshot;
             var serverName = snapshot != null && snapshot.Server != null && !string.IsNullOrEmpty(snapshot.Server.Name)
                 ? snapshot.Server.Name
@@ -2032,22 +2081,22 @@ namespace Oxide.Plugins
                 ? "?"
                 : cleanPlayerName.Substring(0, 1).ToUpperInvariant();
 
-            AddPanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.035 0.24", "0.085 0.76", "0 0 0 0");
+            AddSquarePanel(ui, Header + ".Dynamic", Header + ".AvatarFrame", "0.5985 0.5", 23f, "0 0 0 0");
             AddOffsetPanel(ui, Header + ".AvatarFrame", Header + ".AvatarSurface",
                 "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
             if (!TryAddSteamAvatar(ui, Header + ".AvatarSurface", Header + ".AvatarImage", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
-                AddLabel(ui, Header + ".AvatarSurface", Header + ".AvatarInitial", "0 0", "1 1", playerInitial, 20, TextMain, TextAnchor.MiddleCenter, FontBold);
-            AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Accent, 2f);
+                AddLabel(ui, Header + ".AvatarSurface", Header + ".AvatarInitial", "0 0", "1 1", playerInitial, 17, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddOutline(ui, Header + ".AvatarFrame", Header + ".AvatarBorder", Border, 1f);
 
-            AddLabel(ui, Header + ".Dynamic", Header + ".Title", "0.105 0.46", "0.70 0.83", cleanPlayerName.ToUpperInvariant(), 18, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.105 0.24", "0.70 0.55", CleanText(serverName), 12, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddLabel(ui, Header + ".Dynamic", Header + ".Title", "0.65 0.45", "0.785 0.82", cleanPlayerName.ToUpperInvariant(), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, Header + ".Dynamic", Header + ".Server", "0.65 0.20", "0.785 0.52", CleanText(serverName), 8, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
-            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.735 0.22", "0.915 0.78", "0 0 0 0");
+            AddPanel(ui, Header + ".Dynamic", Header + ".Balance", "0.79 0.22", "0.92 0.78", "0 0 0 0");
             var balance = snapshot != null && snapshot.Player != null ? FormatNumber(snapshot.Player.Balance) : "—";
-            AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 19, TextMain, TextAnchor.MiddleRight, FontBold);
+            AddLabel(ui, Header + ".Balance", Header + ".BalanceValue", "0 0.18", "0.72 0.82", balance, 14, TextMain, TextAnchor.MiddleRight, FontBold);
             AddRawImage(ui, Header + ".Balance", Header + ".BalanceCoin", "0.798 0.308", "0.912 0.692", ImageUrl("rust-menu/coin-hd.png"), "1 1 1 1");
             // Add last inside the dynamic header so later header renders cannot cover it.
-            AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.9345 0.34", "0.965 0.66",
+            AddSpriteButton(ui, Header + ".Dynamic", Header + ".Close", "0.948 0.34", "0.978 0.66",
                 "prostojmenu.ui close", "assets/icons/close.png", TextMain);
 
             CuiHelper.AddUi(player, ui);
@@ -2146,13 +2195,11 @@ namespace Oxide.Plugins
             var ui = new CuiElementContainer();
 
             var hero = Content + ".BattlePass.Hero";
-            AddPanel(ui, Content + ".Body", hero, "0 0.51", "1 1", "0.031 0.008 0.141 0.68");
-            AddPanel(ui, hero, hero + ".CopySurface", "0 0", "0.57 1", "0.031 0.008 0.141 0.86");
-            AddPanel(ui, hero, hero + ".Rail", "0 0", "0.008 1", Accent);
+            AddPanel(ui, Content + ".Body", hero, "0 0.43", "1 0.995", BgSecondary);
 
             var seasonTitle = "SEASON " + Math.Max(1, season.SeasonNumber).ToString(CultureInfo.InvariantCulture);
-            AddLabel(ui, hero, hero + ".Title", "0.035 0.69", "0.56 0.93", seasonTitle, 39, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, hero, hero + ".Description", "0.038 0.49", "0.55 0.70",
+            AddLabel(ui, hero, hero + ".Title", "0.035 0.68", "0.60 0.93", seasonTitle, 27, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, hero, hero + ".Description", "0.038 0.47", "0.58 0.70",
                 WrapText(Safe(season.Description), 62, 3), 11, "0.78 0.74 0.82 1", TextAnchor.UpperLeft, FontRegular);
 
             var progressLabel = progress.IsCompleted ? "СЕЗОН ПРОЙДЕН" : "ПРОГРЕСС СЕЗОНА";
@@ -2179,17 +2226,17 @@ namespace Oxide.Plugins
             }
 
             var track = Content + ".BattlePass.Track";
-            AddPanel(ui, Content + ".Body", track, "0 0.005", "1 0.485", "0.031 0.008 0.141 0.50");
-            AddLabel(ui, track, track + ".Title", "0.005 0.865", "0.56 0.985", "НАГРАДЫ ПО ПОРЯДКУ", 15, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, track, track + ".Subtitle", "0.005 0.79", "0.70 0.875",
+            AddPanel(ui, Content + ".Body", track, "0 0.005", "1 0.42", "0 0 0 0");
+            AddLabel(ui, track, track + ".Title", "0.005 0.84", "0.56 0.985", "НАГРАДЫ ПО ПОРЯДКУ", 13, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, track, track + ".Subtitle", "0.005 0.75", "0.70 0.86",
                 tasks.Count + " ЭТАПОВ  •  ОСНОВНОЙ ПУТЬ И ДОПОЛНИТЕЛЬНЫЕ VIP-НАГРАДЫ", 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddLabel(ui, track, track + ".Page", "0.76 0.86", "0.86 0.98",
+            AddLabel(ui, track, track + ".Page", "0.76 0.84", "0.86 0.98",
                 view.BattlePassChecking ? "ПРОВЕРЯЕМ…" : (view.BattlePassPage + 1) + " / " + pageCount,
                 10, view.BattlePassChecking ? AccentWarm : TextSecondary, TextAnchor.MiddleCenter, FontBold);
-            AddButton(ui, track, track + ".Prev", "0.865 0.855", "0.925 0.985",
+            AddButton(ui, track, track + ".Prev", "0.865 0.84", "0.925 0.985",
                 view.BattlePassPage > 0 ? BgTertiary : "0.18 0.102 0.231 0.35",
                 "prostojmenu.ui battlepass_prev", "НАЗАД", 8, view.BattlePassPage > 0 ? TextMain : TextSecondary);
-            AddButton(ui, track, track + ".Next", "0.932 0.855", "0.995 0.985",
+            AddButton(ui, track, track + ".Next", "0.932 0.84", "0.995 0.985",
                 view.BattlePassPage + 1 < pageCount ? Accent : "0.18 0.102 0.231 0.35",
                 "prostojmenu.ui battlepass_next", "ДАЛЕЕ", 8, view.BattlePassPage + 1 < pageCount ? TextMain : TextSecondary);
 
@@ -2215,10 +2262,9 @@ namespace Oxide.Plugins
             var isCurrent = currentTaskId.HasValue && currentTaskId.Value == task.Id;
             var completed = status == "completed";
             var statusColor = completed ? Success : isCurrent ? AccentWarm : task.IsVipOnly ? Gold : TextSecondary;
-            var surface = task.IsVipOnly ? "0.149 0.106 0.125 0.94" : isCurrent ? "0.180 0.102 0.231 0.98" : "0.098 0.063 0.176 0.94";
+            var surface = isCurrent ? BgRaised : BgSecondary;
 
-            AddPanel(ui, parent, root, F(xMin, 0.035f), F(xMax, 0.765f), surface);
-            AddPanel(ui, root, root + ".Accent", "0 0.982", "1 1", statusColor);
+            AddPanel(ui, parent, root, F(xMin, 0.035f), F(xMax, 0.72f), surface);
             AddLabel(ui, root, root + ".Type", "0.055 0.86", "0.58 0.965", task.IsVipOnly ? "VIP" : "ЗАДАНИЕ", 8, statusColor, TextAnchor.MiddleLeft, FontBold);
             var position = task.Position > 0 ? task.Position : task.Sort;
             AddLabel(ui, root, root + ".Number", "0.60 0.84", "0.94 0.975", position.ToString("00", CultureInfo.InvariantCulture), 17, TextMain, TextAnchor.MiddleRight, FontBold);
@@ -2308,38 +2354,45 @@ namespace Oxide.Plugins
             var firstGridDay = month.AddDays(-mondayOffset);
             var ui = new CuiElementContainer();
 
-            AddLabel(ui, Content + ".Body", Content + ".Calendar.Title", "0 0.91", "0.55 1", MonthName(month.Month) + " " + month.Year, 25, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddPanel(ui, Content + ".Body", Content + ".Calendar.Toolbar", "0 0.895", "1 1", BgRaised);
+            AddLabel(ui, Content + ".Body", Content + ".Calendar.Title", "0.018 0.91", "0.55 0.99", MonthName(month.Month) + " " + month.Year, 20, TextMain, TextAnchor.MiddleLeft, FontBold);
             var calendarSubtitle = view.CalendarLoading
                 ? "Загружаем события месяца…"
                 : !string.IsNullOrWhiteSpace(view.CalendarError)
                     ? view.CalendarError + " • показаны доступные данные"
                     : "Календарь сервера • вайпы, обновления и выходные";
-            AddLabel(ui, Content + ".Body", Content + ".Calendar.Subtitle", "0 0.865", "0.82 0.92", calendarSubtitle, 11,
+            AddLabel(ui, Content + ".Body", Content + ".Calendar.Subtitle", "0.38 0.91", "0.86 0.985", calendarSubtitle, 9,
                 !string.IsNullOrWhiteSpace(view.CalendarError) ? Warning : TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddButton(ui, Content + ".Body", Content + ".Calendar.Prev", "0.88 0.91", "0.93 0.985", BgTertiary, "prostojmenu.ui calendar_prev", "‹", 23, TextMain);
-            AddButton(ui, Content + ".Body", Content + ".Calendar.Next", "0.945 0.91", "0.995 0.985", BgTertiary, "prostojmenu.ui calendar_next", "›", 23, TextMain);
+            AddButton(ui, Content + ".Body", Content + ".Calendar.Prev", "0.88 0.91", "0.93 0.985", BgSecondary, "prostojmenu.ui calendar_prev", "‹", 20, TextMain);
+            AddButton(ui, Content + ".Body", Content + ".Calendar.Next", "0.935 0.91", "0.985 0.985", BgSecondary, "prostojmenu.ui calendar_next", "›", 20, TextMain);
 
             var grid = Content + ".Calendar.Grid";
-            AddPanel(ui, Content + ".Body", grid, "0 0.085", "1 0.845", "0.031 0.008 0.141 0.56");
+            AddPanel(ui, Content + ".Body", grid, "0 0.075", "1 0.89", Border);
             var weekdays = new[] { "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС" };
-            const float gap = 0.007f;
-            var columnWidth = (1f - gap * 6f) / 7f;
+            // CUI anchors are normalized independently by axis. The calendar
+            // is roughly twice as wide as it is tall, so equal anchor gaps make
+            // horizontal separators half as many pixels and they disappear.
+            const float columnGap = 0.003f;
+            const float rowGap = 0.006f;
+            var columnWidth = (1f - columnGap * 6f) / 7f;
             for (var column = 0; column < 7; column++)
             {
-                var xMin = column * (columnWidth + gap);
+                var xMin = column * (columnWidth + columnGap);
                 AddLabel(ui, grid, grid + ".Weekday." + column, F(xMin, 0.91f), F(xMin + columnWidth, 0.99f), weekdays[column], 10,
                     column >= 5 ? "0.98 0.52 0.50 1" : TextSecondary, TextAnchor.MiddleCenter, FontBold);
             }
 
-            const float rowHeight = 0.139f;
+            const float daysTop = 0.895f;
+            const float daysBottom = 0.005f;
+            var rowHeight = (daysTop - daysBottom - rowGap * 5f) / 6f;
             for (var index = 0; index < 42; index++)
             {
                 var date = firstGridDay.AddDays(index);
                 var column = index % 7;
                 var row = index / 7;
-                var xMin = column * (columnWidth + gap);
+                var xMin = column * (columnWidth + columnGap);
                 var xMax = xMin + columnWidth;
-                var yMax = 0.89f - row * (rowHeight + gap);
+                var yMax = daysTop - row * (rowHeight + rowGap);
                 var yMin = yMax - rowHeight;
                 var root = grid + ".Day." + index;
                 var inMonth = date.Month == month.Month;
@@ -2373,23 +2426,22 @@ namespace Oxide.Plugins
                                 (hasHighlight && string.Equals(highlight, "weekend", StringComparison.OrdinalIgnoreCase));
                 var primary = dayEvents.FirstOrDefault();
                 var eventColor = primary != null ? EventColor(primary.Type) : Border;
-                var baseColor = inMonth ? "0.098 0.063 0.176 0.88" : "0.055 0.035 0.102 0.62";
-                if (isWeekend) baseColor = inMonth ? "0.145 0.052 0.118 0.90" : "0.075 0.035 0.082 0.62";
-                if (isHoliday) baseColor = inMonth ? "0.205 0.052 0.095 0.92" : "0.09 0.035 0.07 0.64";
-                if (primary != null) baseColor = EventSurface(primary.Type);
+                var isGlobalWipe = primary != null && string.Equals(primary.Type, "global_wipe", StringComparison.OrdinalIgnoreCase);
+                var baseColor = inMonth ? BgRaised : "0.330 0.314 0.290 0.42";
+                if (isWeekend) baseColor = inMonth ? "0.412 0.392 0.369 0.92" : "0.330 0.314 0.290 0.34";
+                if (isHoliday) baseColor = inMonth ? "0.455 0.420 0.385 0.94" : "0.330 0.314 0.290 0.34";
+                if (isGlobalWipe) baseColor = inMonth ? "0.560 0.205 0.105 0.94" : "0.430 0.165 0.095 0.62";
+                if (isToday) baseColor = "0.145 0.330 0.505 0.96";
 
                 AddPanel(ui, grid, root, F(xMin, yMin), F(xMax, yMax), baseColor);
-                // Use one pixel-perfect outline. Percentage-based thickness produced
-                // different horizontal and vertical widths and double borders when
-                // today also contained an event.
-                if (isToday) AddOutline(ui, root, root + ".TodayBorder", Accent, 2f);
-                else if (primary != null) AddOutline(ui, root, root + ".EventBorder", eventColor, 2f);
+                if (isToday || primary != null)
+                    AddPanel(ui, root, root + ".StateBand", "0 0.955", "1 1", isToday ? "0.302 0.702 0.961 1" : eventColor);
                 AddLabel(ui, root, root + ".Date", "0.08 0.58", "0.42 0.94", date.Day.ToString(CultureInfo.InvariantCulture), 13,
-                    isToday ? AccentWarm : isHoliday ? "1 0.45 0.43 1" : isWeekend ? "0.98 0.62 0.60 1" : inMonth ? TextMain : "0.42 0.40 0.46 1", TextAnchor.MiddleLeft, FontBold);
+                    isToday || isGlobalWipe ? TextMain : isHoliday ? "1 0.45 0.43 1" : isWeekend ? "0.98 0.62 0.60 1" : inMonth ? TextMain : "0.42 0.40 0.46 1", TextAnchor.MiddleLeft, FontBold);
 
                 if (primary != null)
                 {
-                    AddLabel(ui, root, root + ".Event", "0.08 0.08", "0.92 0.54", Safe(primary.Label).ToUpperInvariant(), 8, eventColor, TextAnchor.LowerLeft, FontBold);
+                    AddLabel(ui, root, root + ".Event", "0.08 0.08", "0.92 0.54", Safe(primary.Label).ToUpperInvariant(), 8, isGlobalWipe ? TextMain : eventColor, TextAnchor.LowerLeft, FontBold);
                     if (dayEvents.Count > 1)
                         AddLabel(ui, root, root + ".Count", "0.68 0.62", "0.92 0.92", "+" + (dayEvents.Count - 1), 9, TextSecondary, TextAnchor.MiddleRight, FontBold);
                 }
@@ -2402,9 +2454,9 @@ namespace Oxide.Plugins
         private void AddCalendarLegend(CuiElementContainer ui, string parent, string anchorMin, string anchorMax)
         {
             var root = Content + ".Calendar.Legend";
-            AddPanel(ui, parent, root, anchorMin, anchorMax, "0.031 0.008 0.141 0.44");
+            AddPanel(ui, parent, root, anchorMin, anchorMax, BgSecondary);
             var labels = new[] { "ГЛОБАЛЬНЫЙ ВАЙП", "ОБНОВЛЕНИЕ", "ВАЙП КАРТЫ", "ВЫХОДНОЙ", "СЕГОДНЯ" };
-            var colors = new[] { AccentWarm, "0.302 0.702 0.961 1", Success, "0.98 0.52 0.50 1", Accent };
+            var colors = new[] { EventColor("global_wipe"), "0.302 0.702 0.961 1", Success, "0.98 0.52 0.50 1", "0.302 0.702 0.961 1" };
             for (var i = 0; i < labels.Length; i++)
             {
                 var xMin = 0.015f + i * 0.197f;
@@ -2422,29 +2474,28 @@ namespace Oxide.Plugins
             AddSectionHeading(ui, "СТАТИСТИКА ИГРОКА", "Боевой профиль и прогресс текущего вайпа", "LIVE PROFILE");
 
             var portrait = Content + ".Stats.Portrait";
-            AddPanel(ui, Content + ".Body", portrait, "0 0.055", "0.295 0.855", "0.031 0.008 0.141 0.58");
-            AddPanel(ui, portrait, portrait + ".Glow", "0.02 0.02", "0.98 0.52", "0.922 0.047 0.208 0.13");
+            AddPanel(ui, Content + ".Body", portrait, "0 0.035", "0.278 0.90", BgSecondary);
             var playerProfile = snapshot != null ? snapshot.Player : null;
             var avatarSteamId = playerProfile != null && !string.IsNullOrWhiteSpace(playerProfile.SteamId)
                 ? playerProfile.SteamId
                 : player.UserIDString;
             var playerName = playerProfile != null ? Safe(playerProfile.Username).ToUpperInvariant() : "RUST PLAYER";
             var playerInitial = string.IsNullOrWhiteSpace(playerName) ? "?" : playerName.Substring(0, 1);
-            AddPanel(ui, portrait, portrait + ".AvatarFrame", "0.08 0.39", "0.92 0.90", Accent);
-            AddPanel(ui, portrait + ".AvatarFrame", portrait + ".AvatarSurface", "0.018 0.018", "0.982 0.982", BgTertiary);
+            AddSquarePanel(ui, portrait, portrait + ".AvatarFrame", "0.5 0.775", 30f, "0 0 0 0");
+            AddOffsetPanel(ui, portrait + ".AvatarFrame", portrait + ".AvatarSurface", "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
             if (!TryAddSteamAvatar(ui, portrait + ".AvatarSurface", portrait + ".AvatarImage", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
-                AddLabel(ui, portrait + ".AvatarSurface", portrait + ".AvatarInitial", "0 0", "1 1", playerInitial, 58, TextMain, TextAnchor.MiddleCenter, FontBold);
-            AddLabel(ui, portrait, portrait + ".Status", "0.07 0.26", "0.93 0.34", "АКТИВНЫЙ ИГРОК", 9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
-            AddPanel(ui, portrait, portrait + ".Info", "0.05 0.035", "0.95 0.225", "0.031 0.008 0.141 0.88");
-            AddLabel(ui, portrait + ".Info", portrait + ".Name", "0.06 0.67", "0.94 0.94", playerName, 10, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, portrait + ".Info", portrait + ".Meta", "0.06 0.36", "0.94 0.68",
-                "K/D  " + stats.Kd.ToString("0.00", CultureInfo.InvariantCulture) + "   •   ВРЕМЯ  " + FormatPlaytime(stats.Playtime),
-                9, AccentWarm, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, portrait + ".Info", portrait + ".Combat", "0.06 0.06", "0.94 0.38",
-                "УБ.  " + FormatNumber(stats.Kills) + "   •   СМ.  " + FormatNumber(stats.Deaths) + "   •   УЧЁНЫЕ  " + FormatNumber(stats.Scientists),
-                8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
+                AddLabel(ui, portrait + ".AvatarSurface", portrait + ".AvatarInitial", "0 0", "1 1", playerInitial, 29, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddOutline(ui, portrait + ".AvatarFrame", portrait + ".AvatarBorder", Border, 1f);
+            AddLabel(ui, portrait, portrait + ".Name", "0.08 0.625", "0.92 0.71", CompactText(playerName, 20), 13, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddLabel(ui, portrait, portrait + ".Status", "0.08 0.555", "0.92 0.63", "АКТИВНЫЙ ИГРОК", 9, AccentWarm, TextAnchor.MiddleCenter, FontBold);
+            AddStatsProfileRow(ui, portrait, portrait + ".Kd", "0.09 0.405", "0.91 0.515", "stat-kd.png?v=2",
+                "K/D", stats.Kd.ToString("0.00", CultureInfo.InvariantCulture), AccentWarm);
+            AddStatsProfileRow(ui, portrait, portrait + ".Playtime", "0.09 0.265", "0.91 0.375", "stat-time.png?v=2",
+                "ВРЕМЯ", FormatPlaytime(stats.Playtime), TextMain);
+            AddStatsProfileRow(ui, portrait, portrait + ".Combat", "0.09 0.125", "0.91 0.235", "stat-combat.png?v=2", "БОЙ",
+                FormatNumber(stats.Kills) + " / " + FormatNumber(stats.Deaths) + " / " + FormatNumber(stats.Scientists), TextMain);
 
-            AddPanel(ui, Content + ".Body", Content + ".Stats.Found", "0.315 0.61", "1 0.835", "0.031 0.008 0.141 0.64");
+            AddPanel(ui, Content + ".Body", Content + ".Stats.Found", "0.286 0.65", "1 0.90", BgSecondary);
             AddLabel(ui, Content + ".Stats.Found", Content + ".Stats.Found.Title", "0.025 0.75", "0.7 0.95", "НАЙДЕНО И СОБРАНО", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
             var foundByKey = (stats.Found ?? new List<LootMetric>())
                 .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Key))
@@ -2467,7 +2518,7 @@ namespace Oxide.Plugins
                 AddFoundMetricCard(ui, i, foundLabels[i], foundItem != null ? foundItem.Count : 0, foundImage);
             }
 
-            AddPanel(ui, Content + ".Body", Content + ".Stats.Loot", "0.315 0.285", "1 0.59", "0.031 0.008 0.141 0.64");
+            AddPanel(ui, Content + ".Body", Content + ".Stats.Loot", "0.286 0.285", "1 0.645", BgSecondary);
             AddLabel(ui, Content + ".Stats.Loot", Content + ".Stats.Loot.Title", "0.025 0.82", "0.7 0.97", "НАЙДЕНО КОНТЕЙНЕРОВ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
             var lootByKey = (stats.Loot ?? new List<LootMetric>())
                 .Where(item => item != null && !string.IsNullOrWhiteSpace(item.Key))
@@ -2495,7 +2546,7 @@ namespace Oxide.Plugins
                 AddLootMetricCard(ui, i % 4, i / 4, lootLabels[i], lootItem != null ? lootItem.Count : 0, lootImage, lootImageAspects[i]);
             }
 
-            AddPanel(ui, Content + ".Body", Content + ".Stats.Resources", "0.315 0.035", "1 0.285", "0.031 0.008 0.141 0.64");
+            AddPanel(ui, Content + ".Body", Content + ".Stats.Resources", "0.286 0.035", "1 0.28", BgSecondary);
             AddLabel(ui, Content + ".Stats.Resources", Content + ".Stats.Resources.Title", "0.025 0.74", "0.5 0.94", "ДОБЫТО РЕСУРСОВ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
             var resources = stats.Resources ?? new ResourceData();
             var values = new[] { resources.Wood, resources.Stones, resources.Metal, resources.Sulfur };
@@ -2503,10 +2554,10 @@ namespace Oxide.Plugins
             var images = new[] { ImageUrl("user-stats/wood.png"), ImageUrl("user-stats/stone.png"), ImageUrl("user-stats/iron_stone.png"), ImageUrl("user-stats/gold.png") };
             for (var i = 0; i < 4; i++)
             {
-                var xMin = 0.025f + i * 0.242f;
-                var xMax = xMin + 0.218f;
+                var xMin = 0.025f + i * 0.243f;
+                var xMax = xMin + 0.240f;
                 var barRoot = Content + ".Stats.Resources." + i;
-                AddPanel(ui, Content + ".Stats.Resources", barRoot, F(xMin, 0.12f), F(xMax, 0.69f), "0.18 0.102 0.231 0.62");
+                AddPanel(ui, Content + ".Stats.Resources", barRoot, F(xMin, 0.12f), F(xMax, 0.69f), BgRaised);
                 AddSquareRawImage(ui, barRoot, barRoot + ".Image", "0.20 0.5", 23f, images[i], "1 1 1 0.92");
                 AddLabel(ui, barRoot, barRoot + ".Label", "0.40 0.53", "0.96 0.9", labels[i], 9, TextSecondary, TextAnchor.MiddleLeft, FontBold);
                 AddLabel(ui, barRoot, barRoot + ".Value", "0.40 0.08", "0.96 0.58", FormatNumber(values[i]), 15, TextMain, TextAnchor.MiddleLeft, FontBold);
@@ -2514,13 +2565,23 @@ namespace Oxide.Plugins
             CuiHelper.AddUi(player, ui);
         }
 
+        private void AddStatsProfileRow(CuiElementContainer ui, string parent, string root, string anchorMin, string anchorMax,
+            string iconFile, string label, string value, string valueColor)
+        {
+            AddPanel(ui, parent, root, anchorMin, anchorMax, BgRaised);
+            AddSquareRawImage(ui, root, root + ".Icon", "0.09 0.5", 9f,
+                ImageUrl("rust-menu/icons/" + iconFile), valueColor);
+            AddLabel(ui, root, root + ".Label", "0.17 0", "0.48 1", label, 8, TextMain, TextAnchor.MiddleLeft, FontBold);
+            AddLabel(ui, root, root + ".Value", "0.48 0", "0.93 1", value, 9, valueColor, TextAnchor.MiddleRight, FontBold);
+        }
+
         private void AddFoundMetricCard(CuiElementContainer ui, int column, string label, int value, string imageUrl)
         {
             var panel = Content + ".Stats.Found";
-            var xMin = 0.025f + column * 0.242f;
-            var xMax = xMin + 0.218f;
+            var xMin = 0.025f + column * 0.243f;
+            var xMax = xMin + 0.240f;
             var root = panel + ".Item." + column;
-            AddPanel(ui, panel, root, F(xMin, 0.10f), F(xMax, 0.70f), "0.18 0.102 0.231 0.62");
+            AddPanel(ui, panel, root, F(xMin, 0.10f), F(xMax, 0.70f), BgRaised);
             AddSquareRawImage(ui, root, root + ".Image", "0.20 0.5", 24f, imageUrl, "1 1 1 0.94");
             AddLabel(ui, root, root + ".Value", "0.40 0.47", "0.95 0.90", FormatNumber(value), 15, TextMain, TextAnchor.MiddleLeft, FontBold);
             AddLabel(ui, root, root + ".Label", "0.40 0.08", "0.96 0.50", label, 8, TextSecondary, TextAnchor.MiddleLeft, FontBold);
@@ -2529,12 +2590,12 @@ namespace Oxide.Plugins
         private void AddLootMetricCard(CuiElementContainer ui, int column, int row, string label, int value, string imageUrl, float imageAspect)
         {
             var panel = Content + ".Stats.Loot";
-            var xMin = 0.025f + column * 0.242f;
-            var xMax = xMin + 0.218f;
+            var xMin = 0.025f + column * 0.243f;
+            var xMax = xMin + 0.240f;
             var yMax = 0.78f - row * 0.38f;
             var yMin = yMax - 0.32f;
             var root = panel + ".Item." + column + "." + row;
-            AddPanel(ui, panel, root, F(xMin, yMin), F(xMax, yMax), "0.18 0.102 0.231 0.62");
+            AddPanel(ui, panel, root, F(xMin, yMin), F(xMax, yMax), BgRaised);
             var imageHalfWidth = imageAspect >= 1f ? 22f : 22f * imageAspect;
             var imageHalfHeight = imageAspect >= 1f ? 22f / imageAspect : 22f;
             AddFittedRawImage(ui, root, root + ".Image", "0.19 0.5", imageHalfWidth, imageHalfHeight, imageUrl, "1 1 1 0.94");
@@ -2560,26 +2621,32 @@ namespace Oxide.Plugins
                 var items = category != null && category.Items != null ? category.Items : new List<LeaderboardRow>();
                 var column = categoryIndex % 4;
                 var gridRow = categoryIndex / 4;
-                var xMin = column * 0.253f;
-                var xMax = xMin + 0.241f;
-                var yMax = gridRow == 0 ? 0.82f : 0.40f;
-                var yMin = gridRow == 0 ? 0.42f : 0.02f;
+                const float horizontalMargin = 0.005f;
+                const float horizontalGap = 0.008f;
+                const float cardWidth = 0.239f;
+                var xMin = horizontalMargin + column * (cardWidth + horizontalGap);
+                var xMax = xMin + cardWidth;
+                // Give the heading a little more breathing room without changing
+                // card height or disturbing the second leaderboard row.
+                var yMax = gridRow == 0 ? 0.89f : 0.454f;
+                var yMin = gridRow == 0 ? 0.456f : 0.02f;
                 var card = Content + ".Top.Category." + keys[categoryIndex];
 
-                AddPanel(ui, Content + ".Body", card, F(xMin, yMin), F(xMax, yMax), "0.098 0.063 0.176 0.92");
-                AddPanel(ui, card, card + ".Glow", "0 0", "1 1", "0.922 0.047 0.208 0.035");
-                AddPanel(ui, card, card + ".Accent", "0 0.985", "1 1", accents[categoryIndex]);
+                AddPanel(ui, Content + ".Body", card, F(xMin, yMin), F(xMax, yMax), BgSecondary);
+                AddPanel(ui, card, card + ".Header", "0 0.78", "1 1", BgRaised);
+                AddOffsetPanel(ui, card + ".Header", card + ".Header.BottomBorder",
+                    "0 0", "1 0", "0 0", "0 1", Border);
                 var categoryLabel = category != null && !string.IsNullOrWhiteSpace(category.Label)
                     ? category.Label.ToUpperInvariant()
                     : labels[categoryIndex];
-                AddLabel(ui, card, card + ".Title", "0.055 0.79", "0.945 0.95", CompactText(categoryLabel, 24), 12, TextMain, TextAnchor.MiddleLeft, FontBold);
+                AddLabel(ui, card, card + ".Title", "0.055 0.79", "0.945 0.97", CompactText(categoryLabel, 24), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
 
                 for (var playerIndex = 0; playerIndex < 3; playerIndex++)
                 {
-                    var rowMax = 0.75f - playerIndex * 0.24f;
-                    var rowMin = rowMax - 0.22f;
+                    var rowMax = 0.775f - playerIndex * 0.255f;
+                    var rowMin = rowMax - 0.245f;
                     var rowRoot = card + ".Player." + playerIndex;
-                    AddPanel(ui, card, rowRoot, F(0.035f, rowMin), F(0.965f, rowMax), playerIndex % 2 == 0 ? "0.133 0.086 0.216 0.56" : "0.031 0.008 0.141 0.34");
+                    AddPanel(ui, card, rowRoot, F(0f, rowMin), F(1f, rowMax), playerIndex % 2 == 0 ? BgRaised : "0.330 0.314 0.290 0.48");
 
                     if (playerIndex >= items.Count)
                     {
@@ -2593,18 +2660,18 @@ namespace Oxide.Plugins
                     // Keep the portrait square at the reference canvas. The image
                     // uses a fixed two-pixel inset so every side of the frame has
                     // identical thickness after Rust rounds UI coordinates.
-                    AddPanel(ui, rowRoot, rowRoot + ".AvatarFrame", "0.045 0.205", "0.183 0.795", "0 0 0 0");
+                    AddSquarePanel(ui, rowRoot, rowRoot + ".AvatarFrame", "0.115 0.5", 15f, "0 0 0 0");
                     AddOffsetPanel(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarSurface",
                         "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
                     if (!TryAddSteamAvatar(ui, rowRoot + ".AvatarSurface", rowRoot + ".Avatar", "0 0", "1 1", row.SteamId, "1 1 1 1"))
                         AddLabel(ui, rowRoot + ".AvatarSurface", rowRoot + ".Initial", "0 0", "1 1", PlayerInitial(row.Username), 13, TextMain, TextAnchor.MiddleCenter, FontBold);
-                    AddOutline(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarBorder", medal, 2f);
+                    AddOutline(ui, rowRoot + ".AvatarFrame", rowRoot + ".AvatarBorder", medal, 1f);
                     if (row.Status == true)
                         AddStatusDot(ui, rowRoot + ".AvatarFrame", rowRoot + ".Online");
 
-                    AddLabel(ui, rowRoot, rowRoot + ".Place", "0.21 0.53", "0.30 0.91", "#" + position, 9, medal, TextAnchor.MiddleLeft, FontBold);
-                    AddLabel(ui, rowRoot, rowRoot + ".Name", "0.21 0.12", "0.69 0.58", CompactText(Safe(row.Username), 15), 11, TextMain, TextAnchor.MiddleLeft, FontBold);
-                    AddLabel(ui, rowRoot, rowRoot + ".Score", "0.70 0.16", "0.955 0.84", CompactText(Safe(row.Score), 12), 11, TextSecondary, TextAnchor.MiddleRight, FontBold);
+                    AddLabel(ui, rowRoot, rowRoot + ".Place", "0.245 0.53", "0.34 0.91", "#" + position, 9, medal, TextAnchor.MiddleLeft, FontBold);
+                    AddLabel(ui, rowRoot, rowRoot + ".Name", "0.245 0.12", "0.69 0.58", CompactText(Safe(row.Username), 14), 10, TextMain, TextAnchor.MiddleLeft, FontBold);
+                    AddLabel(ui, rowRoot, rowRoot + ".Score", "0.72 0.16", "0.945 0.84", CompactText(Safe(row.Score), 12), 11, TextSecondary, TextAnchor.MiddleRight, FontBold);
                 }
             }
 
@@ -2658,14 +2725,10 @@ namespace Oxide.Plugins
         {
             var ui = new CuiElementContainer();
             var support = view.Support;
-            var badge = view.SupportClosing ? "ЗАКРЫВАЕМ" : view.SupportSending ? "ОТПРАВЛЯЕМ" : view.SupportLoading ? "ОБНОВЛЯЕМ" : support != null && support.UnreadCount > 0
-                ? (support.UnreadCountCapped ? "99+ НОВЫХ" : support.UnreadCount + " НОВЫХ")
-                : "НА СВЯЗИ";
-            AddSectionHeading(ui, "ПОДДЕРЖКА", "Напишите администрации — ответ появится прямо в этом диалоге", badge);
 
             if (support == null)
             {
-                AddPanel(ui, Content + ".Body", Content + ".Support.State", "0 0.08", "1 0.82", BgSecondary);
+                AddPanel(ui, Content + ".Body", Content + ".Support.State", "0 0.08", "1 0.985", BgSecondary);
                 AddSquareRawImage(ui, Content + ".Support.State", Content + ".Support.State.Icon", "0.5 0.64", 27f,
                     ImageUrl("rust-menu/icons/nav-support.png"), "1 1 1 0.55");
                 AddLabel(ui, Content + ".Support.State", Content + ".Support.State.Title", "0.1 0.43", "0.9 0.58",
@@ -2680,7 +2743,7 @@ namespace Oxide.Plugins
 
             if (!support.Registered)
             {
-                AddPanel(ui, Content + ".Body", Content + ".Support.Account", "0 0.08", "1 0.82", BgSecondary);
+                AddPanel(ui, Content + ".Body", Content + ".Support.Account", "0 0.08", "1 0.985", BgSecondary);
                 AddPanel(ui, Content + ".Support.Account", Content + ".Support.Account.Icon", "0.445 0.59", "0.555 0.75", "1 0.38 0.204 0.13");
                 AddSupportIcon(ui, Content + ".Support.Account.Icon", AccentWarm);
                 AddLabel(ui, Content + ".Support.Account", Content + ".Support.Account.Title", "0.12 0.42", "0.88 0.57", "ПРИВЯЖИТЕ STEAM-ПРОФИЛЬ", 21, TextMain, TextAnchor.MiddleCenter, FontBold);
@@ -2691,7 +2754,7 @@ namespace Oxide.Plugins
             }
 
             var ticketsRoot = Content + ".Support.Tickets";
-            AddPanel(ui, Content + ".Body", ticketsRoot, "0 0.035", "0.27 0.82", "0.098 0.063 0.176 0.88");
+            AddPanel(ui, Content + ".Body", ticketsRoot, "0 0.035", "0.235 0.985", BgSecondary);
             AddLabel(ui, ticketsRoot, ticketsRoot + ".Title", "0.07 0.915", "0.93 0.98", "ОБРАЩЕНИЯ", 11, TextMain, TextAnchor.MiddleLeft, FontBold);
             AddLabel(ui, ticketsRoot, ticketsRoot + ".Hint", "0.07 0.86", "0.93 0.92", "ИСТОРИЯ ДИАЛОГОВ", 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
 
@@ -2704,9 +2767,8 @@ namespace Oxide.Plugins
                 var yMin = yMax - 0.098f;
                 var selected = !view.SupportComposeNew && support.ActiveTicket != null && support.ActiveTicket.Number == ticket.Number;
                 var row = ticketsRoot + ".Row." + i;
-                AddButton(ui, ticketsRoot, row, F(0.045f, yMin), F(0.955f, yMax), selected ? "1 0.38 0.204 0.12" : BgRaised,
+                AddButton(ui, ticketsRoot, row, F(0f, yMin), F(1f, yMax), selected ? BgRaised : "0 0 0 0",
                     "prostojmenu.ui support_ticket " + ticket.Number, string.Empty, 1, TextMain);
-                if (selected) AddPanel(ui, row, row + ".Active", "0 0", "0.018 1", AccentWarm);
                 AddLabel(ui, row, row + ".Number", "0.07 0.49", "0.7 0.88", "#" + ticket.Number, 12, TextMain, TextAnchor.MiddleLeft, FontBold);
                 AddLabel(ui, row, row + ".Meta", "0.07 0.12", "0.74 0.5",
                     string.Equals(ticket.Status, "open", StringComparison.OrdinalIgnoreCase) ? "ОТКРЫТО  •  " + FormatDate(ticket.UpdatedAt, "dd.MM") : "ЗАКРЫТО  •  " + FormatDate(ticket.UpdatedAt, "dd.MM"),
@@ -2719,8 +2781,10 @@ namespace Oxide.Plugins
             }
 
             var dialogRoot = Content + ".Support.Dialog";
-            AddPanel(ui, Content + ".Body", dialogRoot, "0.29 0.18", "1 0.82", "0.031 0.008 0.141 0.72");
-            AddPanel(ui, dialogRoot, dialogRoot + ".Header", "0 0.86", "1 1", BgSecondary);
+            AddPanel(ui, Content + ".Body", dialogRoot, "0.24 0.145", "1 0.985", BgSecondary);
+            // The dialog remains shorter than the ticket column because the
+            // composer sits below it; both columns now use the released header area.
+            AddPanel(ui, dialogRoot, dialogRoot + ".Header", "0 0.83", "1 1", BgSecondary);
             var active = view.SupportComposeNew ? null : support.ActiveTicket;
             AddLabel(ui, dialogRoot + ".Header", dialogRoot + ".Header.Title", "0.035 0.42", "0.68 0.88",
                 active != null ? "ОБРАЩЕНИЕ #" + active.Number : "НОВОЕ ОБРАЩЕНИЕ", 14, TextMain, TextAnchor.MiddleLeft, FontBold);
@@ -2743,24 +2807,26 @@ namespace Oxide.Plugins
             for (var i = 0; i < visibleMessages.Count; i++)
             {
                 var message = visibleMessages[i];
-                var yMax = 0.82f - i * 0.156f;
-                var yMin = yMax - 0.14f;
+                // Keep the first message aligned with the first ticket while the
+                // slightly wider rhythm uses the newly extended dialog height.
+                var yMax = 0.799f - i * 0.1605f;
+                var yMin = yMax - 0.15f;
                 var bubble = dialogRoot + ".Message." + i;
-                var xMin = message.IsOwn ? 0.21f : 0.10f;
-                var xMax = message.IsOwn ? 0.90f : 0.79f;
+                var xMin = 0.10f;
+                var xMax = 0.90f;
                 var avatarXMin = message.IsOwn ? 0.914f : 0.018f;
                 var avatarXMax = message.IsOwn ? 0.982f : 0.086f;
                 var avatarSteamId = message.SteamId;
                 if (message.IsOwn && string.IsNullOrWhiteSpace(avatarSteamId) && view.Snapshot != null && view.Snapshot.Player != null)
                     avatarSteamId = view.Snapshot.Player.SteamId;
-                AddPanel(ui, dialogRoot, bubble + ".AvatarFrame", F(avatarXMin, yMin + 0.008f), F(avatarXMax, yMax - 0.008f), "0 0 0 0");
+                AddSquarePanel(ui, dialogRoot, bubble + ".AvatarFrame",
+                    F((avatarXMin + avatarXMax) * 0.5f, (yMin + yMax) * 0.5f), 18f, "0 0 0 0");
                 AddOffsetPanel(ui, bubble + ".AvatarFrame", bubble + ".AvatarSurface",
                     "0 0", "1 1", "2 2", "-2 -2", BgTertiary);
                 if (!TryAddSteamAvatar(ui, bubble + ".AvatarSurface", bubble + ".Avatar", "0 0", "1 1", avatarSteamId, "1 1 1 1"))
                     AddLabel(ui, bubble + ".AvatarSurface", bubble + ".AvatarInitial", "0 0", "1 1", PlayerInitial(message.Author), 16, TextMain, TextAnchor.MiddleCenter, FontBold);
-                AddOutline(ui, bubble + ".AvatarFrame", bubble + ".AvatarBorder", message.IsOwn ? Accent : AccentWarm, 2f);
-                AddPanel(ui, dialogRoot, bubble, F(xMin, yMin), F(xMax, yMax), message.IsOwn ? "0.922 0.047 0.208 0.16" : BgRaised);
-                AddPanel(ui, bubble, bubble + ".Rail", message.IsOwn ? "0.988 0" : "0 0", message.IsOwn ? "1 1" : "0.012 1", message.IsOwn ? Accent : AccentWarm);
+                AddOutline(ui, bubble + ".AvatarFrame", bubble + ".AvatarBorder", Border, 1f);
+                AddPanel(ui, dialogRoot, bubble, F(xMin, yMin), F(xMax, yMax), message.IsOwn ? BgRaised : "0.330 0.314 0.290 0.48");
                 AddLabel(ui, bubble, bubble + ".Author", "0.035 0.68", "0.78 0.94", Safe(message.Author).ToUpperInvariant(), 9,
                     message.IsOwn ? AccentWarm : Success, TextAnchor.MiddleLeft, FontBold);
                 AddLabel(ui, bubble, bubble + ".Text", "0.035 0.18", "0.965 0.69", WrapText(CleanText(message.Message), 58, 2), 11, TextMain, TextAnchor.UpperLeft, FontRegular);
@@ -2777,7 +2843,7 @@ namespace Oxide.Plugins
             }
 
             var composer = Content + ".Support.Composer";
-            AddPanel(ui, Content + ".Body", composer, "0.29 0.035", "1 0.155", "0 0 0 0");
+            AddPanel(ui, Content + ".Body", composer, "0.24 0.035", "1 0.14", "0 0 0 0");
             var activeClosed = active != null && !string.Equals(active.Status, "open", StringComparison.OrdinalIgnoreCase);
             var hasOpenTicket = tickets.Any(ticket => string.Equals(ticket.Status, "open", StringComparison.OrdinalIgnoreCase));
             if (!support.CanWrite)
@@ -2793,9 +2859,8 @@ namespace Oxide.Plugins
             else
             {
                 AddPanel(ui, composer, composer + ".Field", "0 0", "0.78 1", BgSecondary);
-                AddPanel(ui, composer + ".Field", composer + ".Field.Rail", "0 0", "0.008 1", view.SupportSending ? Warning : AccentWarm);
                 AddLabel(ui, composer + ".Field", composer + ".Caption", "0.035 0.68", "0.94 0.96", "СООБЩЕНИЕ", 8,
-                    view.SupportSending ? Warning : AccentWarm, TextAnchor.MiddleLeft, FontBold);
+                    view.SupportSending ? Warning : TextSecondary, TextAnchor.MiddleLeft, FontBold);
                 AddInputField(ui, composer + ".Field", composer + ".Input", "0.03 0.04", "0.97 0.72", view.SupportDraft,
                     "prostojmenu.ui support_input", 500, 13, TextMain);
                 AddButton(ui, composer, composer + ".Send", "0.8 0", "1 1", view.SupportSending ? BgTertiary : Accent,
@@ -2810,23 +2875,23 @@ namespace Oxide.Plugins
 
         private void AddSectionHeading(CuiElementContainer ui, string title, string subtitle, string badge)
         {
-            AddLabel(ui, Content + ".Body", Content + ".Section.Title", "0 0.89", "0.65 1", title, 24, TextMain, TextAnchor.MiddleLeft, FontBold);
-            AddLabel(ui, Content + ".Body", Content + ".Section.Subtitle", "0 0.83", "0.72 0.9", subtitle, 11, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
-            AddPanel(ui, Content + ".Body", Content + ".Section.Badge", "0.78 0.9", "1 0.98", "1 0.38 0.204 0.12");
-            AddLabel(ui, Content + ".Section.Badge", Content + ".Section.Badge.Text", "0.05 0", "0.95 1", badge, 10, AccentWarm, TextAnchor.MiddleCenter, FontBold);
+            AddPanel(ui, Content + ".Body", Content + ".Section.Bar", "0 0.90", "1 1", BgRaised);
+            AddLabel(ui, Content + ".Body", Content + ".Section.Subtitle", "0.018 0.915", "0.76 0.985", subtitle, 9, TextSecondary, TextAnchor.MiddleLeft, FontRegular);
+            AddPanel(ui, Content + ".Body", Content + ".Section.Badge", "0.80 0.915", "0.985 0.985", BgSecondary);
+            AddLabel(ui, Content + ".Section.Badge", Content + ".Section.Badge.Text", "0.05 0", "0.95 1", badge, 8, TextMain, TextAnchor.MiddleCenter, FontBold);
         }
 
         private void RenderEmptyState(BasePlayer player, string title, string text, string color, string iconUrl = null)
         {
             var ui = new CuiElementContainer();
-            AddPanel(ui, Content + ".Body", Content + ".Empty", "0 0.05", "1 0.95", BgSecondary);
+            AddPanel(ui, Content + ".Body", Content + ".Empty", "0 0.05", "1 0.90", BgSecondary);
             var stateIconUrl = string.IsNullOrWhiteSpace(iconUrl)
                 ? ImageUrl("rust-menu/icons/action-refresh.png")
                 : iconUrl;
             AddSquareRawImage(ui, Content + ".Empty", Content + ".Empty.Icon", "0.5 0.65", 27f, stateIconUrl, "1 1 1 0.55");
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Title", "0.12 0.45", "0.88 0.61", title, 22, TextMain, TextAnchor.MiddleCenter, FontBold);
             AddLabel(ui, Content + ".Empty", Content + ".Empty.Text", "0.16 0.28", "0.84 0.47", CleanText(text), 13, TextSecondary, TextAnchor.UpperCenter, FontRegular);
-            AddButton(ui, Content + ".Empty", Content + ".Empty.Refresh", "0.39 0.13", "0.61 0.23", Accent, "prostojmenu.ui refresh", "ОБНОВИТЬ", 12, TextMain);
+            AddButton(ui, Content + ".Empty", Content + ".Empty.Refresh", "0.39 0.13", "0.61 0.23", BgRaised, "prostojmenu.ui refresh", "ОБНОВИТЬ", 12, TextMain);
             CuiHelper.AddUi(player, ui);
         }
 
@@ -2835,17 +2900,17 @@ namespace Oxide.Plugins
             CuiHelper.DestroyUi(player, Toast);
             var color = kind == "success" ? Success : kind == "error" ? Danger : AccentWarm;
             var ui = new CuiElementContainer();
-            AddPanel(ui, Frame, Toast, "0.35 0.025", "0.75 0.095", BgTertiary);
-            AddPanel(ui, Toast, Toast + ".Accent", "0 0", "0.012 1", color);
-            AddLabel(ui, Toast, Toast + ".Text", "0.05 0", "0.95 1", CleanText(message), 12, TextMain, TextAnchor.MiddleCenter, FontBold);
+            AddPanel(ui, Frame, Toast, "0.36 0.024", "0.76 0.088", BgRaised);
+            AddOutline(ui, Toast, Toast + ".Border", color, 1f);
+            AddLabel(ui, Toast, Toast + ".Text", "0.05 0", "0.95 1", CleanText(message), 11, TextMain, TextAnchor.MiddleCenter, FontBold);
             CuiHelper.AddUi(player, ui);
             timer.Once(3.5f, () => { if (player != null && player.IsConnected) CuiHelper.DestroyUi(player, Toast); });
         }
 
         private void PreloadMenuImages()
         {
-            EnsureImage(settings.BackgroundImageUrl, true);
-            EnsureImage(BrandLogoUrl(), true);
+            // The shell is intentionally artwork-free; avoid downloading the
+            // retired full-window background on every fresh installation.
             EnsureImage(ImageUrl("rust-menu/coin-hd.png"));
             EnsureImage(ImageUrl("rust-menu/icons/nav-cart.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-shop.png?v=2"), true);
@@ -2858,6 +2923,9 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/nav-skindrops.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/nav-notifications.png"), true);
             EnsureImage(ImageUrl("rust-menu/icons/action-refresh.png"));
+            EnsureImage(ImageUrl("rust-menu/icons/stat-kd.png?v=2"));
+            EnsureImage(ImageUrl("rust-menu/icons/stat-time.png?v=2"));
+            EnsureImage(ImageUrl("rust-menu/icons/stat-combat.png?v=2"));
             EnsureImage(StoreCartImageUrl);
             EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));
             EnsureImage(ImageUrl("user-stats/wood.png"));
@@ -3017,10 +3085,38 @@ namespace Oxide.Plugins
         private void FinishImageDownload(CachedImage image, bool loaded)
         {
             if (image != null)
+            {
                 image.Status = loaded ? CachedImageStatus.Loaded : CachedImageStatus.Failed;
+                if (loaded)
+                {
+                    image.FailureCount = 0;
+                    image.RetryAtUtc = DateTime.MinValue;
+                }
+                else
+                {
+                    image.FailureCount++;
+                    var retryDelay = Mathf.Min(60f, 2f * Mathf.Pow(2f, Math.Min(5, image.FailureCount - 1)));
+                    image.RetryAtUtc = DateTime.UtcNow.AddSeconds(retryDelay);
+                    if (!imageCacheUnloading && image.FailureCount <= MaxAutomaticImageRetries)
+                    {
+                        timer.Once(retryDelay, () => RetryImage(image));
+                    }
+                }
+            }
             activeImageDownloads = Math.Max(0, activeImageDownloads - 1);
 
             if (loaded) ScheduleImageRefresh(image != null && image.RequiresShellRefresh);
+            PumpImageQueue();
+        }
+
+        private void RetryImage(CachedImage image)
+        {
+            if (imageCacheUnloading || image == null || image.Status != CachedImageStatus.Failed ||
+                DateTime.UtcNow < image.RetryAtUtc)
+                return;
+
+            image.Status = CachedImageStatus.Pending;
+            pendingImages.Enqueue(image);
             PumpImageQueue();
         }
 
@@ -3181,11 +3277,6 @@ namespace Oxide.Plugins
             return settings.ImagesBaseUrl + "/" + (relativePath ?? string.Empty).TrimStart('/');
         }
 
-        private string BrandLogoUrl()
-        {
-            return useMoscowVisualTheme ? MoscowLogoImageUrl : ProstojLogoImageUrl;
-        }
-
         private string BattlePassImageUrl(string value)
         {
             value = (value ?? string.Empty).Trim();
@@ -3246,10 +3337,18 @@ namespace Oxide.Plugins
             }, parent, name, name);
         }
 
-        private void AddRawImage(CuiElementContainer container, string parent, string name, string anchorMin, string anchorMax, string url, string color)
+        private static void AddSquarePanel(CuiElementContainer container, string parent, string name,
+            string centerAnchor, float halfSizePixels, string color)
+        {
+            var half = Mathf.Max(1f, halfSizePixels).ToString("0.###", CultureInfo.InvariantCulture);
+            AddOffsetPanel(container, parent, name, centerAnchor, centerAnchor,
+                "-" + half + " -" + half, half + " " + half, color);
+        }
+
+        private bool AddRawImage(CuiElementContainer container, string parent, string name, string anchorMin, string anchorMax, string url, string color)
         {
             var png = ResolveImage(url);
-            if (string.IsNullOrWhiteSpace(png)) return;
+            if (string.IsNullOrWhiteSpace(png)) return false;
             container.Add(new CuiElement
             {
                 Name = name,
@@ -3260,6 +3359,7 @@ namespace Oxide.Plugins
                     new CuiRectTransformComponent { AnchorMin = anchorMin, AnchorMax = anchorMax }
                 }
             });
+            return true;
         }
 
         private static bool TryAddSteamAvatar(CuiElementContainer container, string parent, string name,
@@ -3442,55 +3542,36 @@ namespace Oxide.Plugins
 
         private static string ThemeColor(string color)
         {
-            if (!useMoscowVisualTheme || string.IsNullOrWhiteSpace(color)) return color;
+            if (string.IsNullOrWhiteSpace(color)) return color;
 
-            switch (color)
-            {
-                case BgMain: return "0.012 0.047 0.035 0.985";
-                case BgSecondary: return "0.027 0.082 0.063 1";
-                case BgTertiary: return "0.047 0.133 0.102 1";
-                case BgRaised: return "0.035 0.106 0.080 1";
-                case TextMain: return "0.902 0.945 0.929 1";
-                case TextSecondary: return "0.545 0.620 0.588 1";
-                case Border: return "0.133 0.286 0.231 1";
-                case Accent: return "0.000 0.718 0.494 1";
-                case AccentWarm: return "0.196 0.678 0.537 1";
-                case Success: return "0.216 0.820 0.588 1";
-                case FrameBorder: return "0.145 0.510 0.396 0.82";
-                case "0.012 0.008 0.035 0.86": return "0.004 0.020 0.015 0.88";
-                case "0.025 0.008 0.09 0.42": return "0.004 0.045 0.032 0.46";
-                case "0.098 0.063 0.176 0.94": return "0.027 0.082 0.063 0.94";
-                case "0.098 0.063 0.176 0.92": return "0.027 0.082 0.063 0.92";
-                case "0.098 0.063 0.176 0.90": return "0.027 0.082 0.063 0.90";
-                case "0.098 0.063 0.176 0.88": return "0.027 0.082 0.063 0.88";
-                case "0.031 0.008 0.141 0.88": return "0.012 0.047 0.035 0.88";
-                case "0.031 0.008 0.141 0.86": return "0.012 0.047 0.035 0.86";
-                case "0.031 0.008 0.141 0.73": return "0.012 0.047 0.035 0.76";
-                case "0.031 0.008 0.141 0.72": return "0.012 0.047 0.035 0.74";
-                case "0.031 0.008 0.141 0.68": return "0.012 0.047 0.035 0.70";
-                case "0.031 0.008 0.141 0.64": return "0.012 0.047 0.035 0.66";
-                case "0.031 0.008 0.141 0.58": return "0.012 0.047 0.035 0.60";
-                case "0.031 0.008 0.141 0.56": return "0.012 0.047 0.035 0.58";
-                case "0.031 0.008 0.141 0.50": return "0.012 0.047 0.035 0.52";
-                case "0.031 0.008 0.141 0.46": return "0.012 0.047 0.035 0.48";
-                case "0.031 0.008 0.141 0.44": return "0.012 0.047 0.035 0.46";
-                case "0.031 0.008 0.141 0.34": return "0.012 0.047 0.035 0.36";
-                case "0.18 0.102 0.231 0.98": return "0.047 0.133 0.102 0.98";
-                case "0.18 0.102 0.231 0.72": return "0.047 0.133 0.102 0.72";
-                case "0.18 0.102 0.231 0.62": return "0.047 0.133 0.102 0.62";
-                case "0.18 0.102 0.231 0.35": return "0.047 0.133 0.102 0.38";
-                case "0.133 0.086 0.216 0.56": return "0.035 0.106 0.080 0.56";
-                case "1 0.38 0.204 0.13": return "0.196 0.678 0.537 0.15";
-                case "1 0.38 0.204 0.12": return "0.196 0.678 0.537 0.14";
-                case "1 0.38 0.204 0.10": return "0.196 0.678 0.537 0.12";
-                case "0.922 0.047 0.208 0.16": return "0.000 0.718 0.494 0.16";
-                case "0.922 0.047 0.208 0.13": return "0.000 0.718 0.494 0.13";
-                case "0.922 0.047 0.208 0.12": return "0.000 0.718 0.494 0.12";
-                case "0.922 0.047 0.208 0.035": return "0.000 0.718 0.494 0.045";
-                case "0.72 0.69 0.75 1": return "0.64 0.71 0.68 1";
-                case "0.62 0.59 0.66 1": return "0.48 0.61 0.55 1";
-                default: return color;
-            }
+            if (useMoscowVisualTheme && StartsWithRgb(color, "0.860 0.220 0.330"))
+                return ReplaceRgb(color, "0.000 0.718 0.494");
+
+            // Normalize legacy purple surfaces at the primitive boundary. This
+            // keeps all existing screens and modules on the same neutral theme
+            // without duplicating style decisions throughout their layouts.
+            if (StartsWithRgb(color, "0.031 0.008 0.141")) return ReplaceRgb(color, "0.259 0.247 0.220");
+            if (StartsWithRgb(color, "0.098 0.063 0.176")) return ReplaceRgb(color, "0.259 0.247 0.220");
+            if (StartsWithRgb(color, "0.18 0.102 0.231") || StartsWithRgb(color, "0.180 0.102 0.231")) return ReplaceRgb(color, "0.330 0.314 0.290");
+            if (StartsWithRgb(color, "0.133 0.086 0.216")) return ReplaceRgb(color, "0.412 0.392 0.369");
+            if (StartsWithRgb(color, "1 0.38 0.204")) return ReplaceRgb(color, "0.520 0.495 0.455");
+            if (StartsWithRgb(color, "0.922 0.047 0.208")) return ReplaceRgb(color, "0.412 0.392 0.369");
+            if (color == "0.925 0.894 0.953 1") return ThemeColor(TextMain);
+            if (color == "0.561 0.561 0.561 1") return ThemeColor(TextSecondary);
+            if (color == "0.72 0.69 0.75 1") return TextMain;
+            if (color == "0.62 0.59 0.66 1") return TextSecondary;
+            return color;
+        }
+
+        private static bool StartsWithRgb(string color, string rgb)
+        {
+            return color.StartsWith(rgb + " ", StringComparison.Ordinal);
+        }
+
+        private static string ReplaceRgb(string color, string rgb)
+        {
+            var alphaIndex = color.LastIndexOf(' ');
+            return alphaIndex > 0 ? rgb + color.Substring(alphaIndex) : color;
         }
 
         private static string F(float x, float y) => x.ToString("0.####", CultureInfo.InvariantCulture) + " " + y.ToString("0.####", CultureInfo.InvariantCulture);
@@ -3552,7 +3633,7 @@ namespace Oxide.Plugins
         {
             switch ((type ?? string.Empty).ToLowerInvariant())
             {
-                case "global_wipe": return AccentWarm;
+                case "global_wipe": return "0.960 0.340 0.180 1";
                 case "game_update": return "0.302 0.702 0.961 1";
                 case "map_wipe": return Success;
                 default: return "0.718 0.580 0.957 1";
