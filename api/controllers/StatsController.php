@@ -59,6 +59,10 @@ class StatsController extends WebController
             'PLUGIN_STATS_INGEST_SECRET'
         );
         $payload = $this->validateStatsPayload($serverTag, $rawBody);
+        $normalizedBody = json_encode(
+            $payload,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+        );
         $batchId = isset($payload['batch_id']) ? strtolower((string)$payload['batch_id']) : null;
         $dedupeKey = $batchId === null ? null : 'stats-ingest:' . hash('sha256', $serverTag . ':' . $batchId);
 
@@ -69,7 +73,7 @@ class StatsController extends WebController
 
         try {
             Yii::$app->queueStats->push(new SaveStatsJob([
-                'data' => $rawBody,
+                'data' => $normalizedBody,
                 'serverTag' => $serverTag,
                 'batchId' => $batchId,
             ]));
@@ -209,17 +213,28 @@ class StatsController extends WebController
             throw new BadRequestHttpException('Invalid batch_id');
         }
 
-        foreach ($payload['users'] as $steamId => $metrics) {
+        foreach ($payload['users'] as $steamId => &$metrics) {
             if (!preg_match('/^\d{17}$/', (string)$steamId) || !is_array($metrics) || count($metrics) > 1000) {
                 throw new BadRequestHttpException('Invalid user statistics');
             }
+            $normalizedMetrics = [];
             foreach ($metrics as $key => $value) {
-                if (!is_string($key) || !preg_match('/^[a-zA-Z0-9_.-]{1,128}$/', $key)
+                if (!is_string($key)) {
+                    throw new BadRequestHttpException('Invalid statistics metric');
+                }
+                $normalizedKey = str_replace(' ', '_', $key);
+                if (!preg_match('/^[a-zA-Z0-9_.-]{1,128}$/', $normalizedKey)
                     || !is_int($value) || $value < 0 || $value > 2147483647) {
                     throw new BadRequestHttpException('Invalid statistics metric');
                 }
+                $normalizedMetrics[$normalizedKey] = min(
+                    2147483647,
+                    ($normalizedMetrics[$normalizedKey] ?? 0) + $value
+                );
             }
+            $metrics = $normalizedMetrics;
         }
+        unset($metrics);
 
         foreach ($payload['kills'] as $event) {
             if (!is_array($event)
