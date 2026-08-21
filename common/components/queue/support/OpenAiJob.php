@@ -104,7 +104,8 @@ class OpenAiJob extends BaseObject implements JobInterface
             if ($isReplay) {
                 return;
             }
-            $server = $chat->user->getCurrentServer();
+            // Сервер, выбранный в самом тикете, точнее текущего сервера игрока.
+            $server = $chat->server ?: $chat->user->getCurrentServer();
 
             // Один вызов API: повтор на пустом ответе только жег токены (GPT-5 reasoning),
             // не меняя результат.
@@ -114,7 +115,10 @@ class OpenAiJob extends BaseObject implements JobInterface
                 $server ? (string)$server->monitoring_name : '',
                 $chatHistory,
                 $chat->getNumber(),
-                $chat->user
+                $chat->user,
+                false,
+                [],
+                $server ? (string)$server->tag : ($chat->server_tag ?: null)
             );
 
             if (!$this->hasVisibleText($candidate)) {
@@ -128,8 +132,9 @@ class OpenAiJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $reply = trim((string)$candidate);
-            if ($reply === 'unknown') {
+            $parsedReply = self::parseReply((string)$candidate);
+            $reply = $parsedReply['message'];
+            if (!$this->hasVisibleText($reply)) {
                 $this->handOffToStaff($chat, 'OpenAI requested staff handoff');
                 return;
             }
@@ -168,6 +173,10 @@ class OpenAiJob extends BaseObject implements JobInterface
                 Yii::$app->telegramChats->sendMessage('Update chat: ' . $ex->getFile() . ':' . $ex->getLine() . ' ' . $ex->getMessage());
             }
 
+            if ($parsedReply['handoff']) {
+                $this->handOffToStaff($chat, 'OpenAI marked reply for staff handoff');
+            }
+
         } catch (\Throwable $e) {
             if (isset($chat) && $chat instanceof Support) {
                 $this->handOffToStaff($chat, 'Unexpected OpenAiJob error: ' . $e->getMessage());
@@ -186,6 +195,29 @@ class OpenAiJob extends BaseObject implements JobInterface
         $plainText = html_entity_decode(strip_tags($plainText), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         return trim($plainText) !== '';
+    }
+
+    /**
+     * Удаляет служебный маркер из видимого ответа и сообщает, надо ли отключить бота.
+     * Legacy-ответ unknown тоже остаётся поддержанным.
+     *
+     * @return array{message:string,handoff:bool}
+     */
+    public static function parseReply(string $reply): array
+    {
+        $reply = trim($reply);
+        if (strcasecmp(trim(strip_tags($reply)), 'unknown') === 0) {
+            return ['message' => '', 'handoff' => true];
+        }
+
+        $markerPattern = '/\[\[\s*STAFF_HANDOFF\s*\]\]/iu';
+        $handoff = preg_match($markerPattern, $reply) === 1;
+        $message = preg_replace($markerPattern, '', $reply);
+
+        return [
+            'message' => trim(is_string($message) ? $message : $reply),
+            'handoff' => $handoff,
+        ];
     }
 
     private function handOffToStaff(Support $chat, string $reason): void

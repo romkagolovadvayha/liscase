@@ -1499,7 +1499,7 @@ class User extends ActiveRecord implements IdentityInterface
         if (!empty($this->telegram_chat_id) && YII_ENV_PROD) {
             $tgMessage = "Поздравляем!";
             $tgMessage .= PHP_EOL . "Вы выиграли скин <b>{$skinName}</b> (<b>{$price} RUB</b>)";
-            $tgMessage .= PHP_EOL . "Получить скин нужно по этой ссылке <a href=\"https://" . Yii::$app->settings->get('site_domain') . "/user/skins\">" . Yii::$app->settings->get('site_domain') . "/user/skins</a>";
+            $tgMessage .= PHP_EOL . "Выбрать и вывести скин можно здесь: <a href=\"https://" . Yii::$app->settings->get('site_domain') . "/market\">" . Yii::$app->settings->get('site_domain') . "/market</a>";
             $tgMessage .= PHP_EOL . "Вы можете копить или забрать скин прямо сейчас.";
             Yii::$app->personalBotTelegram->sendMessage($this->telegram_chat_id, $tgMessage);
         }

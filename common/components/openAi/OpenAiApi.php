@@ -344,7 +344,7 @@ class OpenAiApi
      */
     public function getDescriptionImage($name, $keywords)
     {
-        $openAi = new OpenAi('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');
+        $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo',
             'messages' => [
@@ -377,7 +377,7 @@ class OpenAiApi
      */
     public function getUsers()
     {
-        $openAi = new OpenAi('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');
+        $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo',
             'messages' => [
