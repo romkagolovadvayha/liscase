@@ -112,7 +112,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 ->andWhere(['hash' => $mapId])
                 ->one();
 
-            if ($existingMap) {
+            if ($existingMap && !empty($existingMap->image) && !empty($existingMap->image_preview)) {
                 $skippedExisting++;
                 continue;
             }
@@ -220,6 +220,8 @@ class MapGenerateJob extends BaseObject implements JobInterface
         // Обрабатываем изображение
         $imageIconUrl = $mapData['imageIconUrl'] ?? null;
         if (!empty($imageIconUrl)) {
+            $downloadedPath = null;
+            $tempPreviewPath = null;
             try {
                 $fileIconName = $mapData['id'] . '.jpg';
                 $relativePreviewPath = '/uploads/maps/' . $mapData['id'] . '_200x200.jpg';
@@ -230,7 +232,9 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 // Создаем превью во временном файле
                 $tempDir = sys_get_temp_dir();
                 $tempPreviewPath = $tempDir . '/' . uniqid('map_preview_') . '.jpg';
-                DropImage::resizeImage($downloadedPath, $tempPreviewPath, 200);
+                if (!DropImage::resizeImage($downloadedPath, $tempPreviewPath, 200)) {
+                    throw new \RuntimeException('Failed to create map preview');
+                }
                 
                 // Загружаем оригинал в S3
                 $s3Api = Yii::$app->s3Api;
@@ -243,10 +247,6 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 $previewContent = file_exists($tempPreviewPath) ? file_get_contents($tempPreviewPath) : null;
                 $s3ResultPreview = $previewContent ? $s3Api->putFile($s3KeyPreview, $previewContent, 'image/jpeg') : false;
                 
-                // Удаляем временные файлы
-                @unlink($downloadedPath);
-                @unlink($tempPreviewPath);
-                
                 if ($s3ResultOriginal !== false) {
                     $model->image = '/uploads/maps/' . $fileIconName;
                 }
@@ -258,6 +258,13 @@ class MapGenerateJob extends BaseObject implements JobInterface
                     'MapGenerateJob failed to process image: ' . $throwable->getMessage(),
                     __METHOD__
                 );
+            } finally {
+                if ($downloadedPath && is_file($downloadedPath)) {
+                    @unlink($downloadedPath);
+                }
+                if ($tempPreviewPath && is_file($tempPreviewPath)) {
+                    @unlink($tempPreviewPath);
+                }
             }
         }
 

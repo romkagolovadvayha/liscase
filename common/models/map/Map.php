@@ -459,19 +459,76 @@ class Map extends \yii\db\ActiveRecord
     }
 
     public static function upload($imageUrl, $filename, $depecate = null) {
-        $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
-        $image = (clone Yii::$app->curl)
-            ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
-            ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
-            ->get($imageUrl);
-        Map::watermark($image, $filePath);
+        if (!filter_var($imageUrl, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $imageUrl)) {
+            throw new \InvalidArgumentException('Map image URL must be a valid HTTP(S) URL');
+        }
 
-        return $filePath;
+        $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
+        $attempts = [
+            'direct' => [],
+            'proxy' => [
+                CURLOPT_PROXY => '154.196.30.165:62742',
+                CURLOPT_PROXYUSERPWD => 'XyQREbm5:AZ1zUkyc',
+            ],
+        ];
+        $failures = [];
+
+        foreach ($attempts as $attemptName => $options) {
+            $curl = (clone Yii::$app->curl)
+                ->setHeader('Accept', 'image/jpeg,image/png;q=0.9')
+                ->setOption(CURLOPT_FOLLOWLOCATION, true)
+                ->setOption(CURLOPT_MAXREDIRS, 5)
+                ->setOption(CURLOPT_CONNECTTIMEOUT, 10)
+                ->setOption(CURLOPT_TIMEOUT, 30)
+                ->setOption(CURLOPT_ENCODING, '');
+
+            foreach ($options as $option => $value) {
+                $curl->setOption($option, $value);
+            }
+
+            try {
+                $image = $curl->get($imageUrl);
+            } catch (\Throwable $throwable) {
+                $failures[] = $attemptName . ': request failed (' . $throwable->getMessage() . ')';
+                continue;
+            }
+
+            $statusCode = (int)$curl->responseCode;
+            $contentType = $curl->responseType ?: 'unknown';
+            $contentLength = is_string($image) ? strlen($image) : 0;
+            $imageInfo = $contentLength > 0 ? @getimagesizefromstring($image) : false;
+
+            if ($statusCode < 200 || $statusCode >= 300 || $imageInfo === false) {
+                $failures[] = sprintf(
+                    '%s: HTTP %s, content-type %s, %d bytes',
+                    $attemptName,
+                    $curl->responseCode ?: 'unknown',
+                    $contentType,
+                    $contentLength
+                );
+                continue;
+            }
+
+            try {
+                Map::watermark($image, $filePath);
+                return $filePath;
+            } catch (\Throwable $throwable) {
+                $failures[] = $attemptName . ': image processing failed (' . $throwable->getMessage() . ')';
+            }
+        }
+
+        $host = parse_url($imageUrl, PHP_URL_HOST) ?: 'unknown host';
+        throw new \RuntimeException(
+            'Unable to download a supported map image from ' . $host . '. Attempts: ' . implode('; ', $failures)
+        );
     }
 
     public static function watermark($image, $filePath) {
         // Загружаем основное изображение
-        $background = imagecreatefromstring($image);
+        $background = is_string($image) && $image !== '' ? @imagecreatefromstring($image) : false;
+        if ($background === false) {
+            throw new \RuntimeException('Downloaded map image is empty, invalid, or unsupported by GD');
+        }
 
         // Получаем путь к watermark изображению
         $watermarkPath = Yii::$app->settings->get('design_watemark');

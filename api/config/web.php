@@ -437,6 +437,7 @@ $config = [
                     'class' => 'common\components\log\TelegramSenderErrors',
                     'levels' => ['error'],
                     'except'  => [
+                        'yii\web\HttpException:401',
                         'yii\web\HttpException:403',
                         'yii\web\HttpException:404',
                         'yii\web\HttpException:400',
