@@ -6,6 +6,9 @@ using Rust;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using Rust.Ai.Gen2;
 
 using Oxide.Core.Libraries;
@@ -16,7 +19,6 @@ using Network;
 using Time = UnityEngine.Time;
 using UnityEngine;
 using Object = System.Object;
-using System.Collections;
 using ConVar;
 using Net = Network.Net;
 using System.Text.RegularExpressions;
@@ -24,7 +26,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Oxide.Plugins
 {
-    [Info("Expert Statistics", "prostoj.store", "1.1.0")]
+    [Info("Expert Statistics", "prostoj.store", "1.2.0")]
     [Description("Плагин, синхронизирует статистику игроков с сайтом.")]
     public class ExpertStatistics : CovalencePlugin
     {
@@ -34,13 +36,15 @@ namespace Oxide.Plugins
         {
             [JsonProperty(PropertyName = "Server Tag")] public string server_tag;
             [JsonProperty(PropertyName = "API Base URL")] public string api_base_url;
+            [JsonProperty(PropertyName = "Ingest Secret")] public string ingest_secret;
 
             public static Configuration DefaultConfig()
             {
                 return new Configuration
                 {
                     server_tag = "pve",
-                    api_base_url = "https://api.prostoj.store"
+                    api_base_url = "https://api.prostoj.store",
+                    ingest_secret = ""
                 };
             }
         }
@@ -56,7 +60,7 @@ namespace Oxide.Plugins
                 if (config == null) LoadDefaultConfig();
                 SaveConfig();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 LoadDefaultConfig();
                 if (Debug)
@@ -102,6 +106,14 @@ namespace Oxide.Plugins
 
                                 if (apiConfig != null)
                                 {
+                                    // The secret is local-only unless the config service explicitly
+                                    // supplies it. Do not erase it when an older API response omits it.
+                                    if (String.IsNullOrWhiteSpace(apiConfig.ingest_secret))
+                                        apiConfig.ingest_secret = config.ingest_secret;
+                                    if (String.IsNullOrWhiteSpace(apiConfig.server_tag))
+                                        apiConfig.server_tag = config.server_tag;
+                                    if (String.IsNullOrWhiteSpace(apiConfig.api_base_url))
+                                        apiConfig.api_base_url = config.api_base_url;
                                     config = apiConfig;
                                     NextTick(SaveConfig);
                                     return;
@@ -135,6 +147,7 @@ namespace Oxide.Plugins
 
         public class Kill
         {
+            public string event_id = Guid.NewGuid().ToString("N");
             public string steam_id = "";
             public string type = "";
             public string dead = "";
@@ -146,6 +159,7 @@ namespace Oxide.Plugins
         };
         public class Team
         {
+            public string event_id = Guid.NewGuid().ToString("N");
             public string steam_id = "";
             public string type = "";
             public string team_author = "";
@@ -153,6 +167,7 @@ namespace Oxide.Plugins
         };
         public class Report
         {
+            public string event_id = Guid.NewGuid().ToString("N");
             public string steam_id = "";
             public string recepient_steam_id = "";
             public string reason = "";
@@ -160,6 +175,7 @@ namespace Oxide.Plugins
         };
         public class Chat
         {
+            public string event_id = Guid.NewGuid().ToString("N");
             public string steam_id = "";
             public string message = "";
             public string created_at = "";
@@ -181,10 +197,37 @@ namespace Oxide.Plugins
         {
             public List<Chat> Chats = new List<Chat>();
         }
+
+        private class ServerSnapshot
+        {
+            public int online;
+            public int join;
+            public int queue;
+        }
+
+        private class StatsBatch
+        {
+            public string batch_id;
+            public Dictionary<string, Dictionary<string, int>> users = new Dictionary<string, Dictionary<string, int>>();
+            public List<Kill> kills = new List<Kill>();
+            public List<Team> teams = new List<Team>();
+            public List<Report> reports = new List<Report>();
+            public List<Chat> chats = new List<Chat>();
+            public ServerSnapshot server = new ServerSnapshot();
+        }
+
+        private class PersistedDeliveryState
+        {
+            public StatsBatch pending;
+            public Dictionary<string, Dictionary<string, int>> users = new Dictionary<string, Dictionary<string, int>>();
+            public List<Kill> kills = new List<Kill>();
+            public List<Team> teams = new List<Team>();
+            public List<Report> reports = new List<Report>();
+            public List<Chat> chats = new List<Chat>();
+        }
         #endregion
 
         #region Init
-        Dictionary<string, int> _item;
         DamageType[] suicideDamageTypes = { DamageType.Suicide, DamageType.Radiation, DamageType.RadiationExposure, DamageType.Poison, DamageType.Hunger, DamageType.Thirst, DamageType.Fall, DamageType.Drowned };
         Dictionary<string, Dictionary<string, int>> list = new Dictionary<string, Dictionary<string, int>>();
         List<string> disconnects = new List<string>();
@@ -196,16 +239,19 @@ namespace Oxide.Plugins
         // Уникальные луты: один и тот же крейт засчитывается игроку только один раз (entity+player)
         private readonly Dictionary<ulong, HashSet<string>> _uniqueLootCounted = new Dictionary<ulong, HashSet<string>>();
         private readonly object _uniqueLootLock = new object();
-        // basicblueprintfragment: один раз за 5 мин на игрока
-        private readonly HashSet<string> _countedBasicBlueprintFragment = new HashSet<string>();
         /// <summary>PatrolHelicopter: netId → последний Steam-игрок, нанёсший урон (смерть часто приходит с пустым InitiatorPlayer).</summary>
         private readonly Dictionary<ulong, ulong> _patrolHeliLastSteamDamager = new Dictionary<ulong, ulong>();
         private readonly object _patrolHeliDamagerLock = new object();
+        private const string DeliveryDataFile = "ExpertStatistics.delivery";
+        private StatsBatch _pendingBatch;
+        private bool _statsRequestInFlight;
 
         void OnServerInitialized(bool initial)
         {
             if (Debug)
                 Puts("[Stats] OnServerInitialized | initial=" + initial);
+
+            LoadDeliveryState();
 
             // Загружаем конфиг из API при инициализации сервера (когда IP/порт доступны)
             LoadConfigFromAPI();
@@ -214,68 +260,160 @@ namespace Oxide.Plugins
             {
                 SaveAllStats();
             });
-            timer.Every(5 * 60, () =>
-            {
-                lock (_uniqueLootLock) { _uniqueLootCounted.Clear(); }
-                _countedBasicBlueprintFragment.Clear();
-            });
         }
         void Unload()
         {
-            killsData.Kills.Clear();
-            disconnects.Clear();
-            list.Clear();
             lock (_patrolHeliDamagerLock) { _patrolHeliLastSteamDamager.Clear(); }
-            SaveAllStats();
+            // Web callbacks are not reliable while the plugin is unloading. Keep
+            // both the unacknowledged batch and newly collected events on disk.
+            PersistDeliveryState();
         }
         #endregion
 
         #region Save
         void SaveAllStats()
         {
-            string requestBody = JsonConvert.SerializeObject(
-                new {
-                    users = list,
-                    kills = killsData.Kills,
-                    teams = teamsData.Teams,
-                    reports = reportsData.Reports,
-                    chats = chatsData.Chats,
-                    server = new {
-                        online = BasePlayer.activePlayerList.Count,
-                        join = ServerMgr.Instance.connectionQueue.Joining,
-                        queue = ServerMgr.Instance.connectionQueue.Queued
-                    }
-                }).Replace("\n", "").Replace("  ", "");
+            if (_statsRequestInFlight)
+                return;
+
+            if (_pendingBatch == null)
+            {
+                _pendingBatch = CaptureBatch();
+                PersistDeliveryState();
+            }
+
+            string requestBody = JsonConvert.SerializeObject(_pendingBatch);
             String statsBaseUrl = !String.IsNullOrEmpty(config.api_base_url) ? config.api_base_url.TrimEnd('/') : "https://api.prostoj.store";
-            string statsUrl = $"{statsBaseUrl}/stats/update?serverTag={config.server_tag}";
+            string versionedBaseUrl = statsBaseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase)
+                ? statsBaseUrl
+                : statsBaseUrl + "/v1";
+            string statsUrl = $"{versionedBaseUrl}/plugin-ingest/stats/{Uri.EscapeDataString(config.server_tag)}";
             if (Debug)
             {
                 Puts($"[ExpertStatistics] DEBUG POST (request not sent): {statsUrl}");
                 Puts(requestBody);
-                list.Clear();
-                chatsData.Chats.Clear();
-                reportsData.Reports.Clear();
-                teamsData.Teams.Clear();
-                killsData.Kills.Clear();
-                teams.Clear();
-                disconnects.Clear();
                 return;
             }
             Dictionary<string, string> header = new Dictionary<string, string>();
             header.Add("Content-Type", "application/json");
+            AddIngestSignatureHeaders(header, requestBody);
+            _statsRequestInFlight = true;
             webrequest.Enqueue(statsUrl, requestBody, (code, response) =>
             {
+                _statsRequestInFlight = false;
                 if (code >= 200 && code < 300)
                 {
-                    list.Clear();
-                    chatsData.Chats.Clear();
-                    reportsData.Reports.Clear();
-                    teamsData.Teams.Clear();
-                    killsData.Kills.Clear();
-                    teams.Clear();
-                    disconnects.Clear();
+                    _pendingBatch = null;
+                    PersistDeliveryState();
+
+                    // Events collected while the request was in flight belong to
+                    // the next batch and must never be cleared by this callback.
+                    if (HasCurrentEvents())
+                        NextTick(SaveAllStats);
                 }
-            }, this, RequestMethod.POST, header, timeout: 1F);
+                else
+                {
+                    PrintWarning($"[ExpertStatistics] statistics delivery failed (HTTP {code}); batch {_pendingBatch?.batch_id} will be retried.");
+                    PersistDeliveryState();
+                }
+            }, this, RequestMethod.POST, header, timeout: 10F);
+        }
+
+        private StatsBatch CaptureBatch()
+        {
+            var queue = ServerMgr.Instance?.connectionQueue;
+            var batch = new StatsBatch
+            {
+                batch_id = Guid.NewGuid().ToString("N"),
+                users = list,
+                // Bound every request so a backlog accumulated during an API
+                // outage cannot become a permanently rejected oversized body.
+                kills = TakeBatch(killsData.Kills, 2000),
+                teams = TakeBatch(teamsData.Teams, 2000),
+                reports = TakeBatch(reportsData.Reports, 200),
+                chats = TakeBatch(chatsData.Chats, 1000),
+                server = new ServerSnapshot
+                {
+                    online = BasePlayer.activePlayerList?.Count ?? 0,
+                    join = queue?.Joining ?? 0,
+                    queue = queue?.Queued ?? 0
+                }
+            };
+
+            list = new Dictionary<string, Dictionary<string, int>>();
+            teams.Clear();
+            disconnects.Clear();
+            return batch;
+        }
+
+        private static List<T> TakeBatch<T>(List<T> source, int limit)
+        {
+            if (source == null || source.Count == 0)
+                return new List<T>();
+            int count = Math.Min(limit, source.Count);
+            List<T> result = source.GetRange(0, count);
+            source.RemoveRange(0, count);
+            return result;
+        }
+
+        private bool HasCurrentEvents()
+        {
+            return list.Count != 0 || killsData.Kills.Count != 0 || teamsData.Teams.Count != 0
+                || reportsData.Reports.Count != 0 || chatsData.Chats.Count != 0;
+        }
+
+        private void AddIngestSignatureHeaders(Dictionary<string, string> headers, string body)
+        {
+            if (String.IsNullOrWhiteSpace(config.ingest_secret))
+                return;
+
+            string timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture);
+            string signedValue = timestamp + "." + config.server_tag + "." + body;
+            using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(config.ingest_secret)))
+            {
+                byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(signedValue));
+                headers["X-Ingest-Timestamp"] = timestamp;
+                headers["X-Ingest-Signature"] = BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        private void LoadDeliveryState()
+        {
+            try
+            {
+                PersistedDeliveryState state = Interface.Oxide.DataFileSystem.ReadObject<PersistedDeliveryState>(DeliveryDataFile);
+                if (state == null) return;
+                _pendingBatch = state.pending;
+                list = state.users ?? new Dictionary<string, Dictionary<string, int>>();
+                killsData.Kills = state.kills ?? new List<Kill>();
+                teamsData.Teams = state.teams ?? new List<Team>();
+                reportsData.Reports = state.reports ?? new List<Report>();
+                chatsData.Chats = state.chats ?? new List<Chat>();
+            }
+            catch (Exception ex)
+            {
+                PrintError($"[ExpertStatistics] failed to load delivery state: {ex.Message}");
+            }
+        }
+
+        private void PersistDeliveryState()
+        {
+            try
+            {
+                Interface.Oxide.DataFileSystem.WriteObject(DeliveryDataFile, new PersistedDeliveryState
+                {
+                    pending = _pendingBatch,
+                    users = list,
+                    kills = killsData.Kills,
+                    teams = teamsData.Teams,
+                    reports = reportsData.Reports,
+                    chats = chatsData.Chats
+                });
+            }
+            catch (Exception ex)
+            {
+                PrintError($"[ExpertStatistics] failed to persist delivery state: {ex.Message}");
+            }
         }
 
         [Command("stats.save")]
@@ -332,7 +470,8 @@ namespace Oxide.Plugins
                 list.Add(steamId, new Dictionary<string, int>());
             if (!list[steamId].ContainsKey(parametr))
                 list[steamId][parametr] = 0;
-            list[steamId][parametr] += count;
+            int current = list[steamId][parametr];
+            list[steamId][parametr] = current > Int32.MaxValue - count ? Int32.MaxValue : current + count;
         }
 
         /// <summary>Игрок-источник урона из сущности (турель, SAM, снаряд с creatorEntity и т.д.).</summary>
@@ -424,29 +563,33 @@ namespace Oxide.Plugins
 		// }
 		void OnPlayerChat(BasePlayer player, string message, ConVar.Chat.ChatChannel channel)
 		{
+			if (player == null || !player.userID.IsSteamId() || message == null) return;
 			LogHookEvent(player, "OnPlayerChat", $"channel={channel} msg={message}");
 			if (channel == ConVar.Chat.ChatChannel.Global) {
 				Chat model = new Chat();
 				model.steam_id = player.UserIDString;
-				model.message = message;
+				model.message = message.Length > 512 ? message.Substring(0, 512) : message;
 				model.created_at = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 				chatsData.Chats.Add(model);
 			}
 		}
         private void OnPlayerReported(BasePlayer reporter, string targetName, string targetId, string subject, string message, string type)
 		{
+			if (reporter == null || !reporter.userID.IsSteamId() || String.IsNullOrWhiteSpace(targetId)) return;
 			LogHookEvent(reporter, "OnPlayerReported", $"type={type} target={targetId}");
-			if (!type.Equals("cheat")) return;
+			if (!String.Equals(type, "cheat", StringComparison.OrdinalIgnoreCase)) return;
             Report model = new Report();
             model.steam_id = reporter.UserIDString;
             model.recepient_steam_id = targetId.ToString();
-            model.reason = message;
+            string reason = message ?? subject ?? type ?? String.Empty;
+            model.reason = reason.Length > 4000 ? reason.Substring(0, 4000) : reason;
             model.created_at = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             reportsData.Reports.Add(model);
 		}
 		void OnCardSwipe(CardReader cardReader, Keycard card, BasePlayer player)
 		{
 			LogHookEvent(player, "OnCardSwipe", $"accessLevel={card?.accessLevel}");
+            if (card == null || player == null || !player.userID.IsSteamId()) return;
             switch (card.accessLevel)
             {
                 case 1:
@@ -468,11 +611,23 @@ namespace Oxide.Plugins
 		}
 		void OnPlayerAttack(BasePlayer attacker, HitInfo info)
         {
-			LogHookEvent(attacker, "OnPlayerAttack", $"bone={info?.boneName} target={info?.HitEntity?.ShortPrefabName}");
-			BasePlayer player = info.HitEntity?.ToPlayer();
-            if (player != null && !player.IsNpc)
-            {
-                switch (info.boneName.ToLower())
+			// Rust may call this hook for world hits, destroyed entities or HitInfo
+			// instances without a resolved bone. Validate every Unity object before
+			// reading its properties; even debug interpolation must happen afterwards.
+			if (info == null || attacker == null || attacker.IsDestroyed || !attacker.userID.IsSteamId()) return;
+
+			BaseEntity hitEntity = info.HitEntity;
+			if (hitEntity == null || hitEntity.IsDestroyed) return;
+
+			BasePlayer player = hitEntity as BasePlayer;
+			if (player == null || player.IsDestroyed || player.IsNpc) return;
+
+			string boneName = info.boneName;
+			if (String.IsNullOrWhiteSpace(boneName)) return;
+			boneName = boneName.Trim().ToLowerInvariant();
+
+			LogHookEvent(attacker, "OnPlayerAttack", $"bone={boneName} target={hitEntity.ShortPrefabName}");
+                switch (boneName)
                 {
                     case "head":
 						addParametr(attacker.UserIDString, "hits_head", 1);
@@ -514,12 +669,11 @@ namespace Oxide.Plugins
 						addParametr(attacker.UserIDString, "hits_righthand", 1);
                         break;
                 }
-            }
         }
         void OnHealingItemUse(MedicalTool tool, BasePlayer player)
 		{
 			LogHookEvent(player, "OnHealingItemUse", $"tool={tool?.ShortPrefabName}");
-            if (player.IsNpc) {
+            if (tool == null || player == null || player.IsNpc || !player.userID.IsSteamId()) {
                 return;
             }
             switch (tool.ShortPrefabName)
@@ -539,7 +693,7 @@ namespace Oxide.Plugins
 		void OnPlayerAddModifiers(BasePlayer player, Item item, ItemModConsumable consumable)
 		{
 			LogHookEvent(player, "OnPlayerAddModifiers", $"item={item?.info?.shortname}");
-            if (player.IsNpc) {
+            if (player == null || player.IsNpc || !player.userID.IsSteamId() || item?.info == null) {
                 return;
             }
             addParametr(player.UserIDString, "mod_" + item.info.shortname, 1);
@@ -548,6 +702,7 @@ namespace Oxide.Plugins
         void OnFishCatch(Item item, BaseFishingRod rod, BasePlayer player)
         {
 			LogHookEvent(player, "OnFishCatch", $"item={item?.info?.shortname} amount={item?.amount}");
+            if (player == null || !player.userID.IsSteamId() || item?.info == null || item.amount <= 0) return;
             addParametr(player.UserIDString, "f_" + item.info.shortname, item.amount);
         }
 
@@ -925,10 +1080,18 @@ namespace Oxide.Plugins
             }
         }
 
+        private void OnEntityKill(LootContainer entity)
+        {
+            if (entity?.net == null) return;
+            lock (_uniqueLootLock)
+                _uniqueLootCounted.Remove(entity.net.ID.Value);
+        }
+
         private void OnLootEntity(BasePlayer player, LootContainer entity)
         {
 			LogHookEvent(player, "OnLootEntity", $"entity={entity?.ShortPrefabName}");
-            if (entity == null || player == null || entity.OwnerID.IsSteamId() || entity.net == null)
+            if (entity == null || player == null || player.IsNpc || !player.userID.IsSteamId()
+                || entity.OwnerID.IsSteamId() || entity.net == null || entity.inventory?.itemList == null)
                 return;
 
             bool isUniqueOpen = false;
@@ -1063,6 +1226,7 @@ namespace Oxide.Plugins
 
 		private void OnTeamLeave(RelationshipManager.PlayerTeam team, BasePlayer player)
 		{
+			if (team == null || player == null || !player.userID.IsSteamId()) return;
 			LogHookEvent(player, "OnTeamLeave", "");
             Team model = new Team();
             model.steam_id = player.UserIDString;
@@ -1074,9 +1238,10 @@ namespace Oxide.Plugins
 
 		private void OnTeamKick(RelationshipManager.PlayerTeam team, BasePlayer player, ulong target)
 		{
+			if (team == null || player == null || !target.IsSteamId()) return;
 			LogHookEvent(player, "OnTeamKick", $"target={target}");
             Team model = new Team();
-            model.steam_id = player.UserIDString;
+            model.steam_id = target.ToString();
             model.type = "kicked";
             model.team_author = team.teamLeader.ToString();
             model.created_at = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -1085,6 +1250,7 @@ namespace Oxide.Plugins
 
 		private void OnTeamAcceptInvite(RelationshipManager.PlayerTeam team, BasePlayer player)
 		{
+			if (team == null || player == null || !player.userID.IsSteamId()) return;
 			LogHookEvent(player, "OnTeamAcceptInvite", "");
             Team model = new Team();
             model.steam_id = player.UserIDString;
@@ -1097,6 +1263,7 @@ namespace Oxide.Plugins
         private void OnTeamDisband(RelationshipManager.PlayerTeam team)
         {
 			Puts("[Stats] OnTeamDisband | members=" + (team?.members?.Count ?? 0));
+            if (team?.members == null) return;
             foreach (var item in team.members)
             {
                 Team model = new Team();
@@ -1113,15 +1280,11 @@ namespace Oxide.Plugins
 		private void OnStashExposed(StashContainer stash, BasePlayer player)
 		{
 			LogHookEvent(player, "OnStashExposed", "stash");
-		  if (stash == null)
+		  if (stash == null || player == null || !player.userID.IsSteamId())
 		  {
 			return;
 		  }
 		  var owner = stash.OwnerID;
-
-		   if (player.userID != owner) {
-			addParametr(player.UserIDString, "stash", 1);
-		   }
 
 		  var team = player.Team;
 		  if (team != null)
@@ -1137,6 +1300,8 @@ namespace Oxide.Plugins
 		  {
 			return;
 		  }
+
+		  addParametr(player.UserIDString, "stash", 1);
 
 		}
 

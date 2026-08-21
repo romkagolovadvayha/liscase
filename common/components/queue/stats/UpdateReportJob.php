@@ -16,6 +16,7 @@ use common\models\user\UserTop;
 use GeoIp2\Database\Reader;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\IntegrityException;
 use yii\queue\JobInterface;
 use yii\helpers\Html;
 use common\components\rustadmin\dto\RustAdminPlayerResponse;
@@ -109,16 +110,32 @@ class UpdateReportJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
-        $item = $this->item;
+        $item = is_array($this->item) ? $this->item : [];
         try {
+            $reporterSteamId = (string)($item['steam_id'] ?? '');
+            $recipientSteamId = (string)($item['recepient_steam_id'] ?? '');
+            if (!preg_match('/^\d{17}$/', $reporterSteamId)
+                || !preg_match('/^\d{17}$/', $recipientSteamId)) {
+                throw new \InvalidArgumentException('Invalid report event');
+            }
             $model = new Reports();
-            $model->steam_id = $item['steam_id'];
-            $model->recepient_steam_id = $item['recepient_steam_id'];
-            $model->reason = $item['reason'];
-            $model->created_at = $item['created_at'];
+            $model->event_id = !empty($item['event_id']) ? substr((string)$item['event_id'], 0, 64) : null;
+            $model->steam_id = $reporterSteamId;
+            $model->recepient_steam_id = $recipientSteamId;
+            $model->reason = mb_substr((string)($item['reason'] ?? ''), 0, 4000);
+            $model->created_at = (string)($item['created_at'] ?? date('Y-m-d H:i:s'));
             $model->server_tag = $this->serverTag;
             $model->wipe = $this->wipeDate;
-            $model->save();
+            try {
+                if (!$model->save(false)) {
+                    throw new \RuntimeException('Failed to save report event');
+                }
+            } catch (IntegrityException $e) {
+                if (!empty($item['event_id']) && $this->isDuplicateKey($e)) {
+                    return;
+                }
+                throw $e;
+            }
 
             $user = User::findBySteamId($item['steam_id'], false, 'report');
             $reportUser = User::findBySteamId($item['recepient_steam_id'], false, 'report 2');
@@ -286,7 +303,16 @@ class UpdateReportJob extends BaseObject implements JobInterface
             }
         } catch (\Exception $e) {
             Yii::$app->telegramChats->sendMessage("UpdateReportJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
+            throw $e;
         }
+    }
+
+    private function isDuplicateKey(IntegrityException $e): bool
+    {
+        $info = $e->errorInfo ?? [];
+        return (isset($info[1]) && (int)$info[1] === 1062)
+            || stripos($e->getMessage(), 'Duplicate entry') !== false
+            || stripos($e->getMessage(), 'UNIQUE constraint failed') !== false;
     }
 
     private function shouldNotifyRedFlag(int $playtime, string $countryCode): bool

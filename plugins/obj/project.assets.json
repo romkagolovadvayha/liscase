@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "c:\\xampp\\htdocs\\liscase\\plugins\\rust.oxide.live.csproj",
-      "projectName": "rust.oxide.live",
-      "projectPath": "c:\\xampp\\htdocs\\liscase\\plugins\\rust.oxide.live.csproj",
+      "projectUniqueName": "C:\\xampp\\htdocs\\liscase\\plugins\\cashrace.verify.csproj",
+      "projectName": "cashrace.verify",
+      "projectPath": "C:\\xampp\\htdocs\\liscase\\plugins\\cashrace.verify.csproj",
       "packagesPath": "C:\\Users\\rom_i\\.nuget\\packages\\",
-      "outputPath": "c:\\xampp\\htdocs\\liscase\\plugins\\obj\\",
+      "outputPath": "C:\\xampp\\htdocs\\liscase\\plugins\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

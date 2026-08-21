@@ -15,6 +15,7 @@ use common\models\user\User;
 use common\models\user\UserTop;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\IntegrityException;
 use yii\queue\JobInterface;
 
 class UpdateKillsJob extends BaseObject implements JobInterface
@@ -32,95 +33,77 @@ class UpdateKillsJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
-        $item = $this->item;
+        $item = is_array($this->item) ? $this->item : [];
+        $transaction = null;
         try {
+            $steamId = (string)($item['steam_id'] ?? '');
+            $type = (string)($item['type'] ?? '');
+            $dead = (string)($item['dead'] ?? '');
+            if (!preg_match('/^\d{17}$/', $steamId) || !in_array($type, ['kill', 'animal', 'deaths'], true)) {
+                throw new \InvalidArgumentException('Invalid kill event');
+            }
+
+            $inventoryWear = is_array($item['inventoryWear'] ?? null) ? $item['inventoryWear'] : [];
+            $signs = is_array($item['signs'] ?? null) ? $item['signs'] : [];
+            $transaction = Yii::$app->db->beginTransaction();
             $model = new Kills();
-            $model->steam_id = $item['steam_id'];
-            $model->type = $item['type'];
-            $model->dead = $item['dead'];
-            $model->weapon = $item['weapon'];
-            $model->distance = $item['distance'];
-            $model->created_at = $item['date'];
+            $model->event_id = !empty($item['event_id']) ? substr((string)$item['event_id'], 0, 64) : null;
+            $model->steam_id = $steamId;
+            $model->type = $type;
+            $model->dead = substr($dead, 0, 255);
+            $model->weapon = substr((string)($item['weapon'] ?? ''), 0, 255);
+            $model->distance = max(0, min(100000, (int)($item['distance'] ?? 0)));
+            $model->created_at = (string)($item['date'] ?? date('Y-m-d H:i:s'));
             $model->server_tag = $this->serverTag;
             $model->wipe = $this->wipeDate;
 
-            if (!empty($item['signs'])) {
-                $model->signs = json_encode($item['signs']);
+            if ($signs !== []) {
+                $model->signs = json_encode(array_slice($signs, 0, 32));
             }
-            if (!empty($item['inventoryWear'])) {
-                $model->wears = json_encode($item['inventoryWear']);
+            if ($inventoryWear !== []) {
+                $model->wears = json_encode(array_slice($inventoryWear, 0, 128));
             }
 
-            $model->save();
-
-
-            if ($item['type'] == 'kill') {
-                if (empty($item['inventoryWear'])) {
-                    /** @var Statistics $paramKills */
-                    $paramNudeKills = Statistics::find()
-                                            ->andWhere(['steam_id' => $model->steam_id])
-                                            ->andWhere(['server_tag' => $this->serverTag])
-                                            ->andWhere(['wipe' => $this->wipeDate])
-                                            ->andWhere(['key' => 'nude_kills'])
-                                            ->one();
-                    if (!empty($paramNudeKills)) {
-                        $paramNudeKills->value++;
-                        $paramNudeKills->save(false);
-                    } else {
-                        $nModel = new Statistics();
-                        $nModel->steam_id = $model->steam_id;
-                        $nModel->server_tag = $this->serverTag;
-                        $nModel->key = 'nude_kills';
-                        $nModel->value = 1;
-                        $nModel->wipe = $this->wipeDate;
-                        $nModel->save();
-                    }
-                }
-                if (empty($item['signs'])) {
-                    /** @var Statistics $paramKills */
-                    $paramKills = Statistics::find()
-                                            ->andWhere(['steam_id' => $model->steam_id])
-                                            ->andWhere(['server_tag' => $this->serverTag])
-                                            ->andWhere(['wipe' => $this->wipeDate])
-                                            ->andWhere(['key' => 'kills'])
-                                            ->one();
-
-                    if (!empty($paramKills)) {
-                        $paramKills->value++;
-                        $paramKills->save(false);
-                    } else {
-                        $nModel = new Statistics();
-                        $nModel->steam_id = $model->steam_id;
-                        $nModel->server_tag = $this->serverTag;
-                        $nModel->key = 'kills';
-                        $nModel->value = 1;
-                        $nModel->wipe = $this->wipeDate;
-                        $nModel->save();
-                    }
-                }
-                /** @var Statistics $paramDeaths */
-                $paramDeaths = Statistics::find()
-                                        ->andWhere(['steam_id' => $item['dead']])
-                                        ->andWhere(['server_tag' => $this->serverTag])
-                                        ->andWhere(['wipe' => $this->wipeDate])
-                                        ->andWhere(['key' => 'deaths'])
-                                        ->one();
-                if (!empty($paramDeaths)) {
-                    $paramDeaths->value++;
-                    $paramDeaths->save(false);
-                } else {
-                    $nModel = new Statistics();
-                    $nModel->steam_id = $item['dead'];
-                    $nModel->server_tag = $this->serverTag;
-                    $nModel->key = 'deaths';
-                    $nModel->value = 1;
-                    $nModel->wipe = $this->wipeDate;
-                    $nModel->save();
-                }
+            if (!$model->save(false)) {
+                throw new \RuntimeException('Failed to save kill event');
             }
+
+            if ($type === 'kill') {
+                $rows = [];
+                if ($inventoryWear === [] && $signs === []) {
+                    $rows[] = [$steamId, $this->serverTag, 'nude_kills', 1, $this->wipeDate];
+                }
+                if ($signs === []) {
+                    $rows[] = [$steamId, $this->serverTag, 'kills', 1, $this->wipeDate];
+                }
+                if (preg_match('/^\d{17}$/', $dead)) {
+                    $rows[] = [$dead, $this->serverTag, 'deaths', 1, $this->wipeDate];
+                }
+                Statistics::batchUpsertIncrementValues($rows);
+            }
+            $transaction->commit();
+        } catch (IntegrityException $e) {
+            if ($transaction !== null && $transaction->isActive) {
+                $transaction->rollBack();
+            }
+            if (!empty($item['event_id']) && $this->isDuplicateKey($e)) {
+                return;
+            }
+            throw $e;
         } catch (\Exception $e) {
+            if ($transaction !== null && $transaction->isActive) {
+                $transaction->rollBack();
+            }
             Yii::$app->telegramChats->sendMessage("UpdateKillsJob" . $e->getFile() . $e->getLine() . ":" . $e->getMessage());
             throw $e;
         }
+    }
+
+    private function isDuplicateKey(IntegrityException $e): bool
+    {
+        $info = $e->errorInfo ?? [];
+        return (isset($info[1]) && (int)$info[1] === 1062)
+            || stripos($e->getMessage(), 'Duplicate entry') !== false
+            || stripos($e->getMessage(), 'UNIQUE constraint failed') !== false;
     }
 }

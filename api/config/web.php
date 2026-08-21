@@ -303,6 +303,7 @@ $config = [
                 'v1/radio/boombox-list' => 'v1/radio/boombox-list',
 
                 // Ingest статистики с игровых серверов (POST raw JSON, без JWT; как frontend ApiStatsController)
+                ['pattern' => 'v1/plugin-ingest/stats/<serverTag:[\w-]+>', 'route' => 'stats/update', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/update-users/<serverTag:[\w-]+>', 'route' => 'stats/update-users', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/raid/<serverTag:[\w-]+>', 'route' => 'stats/raid', 'verb' => ['POST', 'OPTIONS']],
                 ['pattern' => 'v1/plugin-ingest/signs', 'route' => 'stats/signs', 'verb' => ['POST', 'OPTIONS']],

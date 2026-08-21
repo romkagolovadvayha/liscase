@@ -7,6 +7,7 @@ use common\models\statistics\Statistics;
 use common\models\user\User;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\IntegrityException;
 use yii\queue\JobInterface;
 
 /**
@@ -20,6 +21,7 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
     public $serverTag;
     public $serverId;
     public $wipeDate;
+    public $batchId;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -29,7 +31,14 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        $transaction = null;
         try {
+            $transaction = Yii::$app->db->beginTransaction();
+            if ($this->hasAlreadyProcessedBatch()) {
+                $transaction->rollBack();
+                return;
+            }
+
             $wipeDate = $this->wipeDate;
             $rows = [];
             $cupboardSteamIds = [];
@@ -57,19 +66,48 @@ class UpdateStatsUsersJob extends BaseObject implements JobInterface
             }
 
             if (empty($rows)) {
+                $transaction->commit();
                 $this->sendRaidNotifyPromoForSteamIds($cupboardSteamIds);
                 return;
             }
 
             Statistics::batchUpsertIncrementValues($rows);
+            $transaction->commit();
 
             $this->sendRaidNotifyPromoForSteamIds($cupboardSteamIds);
         } catch (\Exception $e) {
+            if ($transaction !== null && $transaction->isActive) {
+                $transaction->rollBack();
+            }
             Yii::$app->telegramChats->sendMessage(
                 "UpdateStatsUsersJob::execute: " . $e->getFile() . ':' . $e->getLine() . ':' . $e->getMessage()
             );
             throw $e;
         }
+    }
+
+    /**
+     * Inserts the receipt in the same DB transaction as the increments. A queue
+     * retry therefore either replays the whole transaction or performs no work.
+     */
+    private function hasAlreadyProcessedBatch(): bool
+    {
+        $batchId = strtolower(trim((string)$this->batchId));
+        if (!preg_match('/^(?:[a-f0-9]{32}|[a-f0-9-]{36})$/', $batchId)) {
+            return false;
+        }
+
+        try {
+            Yii::$app->db->createCommand()->insert('plugin_ingest_receipts', [
+                'receipt_key' => 'stats-users:' . $this->serverTag . ':' . $batchId,
+                'server_tag' => (string)$this->serverTag,
+                'created_at' => time(),
+            ])->execute();
+        } catch (IntegrityException $e) {
+            return true;
+        }
+
+        return false;
     }
 
     private function sendRaidNotifyPromoForSteamIds(array $steamIds): void

@@ -17,6 +17,7 @@ use yii\helpers\ArrayHelper;
 
 /**
  * @property int    $id
+ * @property string|null $event_id
  * @property string $steam_id
  * @property string $message
  * @property bool   $is_muted

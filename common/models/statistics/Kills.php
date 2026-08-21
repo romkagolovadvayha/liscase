@@ -13,6 +13,7 @@ use yii\db\Expression;
 
 /**
  * @property int    $id
+ * @property string|null $event_id
  * @property string $steam_id
  * @property string $type
  * @property string $dead

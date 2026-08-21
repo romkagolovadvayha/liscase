@@ -1197,7 +1197,7 @@ namespace Oxide.Plugins
 		
 		private object HandleDamageToVehicle(BaseCombatEntity vehicle, HitInfo info)
         {
-			if (info == null || info.damageTypes.GetMajorityDamageType() == DamageType.Decay || !vehicle.IsValid() || !_vehiclesList.TryGetValue(vehicle.net.ID.Value, out var vehicleData) || !vehicleData.OwnerID.IsSteamId()) return null;
+			if (info == null || info.damageTypes == null || info.damageTypes.GetMajorityDamageType() == DamageType.Decay || !vehicle.IsValid() || _vehiclesList == null || !_vehiclesList.TryGetValue(vehicle.net.ID.Value, out var vehicleData) || vehicleData == null || !vehicleData.OwnerID.IsSteamId()) return null;
 			switch (TryGetAttacker(info, out var initiator))
             {
 				case AttackerIndex.PatrolHelicopter:

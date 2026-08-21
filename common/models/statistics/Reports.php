@@ -10,6 +10,7 @@ use yii\base\BaseObject;
 
 /**
  * @property int    $id
+ * @property string|null $event_id
  * @property string $steam_id
  * @property string $recepient_steam_id
  * @property string $reason

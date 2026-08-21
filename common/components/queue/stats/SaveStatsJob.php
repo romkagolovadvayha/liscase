@@ -22,6 +22,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 {
     public $data;
     public $serverTag;
+    public $batchId;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -32,7 +33,10 @@ class SaveStatsJob extends BaseObject implements JobInterface
     public function execute($queue)
     {
         try {
-            $request = json_decode($this->data, 1);
+            $request = json_decode($this->data, true);
+            if (!is_array($request) || json_last_error() !== JSON_ERROR_NONE) {
+                throw new \InvalidArgumentException('Invalid statistics JSON');
+            }
             /** @var Servers $server */
             $server = Servers::find()
                              ->cache(60)
@@ -45,12 +49,10 @@ class SaveStatsJob extends BaseObject implements JobInterface
             // Persist the lightweight server snapshot before dispatching the heavy
             // parts of the payload. Any downstream queue failure must not prevent
             // online/status data from being refreshed.
-            $server->players = (int) $request['server']['online'];
-            if ($server->players > 50) {
-                $server->players += 5;
-            }
-            $server->joined = (int) $request['server']['join'];
-            $server->queued = (int) $request['server']['queue'];
+            $serverSnapshot = is_array($request['server'] ?? null) ? $request['server'] : [];
+            $server->players = max(0, (int) ($serverSnapshot['online'] ?? 0));
+            $server->joined = max(0, (int) ($serverSnapshot['join'] ?? 0));
+            $server->queued = max(0, (int) ($serverSnapshot['queue'] ?? 0));
             $server->updated_at = date('Y-m-d H:i:s');
             $server->status = Servers::STATUS_ACTIVE;
             $server->updateAttributes([
@@ -63,12 +65,13 @@ class SaveStatsJob extends BaseObject implements JobInterface
 
             $wipeDate = $server->currentWipe();
             Yii::$app->queueParams->push(new UpdateStatsUsersJob([
-                                                                     'users' => $request['users'],
+                                                                     'users' => is_array($request['users'] ?? null) ? $request['users'] : [],
                                                                      'serverTag' => $this->serverTag,
                                                                      'serverId' => $server->id,
                                                                      'wipeDate' => $wipeDate,
+                                                                     'batchId' => $this->batchId ?: ($request['batch_id'] ?? null),
                                                                  ]));
-            foreach ($request['kills'] as $item) {
+            foreach (($request['kills'] ?? []) as $item) {
                 try {
                     Yii::$app->queueKills->push(new UpdateKillsJob([
                         'item' => $item,
@@ -106,7 +109,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
 //            }
             try {
                 Yii::$app->queueTeam->push(new SaveChatsJob([
-                                                                'messages' => $request['chats'],
+                                                                'messages' => is_array($request['chats'] ?? null) ? $request['chats'] : [],
                                                                 'serverTag' => $this->serverTag,
                                                             ]));
             } catch (\Exception $e) {
@@ -114,7 +117,7 @@ class SaveStatsJob extends BaseObject implements JobInterface
                 throw $e;
             }
             try {
-                foreach ($request['reports'] as $item) {
+                foreach (($request['reports'] ?? []) as $item) {
                     try {
                         Yii::$app->queueReport->push(new UpdateReportJob([
                             'item' => $item,
@@ -143,6 +146,9 @@ class SaveStatsJob extends BaseObject implements JobInterface
             } catch (\Exception $e) {
                 Yii::error("SaveStatsJob::saveOrUpdateHourlyStats error: " . $e->getMessage(), 'servers_statistics');
             }
+
+            Yii::$app->cache->delete('usersTop');
+            Yii::$app->cache->delete('usersLive');
 
         } catch (\Exception $e) {
             Yii::error("SaveStatsJob: " . $e->getMessage(), 'error');
