@@ -77,6 +77,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             'options' => ['rows' => 6, 'value' => $model->getMessage($language_id)],
                             'language' => 'ru',
                             'clientOptions' => [
+                                'license_key' => 'gpl',
                                 'skin' => 'oxide-dark',
                                 'content_css' => 'dark',
                                 'content_style' => 'body { background-color: hsl(0,0%,13%); color: #e5e5e5; font-size: 14px; line-height: 1.5; }',

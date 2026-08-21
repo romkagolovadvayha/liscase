@@ -37,6 +37,7 @@ use yii\helpers\Html;
             'options' => ['rows' => 12],
             'language' => 'ru',
             'clientOptions' => [
+                'license_key' => 'gpl',
                 'plugins' => [
                     'advlist','autolink','lists','link','media',
                     'table','codesample','code','emoticons','paste','autoresize','quickbars'

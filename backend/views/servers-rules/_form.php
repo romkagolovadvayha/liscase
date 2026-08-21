@@ -51,6 +51,7 @@ use yii\helpers\ArrayHelper;
             'options' => ['rows' => 10],
             'language' => 'ru',
             'clientOptions' => [
+                'license_key' => 'gpl',
                 'plugins' => [
                     'advlist','autolink','lists','link','media',
                     'table','codesample','code','emoticons','paste','autoresize','quickbars'

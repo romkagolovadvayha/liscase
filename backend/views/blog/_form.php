@@ -37,6 +37,7 @@ $csrfToken = Yii::$app->request->getCsrfToken();
             'options' => ['rows' => 10, 'class' => 'blog-form-tinymce'],
             'language' => 'ru',
             'clientOptions' => [
+                'license_key' => 'gpl',
                 'skin' => 'oxide-dark',
                 'content_css' => 'dark',
                 'content_style' => 'body { background-color: hsl(0,0%,13%); color: #e5e5e5; }',
