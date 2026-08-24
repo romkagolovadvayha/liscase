@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojShop", "Prostoj Team", "1.0.13")]
+    [Info("ProstojShop", "Prostoj Team", "1.0.14")]
     [Description("Prostoj store inside ProstojMenu")]
     public class ProstojShop : RustPlugin
     {
@@ -22,6 +22,7 @@ namespace Oxide.Plugins
         private const int ProductsPerPage = 16;
         private Configuration config;
         private bool registered;
+        private Timer catalogRefreshTimer;
         private readonly Dictionary<ulong, PlayerState> states = new Dictionary<ulong, PlayerState>();
 
         private class Configuration
@@ -29,6 +30,7 @@ namespace Oxide.Plugins
             [JsonProperty("API URL")] public string ApiUrl = "https://api.prostoj.store/v1/rust-menu/shop";
             [JsonProperty("Private admin Steam ID")] public string PrivateAdminSteamId = PreviewSteamId;
             [JsonProperty("Balance poll seconds")] public float BalancePollSeconds = 5f;
+            [JsonProperty("Catalog refresh seconds")] public float CatalogRefreshSeconds = 60f;
         }
 
         private class PlayerState
@@ -52,6 +54,7 @@ namespace Oxide.Plugins
             public bool TopupSuccess;
             public Timer BalanceTimer;
             public Timer PurchaseFeedbackTimer;
+            public long NextCatalogRefreshAt;
         }
 
         private class ApiEnvelope<T>
@@ -100,6 +103,7 @@ namespace Oxide.Plugins
             [JsonProperty("blocked")] public bool Blocked;
             [JsonProperty("blocked_seconds")] public int BlockedSeconds;
             [JsonProperty("can_buy")] public bool CanBuy;
+            [JsonIgnore] public long BlockedUntil;
         }
 
         private class PaginationData
@@ -147,6 +151,7 @@ namespace Oxide.Plugins
             catch { config = new Configuration(); PrintWarning("Invalid config was replaced with defaults."); }
             config.ApiUrl = (config.ApiUrl ?? string.Empty).Trim().TrimEnd('/');
             config.BalancePollSeconds = Mathf.Clamp(config.BalancePollSeconds, 3f, 15f);
+            config.CatalogRefreshSeconds = Mathf.Clamp(config.CatalogRefreshSeconds, 30f, 300f);
             SaveConfig();
         }
 
@@ -156,6 +161,7 @@ namespace Oxide.Plugins
         {
             CacheCategoryIcons();
             RegisterTab();
+            catalogRefreshTimer = timer.Every(5f, RefreshOpenCatalogs);
             foreach (var player in BasePlayer.activePlayerList.Where(IsAllowedAdmin))
                 RequestCatalog(player, false);
         }
@@ -168,6 +174,7 @@ namespace Oxide.Plugins
                 state.PurchaseFeedbackTimer?.Destroy();
             }
             states.Clear();
+            catalogRefreshTimer?.Destroy();
             if (registered) ProstojMenu?.Call("API_UnregisterTab", this, TabKey);
         }
 
@@ -221,6 +228,8 @@ namespace Oxide.Plugins
             }
             Draw(player, parent, state);
             if (state.Shop == null && !state.Loading) RequestCatalog(player, false);
+            else if (!state.Loading && state.NextCatalogRefreshAt > 0 && CurrentUnix() >= state.NextCatalogRefreshAt)
+                RequestCatalog(player, false);
             if (state.TopupOpen && state.Topup != null && !state.TopupSuccess && state.BalanceTimer == null && !TopupExpired(state))
                 StartBalancePoll(player, state);
             return true;
@@ -303,7 +312,6 @@ namespace Oxide.Plugins
             if (state.Loading) return;
             state.Loading = true;
             state.Error = null;
-            var hadCatalog = state.Shop != null;
             var version = ++state.RequestVersion;
             if (redraw) Refresh(player);
             var url = PlayerUrl(player, Endpoint()) + "&all=1&category_id=" + state.CategoryId + "&page=" + state.Page + "&page_size=20";
@@ -313,7 +321,10 @@ namespace Oxide.Plugins
                 state.Loading = false;
                 ApiEnvelope<ShopData> envelope;
                 if (!TryEnvelope(code, response, out envelope) || envelope.Data == null)
+                {
                     state.Error = ErrorText(response, "Магазин временно недоступен.");
+                    state.NextCatalogRefreshAt = CurrentUnix() + 30;
+                }
                 else
                 {
                     var previousBalance = state.Shop != null ? state.Shop.Balance : -1;
@@ -322,6 +333,7 @@ namespace Oxide.Plugins
                         : envelope.Data.Pagination != null ? Math.Max(1, envelope.Data.Pagination.Page) : Math.Max(1, state.Page);
                     state.Error = null;
                     state.Shop = envelope.Data;
+                    PrepareBlockRefresh(state);
                     var remotePages = envelope.Data.Pagination != null ? Math.Max(1, envelope.Data.Pagination.Pages) : 1;
                     if (!envelope.Data.CatalogComplete && state.CategoryId == 0 && remotePages > 1)
                     {
@@ -337,7 +349,7 @@ namespace Oxide.Plugins
                     if (imagesPending)
                         timer.Once(1.2f, () => { if (player != null && player.IsConnected && IsActive(player)) Refresh(player); });
                 }
-                if ((redraw || !hadCatalog) && IsActive(player)) Refresh(player);
+                if (IsActive(player)) Refresh(player);
             }, this, RequestMethod.GET, Headers(false), 12f);
         }
 
@@ -415,7 +427,7 @@ namespace Oxide.Plugins
         {
             if (state.BusyDropId != 0 || state.Shop == null) return;
             var product = state.Shop.Products.FirstOrDefault(x => x.Id == dropId);
-            if (product == null || product.Blocked || product.Price > state.Shop.Balance) return;
+            if (product == null || IsProductBlocked(product) || product.Price > state.Shop.Balance) return;
             state.BusyDropId = dropId;
             ClearPurchaseFeedback(state);
             state.Error = null;
@@ -630,10 +642,11 @@ namespace Oxide.Plugins
                 var busy = state.BusyDropId == product.Id;
                 var bought = state.PurchasedDropId == product.Id;
                 var lacking = product.Price > state.Shop.Balance;
-                var label = bought ? "КУПЛЕНО" : busy ? "ПОКУПКА…" : product.Blocked ? "ВАЙП-БЛОК" : lacking ? "НЕ ХВАТАЕТ" : "КУПИТЬ";
-                var color = bought ? success : product.Blocked || lacking ? "0.20 0.22 0.22 0.95" : accent;
+                var blocked = IsProductBlocked(product);
+                var label = bought ? "КУПЛЕНО" : busy ? "ПОКУПКА…" : blocked ? "ВАЙП-БЛОК" : lacking ? "НЕ ХВАТАЕТ" : "КУПИТЬ";
+                var color = bought ? success : blocked || lacking ? "0.20 0.22 0.22 0.95" : accent;
                 AddButton(ui, card, "0.50 0.045", "0.95 0.18", "prostojshop.ui buy " + product.Id, label, color, text,
-                    !bought && !busy && !product.Blocked && !lacking && state.BusyDropId == 0, 8, bought);
+                    !bought && !busy && !blocked && !lacking && state.BusyDropId == 0, 8, bought);
             }
         }
 
@@ -1012,6 +1025,56 @@ namespace Oxide.Plugins
             state.PurchasedDropId = 0;
             state.PurchaseFeedbackVersion++;
         }
+
+        private void RefreshOpenCatalogs()
+        {
+            var now = CurrentUnix();
+            foreach (var entry in states.ToArray())
+            {
+                var state = entry.Value;
+                if (state == null || state.Shop == null || state.Loading || state.NextCatalogRefreshAt <= 0 || now < state.NextCatalogRefreshAt)
+                    continue;
+                var player = BasePlayer.FindByID(entry.Key);
+                if (player != null && player.IsConnected && IsActive(player))
+                {
+                    Refresh(player);
+                    RequestCatalog(player, false);
+                }
+            }
+        }
+
+        private void PrepareBlockRefresh(PlayerState state)
+        {
+            if (state == null || state.Shop == null) return;
+            var now = CurrentUnix();
+            var nextDelay = Math.Max(30L, (long)Math.Ceiling(config.CatalogRefreshSeconds));
+            foreach (var product in state.Shop.Products ?? new List<ProductData>())
+            {
+                if (product == null) continue;
+                product.BlockedUntil = product.Blocked && product.BlockedSeconds > 0
+                    ? now + product.BlockedSeconds
+                    : 0;
+                if (product.BlockedUntil > now)
+                    nextDelay = Math.Min(nextDelay, Math.Max(1L, product.BlockedUntil - now + 1L));
+            }
+            state.NextCatalogRefreshAt = now + nextDelay;
+        }
+
+        private static bool IsProductBlocked(ProductData product)
+        {
+            if (product == null) return false;
+            if (product.BlockedUntil > 0)
+            {
+                if (CurrentUnix() < product.BlockedUntil) return true;
+                product.Blocked = false;
+                product.BlockedSeconds = 0;
+                product.BlockedUntil = 0;
+                return false;
+            }
+            return product.Blocked;
+        }
+
+        private static long CurrentUnix() => DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         private static bool TopupExpired(PlayerState state) => state.Topup != null && state.Topup.ExpiresAt > 0 && DateTimeOffset.UtcNow.ToUnixTimeSeconds() >= state.Topup.ExpiresAt;
 

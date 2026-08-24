@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("ProstojRUST", "prostoj.store", "0.8.3")]
+    [Info("ProstojRUST", "prostoj.store", "0.8.4")]
     public class ProstojRUST : RustPlugin
     {
         private const string HudCartImageUrl = "https://img.icons8.com/material-rounded/256/ffffff/shopping-cart.png";
@@ -358,12 +358,15 @@ namespace Oxide.Plugins
         private readonly Dictionary<ulong, List<WItem>> playerBaskets = new Dictionary<ulong, List<WItem>>();
         private readonly HashSet<ulong> menuBasketRequests = new HashSet<ulong>();
         private readonly Dictionary<ulong, int> menuBasketVersions = new Dictionary<ulong, int>();
+        private readonly Dictionary<ulong, double> menuBasketNextRefreshAt = new Dictionary<ulong, double>();
         private HashSet<ulong> ListBannedCommandUserID = new HashSet<ulong>();
         private Timer TimerCheckInstant;
         private const string StoreLayer = "ProstojRUST.Store";
         private const string HelpLayer = "ProstojRUST.Help";
         private const string IconLayer = "ProstojRUST.Icon";
         private const string MenuStoreLayer = "ProstojMenu.Content.Store";
+        private const float MenuBasketRefreshSeconds = 60f;
+        private Timer menuBasketRefreshTimer;
         private readonly Dictionary<ulong, string> menuStoreParents = new Dictionary<ulong, string>();
         private readonly Dictionary<ulong, int> menuStorePages = new Dictionary<ulong, int>();
         private static readonly Dictionary<string, string> MenuThemeTokens = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -578,6 +581,8 @@ namespace Oxide.Plugins
             timer.Once(2, FetchShopUrl);
 
             timer.Every(1, () => Delays.RequestPerSecond = 0);
+            menuBasketRefreshTimer?.Destroy();
+            menuBasketRefreshTimer = timer.Every(5f, RefreshOpenMenuBaskets);
 
             ListTimeOutCommand[0] = new Dictionary<ulong, int>();
             ListTimeOutCommand[1] = new Dictionary<ulong, int>();
@@ -676,7 +681,9 @@ namespace Oxide.Plugins
             menuStorePages.Clear();
             menuBasketRequests.Clear();
             menuBasketVersions.Clear();
+            menuBasketNextRefreshAt.Clear();
             playerBaskets.Clear();
+            menuBasketRefreshTimer?.Destroy();
 
             if (LoadingCoroutine != null) ServerMgr.Instance.StopCoroutine(LoadingCoroutine);
             foreach (var pl in BasePlayer.activePlayerList)
@@ -738,6 +745,7 @@ namespace Oxide.Plugins
             menuStorePages.Remove(player.userID);
             menuBasketRequests.Remove(player.userID);
             menuBasketVersions.Remove(player.userID);
+            menuBasketNextRefreshAt.Remove(player.userID);
             playerBaskets.Remove(player.userID);
             playersBasketCache.Remove(player.userID);
             Delays.ItemList.Remove(player.userID);
@@ -1143,7 +1151,12 @@ namespace Oxide.Plugins
             }
 
             if (playerBaskets.ContainsKey(player.userID))
+            {
                 DrawMenuStore(player, page, false);
+                double nextRefreshAt;
+                if (!menuBasketNextRefreshAt.TryGetValue(player.userID, out nextRefreshAt) || CurrentTime() >= nextRefreshAt)
+                    RequestMenuBasket(player, page);
+            }
             else
                 RequestMenuBasket(player, page);
             return true;
@@ -1159,6 +1172,7 @@ namespace Oxide.Plugins
             int version;
             menuBasketVersions.TryGetValue(player.userID, out version);
             menuBasketVersions[player.userID] = version + 1;
+            menuBasketNextRefreshAt[player.userID] = 0;
 
             if (!menuStoreParents.ContainsKey(player.userID))
             {
@@ -1176,6 +1190,48 @@ namespace Oxide.Plugins
             if (player == null || ProstojMenu == null || !menuStoreParents.ContainsKey(player.userID)) return false;
             var result = ProstojMenu.Call("API_IsTabActive", player, "store");
             return result is bool && (bool)result;
+        }
+
+        private void RefreshOpenMenuBaskets()
+        {
+            var now = CurrentTime();
+            foreach (var userId in menuStoreParents.Keys.ToArray())
+            {
+                double nextRefreshAt;
+                if (menuBasketNextRefreshAt.TryGetValue(userId, out nextRefreshAt) && now < nextRefreshAt)
+                    continue;
+                var player = BasePlayer.FindByID(userId);
+                if (player == null || !player.IsConnected || !IsMenuStoreActive(player)) continue;
+                if (playerBaskets.ContainsKey(userId))
+                    DrawMenuStore(player, menuStorePages.ContainsKey(userId) ? menuStorePages[userId] : 0, false);
+                RequestMenuBasket(player, menuStorePages.ContainsKey(userId) ? menuStorePages[userId] : 0);
+            }
+        }
+
+        private void ScheduleBasketRefresh(ulong userId, List<WItem> items)
+        {
+            var now = CurrentTime();
+            var nextRefreshAt = now + MenuBasketRefreshSeconds;
+            foreach (var item in items ?? new List<WItem>())
+            {
+                NormalizeBasketBlock(item);
+                if (item != null && item.Block_Date > now)
+                    nextRefreshAt = Math.Min(nextRefreshAt, item.Block_Date + 1d);
+            }
+            menuBasketNextRefreshAt[userId] = nextRefreshAt;
+        }
+
+        private static void NormalizeBasketBlock(WItem item)
+        {
+            if (item != null && item.Block_Date > 0)
+                item.Blocked = item.Block_Date > CurrentTime();
+        }
+
+        private static bool IsBasketItemBlocked(WItem item)
+        {
+            if (item == null) return false;
+            NormalizeBasketBlock(item);
+            return item.Blocked;
         }
 
         private void RequestMenuBasket(BasePlayer player, int page)
@@ -1210,6 +1266,7 @@ namespace Oxide.Plugins
                 var cartActive = IsMenuStoreActive(player);
                 if (code != 200 || string.IsNullOrEmpty(response))
                 {
+                    menuBasketNextRefreshAt[userId] = CurrentTime() + 30d;
                     if (!cartActive) return;
                     if (hasCachedBasket)
                     {
@@ -1227,6 +1284,7 @@ namespace Oxide.Plugins
                 }
                 catch (Exception exception)
                 {
+                    menuBasketNextRefreshAt[userId] = CurrentTime() + 30d;
                     PrintWarning("Store basket response parse failed: " + exception.Message);
                     if (!cartActive) return;
                     if (hasCachedBasket)
@@ -1239,6 +1297,7 @@ namespace Oxide.Plugins
                 }
                 if (data == null || !data.ContainsKey("result") || data["result"]?.ToString() != "success")
                 {
+                    menuBasketNextRefreshAt[userId] = CurrentTime() + 30d;
                     if (!cartActive) return;
                     if (hasCachedBasket)
                     {
@@ -1258,11 +1317,16 @@ namespace Oxide.Plugins
                         var raw = obj as Dictionary<string, object>;
                         if (raw == null) continue;
                         var item = new WItem(raw);
-                        if (!string.IsNullOrEmpty(item.ID)) newItems.Add(item);
+                        if (!string.IsNullOrEmpty(item.ID))
+                        {
+                            NormalizeBasketBlock(item);
+                            newItems.Add(item);
+                        }
                     }
                 }
 
                 playerBaskets[player.userID] = newItems;
+                ScheduleBasketRefresh(player.userID, newItems);
                 if (cartActive) DrawMenuStore(player, page, false);
             }, player);
         }
@@ -1341,7 +1405,7 @@ namespace Oxide.Plugins
                 MenuAddButton(ui, root, root + ".Action", "0 0", "1 1", "0 0 0 0", $"UI_ProstojRUST menu_take {i} {basketId}", string.Empty, 1, "1 1 1 0");
 
                 var blockedLeft = item.Block_Date - CurrentTime();
-                if (item.Blocked || blockedLeft > 0)
+                if (IsBasketItemBlocked(item))
                 {
                     MenuAddPanel(ui, root, root + ".Blocked", "0 0", "1 1", "0.922 0.047 0.208 0.58");
                     MenuAddLabel(ui, root + ".Blocked", root + ".Blocked.Text", "0.06 0.15", "0.94 0.85", "ЗАБЛОКИРОВАНО\n" + FormatLeftTime(blockedLeft), 9, "0.925 0.894 0.953 1", TextAnchor.MiddleCenter, "robotocondensed-bold.ttf");
@@ -1702,7 +1766,7 @@ namespace Oxide.Plugins
                 }, itemRoot);
 
                 var blockedLeft = item.Block_Date - CurrentTime();
-                if (item.Blocked || blockedLeft > 0)
+                if (IsBasketItemBlocked(item))
                 {
                     content.Add(new CuiButton
                     {
@@ -1755,7 +1819,7 @@ namespace Oxide.Plugins
                 if (selected != null)
                 {
                     var leftTime = selected.Block_Date - CurrentTime();
-                    if (selected.Blocked || leftTime > 0)
+                    if (IsBasketItemBlocked(selected))
                     {
                         return;
                     }
