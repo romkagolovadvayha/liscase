@@ -26,6 +26,9 @@ class PaymentCardRf
     public function check($depositId)
     {
         $model = Deposit::findOne($depositId);
+        if (!$model) {
+            return null;
+        }
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
@@ -34,13 +37,9 @@ class PaymentCardRf
             return false;
         }
         if ($result['status'] === 'succeeded') {
-            $model->status = Deposit::STATUS_SUCCESS;
-            $model->save(false);
-            Deposit::bonus($model->user, $model->amount, $model->payment_type);
-            $model->user->getPersonalBalance()->recalculateBalance();
+            $model->markSuccessful();
         } elseif ($result['status'] === 'canceled') {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
+            $model->markCanceled();
         }
 
         return $model->status;

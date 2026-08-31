@@ -227,8 +227,7 @@ class PaymentController extends BaseApiController
             $response = $paymentApi->create($deposit);
 
             if (empty($response)) {
-                $deposit->status = Deposit::STATUS_CANCELED;
-                $deposit->save(false);
+                $deposit->markCanceled();
                 return $this->errorResponse('PAYMENT_CREATION_FAILED', 'Failed to create payment', [], 500);
             }
 
@@ -253,8 +252,7 @@ class PaymentController extends BaseApiController
             Yii::error('Payment creation error: ' . $e->getMessage());
             
             if (isset($deposit)) {
-                $deposit->status = Deposit::STATUS_CANCELED;
-                $deposit->save(false);
+                $deposit->markCanceled();
             }
 
             $statusCode = $e->getCode() === 414 ? 414 : 500;
@@ -353,4 +351,3 @@ class PaymentController extends BaseApiController
     }
 
 }
-

@@ -7,7 +7,9 @@ use common\models\profit\Profit;
 use Yii;
 use common\models\user\User;
 use yii\base\BaseObject;
+use yii\db\Expression;
 use yii\helpers\ArrayHelper;
+use yii\helpers\Html;
 
 /**
  * This is the model class for table "deposit".
@@ -21,6 +23,7 @@ use yii\helpers\ArrayHelper;
  * @property float  $commission
  * @property int    $status
  * @property string $created_at
+ * @property string|null $completed_at
  *
  * @property User $user
  */
@@ -79,7 +82,7 @@ class Deposit extends \common\components\base\ActiveRecord
             [['user_id', 'payment_type'], 'integer'],
             [['payment_id', 'commission'], 'trim'],
             [['amount'], 'integer', 'min' => 1],
-            [['created_at'], 'safe'],
+            [['created_at', 'completed_at'], 'safe'],
         ];
     }
 
@@ -94,6 +97,7 @@ class Deposit extends \common\components\base\ActiveRecord
             'amount'          => Yii::t('common', 'Сумма'),
             'amount_exchange' => Yii::t('common', 'Сумма в валюте'),
             'created_at'      => Yii::t('common', 'Дата операции'),
+            'completed_at'    => Yii::t('common', 'Дата зачисления'),
         ];
     }
 
@@ -267,122 +271,235 @@ class Deposit extends \common\components\base\ActiveRecord
     }
 
     /**
-     * @param User $user
-     * @param $amount
-     * @param $paymentType
+     * Atomically completes a deposit and runs its one-time side effects.
      *
-     * @return mixed
+     * The conditional UPDATE is the idempotency boundary. A callback, status
+     * poll and cron job may all observe the provider's successful status at
+     * the same time, but only one of them can change WAIT_CONFIRM to SUCCESS.
+     *
+     * @param bool $allowCanceled Whether an administrator may explicitly
+     *                            complete a previously canceled deposit.
      */
-    public static function bonus($user, $amount, $paymentType)
+    public function markSuccessful($allowCanceled = false)
     {
-        $amountTotalSum = Deposit::find()
-                               ->andWhere(['status' => Deposit::STATUS_SUCCESS])
-                               ->sum('amount') ?? 0;
-        $amountDaySum = Deposit::find()
-                            ->andWhere(['>=', 'created_at', date('Y-m-d') . " 00:00:01"])
-                            ->andWhere(['<=', 'created_at', date('Y-m-d') . " 23:59:59"])
-                            ->andWhere(['status' => Deposit::STATUS_SUCCESS])
-                            ->sum('amount') ?? 0;
-
-
-        $amountStr = number_format($amount, 0, '.', ' ');
-        $message = "💰️ <b>Пополнение баланса</b>" . PHP_EOL
-            . "Пользователь: {$user->username}" . PHP_EOL
-            . "SteamID: {$user->steam_id}" . PHP_EOL
-            . "Сумма: {$amountStr} RUB";
-
-        if (!empty($user->server)) {
-            $message .= PHP_EOL . "Сервер: {$user->server->name}";
-        }
-        if ($user->is_mirror_returned) {
-            $message .= PHP_EOL . "<b>Игрок вернулся с зеркала</b>";
-        }
-        if ($user->is_mirror_registration) {
-            $message .= PHP_EOL . "<b>Игрок пришел к нам зеркала</b>";
+        if (empty($this->id)) {
+            throw new \LogicException('A deposit must be persisted before it can be completed.');
         }
 
-        $depositsSum = Deposit::find()
-            ->andWhere(['user_id' => $user->id])
-            ->andWhere(['status' => Deposit::STATUS_SUCCESS])
-            ->sum('amount') ?? 0;
-
-        $paymentName = ArrayHelper::getValue(Deposit::getTypeList(), $paymentType);
-        if (!empty($paymentName)) {
-            $message .= PHP_EOL . "Метод оплаты: {$paymentName}";
+        $allowedStatuses = [self::STATUS_WAIT_CONFIRM];
+        if ($allowCanceled) {
+            $allowedStatuses[] = self::STATUS_CANCELED;
         }
 
-        $depositsSumStr = number_format($depositsSum, 0, '.', ' ');
-        $amountDaySumStr = number_format($amountDaySum, 0, '.', ' ');
-        $amountTotalSumStr = number_format($amountTotalSum, 0, '.', ' ');
-        $message .= PHP_EOL . PHP_EOL
-            . "Поступлений от игрока: {$depositsSumStr} RUB" . PHP_EOL
-            . "Всего за день: {$amountDaySumStr} RUB" . PHP_EOL
-            . "Всего за всегда: {$amountTotalSumStr} RUB";
+        $transaction = static::getDb()->beginTransaction();
+        try {
+            $updated = static::updateAll(
+                [
+                    'status' => self::STATUS_SUCCESS,
+                    'completed_at' => new Expression('CURRENT_TIMESTAMP'),
+                ],
+                ['id' => (int)$this->id, 'status' => $allowedStatuses]
+            );
 
-        Yii::$app->telegramPayments->sendMessage($message);
+            if ($updated !== 1) {
+                $transaction->rollBack();
+                $this->refresh();
+                return false;
+            }
 
-        $bonus = 0;
-        if ($amount >= 20000) {
-               $bonus = $amount * 1;
-        } elseif ($amount >= 5000) {
-            $bonus = $amount * 0.5;
-        } elseif ($amount >= 2000) {
-            $bonus = $amount * 0.3;
-        } elseif ($amount >= 1500) {
-            $bonus = $amount * 0.25;
-        } elseif ($amount >= 1000) {
-            $bonus = $amount * 0.2;
-        } elseif ($amount >= 500) {
-            $bonus = $amount * 0.15;
+            $this->status = self::STATUS_SUCCESS;
+            $this->completed_at = date('Y-m-d H:i:s');
+            $bonusCreated = $this->createDepositBonus();
+            if (!$bonusCreated) {
+                // Profit::afterSave recalculates the balance when a bonus was
+                // created. Deposits below the bonus threshold still need it.
+                $this->user->getPersonalBalance()->recalculateBalance();
+            }
+
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            if ($transaction->isActive) {
+                $transaction->rollBack();
+            }
+            throw $e;
         }
 
-        if ($bonus > 0) {
-            $profit = new Profit();
-            $profit->status = 1;
-            $profit->type = Profit::TYPE_BONUS;
-            $profit->amount = ceil($bonus);
-            $profit->user_balance_id = $user->getPersonalBalance()->id;
-            $profit->comment = Yii::t('common', 'Бонус при пополнении');
-            $profit->created_at = date('Y-m-d H:i:s');
-            $profit->save(false);
+        // External delivery is deliberately outside the DB transaction. Only
+        // the winner of the atomic transition reaches this point.
+        try {
+            $this->sendSuccessNotification();
+        } catch (\Throwable $e) {
+            Yii::error(sprintf(
+                'Deposit #%d payment notification failed: %s',
+                (int)$this->id,
+                $e->getMessage()
+            ), 'payment');
         }
+
         return true;
     }
 
-    public static function responseAdapter($response, $payment) {
-        $data = json_decode($response, 1);
+    /**
+     * Atomically cancels a deposit which is still awaiting confirmation.
+     */
+    public function markCanceled()
+    {
+        if (empty($this->id)) {
+            return false;
+        }
+
+        $updated = static::updateAll(
+            ['status' => self::STATUS_CANCELED],
+            ['id' => (int)$this->id, 'status' => self::STATUS_WAIT_CONFIRM]
+        );
+
+        if ($updated === 1) {
+            $this->status = self::STATUS_CANCELED;
+            return true;
+        }
+
+        $this->refresh();
+        return false;
+    }
+
+    /**
+     * Pure bonus calculation shared by processing and regression tests.
+     */
+    public static function calculateBonusAmount($amount)
+    {
+        if ($amount >= 20000) {
+            return (int)ceil($amount);
+        }
+        if ($amount >= 5000) {
+            return (int)ceil($amount * 0.5);
+        }
+        if ($amount >= 2000) {
+            return (int)ceil($amount * 0.3);
+        }
+        if ($amount >= 1500) {
+            return (int)ceil($amount * 0.25);
+        }
+        if ($amount >= 1000) {
+            return (int)ceil($amount * 0.2);
+        }
+        if ($amount >= 500) {
+            return (int)ceil($amount * 0.15);
+        }
+
+        return 0;
+    }
+
+    private function createDepositBonus()
+    {
+        $bonus = self::calculateBonusAmount((int)$this->amount);
+        if ($bonus <= 0) {
+            return false;
+        }
+
+        $profit = new Profit();
+        $profit->status = 1;
+        $profit->type = Profit::TYPE_BONUS;
+        $profit->amount = $bonus;
+        $profit->deposit_id = $this->id;
+        $profit->user_balance_id = $this->user->getPersonalBalance()->id;
+        $profit->comment = Yii::t('common', 'Бонус при пополнении');
+        $profit->created_at = date('Y-m-d H:i:s');
+        if (!$profit->save(false)) {
+            throw new \RuntimeException('Failed to save the deposit bonus.');
+        }
+
+        return true;
+    }
+
+    private function sendSuccessNotification()
+    {
+        if (!Yii::$app->has('telegramPayments')) {
+            return;
+        }
+
+        $amountTotalSum = static::find()
+            ->andWhere(['status' => self::STATUS_SUCCESS])
+            ->sum('amount') ?? 0;
+        $amountDaySum = static::find()
+            ->andWhere(['between', 'completed_at', date('Y-m-d 00:00:00'), date('Y-m-d 23:59:59')])
+            ->andWhere(['status' => self::STATUS_SUCCESS])
+            ->sum('amount') ?? 0;
+
+        $user = $this->user;
+        $amountStr = number_format($this->amount, 0, '.', ' ');
+        $message = "💰️ <b>Пополнение баланса</b>" . PHP_EOL
+            . 'Пользователь: ' . Html::encode($user->username) . PHP_EOL
+            . 'SteamID: ' . Html::encode($user->steam_id) . PHP_EOL
+            . "Сумма: {$amountStr} RUB";
+
+        if (!empty($user->server)) {
+            $message .= PHP_EOL . 'Сервер: ' . Html::encode($user->server->name);
+        }
+        if ($user->is_mirror_returned) {
+            $message .= PHP_EOL . '<b>Игрок вернулся с зеркала</b>';
+        }
+        if ($user->is_mirror_registration) {
+            $message .= PHP_EOL . '<b>Игрок пришел к нам зеркала</b>';
+        }
+
+        $depositsSum = static::find()
+            ->andWhere(['user_id' => $user->id])
+            ->andWhere(['status' => self::STATUS_SUCCESS])
+            ->sum('amount') ?? 0;
+
+        $paymentName = ArrayHelper::getValue(self::getTypeList(), $this->payment_type);
+        if (!empty($paymentName)) {
+            $message .= PHP_EOL . 'Метод оплаты: ' . Html::encode($paymentName);
+        }
+
+        $message .= PHP_EOL . PHP_EOL
+            . 'Поступлений от игрока: ' . number_format($depositsSum, 0, '.', ' ') . ' RUB' . PHP_EOL
+            . 'Всего за день: ' . number_format($amountDaySum, 0, '.', ' ') . ' RUB' . PHP_EOL
+            . 'Всего за всегда: ' . number_format($amountTotalSum, 0, '.', ' ') . ' RUB';
+
+        Yii::$app->telegramPayments->sendMessage($message);
+    }
+
+    public static function responseAdapter($response, $payment)
+    {
+        $data = json_decode($response, true);
+        if (!is_array($data)) {
+            return null;
+        }
+
         $status = null;
         switch ($payment) {
             case 'tome':
-                if ($data['event'] == 'payment.succeeded') {
+                $event = $data['event'] ?? null;
+                if ($event === 'payment.succeeded') {
                     $status = 'SUCCESS';
                 }
-                if ($data['event'] == 'payment.canceled') {
+                if ($event === 'payment.canceled') {
                     $status = 'CANCEL';
                 }
                 return [
-                  'id' => $data['object']['id'],
-                  'status' => $status
+                    'id' => $data['object']['id'] ?? null,
+                    'status' => $status,
                 ];
             case 'tinkoff':
-                if ($data['Status'] == 'CONFIRMED') {
+                $providerStatus = $data['Status'] ?? null;
+                if ($providerStatus === 'CONFIRMED') {
                     $status = 'SUCCESS';
                 }
-                if (in_array($data['Status'], ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'])) {
+                if (in_array($providerStatus, ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'], true)) {
                     $status = 'CANCEL';
                 }
                 return [
-                    'id' => $data['PaymentId'],
-                    'status' => $status
+                    'id' => $data['PaymentId'] ?? null,
+                    'status' => $status,
                 ];
             case 'anypay':
-                $status = 'NO AVAILABLE';
-                $transactionId = !empty($data['transaction_id']) ? $data['transaction_id'] : $data['result']['transaction_id'];
                 return [
-                    'id' => $transactionId,
-                    'status' => $status
+                    'id' => $data['transaction_id'] ?? ($data['result']['transaction_id'] ?? null),
+                    'status' => 'NO AVAILABLE',
                 ];
-            break;
+            default:
+                return null;
         }
     }
 

@@ -25,18 +25,18 @@ class PaymentSbp
     public function check($depositId)
     {
         $model = Deposit::findOne($depositId);
+        if (!$model) {
+            return null;
+        }
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
         $result = Yii::$app->tomeApi->check($model->payment_id);
-        if ($result['status'] === 'succeeded') {
-            $model->status = Deposit::STATUS_SUCCESS;
-            $model->save(false);
-            Deposit::bonus($model->user, $model->amount, $model->payment_type);
-            $model->user->getPersonalBalance()->recalculateBalance();
-        } elseif ($result['status'] === 'canceled') {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
+        $status = $result['status'] ?? null;
+        if ($status === 'succeeded') {
+            $model->markSuccessful();
+        } elseif ($status === 'canceled') {
+            $model->markCanceled();
         }
 
         return $model->status;

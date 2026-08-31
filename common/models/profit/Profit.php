@@ -12,6 +12,7 @@ use common\models\user\UserBalance;
  *
  * @property int         $id
  * @property int         $user_balance_id
+ * @property int|null    $deposit_id
  * @property int         $type
  * @property string      $amount
  * @property string      $comment
@@ -86,7 +87,7 @@ class Profit extends \common\components\base\ActiveRecord
     {
         return [
             [['user_balance_id', 'type', 'amount'], 'required'],
-            [['user_balance_id', 'type', 'status'], 'integer'],
+            [['user_balance_id', 'deposit_id', 'type', 'status'], 'integer'],
             [['created_at'], 'safe'],
             [['comment'], 'string', 'max' => 255],
         ];
@@ -97,6 +98,7 @@ class Profit extends \common\components\base\ActiveRecord
         return [
             'id'                => 'ID',
             'user_balance_id'   => Yii::t('common', 'Баланс'),
+            'deposit_id'        => Yii::t('common', 'Депозит'),
             'type'              => Yii::t('common', 'Тип'),
             'amount'            => Yii::t('common', 'Сумма'),
             'status'            => Yii::t('common', 'Статус'),

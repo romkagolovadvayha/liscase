@@ -330,8 +330,7 @@ class GameStoresController extends BaseApiController
             $response = $paymentApi->create($deposit);
 
             if (empty($response)) {
-                $deposit->status = Deposit::STATUS_CANCELED;
-                $deposit->save(false);
+                $deposit->markCanceled();
                 return $this->errorResponseGameStores('Не удалось создать платеж в системе оплаты', 500);
             }
 
@@ -2568,4 +2567,3 @@ class GameStoresController extends BaseApiController
         return "{$day} {$monthName} {$time} МСК";
     }
 }
-

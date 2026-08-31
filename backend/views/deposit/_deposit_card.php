@@ -68,6 +68,8 @@ $paymentTypeLabel = ArrayHelper::getValue(Deposit::getTypeList(), $model->paymen
             ) ?>
         <?php endif; ?>
         <?= Html::a(Yii::t('common', 'Просмотр'), Url::toRoute(['view', 'id' => $model->id]), ['class' => 'ds-btn ds-btn--secondary ds-btn--sm']) ?>
-        <?= Html::a(Yii::t('common', 'Изменить'), Url::toRoute(['update', 'id' => $model->id]), ['class' => 'ds-btn ds-btn--secondary ds-btn--sm']) ?>
+        <?php if ($model->status != Deposit::STATUS_SUCCESS): ?>
+            <?= Html::a(Yii::t('common', 'Изменить'), Url::toRoute(['update', 'id' => $model->id]), ['class' => 'ds-btn ds-btn--secondary ds-btn--sm']) ?>
+        <?php endif; ?>
     </div>
 </div>

@@ -20,7 +20,8 @@ class TelegramPayments
         [$url, $params] = $this->_getUrl($method, $params);
 
         $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($ch, CURLOPT_USERAGENT, "PostManGoBot 1.0");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 20);
@@ -44,10 +45,25 @@ class TelegramPayments
         $answer = curl_exec($ch);
         if ($answer === false) {
             Yii::error('empty telegram query answer ' . curl_error($ch));
+            curl_close($ch);
+            return [];
         }
 
+        curl_close($ch);
+        $decoded = json_decode($answer, true);
+        if (!is_array($decoded)) {
+            Yii::error('Telegram Payments returned an invalid JSON response', 'payment');
+            return [];
+        }
 
-        return json_decode($answer, true);
+        if (empty($decoded['ok'])) {
+            Yii::error(
+                'Telegram Payments rejected a message: ' . ($decoded['description'] ?? 'unknown error'),
+                'payment'
+            );
+        }
+
+        return $decoded;
     }
 
     /**

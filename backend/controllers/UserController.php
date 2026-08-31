@@ -6,6 +6,7 @@ use backend\forms\userProfile\BalanceTransferForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\RoleForm;
+use backend\forms\userProfile\UserDropTransferForm;
 use common\components\helpers\Role;
 use common\models\rcon\RconTasks;
 use common\models\user\UserChecking;
@@ -45,6 +46,7 @@ class UserController extends CrudController
                 'actions' => [
                     'set-user-bool' => ['post'],
                     'run-vip-on-server' => ['post'],
+                    'lookup-drop-transfer-recipient' => ['get'],
                 ],
             ],
         ]);
@@ -155,6 +157,46 @@ class UserController extends CrudController
         return ['success' => false, 'error' => implode(', ', $user->getFirstErrors())];
     }
 
+    /**
+     * AJAX-поиск получателя перед переносом доступных предметов.
+     */
+    public function actionLookupDropTransferRecipient($userId, $steamId)
+    {
+        Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        $sender = User::findOne((int) $userId);
+        if ($sender === null) {
+            return ['success' => false, 'error' => 'Пользователь-отправитель не найден.'];
+        }
+
+        $steamId = trim((string) $steamId);
+        if (!preg_match('/^\d{8,20}$/', $steamId)) {
+            return ['success' => false, 'error' => 'Steam ID должен содержать от 8 до 20 цифр.'];
+        }
+        if ($steamId === (string) $sender->steam_id) {
+            return ['success' => false, 'error' => 'Нельзя перенести предметы на тот же аккаунт.'];
+        }
+
+        $recipient = User::find()
+            ->with('userProfile')
+            ->andWhere(['steam_id' => $steamId])
+            ->one();
+
+        if ($recipient === null) {
+            return ['success' => false, 'error' => 'Пользователь с таким Steam ID не найден.'];
+        }
+
+        return [
+            'success' => true,
+            'user' => [
+                'id' => (int) $recipient->id,
+                'username' => (string) $recipient->username,
+                'steamId' => (string) $recipient->steam_id,
+                'avatar' => (string) $recipient->getAvatar(),
+            ],
+        ];
+    }
+
     public function actionProfile($userId)
     {
         /** @var User $user */
@@ -168,6 +210,7 @@ class UserController extends CrudController
             'bonusForm' => new BonusForm(),
             'payoutForm' => new PayoutForm(),
             'balanceTransferForm' => new BalanceTransferForm(),
+            'userDropTransferForm' => new UserDropTransferForm(),
         ];
 
         foreach ($forms as $form) {
@@ -181,11 +224,15 @@ class UserController extends CrudController
             'BonusForm' => 'Бонус успешно начислен!',
             'PayoutForm' => 'Вывод успешно проведен!',
             'BalanceTransferForm' => 'Перевод выполнен.',
+            'UserDropTransferForm' => 'Предметы успешно перенесены.',
         ];
 
         foreach ($messages as $formName => $message) {
             if (!empty($bodyParams[$formName])) {
                 if ($formName === 'BalanceTransferForm' && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
+                    continue;
+                }
+                if ($formName === 'UserDropTransferForm' && !Yii::$app->user->can(Role::ROLE_ADMIN) && !Yii::$app->user->can(Role::ROLE_MODERATOR)) {
                     continue;
                 }
                 if ($formName === 'PayoutForm' && !Yii::$app->user->can(Role::ROLE_ADMIN)) {
@@ -197,6 +244,13 @@ class UserController extends CrudController
                 $form = $formName === 'User' ? $user : $forms[lcfirst($formName)];
                 if ($form->load(Yii::$app->request->post()) && 
                     ($formName === 'User' ? $form->save() : $form->saveRecord())) {
+                    if ($formName === 'UserDropTransferForm') {
+                        $message = sprintf(
+                            'Перенесено предметов: %d (записей: %d).',
+                            $form->getTransferredItemsCount(),
+                            $form->getTransferredRowsCount()
+                        );
+                    }
                     Yii::$app->session->addFlash('success', $message);
                     return $this->redirect(['profile', 'userId' => $userId]);
                 }

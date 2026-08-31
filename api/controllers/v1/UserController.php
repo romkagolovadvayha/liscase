@@ -27,6 +27,8 @@ use frontend\forms\promocode\PromocodeForm;
 use frontend\forms\market\PaymentForm;
 use api\components\jwt\JwtAuthFilter;
 use yii\data\ArrayDataProvider;
+use yii\db\Expression;
+use yii\db\Query;
 use yii\helpers\ArrayHelper;
 use OpenApi\Annotations as OA;
 
@@ -669,6 +671,27 @@ class UserController extends BaseApiController
      *         description="Размер страницы",
      *         @OA\Schema(type="integer", default=20)
      *     ),
+     *     @OA\Parameter(
+     *         name="type",
+     *         in="query",
+     *         required=false,
+     *         description="Фильтр направления операции",
+     *         @OA\Schema(type="string", enum={"all", "credit", "debit"}, default="all")
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         required=false,
+     *         description="Поле сортировки",
+     *         @OA\Schema(type="string", enum={"created_at", "comment", "sum"}, default="created_at")
+     *     ),
+     *     @OA\Parameter(
+     *         name="order",
+     *         in="query",
+     *         required=false,
+     *         description="Направление сортировки",
+     *         @OA\Schema(type="string", enum={"asc", "desc"}, default="desc")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="История операций",
@@ -680,90 +703,74 @@ class UserController extends BaseApiController
     public function actionHistory($depositId = null)
     {
         $user = $this->getCurrentUser();
-        $page = (int)Yii::$app->request->get('page', 1);
-        $pageSize = (int)Yii::$app->request->get('pageSize', 20);
+        $page = max(1, (int)Yii::$app->request->get('page', 1));
+        $requestedPageSize = (int)Yii::$app->request->get('pageSize', 20);
+        $pageSize = $requestedPageSize > 0 ? min($requestedPageSize, 100) : 20;
+
+        $filterType = strtolower((string)Yii::$app->request->get('type', 'all'));
+        if (!in_array($filterType, ['all', 'credit', 'debit'], true)) {
+            $filterType = 'all';
+        }
+
+        $sortField = strtolower((string)Yii::$app->request->get('sort', 'created_at'));
+        if (!in_array($sortField, ['created_at', 'comment', 'sum'], true)) {
+            $sortField = 'created_at';
+        }
+
+        $sortOrder = strtolower((string)Yii::$app->request->get('order', 'desc'));
+        if (!in_array($sortOrder, ['asc', 'desc'], true)) {
+            $sortOrder = 'desc';
+        }
 
         // Проверка статуса депозита если указан
-        if (!empty($depositId)) {
-            $deposit = Deposit::findOne($depositId);
-            if (!empty($deposit) && $deposit->user_id === $user->id && $deposit->status === Deposit::STATUS_WAIT_CONFIRM) {
-                $status = $deposit->check();
-                // Статус обновлен, можно вернуть информацию
+        if (ctype_digit((string)$depositId) && (int)$depositId > 0) {
+            $deposit = Deposit::findOne((int)$depositId);
+            if ($deposit !== null
+                && (int)$deposit->user_id === (int)$user->id
+                && (int)$deposit->status === Deposit::STATUS_WAIT_CONFIRM) {
+                try {
+                    $deposit->check();
+                } catch (\Throwable $e) {
+                    // Недоступность платежного провайдера не должна ломать всю историю.
+                    Yii::warning(
+                        "Deposit status check failed for deposit {$deposit->id}: {$e->getMessage()}",
+                        __METHOD__
+                    );
+                }
             }
         }
 
         $personalBalance = $user->getPersonalBalance();
-        $operations = [];
+        $unionQuery = $this->buildHistoryUnionQuery(
+            (int)$user->id,
+            (int)$personalBalance->id,
+            $filterType
+        );
 
-        // Прибыли (Profits)
-        $profits = Profit::find()
-            ->select(['type', 'amount', 'comment', 'created_at'])
-            ->where(['user_balance_id' => $personalBalance->id])
-            ->andWhere(['IN', 'type', [
-                Profit::TYPE_REFERRAL,      // Партнерская программа
-                Profit::TYPE_BONUS,         // Бонус
-                Profit::TYPE_WINNER_SKINS,  // Выигран скин
-                Profit::TYPE_PROMOCODE,     // Промокод
-                Profit::TYPE_SELL_DROP,     // Продажа предметов
-                Profit::TYPE_DAILY_REWARD_LIST, // Ежедневная награда
-                Profit::TYPE_ACHIEVEMENT,   // Достижения
-                Profit::TYPE_TASK,          // Задания
-                Profit::TYPE_TASK_V2,       // Задания v2
-                Profit::TYPE_MEDIA_LIVE,    // Бонус за эфир (стрим)
-                Profit::TYPE_TRANSFER_SKINS,   // Перевод из скинов в магазин
-                Profit::TYPE_TRANSFER_REFERRAL, // Перевод из реферальной системы
-            ]])
-            ->asArray()
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        foreach ($profits as &$profit) {
-            $profit['operation_type'] = 'profit';
-            $profit['sum'] = '+' . $profit['amount'];
-        }
-
-        // Траты (Invoices)
-        $invoices = Invoice::find()
-            ->select(['amount', 'comment', 'created_at'])
-            ->where(['user_id' => $user->id])
-            ->asArray()
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        foreach ($invoices as &$invoice) {
-            $invoice['operation_type'] = 'invoice';
-            $invoice['type'] = 'invoice';
-            $invoice['sum'] = '-' . $invoice['amount'];
-        }
-
-        // Пополнения (Deposits)
-        $deposits = Deposit::find()
-            ->select(['amount', 'status', 'created_at'])
-            ->where(['user_id' => $user->id])
-            ->asArray()
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        foreach ($deposits as &$deposit) {
-            $deposit['operation_type'] = 'deposit';
-            $deposit['type'] = 'deposit';
-            $deposit['sum'] = $deposit['status'] == Deposit::STATUS_SUCCESS ? '+' . $deposit['amount'] : '0';
-            $deposit['comment'] = 'Пополнение баланса';
-        }
-
-        // Объединяем все операции
-        $operations = ArrayHelper::merge($profits, $invoices);
-        $operations = ArrayHelper::merge($operations, $deposits);
-
-        // Сортируем по дате
-        usort($operations, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-
-        // Пагинация
-        $totalCount = count($operations);
+        $historyQuery = (new Query())->from(['history' => $unionQuery]);
+        $totalCount = (int)(clone $historyQuery)->count('*', Yii::$app->db);
         $offset = ($page - 1) * $pageSize;
-        $operations = array_slice($operations, $offset, $pageSize);
+
+        $sortColumns = [
+            'created_at' => 'history.created_at',
+            'comment' => 'history.comment',
+            'sum' => 'history.sort_amount',
+        ];
+        $sortDirection = $sortOrder === 'asc' ? SORT_ASC : SORT_DESC;
+        $orderBy = [$sortColumns[$sortField] => $sortDirection];
+        if ($sortField !== 'created_at') {
+            $orderBy['history.created_at'] = SORT_DESC;
+        }
+        // created_at имеет точность до секунды, поэтому добавляем стабильные ключи.
+        $orderBy['history.operation_type'] = SORT_ASC;
+        $orderBy['history.source_id'] = $sortDirection;
+
+        $operations = $historyQuery
+            ->orderBy($orderBy)
+            ->offset($offset)
+            ->limit($pageSize)
+            ->all(Yii::$app->db);
+        $operations = array_map([$this, 'serializeHistoryOperation'], $operations);
 
         return $this->successResponse([
             'operations' => $operations,
@@ -774,7 +781,128 @@ class UserController extends BaseApiController
                 'totalCount' => $totalCount,
                 'totalPages' => (int)ceil($totalCount / $pageSize),
             ],
+            'filters' => [
+                'type' => $filterType,
+                'sort' => $sortField,
+                'order' => $sortOrder,
+            ],
         ]);
+    }
+
+    /**
+     * Строит общую выборку операций до сортировки и пагинации.
+     * Успешные начисления берутся без whitelist типов: это сохраняет историю
+     * синхронной с UserBalance::recalculateBalance().
+     */
+    private function buildHistoryUnionQuery(int $userId, int $personalBalanceId, string $filterType): Query
+    {
+        $profitQuery = (new Query())
+            ->select([
+                'source_id' => 'p.id',
+                'operation_type' => new Expression("'profit'"),
+                'type' => 'p.type',
+                'profit_type' => 'p.type',
+                'amount' => 'p.amount',
+                'sort_amount' => 'p.amount',
+                'comment' => 'p.comment',
+                'status' => 'p.status',
+                'direction' => new Expression("'credit'"),
+                'created_at' => 'p.created_at',
+            ])
+            ->from(['p' => Profit::tableName()])
+            ->where([
+                'p.user_balance_id' => $personalBalanceId,
+                'p.status' => 1,
+            ]);
+
+        $invoiceQuery = (new Query())
+            ->select([
+                'source_id' => 'i.id',
+                'operation_type' => new Expression("'invoice'"),
+                'type' => new Expression("'invoice'"),
+                'profit_type' => new Expression('NULL'),
+                'amount' => 'i.amount',
+                'sort_amount' => 'i.amount',
+                'comment' => 'i.comment',
+                'status' => new Expression('NULL'),
+                'direction' => new Expression("'debit'"),
+                'created_at' => 'i.created_at',
+            ])
+            ->from(['i' => Invoice::tableName()])
+            ->where(['i.user_id' => $userId]);
+
+        $depositQuery = (new Query())
+            ->select([
+                'source_id' => 'd.id',
+                'operation_type' => new Expression("'deposit'"),
+                'type' => new Expression("'deposit'"),
+                'profit_type' => new Expression('NULL'),
+                'amount' => 'd.amount',
+                'sort_amount' => new Expression(
+                    'CASE WHEN d.status = ' . Deposit::STATUS_SUCCESS . ' THEN d.amount ELSE 0 END'
+                ),
+                'comment' => new Expression(':historyDepositComment', [
+                    ':historyDepositComment' => Yii::t('common', 'Пополнение баланса'),
+                ]),
+                'status' => 'd.status',
+                'direction' => new Expression(
+                    "CASE WHEN d.status = " . Deposit::STATUS_SUCCESS . " THEN 'credit' ELSE 'neutral' END"
+                ),
+                'created_at' => 'd.created_at',
+            ])
+            ->from(['d' => Deposit::tableName()])
+            ->where(['d.user_id' => $userId]);
+
+        if ($filterType === 'credit') {
+            $depositQuery->andWhere(['d.status' => Deposit::STATUS_SUCCESS]);
+            $queries = [$profitQuery, $depositQuery];
+        } elseif ($filterType === 'debit') {
+            $queries = [$invoiceQuery];
+        } else {
+            $queries = [$profitQuery, $invoiceQuery, $depositQuery];
+        }
+
+        /** @var Query $unionQuery */
+        $unionQuery = array_shift($queries);
+        foreach ($queries as $query) {
+            $unionQuery->union($query, true);
+        }
+
+        return $unionQuery;
+    }
+
+    /**
+     * Приводит строки из разных финансовых таблиц к единому API-контракту.
+     */
+    private function serializeHistoryOperation(array $operation): array
+    {
+        $operationType = (string)$operation['operation_type'];
+        $direction = (string)$operation['direction'];
+        $amount = (string)$operation['amount'];
+
+        $operation['id'] = $operationType . ':' . (int)$operation['source_id'];
+        $operation['source_id'] = (int)$operation['source_id'];
+        $operation['operation_type'] = $operationType;
+        $operation['kind'] = $operationType;
+        $operation['direction'] = $direction;
+        $operation['amount'] = $amount;
+        $operation['status'] = $operation['status'] === null ? null : (int)$operation['status'];
+        $operation['profit_type'] = $operation['profit_type'] === null
+            ? null
+            : (int)$operation['profit_type'];
+        $operation['type'] = $operationType === 'profit'
+            ? (int)$operation['type']
+            : $operationType;
+        if ($direction === 'credit') {
+            $operation['sum'] = '+' . $amount;
+        } elseif ($direction === 'debit') {
+            $operation['sum'] = '-' . $amount;
+        } else {
+            $operation['sum'] = '0';
+        }
+        unset($operation['sort_amount']);
+
+        return $operation;
     }
 
     /**

@@ -6,11 +6,13 @@ use backend\forms\userProfile\RoleForm;
 use backend\forms\userProfile\BonusForm;
 use backend\forms\userProfile\PayoutForm;
 use backend\forms\userProfile\BalanceTransferForm;
+use backend\forms\userProfile\UserDropTransferForm;
 use common\components\helpers\Role;
 use common\models\user\UserProfile;
 use common\models\user\UserTree;
 use common\models\invoice\Deposit;
 use yii\helpers\Html;
+use yii\helpers\Json;
 use yii\helpers\Url;
 use frontend\widgets\Alert;
 /** @var User $user */
@@ -18,6 +20,7 @@ use frontend\widgets\Alert;
 /** @var BonusForm $bonusForm */
 /** @var PayoutForm $payoutForm */
 /** @var BalanceTransferForm $balanceTransferForm */
+/** @var UserDropTransferForm $userDropTransferForm */
 
 $this->title = Html::encode($user->username);
 
@@ -130,6 +133,11 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                             <?php if (Yii::$app->user->can(Role::ROLE_ADMIN)): ?>
                             <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="role_form" data-bs-target="#modalForm">
                                 <i class="fas fa-user-shield"></i> <?= Yii::t('common', 'Роль') ?>
+                            </button>
+                            <?php endif; ?>
+                            <?php if (Yii::$app->user->can(Role::ROLE_ADMIN) || Yii::$app->user->can(Role::ROLE_MODERATOR)): ?>
+                            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm !border-0" data-bs-toggle="modal" data-bs-modal-form="user_drop_transfer_form" data-bs-target="#modalForm">
+                                <i class="fas fa-boxes" aria-hidden="true"></i> <?= Yii::t('common', 'Перенести предметы') ?>
                             </button>
                             <?php endif; ?>
                             <?php if (!empty($user->server)): ?>
@@ -359,13 +367,14 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
 </div>
 
 <!-- Модальные окна: класс user-profile-modal — тёмная тема в style -->
-<div class="modal fade user-profile-modal" id="modalForm" tabindex="-1" role="dialog" aria-labelledby="modalForm" aria-hidden="true">
+<div class="modal fade user-profile-modal" id="modalForm" tabindex="-1" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable user-profile-modal__dialog" role="document">
         <div class="modal-content user-profile-modal__content">
             <div id="role_form" style="display: none;"><?= $this->render('_form_role', compact('roleForm')) ?></div>
             <div id="bonus_form" style="display: none;"><?= $this->render('_form_personal_bonus', compact('bonusForm')) ?></div>
             <div id="payout_form" style="display: none;"><?= $this->render('_form_payout_form', compact('payoutForm')) ?></div>
             <div id="balance_transfer_form" style="display: none;"><?= $this->render('_form_balance_transfer', compact('balanceTransferForm')) ?></div>
+            <div id="user_drop_transfer_form" style="display: none;"><?= $this->render('_form_user_drop_transfer', compact('userDropTransferForm')) ?></div>
         </div>
     </div>
 </div>
@@ -574,6 +583,9 @@ body.user-profile-sidebar-open .user-profile-sidebar-backdrop {
 $setUserBoolUrl = Url::to(['/user/set-user-bool']);
 $csrfName = Yii::$app->request->csrfParam;
 $csrfToken = Yii::$app->request->csrfToken;
+$dropTransferLookupUrl = Json::htmlEncode(Url::to(['/user/lookup-drop-transfer-recipient']));
+$dropTransferUserId = (int) $user->id;
+$dropTransferItemsCount = $userDropTransferForm->getTransferableItemsCount();
 $this->registerJs(<<<JS
 (function() {
     $('[data-bs-modal-form]').on('click', function () {
@@ -581,6 +593,151 @@ $this->registerJs(<<<JS
         var element = $("#" + $(this).data().bsModalForm);
         form.find('.modal-content > *').hide();
         element.show();
+
+        var title = element.find('.modal-title').first();
+        if (title.length) {
+            if (!title.attr('id')) {
+                title.attr('id', element.attr('id') + '-title');
+            }
+            form.attr('aria-labelledby', title.attr('id'));
+        }
+    });
+
+    var dropTransferLookupUrl = {$dropTransferLookupUrl};
+    var dropTransferUserId = {$dropTransferUserId};
+    var dropTransferItemsCount = {$dropTransferItemsCount};
+    var dropTransferInput = $('#user-drop-transfer-steam-id');
+    var dropTransferStatus = $('#user-drop-transfer-lookup-status');
+    var dropTransferRecipient = $('#user-drop-transfer-recipient');
+    var dropTransferSubmit = $('#user-drop-transfer-submit');
+    var dropTransferForm = $('#user-drop-transfer-form-element');
+    var dropTransferTimer = null;
+    var dropTransferRequest = null;
+    var verifiedSteamId = '';
+
+    function setDropTransferStatus(message, isError) {
+        dropTransferStatus
+            .text(message || '')
+            .toggleClass('invalid-feedback d-block', !!isError)
+            .toggleClass('form-text', !isError);
+        dropTransferInput.attr('aria-invalid', isError ? 'true' : 'false');
+    }
+
+    function resetDropTransferRecipient(message, isError) {
+        verifiedSteamId = '';
+        dropTransferRecipient.prop('hidden', true);
+        dropTransferSubmit.prop('disabled', true).attr('aria-disabled', 'true');
+        setDropTransferStatus(message, isError);
+    }
+
+    function showDropTransferRecipient(user) {
+        verifiedSteamId = String(user.steamId || '');
+        $('#user-drop-transfer-name').text(user.username || 'Без ника');
+        $('#user-drop-transfer-steam').text(verifiedSteamId);
+
+        var avatar = $('#user-drop-transfer-avatar');
+        var fallback = $('#user-drop-transfer-avatar-fallback');
+        if (user.avatar) {
+            avatar
+                .off('error.userDropTransfer')
+                .on('error.userDropTransfer', function() {
+                    avatar.prop('hidden', true);
+                    fallback.prop('hidden', false);
+                })
+                .attr('src', user.avatar)
+                .attr('alt', '')
+                .prop('hidden', false);
+            fallback.prop('hidden', true);
+        } else {
+            avatar.attr('src', '').attr('alt', '').prop('hidden', true);
+            fallback.prop('hidden', false);
+        }
+
+        dropTransferRecipient.prop('hidden', false);
+        setDropTransferStatus('Получатель найден. Проверьте ник и Steam ID.', false);
+        if (dropTransferItemsCount > 0) {
+            dropTransferSubmit.prop('disabled', false).attr('aria-disabled', 'false');
+        }
+    }
+
+    function lookupDropTransferRecipient() {
+        var steamId = $.trim(dropTransferInput.val());
+        if (!steamId) {
+            resetDropTransferRecipient('Введите Steam ID, чтобы проверить получателя.', false);
+            return;
+        }
+        if (!/^\d{8,20}$/.test(steamId)) {
+            resetDropTransferRecipient('Steam ID должен содержать от 8 до 20 цифр.', true);
+            return;
+        }
+
+        if (dropTransferRequest) {
+            dropTransferRequest.abort();
+        }
+
+        resetDropTransferRecipient('Ищем пользователя…', false);
+        dropTransferInput.attr('aria-busy', 'true');
+        dropTransferRequest = $.ajax({
+            url: dropTransferLookupUrl,
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                userId: dropTransferUserId,
+                steamId: steamId
+            }
+        }).done(function(response) {
+            if ($.trim(dropTransferInput.val()) !== steamId) {
+                return;
+            }
+            if (response && response.success && response.user) {
+                showDropTransferRecipient(response.user);
+                return;
+            }
+            resetDropTransferRecipient((response && response.error) || 'Пользователь не найден.', true);
+        }).fail(function(xhr, status) {
+            if (status === 'abort') {
+                return;
+            }
+            var response = xhr.responseJSON || {};
+            resetDropTransferRecipient(response.error || 'Не удалось проверить пользователя.', true);
+        }).always(function() {
+            dropTransferInput.removeAttr('aria-busy');
+            dropTransferRequest = null;
+        });
+    }
+
+    dropTransferInput.on('input', function() {
+        clearTimeout(dropTransferTimer);
+        resetDropTransferRecipient('', false);
+        dropTransferTimer = setTimeout(lookupDropTransferRecipient, 350);
+    });
+
+    $('[data-bs-modal-form="user_drop_transfer_form"]').on('click', function() {
+        if (dropTransferInput.val()) {
+            lookupDropTransferRecipient();
+        }
+    });
+
+    dropTransferForm.on('beforeSubmit', function() {
+        var currentSteamId = $.trim(dropTransferInput.val());
+        if (!verifiedSteamId || verifiedSteamId !== currentSteamId) {
+            resetDropTransferRecipient('Сначала дождитесь проверки получателя.', true);
+            dropTransferInput.trigger('focus');
+            return false;
+        }
+        dropTransferSubmit
+            .prop('disabled', true)
+            .attr('aria-disabled', 'true')
+            .attr('aria-busy', 'true')
+            .text('Переносим…');
+        return true;
+    });
+
+    $('#modalForm').on('shown.bs.modal', function() {
+        var visibleInput = $(this).find('.modal-content > div:visible input:not(:disabled)').first();
+        if (visibleInput.length) {
+            visibleInput.trigger('focus');
+        }
     });
 
     $('.user-profile-bool-input').on('change', function() {
@@ -687,6 +844,24 @@ $this->registerJs(<<<JS
     $('#modalForm .modal-content > *').hide();
     $('#balance_transfer_form').show();
     modal.show();
+})();
+JS
+);
+?>
+<?php endif; ?>
+
+<?php if ($userDropTransferForm->hasErrors()): ?>
+<?php
+$this->registerJs(<<<JS
+(function() {
+    var modalEl = document.getElementById('modalForm');
+    if (!modalEl || !window.bootstrap) return;
+    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    $('#modalForm .modal-content > *').hide();
+    $('#user_drop_transfer_form').show();
+    modalEl.setAttribute('aria-labelledby', 'user-drop-transfer-title');
+    modal.show();
+    $('#user-drop-transfer-steam-id').trigger('input');
 })();
 JS
 );

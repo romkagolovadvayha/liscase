@@ -112,8 +112,7 @@ class PaymentForm extends Model
         try {
             return $paymentApi->create($deposit);
         } catch (\Exception $ex) {
-            $deposit->status = Deposit::STATUS_CANCELED;
-            $deposit->save();
+            $deposit->markCanceled();
             Yii::$app->telegramChats->sendMessage('PaymentForm: ' . $ex->getMessage());
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Платежная система не доступна в данный момент, попробуйте другой метод оплаты.'));
         }

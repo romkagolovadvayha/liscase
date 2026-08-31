@@ -77,12 +77,36 @@ class TBankMerchantAPI
         $args['Password'] = htmlspecialchars_decode($this->_secretKey);
         ksort($args);
         foreach ($args as $arg) {
-            if(!is_array($arg))
-                $token .= $arg;
-        }
-        $token = hash('sha256', $token);
+            if (is_array($arg) || $arg === null) {
+                continue;
+            }
 
-        return $token;
+            if (is_bool($arg)) {
+                $token .= $arg ? 'true' : 'false';
+                continue;
+            }
+
+            $token .= (string)$arg;
+        }
+
+        return hash('sha256', $token);
+    }
+
+    /**
+     * Verifies a signed T-Bank notification using only root-level fields.
+     */
+    public function isValidNotification(array $payload): bool
+    {
+        $receivedToken = $payload['Token'] ?? null;
+        $terminalKey = $payload['TerminalKey'] ?? null;
+        if (!is_string($receivedToken) || $receivedToken === ''
+            || !is_string($terminalKey) || $terminalKey === ''
+            || !hash_equals((string)$this->_terminalKey, $terminalKey)) {
+            return false;
+        }
+
+        unset($payload['Token']);
+        return hash_equals($this->_genToken($payload), strtolower($receivedToken));
     }
 
     /**
@@ -131,6 +155,18 @@ class TBankMerchantAPI
             'OrderId' => $depositId,
         ];
         return $this->sendHttpRequest('POST', "CheckOrder", $params);
+    }
+
+    /**
+     * Returns the authoritative state of one provider payment.
+     */
+    public function getState($paymentId): array
+    {
+        $params = [
+            'TerminalKey' => $this->_terminalKey,
+            'PaymentId' => $paymentId,
+        ];
+        return $this->sendHttpRequest('POST', 'GetState', $params);
     }
 
     /**

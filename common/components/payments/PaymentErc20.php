@@ -25,23 +25,21 @@ class PaymentErc20
     public function check($depositId)
     {
         $model = Deposit::findOne($depositId);
+        if (!$model) {
+            return null;
+        }
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
         $result = Yii::$app->freeKassaApi->check($model->payment_id);
         if (empty($result['orders'])) {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
+            $model->markCanceled();
             return $model->status;
         }
         if ($result['orders'][0]['status'] === 1) {
-            $model->status = Deposit::STATUS_SUCCESS;
-            $model->save(false);
-            Deposit::bonus($model->user, $model->amount, $model->payment_type);
-            $model->user->getPersonalBalance()->recalculateBalance();
+            $model->markSuccessful();
         } elseif ($result['orders'][0]['status'] === 8 || $result['orders'][0]['status'] === 9) {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
+            $model->markCanceled();
         }
 
         return $model->status;

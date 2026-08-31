@@ -46,30 +46,34 @@ class PaymentTinkoff
             return null;
         }
 
-        $request = $TBank->check($depositId);
-        if (empty($request['Success'])) {
-            return null;
-        }
-
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
 
-        $status = $request['Payments'][0]['Status'] ?? null;
+        $request = $TBank->getState($model->payment_id);
+        if (empty($request['Success'])) {
+            return null;
+        }
+
+        if (!$this->matchesDeposit($request, $model)) {
+            Yii::error(sprintf(
+                'TBank status response does not match deposit #%d',
+                (int)$model->id
+            ), 'payment');
+            return null;
+        }
+
+        $status = $request['Status'] ?? null;
         if (!is_string($status) || $status === '') {
             return null;
         }
 
         if ($status === 'CONFIRMED') {
-            $model->status = Deposit::STATUS_SUCCESS;
-            $model->save(false);
-            Deposit::bonus($model->user, $model->amount, $model->payment_type);
-            $model->user->getPersonalBalance()->recalculateBalance();
+            $model->markSuccessful();
         }
 
         if (in_array($status, ['PARTIAL_REVERSED', 'REVERSED', 'CANCELED', 'PARTIAL_REFUNDED', 'REFUNDED', 'REJECTED', 'DEADLINE_EXPIRED'], true)) {
-            $model->status = Deposit::STATUS_CANCELED;
-            $model->save(false);
+            $model->markCanceled();
         }
 
         return $model->status;
@@ -81,14 +85,28 @@ class PaymentTinkoff
         $secretKey = Yii::$app->settings->get('tinkoffpay_secretKey');
         $TBank = new TBankMerchantAPI($terminalKey, $secretKey);
         $model = Deposit::findOne($depositId);
+        if (!$model) {
+            return null;
+        }
         if ($model->status !== Deposit::STATUS_WAIT_CONFIRM) {
             return $model->status;
         }
-        $request = $TBank->check($depositId);
-        if (empty($request['Payments'])) {
+        $request = $TBank->getState($model->payment_id);
+        if (empty($request['Success']) || !$this->matchesDeposit($request, $model)) {
             return '';
         }
-        return $request['Payments'][0]['Status'] ?? '';
+        return $request['Status'] ?? '';
     }
 
+    private function matchesDeposit(array $response, Deposit $deposit): bool
+    {
+        $expectedAmount = (int)round(
+            ((float)$deposit->amount + (float)$deposit->commission) * 100
+        );
+
+        return isset($response['PaymentId'], $response['OrderId'], $response['Amount'])
+            && (string)$response['PaymentId'] === (string)$deposit->payment_id
+            && (string)$response['OrderId'] === (string)$deposit->id
+            && (int)$response['Amount'] === $expectedAmount;
+    }
 }
