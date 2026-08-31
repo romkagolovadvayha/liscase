@@ -100,9 +100,11 @@ abstract class AbstractSystemBots
      * @param int    $chatId
      * @param string $buttonValue
      *
+     * @param array  $callbackQuery Полный callback_query, включая from.id
+     *
      * @return string|null
      */
-    public function executeCallBack($chatId, $buttonValue)
+    public function executeCallBack($chatId, $buttonValue, $callbackQuery = [])
     {
         return null;
     }

@@ -718,7 +718,7 @@ class RustotekaBotSystem extends AbstractSystemBots
      *
      * @return null|string|array
      */
-    public function executeCallBack($chatId, $buttonValue)
+    public function executeCallBack($chatId, $buttonValue, $callbackQuery = [])
     {
         // Парсим данные кнопки
         $data = json_decode($buttonValue, true);

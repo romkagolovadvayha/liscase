@@ -64,8 +64,14 @@ final class TelegramWebhookProcessor
                 return;
             }
 
-            $answerMessage = $system->executeCallBack($chat['id'], $buttonValue);
-            if (!empty($answerMessage['editMessageReplyMarkup'])) {
+            $answerMessage = $system->executeCallBack($chat['id'], $buttonValue, $callBack);
+            if (!empty($answerMessage['forceReply']) && !empty($answerMessage['message'])) {
+                $bot->sendForceReply(
+                    $chat['id'],
+                    $answerMessage['message'],
+                    ArrayHelper::getValue($answerMessage, 'placeholder', '')
+                );
+            } elseif (!empty($answerMessage['editMessageReplyMarkup'])) {
                 $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage['message'])) {
                 $bot->sendMessage($chat['id'], $answerMessage['message'], $answerMessage['buttons']);
@@ -76,6 +82,8 @@ final class TelegramWebhookProcessor
                 $caption .= "\n\n" . $answerMessage;
                 $bot->editMessageCaption($chat['id'], $message['message_id'], $caption);
             }
+
+            $bot->answerCallbackQuery(ArrayHelper::getValue($callBack, 'id'));
         } else {
             $message = ArrayHelper::getValue($inputParams, 'message');
             $chat    = ArrayHelper::getValue($message, 'chat');

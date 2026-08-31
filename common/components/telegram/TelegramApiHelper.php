@@ -229,6 +229,51 @@ class TelegramApiHelper extends \yii\base\Component
 
         return $this->_sendRequest('sendMessage', $params);
     }
+
+    /**
+     * Отправляет сообщение, которое Telegram сразу открывает как ответ для выбранного пользователя.
+     */
+    public function sendForceReply($chatId, $messageText, $placeholder = '')
+    {
+        if (empty($messageText)) {
+            return false;
+        }
+
+        $replyMarkup = [
+            'force_reply' => true,
+            'selective' => true,
+        ];
+        if ($placeholder !== '') {
+            $replyMarkup['input_field_placeholder'] = mb_substr((string)$placeholder, 0, 64);
+        }
+
+        return $this->_sendRequest('sendMessage', [
+            'chat_id' => $chatId,
+            'text' => $messageText,
+            'parse_mode' => 'Html',
+            'reply_markup' => json_encode($replyMarkup, JSON_UNESCAPED_UNICODE),
+        ]);
+    }
+
+    /**
+     * Закрывает индикатор загрузки после нажатия inline-кнопки.
+     */
+    public function answerCallbackQuery($callbackQueryId, $text = '', $showAlert = false)
+    {
+        if (empty($callbackQueryId)) {
+            return false;
+        }
+
+        $params = [
+            'callback_query_id' => $callbackQueryId,
+            'show_alert' => $showAlert ? 1 : 0,
+        ];
+        if ($text !== '') {
+            $params['text'] = mb_substr((string)$text, 0, 200);
+        }
+
+        return $this->_sendRequest('answerCallbackQuery', $params);
+    }
     /**
      * @param int    $chatId
      * @param string $messageText

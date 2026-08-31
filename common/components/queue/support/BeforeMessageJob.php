@@ -2,6 +2,8 @@
 
 namespace common\components\queue\support;
 
+use common\components\telegram\SupportTelegramReplyService;
+use common\models\support\Support;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
 use Yii;
@@ -37,15 +39,23 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $text .= PHP_EOL . "Сообщение: " . $message;
             $text .= PHP_EOL . "<a href=\"https://{$domain}/support/ticket?id={$this->chatNumber}\">Перейти к тикету</a>";
 
+            $buttons = [];
+            if ($this->isTicketOwnerMessage()) {
+                $buttons[] = [
+                    'text' => '✍️ Ответить',
+                    'callback_data' => SupportTelegramReplyService::callbackData((int)$this->chatNumber),
+                ];
+            }
+
             $photoUrls = $this->collectPhotoUrls();
             if (empty($photoUrls)) {
-                Yii::$app->telegramSupport->sendMessage($text);
+                Yii::$app->telegramSupport->sendMessage($text, $buttons);
                 return;
             }
 
             // caption в Telegram — максимум 1024 символа
             $caption = mb_substr($text, 0, 1024);
-            Yii::$app->telegramSupport->sendMessage($caption, [], $photoUrls[0]);
+            Yii::$app->telegramSupport->sendMessage($caption, $buttons, $photoUrls[0]);
 
             foreach (array_slice($photoUrls, 1) as $photoUrl) {
                 Yii::$app->telegramSupport->sendMessage('', [], $photoUrl);
@@ -105,6 +115,23 @@ class BeforeMessageJob extends BaseObject implements JobInterface
 
         return SupportFile::find()
             ->andWhere(['support_message_id' => (int)$this->messageId])
+            ->exists();
+    }
+
+    /**
+     * Кнопка ответа нужна только у входящих сообщений владельца тикета.
+     */
+    private function isTicketOwnerMessage(): bool
+    {
+        if (empty($this->chatId) || empty($this->userId) || empty($this->chatNumber)) {
+            return false;
+        }
+
+        return Support::find()
+            ->andWhere([
+                'id' => (int)$this->chatId,
+                'user_id' => (int)$this->userId,
+            ])
             ->exists();
     }
 }

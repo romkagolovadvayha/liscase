@@ -495,7 +495,7 @@ class PersonalBotSystem extends AbstractSystem
      *
      * @return null|string|array
      */
-    public function executeCallBack($chatId, $buttonValue)
+    public function executeCallBack($chatId, $buttonValue, $callbackQuery = [])
     {
         try {
             if ($buttonValue !== null && $buttonValue !== '') {

@@ -2,7 +2,9 @@
 
 namespace common\components\telegram\foreignSystem;
 
+use common\components\telegram\SupportTelegramReplyService;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * Бот уведомлений модерации ({@see TelegramSupport}, настройка tgbotSupportAlert_token).
@@ -12,6 +14,43 @@ use Yii;
  */
 class SupportAlertBotSystem extends PersonalBotSystem
 {
+    /**
+     * В группе поддержки обычный текст обрабатывается только как начатый через кнопку ответ.
+     * В личном чате (когда personal/support используют один токен) сохраняются команды PersonalBotSystem.
+     *
+     * @param array $message
+     * @return array|string|null
+     */
+    public function executeCommand($message)
+    {
+        $chatId = ArrayHelper::getValue($message, 'chat.id');
+        if (SupportTelegramReplyService::isSupportChat($chatId)) {
+            return (new SupportTelegramReplyService())->handleMessage($message);
+        }
+
+        return parent::executeCommand($message);
+    }
+
+    /**
+     * @param int|string $chatId
+     * @param string $buttonValue
+     * @param array $callbackQuery
+     * @return array|string|null
+     */
+    public function executeCallBack($chatId, $buttonValue, $callbackQuery = [])
+    {
+        $ticketNumber = SupportTelegramReplyService::ticketNumberFromCallback((string)$buttonValue);
+        if ($ticketNumber !== null) {
+            return (new SupportTelegramReplyService())->beginReply(
+                $chatId,
+                ArrayHelper::getValue($callbackQuery, 'from.id'),
+                $ticketNumber
+            );
+        }
+
+        return parent::executeCallBack($chatId, $buttonValue, $callbackQuery);
+    }
+
     /**
      * @return string
      */
