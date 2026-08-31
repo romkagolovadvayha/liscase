@@ -848,7 +848,9 @@ class UserController extends BaseApiController
                 'direction' => new Expression(
                     "CASE WHEN d.status = " . Deposit::STATUS_SUCCESS . " THEN 'credit' ELSE 'neutral' END"
                 ),
-                'created_at' => 'd.created_at',
+                // Successful deposits are shown at the actual completion
+                // time; waiting/canceled deposits retain their creation time.
+                'created_at' => new Expression('COALESCE(d.completed_at, d.created_at)'),
             ])
             ->from(['d' => Deposit::tableName()])
             ->where(['d.user_id' => $userId]);

@@ -15,18 +15,20 @@ class m260831_060000_harden_deposit_processing extends Migration
             'completed_at',
             $this->dateTime()->null()->after('created_at')
         );
-        $this->update(
-            'deposit',
-            ['completed_at' => new Expression('created_at')],
-            ['status' => 3]
-        );
 
         // created_at describes initiation and must not silently change on
-        // payment_id, commission or status updates.
+        // payment_id, commission or status updates. This must happen before
+        // the completed_at backfill: otherwise MySQL's former ON UPDATE clause
+        // rewrites created_at to the migration time.
         $this->alterColumn(
             'deposit',
             'created_at',
             'TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP'
+        );
+        $this->update(
+            'deposit',
+            ['completed_at' => new Expression('created_at')],
+            ['status' => 3]
         );
 
         $this->addColumn(
