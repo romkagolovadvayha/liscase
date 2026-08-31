@@ -585,7 +585,7 @@ $csrfName = Yii::$app->request->csrfParam;
 $csrfToken = Yii::$app->request->csrfToken;
 $dropTransferLookupUrl = Json::htmlEncode(Url::to(['/user/lookup-drop-transfer-recipient']));
 $dropTransferUserId = (int) $user->id;
-$dropTransferItemsCount = $userDropTransferForm->getTransferableItemsCount();
+$dropTransferRowsCount = $userDropTransferForm->getTransferableRowsCount();
 $this->registerJs(<<<JS
 (function() {
     $('[data-bs-modal-form]').on('click', function () {
@@ -605,7 +605,7 @@ $this->registerJs(<<<JS
 
     var dropTransferLookupUrl = {$dropTransferLookupUrl};
     var dropTransferUserId = {$dropTransferUserId};
-    var dropTransferItemsCount = {$dropTransferItemsCount};
+    var dropTransferRowsCount = {$dropTransferRowsCount};
     var dropTransferInput = $('#user-drop-transfer-steam-id');
     var dropTransferStatus = $('#user-drop-transfer-lookup-status');
     var dropTransferRecipient = $('#user-drop-transfer-recipient');
@@ -655,7 +655,7 @@ $this->registerJs(<<<JS
 
         dropTransferRecipient.prop('hidden', false);
         setDropTransferStatus('Получатель найден. Проверьте ник и Steam ID.', false);
-        if (dropTransferItemsCount > 0) {
+        if (dropTransferRowsCount > 0) {
             dropTransferSubmit.prop('disabled', false).attr('aria-disabled', 'false');
         }
     }

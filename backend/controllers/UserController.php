@@ -246,9 +246,9 @@ class UserController extends CrudController
                     ($formName === 'User' ? $form->save() : $form->saveRecord())) {
                     if ($formName === 'UserDropTransferForm') {
                         $message = sprintf(
-                            'Перенесено предметов: %d (записей: %d).',
-                            $form->getTransferredItemsCount(),
-                            $form->getTransferredRowsCount()
+                            'Перенесено записей: %d (суммарное количество: %d).',
+                            $form->getTransferredRowsCount(),
+                            $form->getTransferredItemsCount()
                         );
                     }
                     Yii::$app->session->addFlash('success', $message);

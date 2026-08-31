@@ -18,7 +18,7 @@ class UserDropTransferForm extends Model
     private $_recipient;
 
     /** @var int|null */
-    private $_transferableItemsCount;
+    private $_transferableRowsCount;
 
     /** @var int */
     private $_transferredRowsCount = 0;
@@ -86,15 +86,15 @@ class UserDropTransferForm extends Model
             return;
         }
 
-        if ($this->getTransferableItemsCount() < 1) {
+        if ($this->getTransferableRowsCount() < 1) {
             $this->addError($attribute, 'У пользователя нет доступных предметов для переноса.');
         }
     }
 
-    public function getTransferableItemsCount(): int
+    public function getTransferableRowsCount(): int
     {
-        if ($this->_transferableItemsCount !== null) {
-            return $this->_transferableItemsCount;
+        if ($this->_transferableRowsCount !== null) {
+            return $this->_transferableRowsCount;
         }
 
         if ($this->sender === null) {
@@ -106,11 +106,11 @@ class UserDropTransferForm extends Model
                 'user_id' => (int) $this->sender->id,
                 'status' => UserDrop::STATUS_ACTIVE,
             ])
-            ->sum('COALESCE([[count]], 1)');
+            ->count();
 
-        $this->_transferableItemsCount = max(0, (int) $count);
+        $this->_transferableRowsCount = max(0, (int) $count);
 
-        return $this->_transferableItemsCount;
+        return $this->_transferableRowsCount;
     }
 
     public function getTransferredRowsCount(): int
@@ -147,7 +147,7 @@ class UserDropTransferForm extends Model
             )->queryAll();
 
             if (empty($rows)) {
-                $this->_transferableItemsCount = 0;
+                $this->_transferableRowsCount = 0;
                 $transaction->rollBack();
                 $this->addError('formError', 'Доступных предметов для переноса больше нет.');
                 return false;
@@ -188,7 +188,7 @@ class UserDropTransferForm extends Model
 
             $this->_transferredRowsCount = $updatedRows;
             $this->_transferredItemsCount = $itemsCount;
-            $this->_transferableItemsCount = 0;
+            $this->_transferableRowsCount = 0;
 
             $adminId = Yii::$app->user->id === null ? 0 : (int) Yii::$app->user->id;
             Yii::warning(sprintf(

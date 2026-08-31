@@ -7,7 +7,7 @@ use yii\bootstrap5\Html;
 /* @var $this yii\web\View */
 /* @var $userDropTransferForm UserDropTransferForm */
 
-$itemsCount = $userDropTransferForm->getTransferableItemsCount();
+$rowsCount = $userDropTransferForm->getTransferableRowsCount();
 ?>
 
 <div class="modal-header">
@@ -19,14 +19,14 @@ $itemsCount = $userDropTransferForm->getTransferableItemsCount();
         Все предметы со статусом «Доступен» будут перенесены на другой аккаунт. Уже выданные, проданные, временно заблокированные и находящиеся в отправке предметы останутся на текущем аккаунте.
     </p>
 
-    <div class="ds-alert <?= $itemsCount > 0 ? 'ds-alert--info' : 'ds-alert--warning' ?> mb-3" role="status">
+    <div class="ds-alert <?= $rowsCount > 0 ? 'ds-alert--info' : 'ds-alert--warning' ?> mb-3" role="status">
         <div class="ds-alert__icon" aria-hidden="true">
-            <i class="fas <?= $itemsCount > 0 ? 'fa-box-open' : 'fa-exclamation-triangle' ?>"></i>
+            <i class="fas <?= $rowsCount > 0 ? 'fa-box-open' : 'fa-exclamation-triangle' ?>"></i>
         </div>
         <div class="ds-alert__content">
             <div class="ds-alert__message">
-                <?= $itemsCount > 0
-                    ? 'Доступно к переносу: ' . Html::encode((string) $itemsCount) . ' шт.'
+                <?= $rowsCount > 0
+                    ? 'Количество записей для переноса: ' . Html::encode((string) $rowsCount)
                     : 'У пользователя нет доступных предметов для переноса.' ?>
             </div>
         </div>
@@ -50,11 +50,11 @@ $itemsCount = $userDropTransferForm->getTransferableItemsCount();
         'maxlength' => 20,
         'aria-required' => 'true',
         'aria-describedby' => 'user-drop-transfer-lookup-status',
-        'disabled' => $itemsCount < 1,
+        'disabled' => $rowsCount < 1,
     ]) ?>
 
     <div id="user-drop-transfer-lookup-status" class="form-text" role="status" aria-live="polite" aria-atomic="true">
-        <?= $itemsCount > 0 ? 'Введите Steam ID, чтобы проверить получателя.' : '' ?>
+        <?= $rowsCount > 0 ? 'Введите Steam ID, чтобы проверить получателя.' : '' ?>
     </div>
 
     <div id="user-drop-transfer-recipient" class="ds-card mt-3" hidden>
