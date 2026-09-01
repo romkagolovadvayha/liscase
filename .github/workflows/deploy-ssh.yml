@@ -290,6 +290,7 @@ jobs:
             "$PHP_BIN" "$COMPOSER_BIN" install --no-interaction --no-dev --optimize-autoloader
             "$PHP_BIN" -d default_socket_timeout=28800 yii migrate --interactive=0
             if [ -f supervisor.deploy.conf ]; then
+              mkdir -p console/runtime/supervisor
               # Environment secrets edited on Windows may contain CRLF. Normalize first so
               # section-level validation below behaves identically on every target.
               tr -d '\r' < supervisor.deploy.conf > supervisor.deploy.conf.__lf__
