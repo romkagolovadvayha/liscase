@@ -11,6 +11,17 @@ final class MaxSupportWebhookContext
 {
     public static function chatId(array $update, string $configuredChatId): ?string
     {
+        // A support callback can only originate from a button sent by this bot.
+        // Its Message.recipient describes the original message recipient and may
+        // differ between a group chat and a direct dialog, so the configured
+        // support conversation is the source of truth for callback replies.
+        if (
+            (string)($update['update_type'] ?? '') === 'message_callback'
+            && $configuredChatId !== ''
+        ) {
+            return $configuredChatId;
+        }
+
         $chatId = ArrayHelper::getValue(
             $update,
             'message.recipient.chat_id',
@@ -28,9 +39,7 @@ final class MaxSupportWebhookContext
         // The callback still belongs to the configured support conversation because
         // its original message was sent by this bot.
         $chatType = (string)ArrayHelper::getValue($update, 'message.recipient.chat_type', '');
-        $isBotCallback = (string)($update['update_type'] ?? '') === 'message_callback'
-            && (bool)ArrayHelper::getValue($update, 'message.sender.is_bot', false);
-        if ($chatType === 'dialog' || $isBotCallback) {
+        if ($chatType === 'dialog') {
             return $configuredChatId;
         }
 

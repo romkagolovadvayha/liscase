@@ -46,6 +46,20 @@ class MaxSupportWebhookContextTest extends Unit
         $this->assertSame('54321', MaxSupportWebhookContext::chatId($update, '54321'));
     }
 
+    public function testUsesConfiguredChatWhenCallbackRecipientDiffers(): void
+    {
+        $update = [
+            'update_type' => 'message_callback',
+            'callback' => ['user' => ['user_id' => 777]],
+            'message' => [
+                'sender' => ['is_bot' => true],
+                'recipient' => ['chat_id' => 99999, 'chat_type' => 'dialog'],
+            ],
+        ];
+
+        $this->assertSame('54321', MaxSupportWebhookContext::chatId($update, '54321'));
+    }
+
     public function testDoesNotGuessAGroupChat(): void
     {
         $update = [

@@ -3,6 +3,7 @@
 namespace common\components\max;
 
 use common\components\support\SupportReplyCallback;
+use Yii;
 use yii\helpers\ArrayHelper;
 
 /**
@@ -10,6 +11,9 @@ use yii\helpers\ArrayHelper;
  */
 final class MaxSupportWebhookProcessor
 {
+    private const CALLBACK_CACHE_PREFIX = 'max_support_callback_processed_v1:';
+    private const CALLBACK_CACHE_TTL = 5 * 60;
+
     private MaxBotApi $api;
     private MaxSupportReplyService $replies;
 
@@ -67,6 +71,28 @@ final class MaxSupportWebhookProcessor
         }
 
         $callbackId = (string)ArrayHelper::getValue($update, 'callback.callback_id', '');
+        $callbackCacheKey = $this->callbackCacheKey($callbackId);
+        if ($callbackCacheKey !== null && !Yii::$app->cache->add(
+            $callbackCacheKey,
+            1,
+            self::CALLBACK_CACHE_TTL
+        )) {
+            return;
+        }
+
+        try {
+            $this->processUniqueCallback($update, $ticketNumber, $callbackId);
+        } catch (\Throwable $e) {
+            if ($callbackCacheKey !== null) {
+                Yii::$app->cache->delete($callbackCacheKey);
+            }
+
+            throw $e;
+        }
+    }
+
+    private function processUniqueCallback(array $update, int $ticketNumber, string $callbackId): void
+    {
         $operatorMaxId = ArrayHelper::getValue($update, 'callback.user.user_id');
         $chatId = $this->messageChatId($update);
         $result = $this->replies->beginReply($chatId, $operatorMaxId, $ticketNumber);
@@ -78,6 +104,13 @@ final class MaxSupportWebhookProcessor
         if ($chatId !== null && !empty($result['message'])) {
             $this->api->sendMessage($chatId, (string)$result['message']);
         }
+    }
+
+    private function callbackCacheKey(string $callbackId): ?string
+    {
+        return $callbackId === ''
+            ? null
+            : self::CALLBACK_CACHE_PREFIX . hash('sha256', $callbackId);
     }
 
     private function processMessage(array $update): void

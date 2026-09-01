@@ -67,12 +67,36 @@ class TelegramSupport
         }
 
         $answer = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
         if ($answer === false) {
-            Yii::error('empty telegram query answer ' . curl_error($ch));
+            Yii::error('TelegramSupport request failed: ' . $curlError, __METHOD__);
+
+            return [];
         }
 
+        $decoded = json_decode((string)$answer, true);
+        if (!is_array($decoded)) {
+            Yii::error(
+                'TelegramSupport returned an invalid JSON response (HTTP ' . $httpCode . '): '
+                . json_last_error_msg(),
+                __METHOD__
+            );
 
-        return json_decode($answer, true);
+            return [];
+        }
+
+        if ($httpCode < 200 || $httpCode >= 300 || empty($decoded['ok'])) {
+            Yii::error(
+                'TelegramSupport rejected a request (HTTP ' . $httpCode . '): '
+                . (string)($decoded['description'] ?? 'unknown error'),
+                __METHOD__
+            );
+        }
+
+        return $decoded;
     }
 
     /**
