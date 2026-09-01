@@ -6,6 +6,8 @@ use Yii;
 use common\helpers\ApiPublicCacheTtl;
 use common\models\map\MapList;
 use common\models\map\MapListVote;
+use common\models\map\MapVotingRound;
+use common\models\map\MapVotingRoundMap;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
@@ -101,16 +103,22 @@ class MapsController extends BaseApiController
             return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+
         $language = Yii::$app->language;
         $cache = Yii::$app->cache;
-        $listCacheKey = 'api_maps_list_v2_' . $server->tag . '_' . $language;
+        $listCacheKey = 'api_maps_list_v3_' . $server->tag . '_' . ($round ? $round->id : 0) . '_' . $language;
         $cachedList = $cache->get($listCacheKey);
         if ($cachedList !== false && is_array($cachedList)) {
             $userVotedMapIds = [];
             $currentUser = Yii::$app->user->identity;
             if ($currentUser) {
                 $userVotedMapIds = MapListVote::find()
-                    ->where(['server_id' => $server->id, 'user_id' => $currentUser->id])
+                    ->where([
+                        'server_id' => $server->id,
+                        'user_id' => $currentUser->id,
+                        'round_id' => $round ? $round->id : 0,
+                    ])
                     ->select('map_list_id')
                     ->column();
             }
@@ -126,20 +134,8 @@ class MapsController extends BaseApiController
                 'totalMaps' => $cachedList['totalMaps'],
                 'totalVotes' => $cachedList['totalVotes'],
                 'maxVotes' => $cachedList['maxVotes'],
+                'votingRound' => $cachedList['votingRound'] ?? null,
             ]);
-        }
-
-        // Получаем ID карт, которые уже зафиксированы на любом из серверов (кэшируем на 5 минут)
-        $cacheKey = 'api_maps_fixed_ids';
-        $cache = Yii::$app->cache;
-        $fixedMapIds = $cache->get($cacheKey);
-        
-        if ($fixedMapIds === false) {
-            $fixedMapIds = Servers::find()
-                ->select('map_list_id')
-                ->andWhere(['IS NOT', 'map_list_id', null])
-                ->column();
-            $cache->set($cacheKey, $fixedMapIds, ApiPublicCacheTtl::SECONDS);
         }
 
         // Вычисляем дату через 3 суток от текущего момента (следующий вайп — из календаря, иначе колонка сервера)
@@ -162,10 +158,18 @@ class MapsController extends BaseApiController
             ->andWhere(['>=', 'ml.size_int', (int)$server->min_map_size])
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
-        
-        // Исключаем все зафиксированные карты
-        if (!empty($fixedMapIds)) {
-            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+
+        if ($round) {
+            $mapQuery
+                ->innerJoin(
+                    MapVotingRoundMap::tableName() . ' rmap',
+                    'rmap.map_list_id = ml.id'
+                )
+                ->andWhere(['rmap.round_id' => $round->id])
+                ->andWhere(['ml.save_version' => $round->save_version])
+                ->andWhere(['ml.is_staging' => (bool)$round->is_staging]);
+        } else {
+            $mapQuery->andWhere(['ml.id' => 0]);
         }
         
         // Не зафиксированные карты показываем только если следующий вайп (календарь/колонка) <= now + 3 дня
@@ -194,7 +198,11 @@ class MapsController extends BaseApiController
         if (!empty($mapIds)) {
             $rawCounts = MapListVote::find()
                 ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
-                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->andWhere([
+                    'map_list_id' => $mapIds,
+                    'server_id' => $server->id,
+                    'round_id' => $round->id,
+                ])
                 ->groupBy('map_list_id')
                 ->asArray()
                 ->all();
@@ -214,6 +222,7 @@ class MapsController extends BaseApiController
                         'map_list_id' => $mapIds,
                         'server_id' => $server->id,
                         'user_id' => $currentUser->id,
+                        'round_id' => $round->id,
                     ])
                     ->column());
             }
@@ -325,6 +334,8 @@ class MapsController extends BaseApiController
                     'hash' => $fixedMap->hash,
                     'size' => $fixedMap->size_int ?? $fixedMap->size,
                     'seed' => $fixedMap->seed,
+                    'saveVersion' => $fixedMap->save_version,
+                    'isStaging' => (bool)$fixedMap->is_staging,
                     'image' => $this->getMapImageUrl($imagePath),
                 ];
             }
@@ -348,6 +359,13 @@ class MapsController extends BaseApiController
             'totalMaps' => count($mapsData),
             'totalVotes' => $totalVotes,
             'maxVotes' => $maxVotes,
+            'votingRound' => $round ? [
+                'id' => (int)$round->id,
+                'targetWipeAt' => $round->target_wipe_at,
+                'isStaging' => (bool)$round->is_staging,
+                'saveVersion' => (int)$round->save_version,
+                'status' => $round->status,
+            ] : null,
         ];
         $toCache = [
             'maps' => array_map(function ($m) {
@@ -358,6 +376,7 @@ class MapsController extends BaseApiController
             'totalMaps' => count($mapsData),
             'totalVotes' => $totalVotes,
             'maxVotes' => $maxVotes,
+            'votingRound' => $response['votingRound'],
         ];
         $cache->set($listCacheKey, $toCache, ApiPublicCacheTtl::SECONDS);
 
@@ -422,12 +441,24 @@ class MapsController extends BaseApiController
             return $this->errorResponse('SERVER_NOT_FOUND', 'Сервер не найден', [], 404);
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        if (!$round) {
+            return $this->errorResponse('VOTING_CLOSED', 'Активное голосование для этого вайпа не найдено', [], 409);
+        }
+        if (!$round->containsMap((int)$map->id) || !$map->isValidForServer($server)) {
+            return $this->errorResponse('MAP_NOT_IN_ROUND', 'Эта карта не участвует в текущем голосовании', [], 409);
+        }
+        if (strtotime($round->target_wipe_at) <= time()) {
+            return $this->errorResponse('VOTING_CLOSED', 'Голосование уже завершено', [], 409);
+        }
+
         // Проверяем, есть ли уже голос за эту карту
         $existingVote = MapListVote::find()
             ->where([
                 'map_list_id' => $map->id,
                 'server_id' => $server->id,
                 'user_id' => $user->id,
+                'round_id' => $round->id,
             ])
             ->one();
 
@@ -459,6 +490,7 @@ class MapsController extends BaseApiController
             $vote = new MapListVote([
                 'map_list_id' => $map->id,
                 'server_id' => $server->id,
+                'round_id' => $round->id,
                 'user_id' => $user->id,
             ]);
 
@@ -471,12 +503,12 @@ class MapsController extends BaseApiController
 
         // Получаем обновленное количество голосов
         $voteCount = MapListVote::find()
-            ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'round_id' => $round->id])
             ->count();
 
         // Получаем список проголосовавших (последние 50)
         $votes = MapListVote::find()
-            ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'round_id' => $round->id])
             ->with('user')
             ->orderBy(['created_at' => SORT_DESC])
             ->limit(50)
@@ -496,7 +528,8 @@ class MapsController extends BaseApiController
         }
 
         foreach (['ru-RU', 'en-US', 'ru', 'en'] as $language) {
-            Yii::$app->cache->delete('api_maps_list_v2_' . $server->tag . '_' . $language);
+            Yii::$app->cache->delete('api_maps_list_v3_' . $server->tag . '_' . $round->id . '_' . $language);
+            Yii::$app->cache->delete('api_maps_detail_' . $map->id . '_' . $server->id . '_' . $round->id . '_' . $language);
         }
 
         return $this->successResponse([
@@ -550,17 +583,26 @@ class MapsController extends BaseApiController
         $request = Yii::$app->request;
         $serverId = $request->get('server_id');
         $serverIdKey = $serverId ? (int) $serverId : 0;
+        $detailRound = $serverIdKey ? MapVotingRound::getOpenForServer($serverIdKey) : null;
+        if ($detailRound && !$detailRound->containsMap((int)$map->id)) {
+            $detailRound = null;
+        }
         $language = Yii::$app->language;
-        $cacheKey = 'api_maps_detail_' . $id . '_' . $serverIdKey . '_' . $language;
+        $cacheKey = 'api_maps_detail_' . $id . '_' . $serverIdKey . '_' . ($detailRound ? $detailRound->id : 0) . '_' . $language;
         $cache = Yii::$app->cache;
         $currentUser = Yii::$app->user->identity;
         $cached = $cache->get($cacheKey);
         if ($cached !== false && is_array($cached)) {
-            if ($currentUser && $serverIdKey) {
+            if ($currentUser && $serverIdKey && $detailRound) {
                 $server = Servers::findOne($serverIdKey);
                 if ($server) {
                     $userVote = MapListVote::find()
-                        ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'user_id' => $currentUser->id])
+                        ->where([
+                            'map_list_id' => $map->id,
+                            'server_id' => $server->id,
+                            'user_id' => $currentUser->id,
+                            'round_id' => $detailRound->id,
+                        ])
                         ->exists();
                     $cached['userVotedMapIds'] = $userVote ? [(int) $map->id] : [];
                 }
@@ -595,13 +637,13 @@ class MapsController extends BaseApiController
         $voters = [];
         $userVotedMapIds = [];
 
-        if ($server) {
+        if ($server && $detailRound) {
             $voteCount = MapListVote::find()
-                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'round_id' => $detailRound->id])
                 ->count();
 
             $votes = MapListVote::find()
-                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->where(['map_list_id' => $map->id, 'server_id' => $server->id, 'round_id' => $detailRound->id])
                 ->with('user')
                 ->orderBy(['created_at' => SORT_DESC])
                 ->limit(50)
@@ -626,6 +668,7 @@ class MapsController extends BaseApiController
                         'map_list_id' => $map->id,
                         'server_id' => $server->id,
                         'user_id' => $currentUser->id,
+                        'round_id' => $detailRound->id,
                     ])
                     ->exists();
                 if ($userVote) {

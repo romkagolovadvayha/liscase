@@ -5,6 +5,8 @@ namespace frontend\controllers;
 use common\helpers\MapLocalization;
 use common\models\map\MapList;
 use common\models\map\MapListVote;
+use common\models\map\MapVotingRound;
+use common\models\map\MapVotingRoundMap;
 use common\models\servers\Servers;
 use common\models\statistics\Statistics;
 use common\models\user\User;
@@ -56,11 +58,7 @@ class MapsV2Controller extends Controller
 
         $this->registerSeo($server);
 
-        // Получаем ID карт, которые уже зафиксированы на любом из серверов
-        $fixedMapIds = Servers::find()
-            ->select('map_list_id')
-            ->andWhere(['IS NOT', 'map_list_id', null])
-            ->column();
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
 
         // Вычисляем дату через 3 суток от текущего момента
         $threeDaysFromNow = new \DateTime();
@@ -75,9 +73,14 @@ class MapsV2Controller extends Controller
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
         
-        // Исключаем все зафиксированные карты
-        if (!empty($fixedMapIds)) {
-            $mapQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+        if ($round) {
+            $mapQuery
+                ->innerJoin(MapVotingRoundMap::tableName() . ' rmap', 'rmap.map_list_id = ml.id')
+                ->andWhere(['rmap.round_id' => $round->id])
+                ->andWhere(['ml.save_version' => $round->save_version])
+                ->andWhere(['ml.is_staging' => (bool)$round->is_staging]);
+        } else {
+            $mapQuery->andWhere(['ml.id' => 0]);
         }
         
         // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
@@ -163,7 +166,7 @@ class MapsV2Controller extends Controller
         if ($mapIds) {
             $rawCounts = MapListVote::find()
                 ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
-                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id, 'round_id' => $round->id])
                 ->groupBy('map_list_id')
                 ->asArray()
                 ->all();
@@ -176,7 +179,7 @@ class MapsV2Controller extends Controller
             }
 
             $votes = MapListVote::find()
-                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id, 'round_id' => $round->id])
                 ->with('user')
                 ->orderBy(['created_at' => SORT_DESC])
                 ->all();
@@ -205,6 +208,7 @@ class MapsV2Controller extends Controller
                     ->andWhere([
                         'server_id' => $server->id,
                         'user_id' => Yii::$app->user->id,
+                        'round_id' => $round->id,
                     ])
                     ->column();
                 if (!empty($userVotedMapIds)) {
@@ -405,13 +409,20 @@ class MapsV2Controller extends Controller
             }
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        $roundId = $round && $round->containsMap((int)$map->id) ? (int)$round->id : 0;
+
         $voteCounts = [];
         $userVotes = [];
         $userVotedMapIds = [];
 
         $rawCounts = MapListVote::find()
             ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
-            ->andWhere(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->andWhere([
+                'map_list_id' => $map->id,
+                'server_id' => $server->id,
+                'round_id' => $roundId,
+            ])
             ->groupBy('map_list_id')
             ->asArray()
             ->all();
@@ -421,7 +432,11 @@ class MapsV2Controller extends Controller
         }
 
         $votes = MapListVote::find()
-            ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+            ->where([
+                'map_list_id' => $map->id,
+                'server_id' => $server->id,
+                'round_id' => $roundId,
+            ])
             ->with('user')
             ->all();
 
@@ -512,12 +527,6 @@ class MapsV2Controller extends Controller
             $serverNextWipe = new \DateTime($server->next_wipe);
             $shouldShowUnfixedMaps = $serverNextWipe <= $threeDaysFromNow;
 
-            // Получаем ID карт, которые уже зафиксированы на любом из серверов
-            $fixedMapIds = Servers::find()
-                ->select('map_list_id')
-                ->andWhere(['IS NOT', 'map_list_id', null])
-                ->column();
-
             $allMapsQuery = MapList::find()
                 ->alias('ml')
                 ->andWhere(['IS NOT', 'ml.size_int', null])
@@ -525,9 +534,14 @@ class MapsV2Controller extends Controller
                 ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
                 ->orderBy(['ml.created_at' => SORT_DESC]);
 
-            // Исключаем все зафиксированные карты
-            if (!empty($fixedMapIds)) {
-                $allMapsQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
+            if ($round) {
+                $allMapsQuery
+                    ->innerJoin(MapVotingRoundMap::tableName() . ' rmap', 'rmap.map_list_id = ml.id')
+                    ->andWhere(['rmap.round_id' => $round->id])
+                    ->andWhere(['ml.save_version' => $round->save_version])
+                    ->andWhere(['ml.is_staging' => (bool)$round->is_staging]);
+            } else {
+                $allMapsQuery->andWhere(['ml.id' => 0]);
             }
             
             // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
@@ -596,19 +610,28 @@ class MapsV2Controller extends Controller
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        if (!$round || !$round->containsMap((int)$map->id) || !$map->isValidForServer($server)) {
+            throw new BadRequestHttpException(Yii::t('common', 'Эта карта не участвует в текущем голосовании'));
+        }
+        if (strtotime($round->target_wipe_at) <= time()) {
+            throw new BadRequestHttpException(Yii::t('common', 'Голосование уже завершено'));
+        }
+
         if (Yii::$app->user->isGuest) {
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно авторизоваться на сайте!'));
         } else {
             /** @var User $user */
-        $user = Yii::$app->user->identity;
+            $user = Yii::$app->user->identity;
 
             // Проверяем, есть ли уже голос за эту карту
             $existingVote = MapListVote::find()
-            ->where([
+                ->where([
                     'map_list_id' => $map->id,
-                'server_id' => $server->id,
-                'user_id' => $user->id,
-            ])
+                    'server_id' => $server->id,
+                    'user_id' => $user->id,
+                    'round_id' => $round->id,
+                ])
                 ->one();
 
             $voteAdded = false;
@@ -631,11 +654,12 @@ class MapsV2Controller extends Controller
                     Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы проголосовать, нужно отыграть на сервере минимум 1 час!'));
                 } else {
                     // Добавляем голос
-        $vote = new MapListVote([
-            'map_list_id' => $map->id,
-            'server_id' => $server->id,
-            'user_id' => $user->id,
-        ]);
+                    $vote = new MapListVote([
+                        'map_list_id' => $map->id,
+                        'server_id' => $server->id,
+                        'round_id' => $round->id,
+                        'user_id' => $user->id,
+                    ]);
 
                     if ($vote->save()) {
                         $voteAdded = true;
@@ -644,12 +668,6 @@ class MapsV2Controller extends Controller
                 }
             }
         }
-
-        // Получаем ID карт, которые уже зафиксированы на любом из серверов
-        $fixedMapIds = Servers::find()
-            ->select('map_list_id')
-            ->andWhere(['IS NOT', 'map_list_id', null])
-            ->column();
 
         // Вычисляем дату через 3 суток от текущего момента
         $threeDaysFromNow = new \DateTime();
@@ -665,10 +683,11 @@ class MapsV2Controller extends Controller
             ->andWhere(['<=', 'ml.size_int', (int)$server->max_map_size])
             ->orderBy(['ml.created_at' => SORT_DESC]);
         
-        // Исключаем все зафиксированные карты
-        if (!empty($fixedMapIds)) {
-            $allMapsQuery->andWhere(['NOT IN', 'ml.id', $fixedMapIds]);
-        }
+        $allMapsQuery
+            ->innerJoin(MapVotingRoundMap::tableName() . ' rmap', 'rmap.map_list_id = ml.id')
+            ->andWhere(['rmap.round_id' => $round->id])
+            ->andWhere(['ml.save_version' => $round->save_version])
+            ->andWhere(['ml.is_staging' => (bool)$round->is_staging]);
         
         // Не зафиксированные карты показываем только если next_wipe сервера <= now + 3 дня
         if (!$shouldShowUnfixedMaps) {
@@ -688,7 +707,7 @@ class MapsV2Controller extends Controller
         if ($mapIds) {
             $rawCounts = MapListVote::find()
                 ->select(['map_list_id', 'cnt' => 'COUNT(*)'])
-                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->andWhere(['map_list_id' => $mapIds, 'server_id' => $server->id, 'round_id' => $round->id])
                 ->groupBy('map_list_id')
                 ->asArray()
                 ->all();
@@ -702,7 +721,7 @@ class MapsV2Controller extends Controller
             }
 
             $votes = MapListVote::find()
-                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id])
+                ->where(['map_list_id' => $mapIds, 'server_id' => $server->id, 'round_id' => $round->id])
                 ->with('user')
                 ->orderBy(['created_at' => SORT_DESC])
                 ->all();
@@ -731,6 +750,7 @@ class MapsV2Controller extends Controller
                     ->andWhere([
                         'server_id' => $server->id,
                         'user_id' => Yii::$app->user->id,
+                        'round_id' => $round->id,
                     ])
                     ->column();
                 if (!empty($userVotedMapIds)) {
@@ -947,10 +967,16 @@ class MapsV2Controller extends Controller
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        if (!$round || !$round->containsMap((int)$map->id)) {
+            throw new BadRequestHttpException(Yii::t('common', 'Эта карта не участвует в текущем голосовании'));
+        }
+
         $votes = MapListVote::find()
             ->where([
                 'map_list_id' => $map->id,
                 'server_id' => $server->id,
+                'round_id' => $round->id,
             ])
             ->with('user')
             ->orderBy(['created_at' => SORT_DESC])
@@ -976,6 +1002,7 @@ class MapsV2Controller extends Controller
                 ->where([
                     'map_list_id' => $map->id,
                     'server_id' => $server->id,
+                    'round_id' => $round->id,
                 ])
                 ->count(),
         ];
@@ -993,10 +1020,16 @@ class MapsV2Controller extends Controller
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        if (!$round || !$round->containsMap((int)$map->id)) {
+            throw new BadRequestHttpException(Yii::t('common', 'Эта карта не участвует в текущем голосовании'));
+        }
+
         $votes = MapListVote::find()
             ->where([
                 'map_list_id' => $map->id,
                 'server_id' => $server->id,
+                'round_id' => $round->id,
             ])
             ->with('user')
             ->orderBy(['created_at' => SORT_DESC])
@@ -1019,7 +1052,11 @@ class MapsV2Controller extends Controller
         $userVotedMapIds = [];
         if (!Yii::$app->user->isGuest) {
             $userVotes = MapListVote::find()
-                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->where([
+                    'map_list_id' => $map->id,
+                    'server_id' => $server->id,
+                    'round_id' => $round->id,
+                ])
                 ->andWhere(['user_id' => Yii::$app->user->id])
                 ->all();
             foreach ($userVotes as $vote) {
@@ -1059,6 +1096,14 @@ class MapsV2Controller extends Controller
             throw new NotFoundHttpException(Yii::t('common', 'Сервер не найден'));
         }
 
+        $round = MapVotingRound::getOpenForServer((int)$server->id);
+        if (!$round || !$round->containsMap((int)$map->id) || !$map->isValidForServer($server)) {
+            throw new BadRequestHttpException(Yii::t('common', 'Эта карта не участвует в текущем голосовании'));
+        }
+        if (strtotime($round->target_wipe_at) <= time()) {
+            throw new BadRequestHttpException(Yii::t('common', 'Голосование уже завершено'));
+        }
+
         if (Yii::$app->user->isGuest) {
             Yii::$app->session->addFlash('danger', Yii::t('common', 'Чтобы голосовать, нужно авторизоваться на сайте!'));
         } else {
@@ -1071,6 +1116,7 @@ class MapsV2Controller extends Controller
                     'map_list_id' => $map->id,
                     'server_id' => $server->id,
                     'user_id' => $user->id,
+                    'round_id' => $round->id,
                 ])
                 ->one();
 
@@ -1093,6 +1139,7 @@ class MapsV2Controller extends Controller
                     $vote = new MapListVote([
                         'map_list_id' => $map->id,
                         'server_id' => $server->id,
+                        'round_id' => $round->id,
                         'user_id' => $user->id,
                     ]);
 
@@ -1108,6 +1155,7 @@ class MapsV2Controller extends Controller
             ->where([
                 'map_list_id' => $map->id,
                 'server_id' => $server->id,
+                'round_id' => $round->id,
             ])
             ->with('user')
             ->orderBy(['created_at' => SORT_DESC])
@@ -1130,7 +1178,11 @@ class MapsV2Controller extends Controller
         $userVotedMapIds = [];
         if (!Yii::$app->user->isGuest) {
             $userVotes = MapListVote::find()
-                ->where(['map_list_id' => $map->id, 'server_id' => $server->id])
+                ->where([
+                    'map_list_id' => $map->id,
+                    'server_id' => $server->id,
+                    'round_id' => $round->id,
+                ])
                 ->andWhere(['user_id' => Yii::$app->user->id])
                 ->all();
             foreach ($userVotes as $vote) {

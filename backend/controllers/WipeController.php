@@ -11,6 +11,7 @@ use common\models\box\DropBlocked;
 use common\models\map\Map;
 use common\models\map\MapList;
 use common\models\map\MapListVote;
+use common\models\map\MapVotingRound;
 use common\models\profit\Profit;
 use common\models\promocode\Promocode;
 use common\models\rcon\RconTasks;
@@ -430,16 +431,18 @@ class WipeController extends Controller
                     continue;
                 }
 
-                // Определяем выигрышную карту для сервера (без фиксации)
-                $winningMap = MapList::getWinningMapForServer($server->id);
-                
-                if ($winningMap) {
-                    $serverMapMapping[$server->id] = $winningMap->id;
+                $round = MapVotingRound::getOpenForServer((int)$server->id);
+                $result = $round ? $round->result() : null;
+
+                if ($result && $result['status'] === 'winner' && $result['map']) {
+                    $serverMapMapping[$server->id] = $result['map']->id;
                 } else {
-                    // Нет выигрышной карты для этого сервера
+                    $reason = !$round
+                        ? 'нет открытого раунда'
+                        : ($result['status'] === 'tie' ? 'ничья в голосовании' : 'нет голосов');
                     $results[$server->id] = [
                         'success' => true,
-                        'message' => 'Пропущено (нет голосов за карты)',
+                        'message' => 'Пропущено (' . $reason . ')',
                     ];
                 }
             } catch (\Exception $e) {
@@ -469,10 +472,8 @@ class WipeController extends Controller
                     continue;
                 }
 
-                // Используем MapFixJob через очередь
-                \Yii::$app->queueProcess->push(new MapFixJob(['serverId' => $serverId]));
-                
-                // Также фиксируем напрямую для немедленного результата
+                // Фиксируем ровно один раз. Раньше здесь одновременно ставилась
+                // задача в очередь и выполнялась прямая фиксация, что создавало гонку.
                 $fixedMap = MapList::fixWinningMapForServer($serverId);
                 
                 if ($fixedMap) {
@@ -530,18 +531,35 @@ class WipeController extends Controller
             $post = Yii::$app->request->post('map_list_id', []);
             $fixOnlyServerId = (int)Yii::$app->request->post('fix_server', 0);
             $fixed = 0;
+            $failed = 0;
             foreach ($servers as $server) {
                 if ($fixOnlyServerId > 0 && (int)$server->id !== $fixOnlyServerId) {
                     continue;
                 }
                 $mapId = isset($post[$server->id]) ? (int)$post[$server->id] : 0;
-                if ($mapId > 0 && MapList::find()->where(['id' => $mapId])->exists()) {
-                    $server->map_list_id = $mapId;
-                    $server->save(false);
+                $round = MapVotingRound::getOpenForServer((int)$server->id);
+                $result = $round ? $round->result() : null;
+                if (
+                    $mapId > 0
+                    && $round
+                    && $result
+                    && $result['status'] === 'winner'
+                    && $result['map']
+                    && (int)$result['map']->id === $mapId
+                    && $round->fixMap($result['map'])
+                ) {
                     $fixed++;
+                } else {
+                    $failed++;
                 }
             }
-            if ($fixOnlyServerId > 0) {
+            if ($failed > 0) {
+                Yii::$app->session->addFlash('danger', Yii::t(
+                    'common',
+                    'Не зафиксировано серверов: {n}. Проверьте открытый раунд, ничью и ID победителя.',
+                    ['n' => $failed]
+                ));
+            } elseif ($fixOnlyServerId > 0) {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Карта для сервера зафиксирована.'));
             } else {
                 Yii::$app->session->addFlash('success', Yii::t('common', 'Карты зафиксированы. Обработано серверов: {n}.', ['n' => $fixed]));
@@ -551,12 +569,16 @@ class WipeController extends Controller
 
         $rows = [];
         foreach ($servers as $server) {
-            // Только карты, которые ещё не зафиксированы ни на одном сервере
             $winningMap = MapList::getWinningMapForServerUnfixedOnly($server->id);
             $voteCount = 0;
             if ($winningMap) {
+                $round = MapVotingRound::getOpenForServer((int)$server->id);
                 $voteCount = MapListVote::find()
-                    ->where(['server_id' => $server->id, 'map_list_id' => $winningMap->id])
+                    ->where([
+                        'server_id' => $server->id,
+                        'map_list_id' => $winningMap->id,
+                        'round_id' => $round ? $round->id : 0,
+                    ])
                     ->count();
             }
             $rows[] = [
@@ -1083,18 +1105,14 @@ class WipeController extends Controller
             return $this->redirect(['run-wipe']);
         }
 
-        // Получаем данные карты
-        $mapList = null;
-        $seed = null;
-        $worldsize = null;
-
-        if (!empty($server->map_list_id)) {
-            $mapList = MapList::findOne($server->map_list_id);
-            if ($mapList) {
-                $seed = $mapList->seed;
-                $worldsize = $mapList->size_int;
-            }
+        try {
+            $mapList = $this->getVerifiedMapForWipe($server);
+        } catch (\RuntimeException $exception) {
+            Yii::$app->session->addFlash('danger', $exception->getMessage());
+            return $this->redirect(['run-wipe']);
         }
+        $seed = (int)$mapList->seed;
+        $worldsize = (int)$mapList->size_int;
 
         // Формируем параметры команды
         $preset = $wipeType; // 'wipe' или 'global'
@@ -1106,12 +1124,13 @@ class WipeController extends Controller
         $hostname = $server->wipe_server_name ?? '';
         $tags = $server->monitoring_tags ?? 'weekly, vanilla, EU, tut';
 
-        // Формируем команду: autowipe.runnow <seed> <worldsize> [имя_пресета] [gamemode] [description] [maxplayers] [hostname] [tags]
+        // Формируем команду: autowipe.runnow <seed> <worldsize> [имя_пресета]
+        // [gamemode] [description] [maxplayers] [hostname] [tags]
         $commandParts = ['autowipe.runnow'];
 
         // Обязательные параметры
-        $commandParts[] = $seed !== null ? $seed : '0';
-        $commandParts[] = $worldsize !== null ? $worldsize : '0';
+        $commandParts[] = $seed;
+        $commandParts[] = $worldsize;
 
         // Опциональные параметры в правильном порядке
         // Если хотим передать параметр дальше, нужно передать все предыдущие (даже пустые)
@@ -1124,8 +1143,9 @@ class WipeController extends Controller
         $commandParts[] = $tags; // tags
 
         $rconCommand = implode(' ', array_map(function($part) {
+            $part = (string)$part;
             // Экранируем пробелы в параметрах
-            if (strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
+            if ($part === '' || strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
                 return '"' . str_replace('"', '\\"', $part) . '"';
             }
             return $part;
@@ -1172,18 +1192,16 @@ class WipeController extends Controller
             ];
         }
 
-        // Получаем данные карты
-        $mapList = null;
-        $seed = null;
-        $worldsize = null;
-
-        if (!empty($server->map_list_id)) {
-            $mapList = MapList::findOne($server->map_list_id);
-            if ($mapList) {
-                $seed = $mapList->seed;
-                $worldsize = $mapList->size_int;
-            }
+        try {
+            $mapList = $this->getVerifiedMapForWipe($server);
+        } catch (\RuntimeException $exception) {
+            return [
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ];
         }
+        $seed = (int)$mapList->seed;
+        $worldsize = (int)$mapList->size_int;
 
         // Формируем параметры команды
         $preset = $wipeType;
@@ -1195,12 +1213,12 @@ class WipeController extends Controller
         $hostname = $server->wipe_server_name ?? '';
         $tags = $server->monitoring_tags ?? 'weekly, vanilla, EU, tut';
 
-        // Формируем команду: autowipe.runnow <seed> <worldsize> [имя_пресета] [gamemode] [description] [maxplayers] [hostname] [tags]
+        // Команда сохранена в прежнем формате без зависимости от модификаций Oxide-плагина.
         $commandParts = ['autowipe.runnow'];
 
         // Обязательные параметры
-        $commandParts[] = $seed !== null ? $seed : '0';
-        $commandParts[] = $worldsize !== null ? $worldsize : '0';
+        $commandParts[] = $seed;
+        $commandParts[] = $worldsize;
 
         // Опциональные параметры в правильном порядке
         $commandParts[] = $preset; // имя_пресета
@@ -1211,8 +1229,9 @@ class WipeController extends Controller
         $commandParts[] = $tags; // tags
 
         $rconCommand = implode(' ', array_map(function($part) {
+            $part = (string)$part;
             // Экранируем пробелы в параметрах
-            if (strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
+            if ($part === '' || strpos($part, ' ') !== false || strpos($part, '\\n') !== false) {
                 return '"' . str_replace('"', '\\"', $part) . '"';
             }
             return $part;
@@ -1379,6 +1398,63 @@ class WipeController extends Controller
             'count' => $createdCount,
             'amount' => $createdAmount,
         ];
+    }
+
+    /**
+     * Returns the exact voted map or stops the wipe before an unsafe RCON call.
+     */
+    private function getVerifiedMapForWipe(Servers $server): MapList
+    {
+        $openRound = MapVotingRound::getOpenForServer((int)$server->id);
+        if ($openRound) {
+            throw new \RuntimeException(
+                "Голосование за карту сервера {$server->tag} ещё не зафиксировано (раунд #{$openRound->id})."
+            );
+        }
+
+        if (empty($server->map_list_id)) {
+            throw new \RuntimeException("Для сервера {$server->tag} не назначена карта.");
+        }
+
+        $map = MapList::findOne($server->map_list_id);
+        if (!$map || !$map->isValidForServer($server)) {
+            throw new \RuntimeException(
+                "Назначенная карта сервера {$server->tag} имеет недопустимые seed/size/type. Вайп остановлен."
+            );
+        }
+
+        $round = MapVotingRound::find()
+            ->where([
+                'server_id' => $server->id,
+                'status' => MapVotingRound::STATUS_FIXED,
+            ])
+            ->orderBy(['fixed_at' => SORT_DESC, 'id' => SORT_DESC])
+            ->one();
+
+        if (!$round) {
+            throw new \RuntimeException(
+                "Для сервера {$server->tag} нет зафиксированного раунда голосования. Сначала сгенерируйте и зафиксируйте карты."
+            );
+        }
+
+        $expectedTarget = MapVotingRound::targetWipeAt($server);
+        if (strtotime($round->target_wipe_at) !== strtotime($expectedTarget)) {
+            throw new \RuntimeException(
+                "Карта сервера {$server->tag} зафиксирована для другого вайпа ({$round->target_wipe_at})."
+            );
+        }
+
+        if (
+            (int)$round->winning_map_list_id !== (int)$map->id
+            || (int)$round->save_version !== (int)$map->save_version
+            || (bool)$round->is_staging !== (bool)$map->is_staging
+        ) {
+            throw new \RuntimeException(
+                "Назначенная карта сервера {$server->tag} не совпадает с победителем и протоколом раунда #{$round->id}."
+            );
+        }
+
+        return $map;
     }
 
 }

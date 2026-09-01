@@ -137,13 +137,41 @@ class MapList extends \yii\db\ActiveRecord
         return $this->hasMany(MapListVote::class, ['map_list_id' => 'id']);
     }
 
+    public function getVotingRounds()
+    {
+        return $this->hasMany(MapVotingRound::class, ['id' => 'round_id'])
+            ->viaTable(MapVotingRoundMap::tableName(), ['map_list_id' => 'id']);
+    }
+
+    public function isValidForServer(\common\models\servers\Servers $server): bool
+    {
+        if ($this->seed === null || $this->size_int === null || $this->save_version === null) {
+            return false;
+        }
+
+        $seed = (int)$this->seed;
+        $size = (int)$this->size_int;
+        $mapType = strtolower(trim((string)$this->map_type));
+
+        return $seed >= 0
+            && $seed <= 2147483647
+            && $size >= 1000
+            && $size <= 6000
+            && $size >= (int)$server->min_map_size
+            && $size <= (int)$server->max_map_size
+            && in_array($mapType, ['procedural map', 'procedural'], true)
+            && !(bool)$this->is_custom_map;
+    }
+
     /**
      * @param int $serverId
      * @return \yii\db\ActiveQuery
      */
     public function getVotesForServer(int $serverId)
     {
-        return $this->getVotes()->andWhere(['server_id' => $serverId]);
+        $query = $this->getVotes()->andWhere(['server_id' => $serverId]);
+        $round = MapVotingRound::getOpenForServer($serverId);
+        return $round ? $query->andWhere(['round_id' => $round->id]) : $query->andWhere(['round_id' => 0]);
     }
 
     public function getVoteCount(int $serverId): int
@@ -160,6 +188,11 @@ class MapList extends \yii\db\ActiveRecord
 
     public function addVote(int $serverId, int $userId): bool
     {
+        $round = MapVotingRound::getOpenForServer($serverId);
+        if (!$round || !$round->containsMap((int)$this->id)) {
+            return false;
+        }
+
         if ($this->hasUserVoted($serverId, $userId)) {
             return true;
         }
@@ -167,6 +200,7 @@ class MapList extends \yii\db\ActiveRecord
         $vote = new MapListVote([
             'map_list_id' => $this->id,
             'server_id' => $serverId,
+            'round_id' => $round->id,
             'user_id' => $userId,
         ]);
 
@@ -175,10 +209,16 @@ class MapList extends \yii\db\ActiveRecord
 
     public function removeVote(int $serverId, int $userId): bool
     {
+        $round = MapVotingRound::getOpenForServer($serverId);
+        if (!$round) {
+            return false;
+        }
+
         $vote = MapListVote::find()
             ->andWhere([
                 'map_list_id' => $this->id,
                 'server_id' => $serverId,
+                'round_id' => $round->id,
                 'user_id' => $userId,
             ])
             ->one();
@@ -198,55 +238,13 @@ class MapList extends \yii\db\ActiveRecord
      */
     public static function getWinningMapForServer(int $serverId): ?self
     {
-        // Получаем количество голосов для каждой карты на данном сервере
-        $voteCounts = MapListVote::find()
-            ->select(['map_list_id', 'vote_count' => 'COUNT(*)'])
-            ->where(['server_id' => $serverId])
-            ->groupBy('map_list_id')
-            ->orderBy(['vote_count' => SORT_DESC])
-            ->asArray()
-            ->all();
-
-        if (empty($voteCounts)) {
+        $round = MapVotingRound::getOpenForServer($serverId);
+        if (!$round) {
             return null;
         }
 
-        // Находим максимальное количество голосов
-        $maxVotes = (int)$voteCounts[0]['vote_count'];
-        
-        // Получаем все карты с максимальным количеством голосов
-        $winningMapIds = [];
-        foreach ($voteCounts as $row) {
-            if ((int)$row['vote_count'] === $maxVotes) {
-                $winningMapIds[] = (int)$row['map_list_id'];
-            } else {
-                break; // Так как сортировка по убыванию, дальше будут карты с меньшим количеством голосов
-            }
-        }
-
-        // Если несколько карт с одинаковым количеством голосов, выбираем самую новую по created_at
-        // И проверяем, что карта не зафиксирована на другом сервере
-        $winningMaps = self::find()
-            ->where(['id' => $winningMapIds])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        // Ищем первую карту, которая не зафиксирована на другом сервере
-        foreach ($winningMaps as $map) {
-            // Проверяем, не используется ли эта карта на другом сервере
-            $isFixedOnOtherServer = \common\models\servers\Servers::find()
-                ->where(['map_list_id' => $map->id])
-                ->andWhere(['!=', 'id', $serverId])
-                ->exists();
-            
-            // Если карта не зафиксирована на другом сервере, возвращаем её
-            if (!$isFixedOnOtherServer) {
-                return $map;
-            }
-        }
-
-        // Если все карты зафиксированы на других серверах, возвращаем null
-        return null;
+        $result = $round->result();
+        return $result['status'] === 'winner' ? $result['map'] : null;
     }
 
     /**
@@ -258,45 +256,10 @@ class MapList extends \yii\db\ActiveRecord
      */
     public static function getWinningMapForServerUnfixedOnly(int $serverId): ?self
     {
-        $fixedMapIds = \common\models\servers\Servers::find()
-            ->select('map_list_id')
-            ->andWhere(['IS NOT', 'map_list_id', null])
-            ->column();
-        if (!empty($fixedMapIds)) {
-            $fixedMapIds = array_map('intval', array_filter($fixedMapIds));
-        }
-
-        $query = MapListVote::find()
-            ->select(['map_list_id', 'vote_count' => 'COUNT(*)'])
-            ->where(['server_id' => $serverId])
-            ->groupBy('map_list_id')
-            ->orderBy(['vote_count' => SORT_DESC]);
-
-        if (!empty($fixedMapIds)) {
-            $query->andWhere(['NOT IN', 'map_list_id', $fixedMapIds]);
-        }
-
-        $voteCounts = $query->asArray()->all();
-        if (empty($voteCounts)) {
-            return null;
-        }
-
-        $maxVotes = (int)$voteCounts[0]['vote_count'];
-        $winningMapIds = [];
-        foreach ($voteCounts as $row) {
-            if ((int)$row['vote_count'] === $maxVotes) {
-                $winningMapIds[] = (int)$row['map_list_id'];
-            } else {
-                break;
-            }
-        }
-
-        $winningMaps = self::find()
-            ->where(['id' => $winningMapIds])
-            ->orderBy(['created_at' => SORT_DESC])
-            ->all();
-
-        return $winningMaps[0] ?? null;
+        // Procedural seeds may safely be used on more than one server. Silently
+        // replacing the voted winner because another server uses it violates
+        // the vote, so cross-server fixation is intentionally not a filter.
+        return self::getWinningMapForServer($serverId);
     }
 
     /**
@@ -308,63 +271,19 @@ class MapList extends \yii\db\ActiveRecord
      */
     public static function fixWinningMapForServer(int $serverId): ?self
     {
-        // Используем метод определения выигрышной карты
-        $winningMap = self::getWinningMapForServer($serverId);
-
-        if (!$winningMap) {
-            // Нет голосов, можно сбросить map_list_id или оставить null
-            $server = \common\models\servers\Servers::findOne($serverId);
-            if ($server) {
-                $server->map_list_id = null;
-                $server->save(false);
-            }
+        $round = MapVotingRound::getOpenForServer($serverId);
+        if (!$round) {
             return null;
         }
 
-        // Получаем сервер и удаляем предыдущую карту, если она есть
-        $server = \common\models\servers\Servers::findOne($serverId);
-        if (!$server) {
+        $result = $round->result();
+        if ($result['status'] !== 'winner' || !$result['map']) {
+            // Never erase the currently assigned map merely because a new vote
+            // has no votes or is tied.
             return null;
         }
 
-        // Если у сервера была зафиксирована предыдущая карта, удаляем её
-        if (!empty($server->map_list_id) && $server->map_list_id != $winningMap->id) {
-            $previousMap = self::findOne($server->map_list_id);
-            if ($previousMap) {
-                // Удаляем все голоса для текущей карты на данном сервере
-                try {
-                    MapListVote::deleteAll([
-                        'map_list_id' => $previousMap->id,
-                        'server_id' => $serverId,
-                    ]);
-                    Yii::info("Deleted all votes for map ID {$previousMap->id} on server ID {$serverId}", __METHOD__);
-                } catch (\Exception $e) {
-                    Yii::error("Error deleting votes for map ID {$previousMap->id} on server ID {$serverId}: " . $e->getMessage(), __METHOD__);
-                }
-                
-                // Проверяем, используется ли эта карта на других серверах
-                $usedOnOtherServers = \common\models\servers\Servers::find()
-                    ->where(['map_list_id' => $previousMap->id])
-                    ->andWhere(['!=', 'id', $serverId])
-                    ->exists();
-                
-                // Удаляем карту только если она не используется на других серверах
-                if (!$usedOnOtherServers) {
-                    try {
-                        $previousMap->delete();
-                        Yii::info("Deleted previous map ID {$previousMap->id} for server ID {$serverId}", __METHOD__);
-                    } catch (\Exception $e) {
-                        Yii::error("Error deleting previous map ID {$previousMap->id} for server ID {$serverId}: " . $e->getMessage(), __METHOD__);
-                    }
-                }
-            }
-        }
-
-        // Обновляем map_list_id в таблице servers
-        $server->map_list_id = $winningMap->id;
-        $server->save(false);
-
-        return $winningMap;
+        return $round->fixMap($result['map']) ? $result['map'] : null;
     }
 
     /**

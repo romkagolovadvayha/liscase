@@ -5,6 +5,7 @@ namespace common\components\queue\process;
 use common\models\box\DropImage;
 use common\models\map\Map;
 use common\models\map\MapList;
+use common\models\map\MapVotingRound;
 use common\models\servers\Servers;
 use Yii;
 use yii\base\BaseObject;
@@ -22,6 +23,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        $round = null;
         try {
             /** @var Servers $server */
             $server = Servers::findOne($this->serverId);
@@ -30,7 +32,13 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 return;
             }
 
-            $sizes = [4250, 3750];
+            $round = MapVotingRound::prepareForServer($server);
+            if ($round->status === MapVotingRound::STATUS_OPEN) {
+                Yii::info("Map voting round {$round->id} is already open; duplicate generation skipped", __METHOD__);
+                return;
+            }
+
+            $sizes = $this->candidateSizes($server);
 
 
             // Подсчитываем количество подходящих размеров
@@ -47,6 +55,8 @@ class MapGenerateJob extends BaseObject implements JobInterface
 
             if ($countSizes === 0) {
                 Yii::warning("MapGenerateJob: No suitable map sizes for server {$server->id}", __METHOD__);
+                $round->status = MapVotingRound::STATUS_FAILED;
+                $round->save(false, ['status']);
                 return;
             }
 
@@ -61,22 +71,69 @@ class MapGenerateJob extends BaseObject implements JobInterface
                     continue;
                 }
                 $countPerSize = (int)($totalCount / $countSizes);
-                $this->generateMapsForSize($size, $server->id, $countPerSize);
+                $this->generateMapsForSize($size, $server, $countPerSize, $round);
             }
-        } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage("MapGenerateJob: " . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+
+
+            if (!$round->open()) {
+                throw new \RuntimeException("Map voting round {$round->id} could not be opened");
+            }
+
+            Yii::info(
+                "Map voting round {$round->id} opened for server {$server->tag}; "
+                . 'target=' . $round->target_wipe_at
+                . ', staging=' . ((bool)$round->is_staging ? 'true' : 'false')
+                . ', saveVersion=' . $round->save_version,
+                __METHOD__
+            );
+        } catch (\Throwable $e) {
+            if ($round && $round->status === MapVotingRound::STATUS_GENERATING) {
+                $round->status = MapVotingRound::STATUS_FAILED;
+                $round->save(false, ['status']);
+            }
+            try {
+                Yii::$app->telegramChats->sendMessage("MapGenerateJob: " . $e->getFile() . ":" . $e->getLine() . ":" . $e->getMessage());
+            } catch (\Throwable $notificationError) {
+                Yii::error('MapGenerateJob notification failed: ' . $notificationError->getMessage(), __METHOD__);
+            }
             Yii::error("MapGenerateJob error: " . $e->getMessage(), __METHOD__);
         }
     }
 
     /**
+     * Prefer the project's established sizes, but always respect each server's
+     * configured range instead of silently producing an empty round.
+     *
+     * @return int[]
+     */
+    private function candidateSizes(Servers $server): array
+    {
+        $min = max(1000, (int)$server->min_map_size);
+        $max = min(6000, (int)$server->max_map_size);
+        if ($min > $max) {
+            return [];
+        }
+
+        $sizes = array_values(array_filter([4250, 3750], static function (int $size) use ($min, $max) {
+            return $size >= $min && $size <= $max;
+        }));
+
+        if ($sizes) {
+            return $sizes;
+        }
+
+        $middle = (int)(round((($min + $max) / 2) / 50) * 50);
+        return [max($min, min($max, $middle))];
+    }
+
+    /**
      * Генерация карт для указанного размера с использованием новой системы MapList
      * @param int $size
-     * @param int $serverId
+     * @param Servers $server
      * @param int $count
      * @throws \Exception
      */
-    private function generateMapsForSize($size, $serverId, $count)
+    private function generateMapsForSize($size, Servers $server, $count, MapVotingRound $round)
     {
         $apiKey = Yii::$app->settings->get('maps_apiKey');
         if (empty($apiKey)) {
@@ -85,14 +142,13 @@ class MapGenerateJob extends BaseObject implements JobInterface
         }
 
         // Получаем список карт через RustMaps API (без кэша для свежих данных)
-        $mapList = Map::getMapsList($size, false);
+        $mapList = Map::getMapsList($size, false, (bool)$round->is_staging);
         if (empty($mapList)) {
             Yii::warning("MapGenerateJob: No maps found for size {$size}", __METHOD__);
             return;
         }
 
         $processed = 0;
-        $skippedExisting = 0;
         $errors = 0;
         foreach ($mapList as $item) {
             if ($processed >= $count) {
@@ -107,17 +163,8 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 continue;
             }
 
-            // Проверяем, не существует ли уже карта с таким hash в MapList
-            $existingMap = MapList::find()
-                ->andWhere(['hash' => $mapId])
-                ->one();
-
-            if ($existingMap && !empty($existingMap->image) && !empty($existingMap->image_preview)) {
-                $skippedExisting++;
-                continue;
-            }
-
-            // Получаем полную информацию о карте через API v4
+            // Всегда перепроверяем полную карточку в API. Локальная запись с тем
+            // же hash могла быть сохранена на старом Rust-протоколе.
             try {
                 $mapResponseRaw = (clone Yii::$app->curl)
                     ->setHeader('X-API-Key', $apiKey)
@@ -136,6 +183,15 @@ class MapGenerateJob extends BaseObject implements JobInterface
                     continue;
                 }
 
+                if ((int)($mapData['size'] ?? 0) !== (int)$size) {
+                    Yii::warning("MapGenerateJob: map {$mapId} returned an unexpected size", __METHOD__);
+                    continue;
+                }
+                if ((bool)($mapData['isStaging'] ?? false) !== (bool)$round->is_staging) {
+                    Yii::warning("MapGenerateJob: map {$mapId} returned the wrong Rust protocol", __METHOD__);
+                    continue;
+                }
+
                 // Проверяем наличие обязательного поля id
                 if (empty($mapData['id'])) {
                     Yii::error("MapGenerateJob: Missing 'id' field in mapData for mapId {$mapId}. Data: " . json_encode($mapData), __METHOD__);
@@ -145,7 +201,11 @@ class MapGenerateJob extends BaseObject implements JobInterface
                 // Сохраняем карту в MapList
                 $mapListModel = $this->saveMapToList($mapData);
 
-                if ($mapListModel) {
+                if (
+                    $mapListModel
+                    && $mapListModel->isValidForServer($server)
+                    && $round->addCandidate($mapListModel, $processed)
+                ) {
                     $processed++;
                 } else {
                     Yii::error("MapGenerateJob: Failed to save map {$mapData['id']} to MapList", __METHOD__);
@@ -160,7 +220,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
         }
 
         if ($errors > 0) {
-            $summary = "MapGenerateJob: Completed for size {$size}. Processed: {$processed}, Skipped (existing): {$skippedExisting}, Errors: {$errors}";
+            $summary = "MapGenerateJob: Completed for size {$size}. Processed: {$processed}, Errors: {$errors}";
             Yii::warning($summary, __METHOD__);
         }
     }
@@ -173,15 +233,17 @@ class MapGenerateJob extends BaseObject implements JobInterface
     private function saveMapToList($mapData)
     {
         $model = MapList::find()
-            ->andWhere(['hash' => $mapData['id']])
+            ->andWhere([
+                'hash' => $mapData['id'],
+                'save_version' => isset($mapData['saveVersion']) ? (int)$mapData['saveVersion'] : null,
+                'is_staging' => isset($mapData['isStaging']) ? (bool)$mapData['isStaging'] : null,
+            ])
             ->one();
 
-        $isNewRecord = false;
         if ($model === null) {
             $model = new MapList();
             $model->hash = $mapData['id'];
             $model->created_at = date('Y-m-d H:i:s');
-            $isNewRecord = true;
         }
 
         // Заполняем данные карты
@@ -219,7 +281,7 @@ class MapGenerateJob extends BaseObject implements JobInterface
 
         // Обрабатываем изображение
         $imageIconUrl = $mapData['imageIconUrl'] ?? null;
-        if (!empty($imageIconUrl)) {
+        if (!empty($imageIconUrl) && (empty($model->image) || empty($model->image_preview))) {
             $downloadedPath = null;
             $tempPreviewPath = null;
             try {

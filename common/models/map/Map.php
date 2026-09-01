@@ -8,7 +8,6 @@ use common\models\servers\Servers;
 use common\models\User;
 use Yii;
 use yii\base\BaseObject;
-use yii\helpers\ArrayHelper;
 
 /**
  * This is the model class for table "map".
@@ -237,9 +236,12 @@ class Map extends \yii\db\ActiveRecord
         ]);
     }
 
-    public static function getMapsList($size = 0, $useCache = true) {
+    public static function getMapsList($size = 0, $useCache = true, ?bool $staging = null) {
         $result = [];
-        $cacheKey = 'MapsController_getMapsList3_' . $size;
+        if ($staging === null) {
+            $staging = (bool)Yii::$app->settings->get('maps_staging');
+        }
+        $cacheKey = 'MapsController_getMapsList4_' . (int)$size . '_' . ($staging ? 'staging' : 'stable');
         
         if ($useCache) {
             $cached = Yii::$app->cache->get($cacheKey);
@@ -249,25 +251,62 @@ class Map extends \yii\db\ActiveRecord
         }
         
         if (empty($result)) {
-            for ($i = 0; $i < 20; $i++) {
-                $staging = Yii::$app->settings->get('maps_staging') ? 'true' : 'false';
-                $response = (clone \Yii::$app->curl)
-                    ->setHeader('X-API-Key', Yii::$app->settings->get('maps_apiKey'))
-                    ->setHeader('Content-Type', 'application/json')
-                    ->setRawPostData(Map::getSearchQuery($size))
-                    ->post('https://api.rustmaps.com/v4/maps/search?page=' . $i . '&staging=' . $staging . '&includeAllProtocols=false&customMaps=false');
+            $apiKey = Yii::$app->settings->get('maps_apiKey');
+            if (empty($apiKey)) {
+                Yii::error('Map::getMapsList: maps_apiKey is not configured', __METHOD__);
+                return [];
+            }
 
-                $response = json_decode($response, 1);
-
-                if (!is_array($response) || ($response['meta']['statusCode'] ?? null) !== 200) {
-                    Yii::warning("Map::getMapsList: Error parsing maps for size {$size}, page {$i}", __METHOD__);
-                    continue;
+            $seenMapIds = [];
+            $maxPages = 20;
+            for ($i = 0; $i < $maxPages; $i++) {
+                try {
+                    $responseRaw = (clone \Yii::$app->curl)
+                        ->setHeader('X-API-Key', $apiKey)
+                        ->setHeader('Content-Type', 'application/json')
+                        ->setRawPostData(Map::getSearchQuery($size))
+                        ->post(
+                            'https://api.rustmaps.com/v4/maps/search?page=' . $i
+                            . '&staging=' . ($staging ? 'true' : 'false')
+                            . '&includeAllProtocols=false&customMaps=false'
+                        );
+                } catch (\Throwable $throwable) {
+                    Yii::warning(
+                        "Map::getMapsList request failed for size {$size}, page {$i}: {$throwable->getMessage()}",
+                        __METHOD__
+                    );
+                    break;
                 }
 
-                if (!empty($response['data']) && is_array($response['data'])) {
-                    $result = ArrayHelper::merge($result, $response['data']);
+                $response = json_decode($responseRaw, true);
+                if (!is_array($response) || (int)($response['meta']['statusCode'] ?? 0) !== 200) {
+                    Yii::warning(
+                        "Map::getMapsList invalid response for size {$size}, page {$i}: " . substr($responseRaw, 0, 500),
+                        __METHOD__
+                    );
+                    break;
                 }
-                sleep(1);
+
+                $metaErrors = $response['meta']['errors'] ?? [];
+                if ($metaErrors) {
+                    Yii::warning(
+                        'RustMaps search reported partial filter errors: ' . json_encode($metaErrors, JSON_UNESCAPED_UNICODE),
+                        __METHOD__
+                    );
+                }
+
+                foreach (($response['data'] ?? []) as $item) {
+                    $mapId = (string)($item['mapId'] ?? '');
+                    if ($mapId === '' || isset($seenMapIds[$mapId])) {
+                        continue;
+                    }
+                    $seenMapIds[$mapId] = true;
+                    $result[] = $item;
+                }
+
+                if (!empty($response['meta']['lastPage']) || empty($response['data'])) {
+                    break;
+                }
             }
             
             if (!empty($result)) {
@@ -621,6 +660,21 @@ class Map extends \yii\db\ActiveRecord
     }
 
     public static function getSearchQuery($size) {
+        // RustMaps documents every search filter as optional. Only world size is
+        // a product requirement here. The former payload hard-coded outdated
+        // biome/monument lists and silently required Excavator for size 4250+,
+        // which excluded valid current-protocol maps.
+        return json_encode([
+            'searchQuery' => [
+                'size' => [
+                    'min' => (int)$size,
+                    'max' => (int)$size,
+                ],
+            ],
+        ], JSON_UNESCAPED_SLASHES);
+
+        /* Legacy full-filter payload retained below only to keep this patch
+         * reviewable; it is unreachable and can be removed independently. */
         if ($size >= 4250) {
             return '{
   "searchQuery": {
