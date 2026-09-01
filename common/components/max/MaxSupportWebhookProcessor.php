@@ -71,6 +71,13 @@ final class MaxSupportWebhookProcessor
         }
 
         $callbackId = (string)ArrayHelper::getValue($update, 'callback.callback_id', '');
+        $chatId = $this->messageChatId($update);
+        if (!$this->replies->isSupportChat($chatId)) {
+            // Один MAX-бот может использоваться несколькими проектами. Их webhook
+            // получают один callback, но отвечает только владелец текущего чата.
+            return;
+        }
+
         $callbackCacheKey = $this->callbackCacheKey($callbackId);
         if ($callbackCacheKey !== null && !Yii::$app->cache->add(
             $callbackCacheKey,
@@ -81,7 +88,7 @@ final class MaxSupportWebhookProcessor
         }
 
         try {
-            $this->processUniqueCallback($update, $ticketNumber, $callbackId);
+            $this->processUniqueCallback($update, $chatId, $ticketNumber, $callbackId);
         } catch (\Throwable $e) {
             if ($callbackCacheKey !== null) {
                 Yii::$app->cache->delete($callbackCacheKey);
@@ -91,10 +98,17 @@ final class MaxSupportWebhookProcessor
         }
     }
 
-    private function processUniqueCallback(array $update, int $ticketNumber, string $callbackId): void
+    /**
+     * @param int|string $chatId
+     */
+    private function processUniqueCallback(
+        array $update,
+        $chatId,
+        int $ticketNumber,
+        string $callbackId
+    ): void
     {
         $operatorMaxId = ArrayHelper::getValue($update, 'callback.user.user_id');
-        $chatId = $this->messageChatId($update);
         $result = $this->replies->beginReply($chatId, $operatorMaxId, $ticketNumber);
 
         if ($callbackId !== '') {

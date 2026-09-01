@@ -45,7 +45,9 @@ final class MaxSupportReplyService
     public function beginReply($supportChatId, $operatorMaxId, int $ticketNumber): array
     {
         if (!$this->isSupportChat($supportChatId)) {
-            return $this->message('⛔ Эта кнопка работает только в MAX-чате поддержки.');
+            // Один токен бота может обслуживать несколько проектов и webhook.
+            // Чужой проект должен молча пропустить callback из другого чата.
+            return [];
         }
 
         $safeMaxId = preg_replace('/[^0-9]/', '', (string)$operatorMaxId);
