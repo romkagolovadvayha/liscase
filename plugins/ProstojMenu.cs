@@ -2938,7 +2938,7 @@ namespace Oxide.Plugins
             EnsureImage(ImageUrl("rust-menu/icons/stat-time.png?v=2"));
             EnsureImage(ImageUrl("rust-menu/icons/stat-combat.png?v=2"));
             EnsureImage(StoreCartImageUrl);
-            EnsureImage(ImageUrl("battlepass/season-1-medal-v5.png"));
+            EnsureImage(ImageUrl("awards/sticker-style/battlepass-season-1.png"));
             EnsureImage(ImageUrl("user-stats/wood.png"));
             EnsureImage(ImageUrl("user-stats/stone.png"));
             EnsureImage(ImageUrl("user-stats/iron_stone.png"));
@@ -3293,10 +3293,10 @@ namespace Oxide.Plugins
             value = (value ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(value)) return string.Empty;
 
-            const string medalWebpPath = "/images/battlepass/season-1-medal-v5.webp";
+            const string medalWebpPath = "/images/awards/sticker-style/battlepass-season-1.webp";
             if (value.EndsWith(medalWebpPath, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(value, medalWebpPath, StringComparison.OrdinalIgnoreCase))
-                return ImageUrl("battlepass/season-1-medal-v5.png");
+                return ImageUrl("awards/sticker-style/battlepass-season-1.png");
 
             Uri absolute;
             if (Uri.TryCreate(value, UriKind.Absolute, out absolute)) return value;

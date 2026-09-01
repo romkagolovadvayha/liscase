@@ -805,7 +805,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.png",
+                               "url":  "http://127.0.0.1:3001/images/awards/sticker-style/battlepass-season-1.png",
                                "color":  "1 1 1 1"
                            },
                            {
@@ -1149,7 +1149,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.png",
+                               "url":  "http://127.0.0.1:3001/images/awards/sticker-style/battlepass-season-1.png",
                                "color":  "1 1 1 1"
                            },
                            {
@@ -1455,7 +1455,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.png",
+                               "url":  "http://127.0.0.1:3001/images/awards/sticker-style/battlepass-season-1.png",
                                "color":  "1 1 1 1"
                            },
                            {
@@ -1761,7 +1761,7 @@
         "components":  [
                            {
                                "type":  "UnityEngine.UI.RawImage",
-                               "url":  "http://127.0.0.1:3001/images/battlepass/season-1-medal-v5.png",
+                               "url":  "http://127.0.0.1:3001/images/awards/sticker-style/battlepass-season-1.png",
                                "color":  "1 1 1 1"
                            },
                            {

@@ -53,14 +53,14 @@ final class AnnualServerRecordMedalAwarder
     ];
 
     private const CATEGORY_IMAGES = [
-        UserTop::TYPE_FARMER => '/images/awards/records/farmer.webp',
-        UserTop::TYPE_REIDER => '/images/awards/records/reider.webp',
-        UserTop::TYPE_FERMER => '/images/awards/records/fermer.webp',
-        UserTop::TYPE_HUNTER => '/images/awards/records/hunter.webp',
-        UserTop::TYPE_FISHING => '/images/awards/records/fishing.webp',
-        UserTop::TYPE_PLAYTIME => '/images/awards/records/playtime.webp',
-        UserTop::TYPE_KILLS => '/images/awards/records/kills.webp',
-        UserTop::TYPE_SCIENTISTS => '/images/awards/records/scientists.webp',
+        UserTop::TYPE_FARMER => '/images/awards/sticker-style/record-resource-farmer.webp',
+        UserTop::TYPE_REIDER => '/images/awards/sticker-style/record-raider.webp',
+        UserTop::TYPE_FERMER => '/images/awards/sticker-style/record-crop-farmer.webp',
+        UserTop::TYPE_HUNTER => '/images/awards/sticker-style/record-hunter.webp',
+        UserTop::TYPE_FISHING => '/images/awards/sticker-style/record-fishing.webp',
+        UserTop::TYPE_PLAYTIME => '/images/awards/sticker-style/record-playtime.webp',
+        UserTop::TYPE_KILLS => '/images/awards/sticker-style/record-kills.webp',
+        UserTop::TYPE_SCIENTISTS => '/images/awards/sticker-style/record-scientists.webp',
     ];
 
     /** @var Connection */
