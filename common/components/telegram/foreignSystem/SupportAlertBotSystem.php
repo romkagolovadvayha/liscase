@@ -44,7 +44,8 @@ class SupportAlertBotSystem extends PersonalBotSystem
             return (new SupportTelegramReplyService())->beginReply(
                 $chatId,
                 ArrayHelper::getValue($callbackQuery, 'from.id'),
-                $ticketNumber
+                $ticketNumber,
+                ArrayHelper::getValue($callbackQuery, 'from.username')
             );
         }
 

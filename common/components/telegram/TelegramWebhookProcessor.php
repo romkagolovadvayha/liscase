@@ -65,12 +65,27 @@ final class TelegramWebhookProcessor
             }
 
             $answerMessage = $system->executeCallBack($chat['id'], $buttonValue, $callBack);
+            $bot->answerCallbackQuery(
+                ArrayHelper::getValue($callBack, 'id'),
+                is_array($answerMessage) ? (string)ArrayHelper::getValue($answerMessage, 'callbackNotice', '') : ''
+            );
+
             if (!empty($answerMessage['forceReply']) && !empty($answerMessage['message'])) {
-                $bot->sendForceReply(
+                $forceReplyResult = $bot->sendForceReply(
                     $chat['id'],
                     $answerMessage['message'],
-                    ArrayHelper::getValue($answerMessage, 'placeholder', '')
+                    ArrayHelper::getValue($answerMessage, 'placeholder', ''),
+                    (bool)ArrayHelper::getValue($answerMessage, 'forceReplySelective', false)
                 );
+                if (!is_array($forceReplyResult) || empty($forceReplyResult['ok'])) {
+                    \Yii::warning(
+                        'Telegram force reply failed: ' . json_encode($forceReplyResult, JSON_UNESCAPED_UNICODE),
+                        __METHOD__
+                    );
+                    // Даже если конкретный Bot API не принял ForceReply, оператор увидит подсказку
+                    // и сможет вручную ответить на неё — состояние ожидания уже сохранено в кеше.
+                    $bot->sendMessage($chat['id'], $answerMessage['message']);
+                }
             } elseif (!empty($answerMessage['editMessageReplyMarkup'])) {
                 $bot->editMessageReplyMarkup($chat['id'], $message['message_id'], $answerMessage['buttons']);
             } elseif (!empty($answerMessage['message'])) {
@@ -83,7 +98,6 @@ final class TelegramWebhookProcessor
                 $bot->editMessageCaption($chat['id'], $message['message_id'], $caption);
             }
 
-            $bot->answerCallbackQuery(ArrayHelper::getValue($callBack, 'id'));
         } else {
             $message = ArrayHelper::getValue($inputParams, 'message');
             $chat    = ArrayHelper::getValue($message, 'chat');

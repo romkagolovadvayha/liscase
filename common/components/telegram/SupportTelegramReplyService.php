@@ -52,8 +52,14 @@ class SupportTelegramReplyService
     /**
      * @param int|string $supportChatId
      * @param int|string|null $operatorTelegramId
+     * @param string|null $operatorTelegramUsername
      */
-    public function beginReply($supportChatId, $operatorTelegramId, int $ticketNumber): array
+    public function beginReply(
+        $supportChatId,
+        $operatorTelegramId,
+        int $ticketNumber,
+        ?string $operatorTelegramUsername = null
+    ): array
     {
         if (!self::isSupportChat($supportChatId)) {
             return $this->message('⛔ Эта кнопка работает только в чате поддержки.');
@@ -84,11 +90,19 @@ class SupportTelegramReplyService
         );
 
         $operatorName = Html::encode((string)$operator->username);
-        $operatorMention = '<a href="tg://user?id=' . (int)$operatorTelegramId . '">' . $operatorName . '</a>';
+        $hasTelegramUsername = is_string($operatorTelegramUsername)
+            && preg_match('/^[a-zA-Z0-9_]{5,32}$/', $operatorTelegramUsername);
+        $operatorMention = $hasTelegramUsername
+            ? '@' . $operatorTelegramUsername
+            : '<b>' . $operatorName . '</b>';
         return [
             'forceReply' => true,
+            'forceReplySelective' => (bool)$hasTelegramUsername,
+            'callbackNotice' => 'Режим ответа включён',
             'message' => "✍️ {$operatorMention}, напишите ответ для тикета <b>#{$ticketNumber}</b>.\n"
-                . 'Он сохранится в тикете как обычный ответ от вашего аккаунта. Для отмены отправьте <code>/cancel</code>.',
+                . 'Он сохранится в тикете как обычный ответ от вашего аккаунта. '
+                . 'Если поле ввода не открылось, ответьте на это сообщение вручную. '
+                . 'Для отмены отправьте <code>/cancel</code>.',
             'placeholder' => "Ответ для тикета #{$ticketNumber}",
         ];
     }

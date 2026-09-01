@@ -233,7 +233,7 @@ class TelegramApiHelper extends \yii\base\Component
     /**
      * Отправляет сообщение, которое Telegram сразу открывает как ответ для выбранного пользователя.
      */
-    public function sendForceReply($chatId, $messageText, $placeholder = '')
+    public function sendForceReply($chatId, $messageText, $placeholder = '', $selective = false)
     {
         if (empty($messageText)) {
             return false;
@@ -241,8 +241,10 @@ class TelegramApiHelper extends \yii\base\Component
 
         $replyMarkup = [
             'force_reply' => true,
-            'selective' => true,
         ];
+        if ($selective) {
+            $replyMarkup['selective'] = true;
+        }
         if ($placeholder !== '') {
             $replyMarkup['input_field_placeholder'] = mb_substr((string)$placeholder, 0, 64);
         }
