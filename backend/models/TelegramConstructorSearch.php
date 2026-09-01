@@ -26,7 +26,7 @@ class TelegramConstructorSearch extends TelegramConstructor
         ];
     }
 
-    public function init()
+    public function init(): void
     {
         $this->status = 'all';
     }
@@ -67,7 +67,7 @@ class TelegramConstructorSearch extends TelegramConstructor
                 'defaultOrder' => ['id' => SORT_DESC],
             ],
             'pagination' => [
-                'pageSize' => 10,
+                'pageSize' => 15,
             ],
         ]);
     }

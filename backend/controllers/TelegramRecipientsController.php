@@ -18,6 +18,15 @@ use yii\filters\VerbFilter;
 class TelegramRecipientsController extends \backend\components\CrudController
 {
 
+    protected function _renderIndex($dataProvider)
+    {
+        $this->view->params['showFilters'] = false;
+        return $this->render('index', [
+            'searchModel' => $this->_searchModel,
+            'dataProvider' => $dataProvider,
+        ]);
+    }
+
     public function behaviors()
     {
         return [
@@ -98,7 +107,7 @@ class TelegramRecipientsController extends \backend\components\CrudController
     {
         $model = $this->findRecipientList($id);
         $dataProvider = new ActiveDataProvider([
-            'query' => User::find()->andWhere(['id' => $model->getResolvedUserIds()]),
+            'query' => $model->getResolvedUserQuery()->select('user.*'),
             'sort' => ['defaultOrder' => ['id' => SORT_DESC]],
             'pagination' => ['pageSize' => 20],
         ]);

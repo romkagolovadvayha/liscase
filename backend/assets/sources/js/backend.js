@@ -6,7 +6,7 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
     var $form = $('#telegram-constructor-form');
     if (!$form.length) return;
 
-    var $bot = $('#telegramconstructor-bot_id');
+    var $bot = $form.find('input[name="TelegramConstructor[bot_id]"]');
     var $audience = $('#telegramconstructor-audience_id');
     var $onlyWithUser = $('#telegramconstructor-only_with_user');
     var $message = $('#telegramconstructor-telegram_constructor_message_id');
@@ -15,7 +15,26 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
     var $audienceLink = $('#mailing-audience-preview-link');
     var $messagePreview = $('#mailing-message-preview');
     var $templateLink = $('#mailing-selected-template-link');
+    var $summaryChannel = $('#mailing-summary-channel');
+    var $summaryAudience = $('#mailing-summary-audience');
+    var $summaryTemplate = $('#mailing-summary-template');
     var requestSequence = 0;
+
+    function botValue() {
+        return $bot.filter(':checked').val();
+    }
+
+    function selectedText($select) {
+        var text = $select.find('option:selected').text();
+        return $select.val() ? text : '—';
+    }
+
+    function updateSummary() {
+        var $selectedBot = $bot.filter(':checked');
+        $summaryChannel.text($selectedBot.closest('.mailing-channel-option').find('strong').text() || '—');
+        $summaryTemplate.text(selectedText($message));
+        if (!$audience.val()) $summaryAudience.text('—');
+    }
 
     function recipientWord(count) {
         var lastTwo = count % 100;
@@ -26,13 +45,13 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
     }
 
     function toggleVkOption() {
-        var isVk = String($bot.val()) === String($form.data('vk-bot-id'));
+        var isVk = String(botValue()) === String($form.data('vk-bot-id'));
         $('#mailing-vk-option').prop('hidden', !isVk);
         if (!isVk) $onlyWithUser.prop('checked', false);
     }
 
     function updateAudience() {
-        var botId = $bot.val();
+        var botId = botValue();
         var audienceId = $audience.val();
         var currentRequest = ++requestSequence;
         $audienceLink.prop('hidden', true);
@@ -40,7 +59,8 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
         if (!botId || !audienceId) {
             $audienceResult.removeClass('is-loading');
             $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-users');
-            $audienceText.text('Выберите канал и аудиторию — здесь появится точное количество.');
+            $audienceText.text('Выберите аудиторию — здесь появится точное количество.');
+            $summaryAudience.text('—');
             return;
         }
 
@@ -60,14 +80,17 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
                 $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-users');
                 if (!response.success) {
                     $audienceText.text(response.message || 'Не удалось получить количество.');
+                    $summaryAudience.text('Не удалось посчитать');
                     return;
                 }
                 if (Number(response.count) === 0) {
                     $audienceText.html('<strong>Нет получателей</strong><span>Измените канал или аудиторию.</span>');
+                    $summaryAudience.text('Нет получателей');
                     return;
                 }
                 var count = Number(response.count);
                 $audienceText.html('<strong>' + response.formatted + ' ' + recipientWord(count) + '</strong><span>Количество актуально на эту минуту.</span>');
+                $summaryAudience.text(response.formatted + ' · ' + selectedText($audience));
                 var previewUrl = $form.data('audience-preview-url') + '?' + $.param(requestData);
                 $audienceLink.attr('href', previewUrl).prop('hidden', false);
             })
@@ -76,11 +99,13 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
                 $audienceResult.removeClass('is-loading');
                 $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-triangle-exclamation');
                 $audienceText.text('Не удалось проверить аудиторию. Повторите попытку.');
+                $summaryAudience.text('Не удалось посчитать');
             });
     }
 
     function updateMessagePreview() {
         var messageId = $message.val();
+        $summaryTemplate.text(selectedText($message));
         $templateLink.prop('hidden', !messageId);
         if (messageId && window.mailingComposerConfig) {
             $templateLink.attr('href', window.mailingComposerConfig.templateEdit.replace('__id__', messageId));
@@ -97,12 +122,139 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
             .always(function () { $messagePreview.removeAttr('aria-busy'); });
     }
 
-    $bot.on('change', function () { toggleVkOption(); updateAudience(); });
+    $bot.on('change', function () { toggleVkOption(); updateSummary(); updateAudience(); });
     $audience.add($onlyWithUser).on('change', updateAudience);
     $message.on('change', updateMessagePreview);
     toggleVkOption();
+    updateSummary();
     updateAudience();
     updateMessagePreview();
+})();
+
+(function initMailingTemplateForm() {
+    var $form = $('#mailing-template-form');
+    if (!$form.length) return;
+
+    var $mode = $form.find('input[name="TelegramConstructorMessageForm[image_mode]"]');
+    var $deleteImage = $form.find('.is_delete_image');
+    var $url = $('#telegram-message-image-url');
+    var $file = $form.find('input[type="file"][name*="image_file"]');
+    var $previewImage = $('#mailing-template-preview-image');
+    var $previewText = $('#mailing-template-preview-text');
+    var $counter = $('#mailing-message-character-count');
+    var uploadPreviewUrl = $previewImage.data('upload-src') || '';
+    var filePreviewUrl = '';
+
+    function currentMode() {
+        return $mode.filter(':checked').val() || 'none';
+    }
+
+    function visibleText(html) {
+        var container = document.createElement('div');
+        container.innerHTML = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p\s*>/gi, '\n');
+        return (container.textContent || '').trim();
+    }
+
+    function safePreviewHtml(html) {
+        var source = document.createElement('div');
+        var output = document.createElement('div');
+        var allowed = ['P', 'BR', 'STRONG', 'B', 'EM', 'I', 'A', 'UL', 'OL', 'LI', 'CODE'];
+        source.innerHTML = String(html || '');
+
+        function copyChildren(from, to) {
+            Array.prototype.forEach.call(from.childNodes, function (node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    to.appendChild(document.createTextNode(node.textContent));
+                    return;
+                }
+                if (node.nodeType !== Node.ELEMENT_NODE) return;
+                if (allowed.indexOf(node.tagName) === -1) {
+                    copyChildren(node, to);
+                    return;
+                }
+                var clean = document.createElement(node.tagName.toLowerCase());
+                if (node.tagName === 'A') {
+                    var href = node.getAttribute('href') || '';
+                    if (/^https?:\/\//i.test(href)) {
+                        clean.setAttribute('href', href);
+                        clean.setAttribute('target', '_blank');
+                        clean.setAttribute('rel', 'noopener');
+                    }
+                }
+                copyChildren(node, clean);
+                to.appendChild(clean);
+            });
+        }
+
+        copyChildren(source, output);
+        return output.innerHTML;
+    }
+
+    function editorHtml() {
+        if (window.mailingTemplateEditor && !window.mailingTemplateEditor.removed) {
+            return window.mailingTemplateEditor.getContent();
+        }
+        return $('#telegram-message-editor').val() || '';
+    }
+
+    function updateTextPreview() {
+        var html = editorHtml();
+        var length = Array.from(visibleText(html)).length;
+        $counter.text(length + ' / 4096').toggleClass('is-over-limit', length > 4096);
+        if (visibleText(html)) {
+            $previewText.html(safePreviewHtml(html));
+        } else {
+            $previewText.html('<span class="mailing-message-bubble__empty">Добавьте текст или изображение.</span>');
+        }
+    }
+
+    function setPreviewImage(src) {
+        if (src) {
+            $previewImage.attr('src', src).prop('hidden', false);
+        } else {
+            $previewImage.removeAttr('src').prop('hidden', true);
+        }
+    }
+
+    function updateImagePreview() {
+        var mode = currentMode();
+        $form.find('[data-mailing-media-panel]').prop('hidden', true);
+        $form.find('[data-mailing-media-panel="' + mode + '"]').prop('hidden', false);
+        $deleteImage.val(mode === 'none' ? 1 : 0);
+
+        if (mode === 'url') {
+            setPreviewImage($.trim($url.val()).replace(/\{user_id\}/g, '1'));
+        } else if (mode === 'upload') {
+            setPreviewImage(filePreviewUrl || uploadPreviewUrl);
+        } else {
+            setPreviewImage('');
+        }
+    }
+
+    function updateButtonsPreview() {
+        var $target = $('#mailing-template-preview-buttons').empty();
+        $('#sortable-buttons .telegram_message_buttons_item').each(function () {
+            var title = $(this).find('.button_title[data-language="ru-RU"]').val() || 'Кнопка без названия';
+            $('<span>').text(title).appendTo($target);
+        });
+        $target.prop('hidden', !$target.children().length);
+        $('.mailing-empty-buttons').prop('hidden', $('#sortable-buttons .telegram_message_buttons_item').length > 0);
+    }
+
+    window.updateMailingTemplateButtons = updateButtonsPreview;
+    document.addEventListener('mailing:editor-change', updateTextPreview);
+    $mode.on('change', updateImagePreview);
+    $url.on('input change', updateImagePreview);
+    $file.on('change', function () {
+        var file = this.files && this.files[0];
+        if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl);
+        filePreviewUrl = file ? URL.createObjectURL(file) : '';
+        updateImagePreview();
+    });
+
+    updateTextPreview();
+    updateImagePreview();
+    updateButtonsPreview();
 })();
 
 (function initMailingButtons() {
@@ -138,6 +290,7 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
 
     $(document).on('click', '.telegram_message_buttons_item_delete', function () {
         $(this).closest('.telegram_message_buttons_item_wrap').remove();
+        if (window.updateMailingTemplateButtons) window.updateMailingTemplateButtons();
     });
 
     $(document).on('click', '.telegram_message_buttons_item_update', function () {
@@ -194,6 +347,7 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
                 $('#sortable-buttons').append($button);
             }
             refreshButtonText();
+            if (window.updateMailingTemplateButtons) window.updateMailingTemplateButtons();
             clearButtonForm();
             var modalInstance = bootstrap.Modal.getInstance($modal[0]);
             if (modalInstance) modalInstance.hide();
@@ -213,8 +367,8 @@ $(document).on('change', '#country-dashboard, #deposit-period, #expiration-perio
 })();
 
 // Функция updateAudienceId удалена, используется новая логика в форме
-if ($.fn.filseinputLocales) {
-    $.fn.filseinputLocales['ru']['dropZoneTitle'] = "Выберите файлы";
+if ($.fn.fileinputLocales && $.fn.fileinputLocales.ru) {
+    $.fn.fileinputLocales.ru.dropZoneTitle = 'Выберите файл';
 }
 
 function initBackend() {

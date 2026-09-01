@@ -14,6 +14,7 @@ $this->title = $model->title;
 $this->params['contentClass'] = 'content-no-padding';
 $isDraft = $model->status === TelegramConstructor::STATUS_NEW;
 $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
+$canDuplicate = in_array($model->status, [TelegramConstructor::STATUS_SUCCESS, TelegramConstructor::STATUS_ERROR], true);
 $canLaunch = $isDraft && $isAdmin && $audienceCount > 0 && $model->telegramConstructorMessage !== null;
 $hasLaunchBlocker = $isDraft && ($audienceCount === 0 || $model->telegramConstructorMessage === null);
 $statusClasses = [
@@ -34,12 +35,18 @@ $statusClasses = [
                 <span class="mailing-status <?= $statusClasses[$model->status] ?? '' ?>"><?= Html::encode(ArrayHelper::getValue(TelegramConstructor::getStatusList(), $model->status, 'Неизвестно')) ?></span>
             </div>
             <h1><?= Html::encode($model->title) ?></h1>
-            <p><?= $isDraft ? 'Проверьте все параметры. После запуска изменить или повторно отправить рассылку нельзя.' : 'Параметры отправленной рассылки доступны только для просмотра.' ?></p>
+            <p><?= $isDraft ? 'Проверьте параметры и число получателей перед запуском.' : 'Параметры сохранены в истории. Для повторной отправки создайте новый черновик.' ?></p>
         </div>
         <div class="mailing-review-head__actions">
             <?= Html::a('<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> К списку', ['index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
             <?php if ($isDraft): ?>
                 <?= Html::a('<i class="fa-solid fa-pen" aria-hidden="true"></i> Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--secondary']) ?>
+            <?php endif; ?>
+            <?php if ($canDuplicate): ?>
+                <?= Html::a('<i class="fa-solid fa-copy" aria-hidden="true"></i> Повторить', ['duplicate', 'id' => $model->id], [
+                    'class' => 'ds-btn ds-btn--primary',
+                    'data' => ['method' => 'post'],
+                ]) ?>
             <?php endif; ?>
             <?php if ($canLaunch): ?>
                 <?= Html::a('<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Запустить рассылку', ['play', 'id' => $model->id], [

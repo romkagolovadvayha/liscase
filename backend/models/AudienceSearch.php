@@ -7,6 +7,7 @@ use common\models\user\UserLicense;
 use Yii;
 use yii\base\BaseObject;
 use yii\data\ActiveDataProvider;
+use yii\db\ActiveQuery;
 use yii\helpers\ArrayHelper;
 use common\components\base\query\DateQuery;
 
@@ -69,7 +70,11 @@ class AudienceSearch extends User
 
         DateQuery::addDateCondition($query, $this, 't.created_at');
 
-        $query->andWhere(['IN', 't.id', $userIds]);
+        if ($userIds instanceof ActiveQuery) {
+            $query->andWhere(['IN', 't.id', $userIds]);
+        } else {
+            $query->andWhere(['IN', 't.id', (array)$userIds]);
+        }
 
         return $this->_getDataProvider($query);
     }

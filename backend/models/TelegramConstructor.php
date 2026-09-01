@@ -26,6 +26,7 @@ use common\models\user\UserSocialNetwork;
 use common\models\userInvestor\UserInvestor;
 use Yii;
 use yii\base\BaseObject;
+use yii\db\ActiveQuery;
 use yii\helpers\ArrayHelper;
 use yii\web\UploadedFile;
 
@@ -69,6 +70,28 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public static function tableName()
     {
         return 'telegram_constructor';
+    }
+
+    public function init(): void
+    {
+        parent::init();
+        $this->bot_id = self::PERSONAL_BOT;
+        $this->audience_id = self::AUDIENCE_TEST;
+    }
+
+    public function beforeValidate(): bool
+    {
+        if (trim((string)$this->title) === '' && !empty($this->telegram_constructor_message_id)) {
+            $templateTitle = TelegramConstructorMessage::find()
+                ->select('title')
+                ->andWhere(['id' => (int)$this->telegram_constructor_message_id])
+                ->scalar();
+            if ($templateTitle !== false && trim((string)$templateTitle) !== '') {
+                $this->title = trim((string)$templateTitle) . ' — ' . date('d.m.Y H:i');
+            }
+        }
+
+        return parent::beforeValidate();
     }
 
     /**
@@ -150,8 +173,8 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public static function getBotList(): array
     {
         return [
-            self::PERSONAL_BOT => 'Telegram: Персональный бот',
-            self::VK_GROUP => 'ВКонтакте: Группа',
+            self::PERSONAL_BOT => 'Telegram',
+            self::VK_GROUP => 'ВКонтакте',
 //            self::OTHER_BOT => 'Other Bot'
         ];
     }
@@ -174,11 +197,7 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         ];
 
         foreach (TelegramRecipients::find()->orderBy(['name' => SORT_ASC])->all() as $recipientList) {
-            $audiences[self::CUSTOM_AUDIENCE_OFFSET + (int)$recipientList->id] = sprintf(
-                'Сохранённая: %s (%s)',
-                $recipientList->name,
-                Yii::$app->formatter->asInteger($recipientList->getResolvedQuantity())
-            );
+            $audiences[self::CUSTOM_AUDIENCE_OFFSET + (int)$recipientList->id] = 'Сохранённая: ' . $recipientList->name;
         }
 
         $audiencesCache = $audiences;
@@ -196,9 +215,9 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public static function getStatusList(): array
     {
         return [
-            self::STATUS_NEW => 'Создан',
-            self::STATUS_IN_PROGRESS => 'В процессе',
-            self::STATUS_SUCCESS => 'Завершен',
+            self::STATUS_NEW => 'Черновик',
+            self::STATUS_IN_PROGRESS => 'Подготовка',
+            self::STATUS_SUCCESS => 'Передано в очередь',
             self::STATUS_ERROR => 'Ошибка'
         ];
     }
@@ -249,8 +268,9 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             return false;
         }
 
-        $userIds = self::getAudience($this->audience_id, self::PERSONAL_BOT);
-        foreach (User::find()->andWhere(['id' => $userIds])->each(200) as $user) {
+        $recipientQuery = self::getTelegramAudienceQuery($this->audience_id)
+            ->addSelect(['u.telegram_chat_id', 'u.current_language']);
+        foreach ($recipientQuery->each(200) as $user) {
             /** @var User $user */
             if (empty($user->telegram_chat_id)) {
                 continue;
@@ -261,20 +281,29 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             $imageLink = $this->telegramConstructorMessage->getImageLink($user->current_language);
             $isDynamicLink = !empty($imageLink) && strpos($imageLink, '@') === 0 && strpos($imageLink, '{user_id}') !== false;
             
-            $cacheKey = "sendPersonalBot_{$this->telegramConstructorMessage->id}_{$user->current_language}";
+            $cacheKey = "sendPersonalBot_v2_{$this->telegramConstructorMessage->id}_{$user->current_language}";
             $cacheData = Yii::$app->cache->get($cacheKey);
             
             if (!empty($cacheData) && !$isDynamicLink) {
                 $message = $cacheData['message'];
                 $photo = $cacheData['photo'];
                 $buttons = $cacheData['buttons'];
+                $sendAsMessage = $cacheData['sendAsMessage'];
+                $sendPhotoSeparately = $cacheData['sendPhotoSeparately'];
             } else {
                 $buttons = $this->telegramConstructorMessage->getTelegramButtons($user->current_language);
-                $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, !empty($buttons));
+                $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, false);
                 $photo = null;
                 if (!empty($imageLink)) {
                     // Передаем user_id для подстановки в ссылку
                     $photo = $this->telegramConstructorMessage->getPubUrl('', $user->current_language, $user->id);
+                }
+                // Подпись к фото ограничена 1024 символами. Для длинного текста
+                // сначала ставим в очередь фото без подписи, затем обычное сообщение.
+                $sendPhotoSeparately = !empty($photo) && self::getVisibleMessageLength($message) > 1024;
+                $sendAsMessage = !empty($buttons) || $sendPhotoSeparately;
+                if ($sendAsMessage && !empty($photo) && !$sendPhotoSeparately) {
+                    $message = $this->telegramConstructorMessage->getTelegramMessage($user->current_language, true);
                 }
                 
                 // Кэшируем только если ссылка не динамическая
@@ -282,11 +311,20 @@ class TelegramConstructor extends \yii\db\ActiveRecord
                     Yii::$app->cache->set($cacheKey, [
                         'message' => $message,
                         'photo' => $photo,
-                        'buttons' => $buttons
+                        'buttons' => $buttons,
+                        'sendAsMessage' => $sendAsMessage,
+                        'sendPhotoSeparately' => $sendPhotoSeparately,
                     ], 60);
                 }
             }
-            if (!empty($buttons) || empty($photo)) {
+            if ($sendPhotoSeparately) {
+                Yii::$app->queueTelegram->push(new SendPhotoJob([
+                    'telegram_chat_id' => $user->telegram_chat_id,
+                    'photo' => $photo,
+                    'message' => '',
+                ]));
+            }
+            if ($sendAsMessage || empty($photo)) {
                 Yii::$app->queueTelegram->push(new SendMessageJob([
                                                                       'telegram_chat_id' => $user->telegram_chat_id,
                                                                       'message' => $message,
@@ -302,6 +340,14 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         }
 
         return true;
+    }
+
+    private static function getVisibleMessageLength(string $message): int
+    {
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $message);
+        $text = preg_replace('/<\/p\s*>/i', "\n", (string)$text);
+        $text = html_entity_decode(strip_tags((string)$text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return mb_strlen(trim($text));
     }
 
     /**
@@ -402,78 +448,89 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     }
 
     /**
-     * Получение аудитории для рассылки
-     * @param int $audienceId ID аудитории
-     * @param int|null $botId ID бота/платформы (для фильтрации)
-     * @param bool $onlyWithUser Отправлять только пользователям с привязанным user (только для VK)
-     * @return array
+     * Запрос Telegram-получателей. Его можно использовать и как подзапрос,
+     * не загружая сотни тысяч ID в PHP для счётчика или страницы предпросмотра.
      */
-    public static function getAudience($audienceId, $botId = null, $onlyWithUser = false) {
-        // Приводим к int для корректного сравнения
+    public static function getTelegramAudienceQuery($audienceId): ActiveQuery
+    {
+        $audienceId = (int)$audienceId;
+        $query = User::find()
+            ->select('u.id')
+            ->alias('u')
+            ->andWhere(['u.status' => User::STATUS_ACTIVE])
+            ->andWhere(['IS NOT', 'u.telegram_chat_id', null])
+            ->andWhere(['u.is_telegram_blocked' => 0]);
+
+        $excludedIds = self::getExcludedTelegramUserIds();
+        if ($excludedIds !== []) {
+            $query->andWhere(['NOT IN', 'u.id', $excludedIds]);
+        }
+
+        if ($audienceId >= self::CUSTOM_AUDIENCE_OFFSET) {
+            $recipientList = TelegramRecipients::findOne($audienceId - self::CUSTOM_AUDIENCE_OFFSET);
+            return $recipientList === null
+                ? $query->andWhere('0=1')
+                : $query->andWhere(['IN', 'u.id', $recipientList->getResolvedUserQuery()]);
+        }
+
+        if ($audienceId === self::AUDIENCE_TEST) {
+            return $query->andWhere(['u.id' => [509]]);
+        }
+        if ($audienceId === self::AUDIENCE_ALL) {
+            return $query;
+        }
+        if ($audienceId === self::AUDIENCE_WINNER) {
+            return $query->andWhere(['u.steam_id' => [76561198161653962]]);
+        }
+        if ($audienceId === self::AUDIENCE_MODERATORS) {
+            $userIds = array_values(array_unique(array_merge(
+                Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN),
+                Yii::$app->authManager->getUserIdsByRole(Role::ROLE_MODERATOR)
+            )));
+            return $userIds === []
+                ? $query->andWhere('0=1')
+                : $query->andWhere(['u.id' => $userIds]);
+        }
+
+        return $query->andWhere('0=1');
+    }
+
+    public static function getAudienceCount($audienceId, $botId = null, $onlyWithUser = false): int
+    {
+        $botId = $botId !== null ? (int)$botId : null;
+        if ($botId === self::PERSONAL_BOT) {
+            return (int)self::getTelegramAudienceQuery($audienceId)->count();
+        }
+
+        return count(self::getAudience($audienceId, $botId, $onlyWithUser));
+    }
+
+    /**
+     * Получение ID аудитории для фактической постановки сообщений в очередь.
+     * Для счётчиков и таблиц используйте getAudienceCount()/getTelegramAudienceQuery().
+     */
+    public static function getAudience($audienceId, $botId = null, $onlyWithUser = false): array
+    {
         $audienceId = (int)$audienceId;
         $botId = $botId !== null ? (int)$botId : null;
 
-        $customUserIds = null;
-        if ($audienceId >= self::CUSTOM_AUDIENCE_OFFSET) {
-            $recipientList = TelegramRecipients::findOne($audienceId - self::CUSTOM_AUDIENCE_OFFSET);
-            if ($recipientList === null) {
-                return [];
-            }
-            $customUserIds = $recipientList->getResolvedUserIds();
-            if (empty($customUserIds)) {
-                return [];
-            }
-        }
-        
-        // Фильтрация по платформе
         if ($botId === self::PERSONAL_BOT) {
-            // Для Telegram параметр onlyWithUser игнорируется
-            $query = User::find()
-                ->select('DISTINCT(u.id)')
-                ->alias('u')
-                ->andWhere(['u.status' => User::STATUS_ACTIVE])
-                ->andWhere('telegram_chat_id is NOT NULL')
-                ->andWhere(['is_telegram_blocked' => 0]);
-            
-            // Исключаем userId из списка исключений
-            $excludedIds = self::getExcludedTelegramUserIds();
-            if (!empty($excludedIds)) {
-                $query->andWhere(['NOT IN', 'u.id', $excludedIds]);
-            }
+            return array_values(self::getTelegramAudienceQuery($audienceId)->column());
+        }
 
-            if ($customUserIds !== null) {
-                $query->andWhere(['IN', 'u.id', $customUserIds]);
-            } elseif ($audienceId == self::AUDIENCE_TEST) {
-                $query->andWhere(['IN', 'u.id', [509]]);
-            } elseif ($audienceId == self::AUDIENCE_ALL) {
-                // Без дополнительных фильтров
-            } elseif ($audienceId == self::AUDIENCE_WINNER) {
-                $query->andWhere(['IN', 'steam_id', [76561198161653962]]);
-            } elseif ($audienceId == self::AUDIENCE_MODERATORS) {
-                // Для Telegram: получаем ID пользователей с ролями ADMIN или MODERATOR
-                $adminUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN);
-                $moderatorUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_MODERATOR);
-                $moderatorUserIds = array_merge($adminUserIds, $moderatorUserIds);
-                $moderatorUserIds = array_unique($moderatorUserIds);
-                
-                if (empty($moderatorUserIds)) {
+        if ($botId === self::VK_GROUP) {
+            $customUserIds = null;
+            if ($audienceId >= self::CUSTOM_AUDIENCE_OFFSET) {
+                $recipientList = TelegramRecipients::findOne($audienceId - self::CUSTOM_AUDIENCE_OFFSET);
+                if ($recipientList === null) {
                     return [];
                 }
-                
-                $query->andWhere(['IN', 'u.id', $moderatorUserIds]);
-            } else {
-                return [];
+                $customUserIds = $recipientList->getResolvedUserIds();
+                if ($customUserIds === []) {
+                    return [];
+                }
             }
 
-            $userIds = $query->createCommand()->queryColumn();
-            
-            // Дополнительная фильтрация после получения результатов (на случай если исключенные ID были в результатах)
-            if (!empty($excludedIds) && !empty($userIds)) {
-                $userIds = array_diff($userIds, $excludedIds);
-            }
-            
-            return array_values($userIds);
-        } elseif ($botId === self::VK_GROUP) {
             // Для VK группы получаем список участников из базы данных (тех, кто разрешил отправку сообщений)
             $vkUsers = VkUser::getUsersWithPermission();
             
@@ -503,19 +560,19 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             // Применяем фильтрацию по аудитории
             if ($customUserIds !== null) {
                 return $vkUsers;
-            } elseif ($audienceId == self::AUDIENCE_TEST) {
+            } elseif ($audienceId === self::AUDIENCE_TEST) {
                 return array_values(array_intersect($vkUsers, [33610634]));
-            } elseif ($audienceId == self::AUDIENCE_ALL) {
+            } elseif ($audienceId === self::AUDIENCE_ALL) {
                 // Для всех пользователей возвращаем всех с разрешением
                 return $vkUsers;
-            } elseif ($audienceId == self::AUDIENCE_WINNER) {
+            } elseif ($audienceId === self::AUDIENCE_WINNER) {
                 $winnerVkIds = User::find()
                     ->select('vk_id')
                     ->andWhere(['steam_id' => [76561198161653962]])
                     ->andWhere(['IS NOT', 'vk_id', null])
                     ->column();
                 return array_values(array_intersect($vkUsers, $winnerVkIds));
-            } elseif ($audienceId == self::AUDIENCE_MODERATORS) {
+            } elseif ($audienceId === self::AUDIENCE_MODERATORS) {
                 // Для VK: получаем ID пользователей с ролями ADMIN или MODERATOR
                 $adminUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN);
                 $moderatorUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_MODERATOR);

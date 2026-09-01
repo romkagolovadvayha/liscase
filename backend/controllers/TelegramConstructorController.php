@@ -32,6 +32,7 @@ class TelegramConstructorController extends \backend\components\CrudController
                 'actions' => [
                     'delete' => ['POST'],
                     'play' => ['POST'],
+                    'duplicate' => ['POST'],
                     'update-vk-audience' => ['POST'],
                     'update-telegram-audience' => ['POST'],
                 ],
@@ -46,7 +47,7 @@ class TelegramConstructorController extends \backend\components\CrudController
                     [
                         'allow' => true,
                         'roles' => [Role::ROLE_CONTENT_MANAGER],
-                        'actions' => ['index', 'audience', 'create', 'update', 'view', 'get-audience-count', 'preview-audience']
+                        'actions' => ['index', 'audience', 'create', 'update', 'view', 'duplicate', 'get-audience-count', 'preview-audience']
                     ],
                     [
                         'allow' => true,
@@ -80,6 +81,29 @@ class TelegramConstructorController extends \backend\components\CrudController
     protected function _getFormClassName()
     {
         return TelegramConstructor::class;
+    }
+
+    public function actionCreate()
+    {
+        $model = $this->_getFormModel();
+        if (!Yii::$app->request->isPost) {
+            $templateId = (int)Yii::$app->request->get('template');
+            if ($templateId > 0 && \backend\models\TelegramConstructorMessage::find()->andWhere(['id' => $templateId])->exists()) {
+                $model->telegram_constructor_message_id = $templateId;
+            }
+
+            $botId = (int)Yii::$app->request->get('bot');
+            if (array_key_exists($botId, TelegramConstructor::getBotList())) {
+                $model->bot_id = $botId;
+            }
+
+            $audienceId = (int)Yii::$app->request->get('audience');
+            if (array_key_exists($audienceId, TelegramConstructor::getAudienceList())) {
+                $model->audience_id = $audienceId;
+            }
+        }
+
+        return $this->_saveForm($model, 'create');
     }
 
     /**
@@ -129,6 +153,25 @@ class TelegramConstructorController extends \backend\components\CrudController
         return $this->redirect(['index']);
     }
 
+    public function actionDuplicate($id): Response
+    {
+        $source = $this->findMailing($id);
+        $copy = new TelegramConstructor();
+        $copy->bot_id = $source->bot_id;
+        $copy->audience_id = $source->audience_id;
+        $copy->telegram_constructor_message_id = $source->telegram_constructor_message_id;
+        $copy->only_with_user = $source->only_with_user;
+        $copy->title = mb_substr('Копия: ' . $source->title, 0, 190);
+
+        if (!$copy->validate() || !$copy->saveRecord()) {
+            Yii::$app->session->addFlash('error', 'Не удалось создать копию. Проверьте, что шаблон и аудитория ещё доступны.');
+            return $this->redirect(['view', 'id' => $source->id]);
+        }
+
+        Yii::$app->session->addFlash('success', 'Создан новый черновик с теми же параметрами.');
+        return $this->redirect(['update', 'id' => $copy->id]);
+    }
+
     public function actionUpdate($id)
     {
         $model = $this->findMailing($id);
@@ -143,7 +186,7 @@ class TelegramConstructorController extends \backend\components\CrudController
     public function actionView($id)
     {
         $model = $this->findMailing($id);
-        $recipients = TelegramConstructor::getAudience(
+        $audienceCount = TelegramConstructor::getAudienceCount(
             $model->audience_id,
             $model->bot_id,
             $model->bot_id === TelegramConstructor::VK_GROUP && !empty($model->only_with_user)
@@ -151,7 +194,7 @@ class TelegramConstructorController extends \backend\components\CrudController
 
         return $this->render('view', [
             'model' => $model,
-            'audienceCount' => count($recipients),
+            'audienceCount' => $audienceCount,
         ]);
     }
 
@@ -177,12 +220,12 @@ class TelegramConstructorController extends \backend\components\CrudController
             return $this->redirect(['view', 'id' => $model->id]);
         }
 
-        $recipients = TelegramConstructor::getAudience(
+        $recipientsCount = TelegramConstructor::getAudienceCount(
             $model->audience_id,
             $model->bot_id,
             $model->bot_id === TelegramConstructor::VK_GROUP && !empty($model->only_with_user)
         );
-        if (empty($recipients)) {
+        if ($recipientsCount === 0) {
             Yii::$app->session->addFlash('error', 'В выбранной аудитории нет доступных получателей. Рассылка не запущена.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -233,7 +276,7 @@ class TelegramConstructorController extends \backend\components\CrudController
      */
     protected function _renderIndex($dataProvider)
     {
-        $this->view->params['showFilters'] = true;
+        $this->view->params['showFilters'] = false;
         $countTelegramUsers = User::find()
             ->andWhere(['status' => User::STATUS_ACTIVE, 'is_telegram_blocked' => 0])
             ->andWhere(['IS NOT', 'telegram_chat_id', null])
@@ -258,9 +301,9 @@ class TelegramConstructorController extends \backend\components\CrudController
         $searchModel = new AudienceSearch();
         // Передаем only_with_user только для VK группы
         $onlyWithUser = ($model->bot_id == TelegramConstructor::VK_GROUP) && !empty($model->only_with_user);
-        $userIds = TelegramConstructor::getAudience($model->audience_id, $model->bot_id, $onlyWithUser);
 
         if ($model->bot_id === TelegramConstructor::VK_GROUP) {
+            $userIds = TelegramConstructor::getAudience($model->audience_id, $model->bot_id, $onlyWithUser);
             $vkUsers = empty($userIds) ? [] : VkUser::find()->andWhere(['vk_user_id' => $userIds])->all();
             return $this->render('audience-vk', [
                 'audienceId' => $model->audience_id,
@@ -270,12 +313,13 @@ class TelegramConstructorController extends \backend\components\CrudController
             ]);
         }
 
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $userIds);
+        $audienceQuery = TelegramConstructor::getTelegramAudienceQuery($model->audience_id);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $audienceQuery);
 
         return $this->render('audience', [
             'audienceId' => $model->audience_id,
-            'audienceCount' => count($userIds),
-            'audience' => $userIds,
+            'audienceCount' => TelegramConstructor::getAudienceCount($model->audience_id, $model->bot_id),
+            'audience' => [],
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'mailingId' => $model->id,
@@ -301,8 +345,7 @@ class TelegramConstructorController extends \backend\components\CrudController
         // Применяем фильтр only_with_user только для VK группы
         $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && $onlyWithUser;
 
-        $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
-        $count = count($userIds);
+        $count = TelegramConstructor::getAudienceCount($audienceId, $botId, $onlyWithUser);
 
         return [
             'success' => true,
@@ -335,10 +378,10 @@ class TelegramConstructorController extends \backend\components\CrudController
 
         // Для предпросмотра аудитории нужно получить only_with_user из запроса (только для VK)
         $onlyWithUser = ($botId == TelegramConstructor::VK_GROUP) && (bool)Yii::$app->request->get('only_with_user', false);
-        $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
 
         // Для VK группы получаем User IDs из VK user IDs
         if ($botId == TelegramConstructor::VK_GROUP) {
+            $userIds = TelegramConstructor::getAudience($audienceId, $botId, $onlyWithUser);
             if (empty($userIds)) {
                 return $this->render('audience-vk', [
                     'audienceId' => $audienceId,
@@ -360,12 +403,13 @@ class TelegramConstructorController extends \backend\components\CrudController
             ]);
         }
 
-        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $userIds);
+        $audienceQuery = TelegramConstructor::getTelegramAudienceQuery($audienceId);
+        $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $audienceQuery);
 
         return $this->render('audience', [
             'audienceId' => $audienceId,
-            'audienceCount' => count($userIds),
-            'audience' => $userIds,
+            'audienceCount' => TelegramConstructor::getAudienceCount($audienceId, $botId),
+            'audience' => [],
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
             'isVk' => false,

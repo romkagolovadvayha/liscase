@@ -52,8 +52,7 @@ class TelegramConstructorMessageController extends Controller
         $searchModel = new TelegramConstructorMessageSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
-        $this->view->params['showFilters'] = true;
-        $this->view->params['searchModel'] = $searchModel;
+        $this->view->params['showFilters'] = false;
 
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -84,6 +83,10 @@ class TelegramConstructorMessageController extends Controller
         $model = new TelegramConstructorMessageForm();
 
         if ($model->load(Yii::$app->request->post()) && $model->saveRecord()) {
+            if (Yii::$app->request->get('use') === 'campaign') {
+                Yii::$app->session->addFlash('success', 'Шаблон сохранён и выбран для новой рассылки.');
+                return $this->redirect(['/telegram-constructor/create', 'template' => $model->id]);
+            }
             Yii::$app->session->addFlash('success', 'Шаблон сохранён. Проверьте итоговый вид сообщения.');
             return $this->redirect(['view', 'id' => $model->id]);
         }
@@ -151,9 +154,8 @@ class TelegramConstructorMessageController extends Controller
     public function actionGetAudienceInfo($audienceId, $botId = TelegramConstructor::PERSONAL_BOT)
     {
         $this->layout = '@common/views/layouts/content';
-        $audience = TelegramConstructor::getAudience($audienceId, $botId);
         return $this->render('audienceInfo', [
-            'count' => count($audience),
+            'count' => TelegramConstructor::getAudienceCount($audienceId, $botId),
             'audienceId' => $audienceId,
         ]);
     }

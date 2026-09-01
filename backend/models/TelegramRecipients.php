@@ -126,31 +126,34 @@ class TelegramRecipients extends \yii\db\ActiveRecord
             return $this->_resolvedUserIds;
         }
 
+        return $this->_resolvedUserIds = $this->getResolvedUserQuery()->column();
+    }
+
+    /**
+     * Запрос участников сохранённой аудитории без промежуточной загрузки ID в PHP.
+     */
+    public function getResolvedUserQuery(): ActiveQuery
+    {
+        $query = User::find()
+            ->select('id')
+            ->andWhere(['status' => User::STATUS_ACTIVE]);
+
         $languageGroups = TelegramConstructor::getLkLanguagesArr();
         if ($this->name !== null && isset($languageGroups[(string)$this->name])) {
-            $this->_resolvedUserIds = User::find()
-                ->select('id')
-                ->andWhere(['status' => User::STATUS_ACTIVE, 'current_language' => $languageGroups[(string)$this->name]])
-                ->column();
-            return $this->_resolvedUserIds;
+            return $query->andWhere(['current_language' => $languageGroups[(string)$this->name]]);
         }
 
         $values = $this->getRecipientValues();
         if (empty($values)) {
-            return $this->_resolvedUserIds = [];
+            return $query->andWhere('0=1');
         }
 
-        $this->_resolvedUserIds = User::find()
-            ->select('id')
-            ->andWhere(['status' => User::STATUS_ACTIVE])
-            ->andWhere(['or', ['id' => $values], ['ref_code' => $values]])
-            ->column();
-        return $this->_resolvedUserIds;
+        return $query->andWhere(['or', ['id' => $values], ['ref_code' => $values]]);
     }
 
     public function getResolvedQuantity(): int
     {
-        return count($this->getResolvedUserIds());
+        return (int)$this->getResolvedUserQuery()->count();
     }
 
     public function getUsageCount(): int
@@ -172,13 +175,8 @@ class TelegramRecipients extends \yii\db\ActiveRecord
 
     public function getSelectedUsersOptions(): array
     {
-        $ids = $this->getResolvedUserIds();
-        if (empty($ids)) {
-            return [];
-        }
-
         $result = [];
-        foreach (User::find()->andWhere(['id' => $ids])->orderBy(['id' => SORT_DESC])->all() as $user) {
+        foreach ($this->getResolvedUserQuery()->select(['id', 'username'])->orderBy(['id' => SORT_DESC])->all() as $user) {
             $result[$user->id] = self::formatUserLabel($user);
         }
         return $result;

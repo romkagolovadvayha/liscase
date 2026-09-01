@@ -23,19 +23,13 @@ use yii\web\JsExpression;
     <?php $form = ActiveForm::begin(['id' => 'telegram-recipients-form', 'options' => ['class' => 'mailing-audience-form']]) ?>
         <?= Html::errorSummary($model, ['class' => 'ds-alert ds-alert--danger mailing-form-errors', 'header' => '<strong>Не удалось сохранить аудиторию</strong>', 'encode' => false]) ?>
 
-        <section class="mailing-form-section">
-            <header class="mailing-form-section__head">
-                <span class="mailing-step-number">1</span>
-                <div><h2>Название</h2><p>Показывается только в админке и выборе аудитории.</p></div>
+        <section class="mailing-compose-sheet">
+            <header class="mailing-compose-sheet__head">
+                <div><h2>Состав аудитории</h2><p>Название и пользователи находятся в одном компактном блоке.</p></div>
             </header>
             <?= $form->field($model, 'name', ['options' => ['class' => 'mailing-field']])->textInput(['class' => 'ds-input form-control', 'maxlength' => true, 'placeholder' => 'Например: VIP-пользователи сентября'])->label('Название аудитории') ?>
-        </section>
 
-        <section class="mailing-form-section">
-            <header class="mailing-form-section__head">
-                <span class="mailing-step-number">2</span>
-                <div><h2>Пользователи</h2><p>Начните вводить запрос и добавьте нужных людей.</p></div>
-            </header>
+            <div class="mailing-compose-divider" role="presentation"></div>
             <?= $form->field($model, 'ref_id', ['options' => ['class' => 'mailing-field']])->widget(Select2::class, [
                 'data' => $model->getSelectedUsersOptions(),
                 'value' => $model->getResolvedUserIds(),

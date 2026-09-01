@@ -18,6 +18,8 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
      */
     public $image_file;
     public $image_url; // Ссылка на изображение (начинается с @)
+    /** @var string способ добавления изображения: none, url или upload */
+    public $image_mode;
     public $path_file;
     public $is_delete_image;
     public $buttons;
@@ -34,6 +36,7 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             [['title'], 'trim'],
             [['title'], 'string', 'max' => 190],
             [['buttons', 'is_delete_image', 'message', 'buttonsTitles', 'image_url', 'buttonResponseMessageId'], 'safe'],
+            [['image_mode'], 'in', 'range' => ['none', 'url', 'upload']],
             [['message'], 'validateMessageContent'],
             [['buttons'], 'validateButtons'],
             [['image_file'],
@@ -41,7 +44,7 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
              'skipOnEmpty' => true,
              'extensions' => 'png, jpg, jpeg, gif, webp',
              'maxSize' => 1024 * 1024 * 3,
-             'tooBig' => 'The file was larger than 3 MB. Please upload a smaller file.',],
+             'tooBig' => 'Изображение больше 3 МБ. Выберите файл меньшего размера.',],
         ];
     }
 
@@ -52,17 +55,26 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
         foreach ($messages as $message) {
             if (trim(strip_tags((string)$message)) !== '') {
                 $hasText = true;
-                break;
+            }
+            if ($this->getVisibleTextLength((string)$message) > 4096) {
+                $this->addError($attribute, 'Текст сообщения длиннее 4096 символов — Telegram не сможет его отправить.');
             }
         }
 
         $imageUrls = is_array($this->image_url) ? $this->image_url : [];
         $hasUrl = (bool)array_filter($imageUrls, static fn($url) => trim((string)$url) !== '');
         $deleteFlags = is_array($this->is_delete_image) ? $this->is_delete_image : [];
-        $hasExistingImage = !$this->isNewRecord
-            && empty($deleteFlags['ru-RU'])
-            && (bool)$this->getImageLink('ru-RU');
+        $existingImageLink = !$this->isNewRecord ? (string)$this->getImageLink('ru-RU') : '';
+        $hasExistingImage = empty($deleteFlags['ru-RU']) && $existingImageLink !== '';
+        $hasExistingUploadImage = $hasExistingImage && strpos($existingImageLink, '@') !== 0;
         $hasUpload = UploadedFile::getInstance($this, 'image_file[ru-RU]') !== null;
+
+        if ($this->image_mode === 'url' && !$hasUrl) {
+            $this->addError('image_url', 'Вставьте ссылку на изображение или выберите другой вариант.');
+        }
+        if ($this->image_mode === 'upload' && !$hasUpload && !$hasExistingUploadImage) {
+            $this->addError('image_file', 'Выберите изображение или другой вариант.');
+        }
 
         foreach ($imageUrls as $url) {
             $url = trim((string)$url);
@@ -74,11 +86,24 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             if (!filter_var($validatedUrl, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
                 $this->addError('image_url', 'Ссылка на изображение должна начинаться с http:// или https://.');
             }
+            if (mb_strlen($url) > 254) {
+                $this->addError('image_url', 'Ссылка на изображение слишком длинная (максимум 254 символа).');
+            }
         }
 
         if (!$hasText && !$hasUrl && !$hasExistingImage && !$hasUpload) {
             $this->addError($attribute, 'Добавьте текст или изображение сообщения.');
         }
+    }
+
+    public function beforeValidate(): bool
+    {
+        if ($this->image_mode === 'none') {
+            $this->is_delete_image = ['ru-RU' => 1];
+            $this->image_url = ['ru-RU' => ''];
+        }
+
+        return parent::beforeValidate();
     }
 
     public function validateButtons($attribute): void
@@ -94,6 +119,9 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             if ($title === '') {
                 $this->addError($attribute, 'У каждой кнопки должно быть название.');
             }
+            if (mb_strlen($title) > 64) {
+                $this->addError($attribute, 'Название кнопки должно быть не длиннее 64 символов.');
+            }
             if (($url === '') === ($messageId === 0)) {
                 $this->addError($attribute, 'У кнопки должно быть ровно одно действие: ссылка или ответное сообщение.');
             }
@@ -101,10 +129,21 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             if ($url !== '' && (!filter_var($url, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true))) {
                 $this->addError($attribute, 'Проверьте ссылку у кнопки «' . ($title ?: ($index + 1)) . '».');
             }
+            if (mb_strlen($url) > 255) {
+                $this->addError($attribute, 'Ссылка у кнопки «' . ($title ?: ($index + 1)) . '» длиннее 255 символов.');
+            }
             if ($messageId > 0 && !TelegramConstructorMessage::find()->andWhere(['id' => $messageId])->exists()) {
                 $this->addError($attribute, 'Ответный шаблон у кнопки «' . ($title ?: ($index + 1)) . '» не найден.');
             }
         }
+    }
+
+    private function getVisibleTextLength(string $html): int
+    {
+        $text = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $text = preg_replace('/<\/p\s*>/i', "\n", (string)$text);
+        $text = html_entity_decode(strip_tags((string)$text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return mb_strlen(trim($text));
     }
 
     /**
@@ -116,82 +155,78 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
             return false;
         }
 
-        $result = $this->save(false);
+        $transaction = Yii::$app->db->beginTransaction();
+        $uploadedImages = [];
+        $imagesToDelete = [];
 
-        if (empty($this->id)) {
-            $this->id = Yii::$app->db->getLastInsertID();;
-        }
-
-        $updated = [];
-
-        // message/image_url не входят в атрибуты таблицы — берём из POST по formName()
-        $formName = $this->formName();
-        $postForm = Yii::$app->request->post($formName, []);
-        $rawMessage = $postForm['message'] ?? null;
-        $defaultLang = 'ru-RU';
-        $messageByLang = [];
-        if (is_array($rawMessage)) {
-            $messageByLang = $rawMessage;
-        } elseif ($rawMessage !== null && $rawMessage !== '') {
-            $messageByLang = [$defaultLang => (string)$rawMessage];
-        }
-        $imageUrlByLang = is_array($postForm['image_url'] ?? null) ? $postForm['image_url'] : [];
-        $isDeleteByLang = is_array($postForm['is_delete_image'] ?? null) ? $postForm['is_delete_image'] : [];
-        
-        $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
-        $languages = array_merge(
-            array_keys($messageByLang),
-            array_keys($imageUrlByLang),
-            array_keys($imageFileArray)
-        );
-        $languages = array_unique(array_filter($languages));
-        // Если из POST ничего не подтянулось — сохраняем хотя бы для одного языка (как в форме)
-        if (empty($languages)) {
-            $languages = [$defaultLang];
-            $msg = $postForm['message'] ?? null;
-            $messageByLang[$defaultLang] = is_array($msg) ? ($msg[$defaultLang] ?? '') : (string)($msg ?? '');
-        }
-        
-        foreach ($languages as $language) {
-            $messageText = trim($messageByLang[$language] ?? '');
-            
-            $imageUrl = $imageUrlByLang[$language] ?? '';
-            if (!empty($imageUrl)) {
-                if (strpos($imageUrl, '@') !== 0) {
-                    $imageUrl = '@' . $imageUrl;
-                }
-                $updated[$language] = true;
-                $this->updateLanguage($language, $messageText, $imageUrl);
-                continue;
+        try {
+            if (!$this->save(false)) {
+                throw new \RuntimeException('Не удалось сохранить запись шаблона.');
             }
-            
-            // Если ссылка не указана, проверяем загрузку файла
-            $imageFile = UploadedFile::getInstance($this, "image_file[$language]");
-            if($imageFile) {
-                $fileName = $this->id . '_' . uniqid('', true) . '.' . strtolower($imageFile->extension);
-                $s3Key = self::S3_PREFIX . $fileName;
-                $contentType = $imageFile->type ?: ('image/' . strtolower($imageFile->extension));
-                $uploadedS3Key = $this->uploadImageToS3($s3Key, $imageFile->tempName, $contentType);
-                if ($uploadedS3Key !== false) {
-                    $oldImageLink = $this->getImageLink($language);
-                    $this->deleteImageFromS3IfNeeded($oldImageLink);
-                    $updated[$language] = true;
+
+            // message/image_url не входят в атрибуты таблицы — берём из POST по formName()
+            $formName = $this->formName();
+            $postForm = Yii::$app->request->post($formName, []);
+            $rawMessage = $postForm['message'] ?? $this->message;
+            $defaultLang = 'ru-RU';
+            $messageByLang = [];
+            if (is_array($rawMessage)) {
+                $messageByLang = $rawMessage;
+            } elseif ($rawMessage !== null && $rawMessage !== '') {
+                $messageByLang = [$defaultLang => (string)$rawMessage];
+            }
+            $imageUrlByLang = is_array($this->image_url) ? $this->image_url : [];
+            $isDeleteByLang = is_array($this->is_delete_image) ? $this->is_delete_image : [];
+
+            $imageFileArray = is_array($this->image_file) ? $this->image_file : [];
+            $languages = array_unique(array_filter(array_merge(
+                array_keys($messageByLang),
+                array_keys($imageUrlByLang),
+                array_keys($imageFileArray)
+            )));
+            if (empty($languages)) {
+                $languages = [$defaultLang];
+                $messageByLang[$defaultLang] = '';
+            }
+
+            foreach ($languages as $language) {
+                $messageText = trim((string)($messageByLang[$language] ?? ''));
+                $oldImageLink = (string)$this->getImageLink($language);
+                $imageUrl = trim((string)($imageUrlByLang[$language] ?? ''));
+
+                if ($imageUrl !== '') {
+                    if (strpos($imageUrl, '@') !== 0) {
+                        $imageUrl = '@' . $imageUrl;
+                    }
+                    if ($oldImageLink !== '' && $oldImageLink !== $imageUrl) {
+                        $imagesToDelete[] = $oldImageLink;
+                    }
+                    $this->updateLanguage($language, $messageText, $imageUrl);
+                    continue;
+                }
+
+                $imageFile = UploadedFile::getInstance($this, "image_file[$language]");
+                if ($imageFile) {
+                    $fileName = $this->id . '_' . uniqid('', true) . '.' . strtolower($imageFile->extension);
+                    $s3Key = self::S3_PREFIX . $fileName;
+                    $contentType = $imageFile->type ?: ('image/' . strtolower($imageFile->extension));
+                    $uploadedS3Key = $this->uploadImageToS3($s3Key, $imageFile->tempName, $contentType);
+                    if ($uploadedS3Key === false) {
+                        throw new \RuntimeException('Не удалось загрузить изображение.');
+                    }
+                    $uploadedImages[] = $uploadedS3Key;
+                    if ($oldImageLink !== '' && $oldImageLink !== $uploadedS3Key) {
+                        $imagesToDelete[] = $oldImageLink;
+                    }
                     $this->updateLanguage($language, $messageText, $uploadedS3Key);
+                } elseif ($oldImageLink !== '' && !empty($isDeleteByLang[$language])) {
+                    $imagesToDelete[] = $oldImageLink;
+                    $this->updateLanguage($language, $messageText, null);
                 } else {
-                    Yii::warning("Telegram message image upload failed for language={$language}, messageId={$this->id}", __METHOD__);
+                    $this->updateLanguage($language, $messageText, null, false);
                 }
-            } else if (!empty($this->getImageLink($language)) && !empty($isDeleteByLang[$language])) {
-                $oldImageLink = $this->getImageLink($language);
-                $this->deleteImageFromS3IfNeeded($oldImageLink);
-                $updated[$language] = true;
-                $this->updateLanguage($language, $messageText, null);
-            } else {
-                $updated[$language] = true;
-                $this->updateLanguage($language, $messageText, null, false);
             }
-        }
 
-        if ($result) {
             TelegramConstructorButtons::deleteAll(['telegram_constructor_message_id' => $this->id]);
             if (!empty($this->buttons)) {
                 foreach ($this->buttons as $item) {
@@ -204,15 +239,30 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
                         $button->callback_telegram_constructor_message_id = $item['message'];
                     }
                     $button->created_at = date('Y-m-d H:i:s');
-                    $button->save(false);
+                    if (!$button->save(false)) {
+                        throw new \RuntimeException('Не удалось сохранить кнопку сообщения.');
+                    }
                     foreach ($item['title'] as $language => $title) {
                         $button->updateLanguage($language, $title);
                     }
                 }
             }
+            $transaction->commit();
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            foreach ($uploadedImages as $uploadedImage) {
+                $this->deleteImageFromS3IfNeeded($uploadedImage);
+            }
+            Yii::error('Telegram message save failed: ' . $e->getMessage(), __METHOD__);
+            $this->addError('image_file', 'Не удалось сохранить шаблон. Повторите попытку.');
+            return false;
         }
 
-        return $result;
+        foreach (array_unique($imagesToDelete) as $imageToDelete) {
+            $this->deleteImageFromS3IfNeeded($imageToDelete);
+        }
+
+        return true;
     }
 
     /**

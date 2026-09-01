@@ -25,7 +25,7 @@ $isAdmin = Yii::$app->user->can(Role::ROLE_ADMIN);
         <div class="mailing-review-head__actions">
             <?= Html::a('<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> К шаблонам', ['index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
             <?= Html::a('<i class="fa-solid fa-pen" aria-hidden="true"></i> Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
-            <?= Html::a('<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Создать рассылку', ['/telegram-constructor/create'], ['class' => 'ds-btn ds-btn--success']) ?>
+            <?= Html::a('<i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Создать рассылку', ['/telegram-constructor/create', 'template' => $model->id], ['class' => 'ds-btn ds-btn--success']) ?>
         </div>
     </header>
 
