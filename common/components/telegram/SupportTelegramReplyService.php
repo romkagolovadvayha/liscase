@@ -3,7 +3,6 @@
 namespace common\components\telegram;
 
 use common\components\helpers\Role;
-use common\components\queue\telegram\SendMessageJob;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
 use common\models\support\SupportRead;
@@ -75,11 +74,6 @@ class SupportTelegramReplyService
             return $this->message('⛔ Тикет уже закрыт. Ответ отправить нельзя.');
         }
 
-        $recipient = $ticket->user;
-        if ($recipient === null || empty($recipient->telegram_chat_id)) {
-            return $this->message('⛔ У автора тикета не привязан Telegram. Ответьте через страницу тикета.');
-        }
-
         Yii::$app->cache->set(
             $this->pendingCacheKey($operatorTelegramId),
             [
@@ -94,7 +88,7 @@ class SupportTelegramReplyService
         return [
             'forceReply' => true,
             'message' => "✍️ {$operatorMention}, напишите ответ для тикета <b>#{$ticketNumber}</b>.\n"
-                . 'Он сохранится в тикете и придёт пользователю в Telegram. Для отмены отправьте <code>/cancel</code>.',
+                . 'Он сохранится в тикете как обычный ответ от вашего аккаунта. Для отмены отправьте <code>/cancel</code>.',
             'placeholder' => "Ответ для тикета #{$ticketNumber}",
         ];
     }
@@ -147,12 +141,6 @@ class SupportTelegramReplyService
             return $this->message('⛔ Тикет не найден или уже закрыт. Ответ не отправлен.');
         }
 
-        $recipient = $ticket->user;
-        if ($recipient === null || empty($recipient->telegram_chat_id)) {
-            Yii::$app->cache->delete($cacheKey);
-            return $this->message('⛔ У автора тикета больше не привязан Telegram. Ответ не отправлен.');
-        }
-
         try {
             $supportMessage = $this->saveReply($ticket, $operator, $replyText);
         } catch (\Throwable $e) {
@@ -162,17 +150,10 @@ class SupportTelegramReplyService
 
         Yii::$app->cache->delete($cacheKey);
         $this->broadcastReply($ticket, $supportMessage, $operator);
-        $queued = $this->sendReplyToRecipient($ticket, $operator, $recipient, $replyText);
-
-        if (!$queued) {
-            return $this->message(
-                "⚠️ Ответ сохранён в тикете <b>#{$ticketNumber}</b>, но отправить его пользователю в Telegram не удалось."
-            );
-        }
 
         return $this->message(
             "✅ Ответ сотрудника <b>" . Html::encode((string)$operator->username)
-            . "</b> сохранён в тикете <b>#{$ticketNumber}</b> и отправлен пользователю."
+            . "</b> сохранён в тикете <b>#{$ticketNumber}</b>."
         );
     }
 
@@ -251,38 +232,6 @@ class SupportTelegramReplyService
             );
         } catch (\Throwable $e) {
             Yii::warning('Telegram support reply WebSocket broadcast failed: ' . $e->getMessage(), __METHOD__);
-        }
-    }
-
-    private function sendReplyToRecipient(
-        Support $ticket,
-        User $operator,
-        User $recipient,
-        string $replyText
-    ): bool {
-        $operatorName = Html::encode((string)$operator->username);
-        $telegramText = Html::encode(mb_substr($replyText, 0, 3600));
-        $message = "💬 <b>Ответ поддержки в тикете #{$ticket->getNumber()}</b>\n\n"
-            . "<b>{$operatorName}:</b>\n{$telegramText}";
-
-        try {
-            if (Yii::$app->has('queueTelegram')) {
-                $jobId = Yii::$app->queueTelegram->push(new SendMessageJob([
-                    'telegram_chat_id' => $recipient->telegram_chat_id,
-                    'message' => $message,
-                    'buttons' => [],
-                ]));
-                return $jobId !== false;
-            }
-
-            $result = (clone Yii::$app->personalBotTelegram)
-                ->setToken((string)Yii::$app->settings->get('tgbot_botToken'))
-                ->sendMessage($recipient->telegram_chat_id, $message);
-
-            return is_array($result) && !empty($result['ok']);
-        } catch (\Throwable $e) {
-            Yii::error('Telegram support reply delivery failed: ' . $e->getMessage(), __METHOD__);
-            return false;
         }
     }
 
