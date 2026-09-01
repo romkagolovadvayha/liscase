@@ -47,6 +47,8 @@ class TelegramConstructorMessageSearch extends TelegramConstructorMessage
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
+            'sort' => ['defaultOrder' => ['id' => SORT_DESC]],
+            'pagination' => ['pageSize' => 10],
         ]);
 
         $this->load($params);

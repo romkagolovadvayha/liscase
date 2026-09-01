@@ -1,6 +1,7 @@
 <?php
 /* @var $model */
 
-$this->title = Yii::t('common', 'Создать список получателей сообщений телеграм бота');
+$this->title = Yii::t('common', 'Новая аудитория');
+$this->params['contentClass'] = 'content-no-padding';
 
 echo $this->render('_form', ['model' => $model]);

@@ -2,7 +2,6 @@
 
 namespace backend\controllers;
 
-use backend\models\TelegramConstructor;
 use backend\models\TelegramRecipients;
 use backend\models\TelegramRecipientsSearch;
 use common\components\base\Model;
@@ -12,6 +11,9 @@ use kartik\form\ActiveForm;
 use Yii;
 use yii\db\StaleObjectException;
 use yii\web\Response;
+use yii\web\NotFoundHttpException;
+use yii\data\ActiveDataProvider;
+use yii\filters\VerbFilter;
 
 class TelegramRecipientsController extends \backend\components\CrudController
 {
@@ -19,6 +21,10 @@ class TelegramRecipientsController extends \backend\components\CrudController
     public function behaviors()
     {
         return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => ['delete' => ['POST']],
+            ],
             'access' => [
                 'class' => \yii\filters\AccessControl::class,
                 'rules' => [
@@ -36,15 +42,6 @@ class TelegramRecipientsController extends \backend\components\CrudController
      */
     protected function _getSearchClassName()
     {
-        // обновляем численность групп по языкам в лк
-        foreach (TelegramConstructor::getlkLanguagesArr() as $key=>$item){
-            $countUsers = User::find()->cache(30)->where(['current_language' => $item, 'status' => User::STATUS_ACTIVE])->count();
-            $telegramRecipientsModel = TelegramRecipients::findOne(['name'=>$key]);
-            if($telegramRecipientsModel !== null){
-                $telegramRecipientsModel->quantity = $countUsers;
-                $telegramRecipientsModel->save();
-            }
-        }
         return TelegramRecipientsSearch::class;
     }
 
@@ -71,6 +68,7 @@ class TelegramRecipientsController extends \backend\components\CrudController
                 return ActiveForm::validate($formModel);
             }
             if ($formModel->saveRecord()) {
+                Yii::$app->session->addFlash('success', 'Аудитория сохранена и доступна в новых рассылках.');
                 return $this->redirect($this->getIndexUrl());
             }
         }
@@ -83,14 +81,64 @@ class TelegramRecipientsController extends \backend\components\CrudController
      * @throws StaleObjectException
      * @throws \Throwable
      */
-    public function actionDelete($id): string
+    public function actionDelete($id): Response
     {
-        $formModel = TelegramRecipients::findOne($id);
-        if ($formModel !== null) {
-            $formModel->delete();
+        $formModel = $this->findRecipientList($id);
+        $usedCount = $formModel->getUsageCount();
+        if ($usedCount > 0) {
+            Yii::$app->session->addFlash('error', "Аудитория используется в рассылках ({$usedCount}) и не может быть удалена.");
+            return $this->redirect(['index']);
         }
-        $this->_setSearchModel();
-        $this->_rememberIndexUrl();
-        return $this->_renderIndex($this->_getSearchDataProvider());
+        $formModel->delete();
+        Yii::$app->session->addFlash('success', 'Аудитория удалена.');
+        return $this->redirect(['index']);
+    }
+
+    public function actionView($id)
+    {
+        $model = $this->findRecipientList($id);
+        $dataProvider = new ActiveDataProvider([
+            'query' => User::find()->andWhere(['id' => $model->getResolvedUserIds()]),
+            'sort' => ['defaultOrder' => ['id' => SORT_DESC]],
+            'pagination' => ['pageSize' => 20],
+        ]);
+
+        return $this->render('view', ['model' => $model, 'dataProvider' => $dataProvider]);
+    }
+
+    public function actionSearchUsers($q = null): array
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $q = trim((string)$q);
+        if (mb_strlen($q) < 2) {
+            return ['results' => []];
+        }
+
+        $query = User::find()->andWhere(['status' => User::STATUS_ACTIVE]);
+        $conditions = [
+            'or',
+            ['like', 'username', $q],
+            ['like', 'steam_id', $q],
+            ['like', 'ref_code', $q],
+        ];
+        if (ctype_digit($q)) {
+            $conditions[] = ['id' => (int)$q];
+        }
+        $query->andWhere($conditions)->orderBy(['id' => SORT_DESC])->limit(20);
+
+        $results = [];
+        foreach ($query->all() as $user) {
+            $results[] = ['id' => (string)$user->id, 'text' => TelegramRecipients::formatUserLabel($user)];
+        }
+        return ['results' => $results];
+    }
+
+    private function findRecipientList($id): TelegramRecipients
+    {
+        $model = TelegramRecipients::findOne($id);
+        if ($model === null) {
+            throw new NotFoundHttpException('Аудитория не найдена.');
+        }
+        return $model;
     }
 }

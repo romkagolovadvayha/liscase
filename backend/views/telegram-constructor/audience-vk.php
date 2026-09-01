@@ -1,108 +1,61 @@
 <?php
 
-use yii\helpers\ArrayHelper;
-use backend\models\TelegramConstructor;
 use backend\components\AccessibleKartikGridView as GridView;
-use yii\bootstrap5\Html;
+use backend\models\TelegramConstructor;
+use common\helpers\HStrings;
 use common\models\vk\VkUser;
+use yii\data\ArrayDataProvider;
+use yii\helpers\Html;
 
-/** @var $audienceId */
-/** @var $audienceCount int */
-/** @var $vkUsers VkUser[] */
+/** @var int $audienceId */
+/** @var int $audienceCount */
+/** @var VkUser[] $vkUsers */
+/** @var int|null $mailingId */
 
-$this->title = 'Аудитория ВКонтакте: ' . ArrayHelper::getValue(TelegramConstructor::getAudienceList(), $audienceId);
+$this->title = 'Получатели VK — ' . TelegramConstructor::getAudienceName($audienceId);
 $this->params['contentClass'] = 'content-no-padding';
-$this->params['breadcrumbs'][] = ['label' => 'Конструктор рассылок', 'url' => ['/telegram-constructor/index']];
-$this->params['breadcrumbs'][] = $this->title;
-
-$headerCellClass = 'px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]';
-$bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
+$mailingId = $mailingId ?? null;
 ?>
-
-<div class="tc-audience-vk-page w-full">
-    <div class="p-4 lg:p-6 border-b border-[hsl(0_0%_15.3%_/_1)]">
-        <div class="flex items-baseline gap-2">
-            <span class="text-2xl font-semibold text-white"><?= Yii::$app->formatter->asInteger($audienceCount) ?></span>
-            <span class="text-sm text-gray-400">Всего получателей</span>
+<div class="mailing-page mailing-audience-preview-page">
+    <?= $this->render('_section_nav') ?>
+    <header class="mailing-review-head">
+        <div>
+            <div class="mailing-review-head__meta"><span>Предпросмотр аудитории VK</span><span><?= Yii::$app->formatter->asInteger($audienceCount) ?> <?= HStrings::pluralForm($audienceCount, ['получатель', 'получателя', 'получателей']) ?></span></div>
+            <h1><?= Html::encode(TelegramConstructor::getAudienceName($audienceId)) ?></h1>
+            <p>Показаны участники, разрешившие сообщения от сообщества.</p>
         </div>
-    </div>
-
+        <div class="mailing-review-head__actions">
+            <?= Html::a('<i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Вернуться', $mailingId ? ['view', 'id' => $mailingId] : ['create'], ['class' => 'ds-btn ds-btn--secondary']) ?>
+        </div>
+    </header>
     <?= GridView::widget([
-        'dataProvider' => new \yii\data\ArrayDataProvider([
-            'allModels' => $vkUsers,
-            'pagination' => ['pageSize' => 50],
-        ]),
-        'tableOptions' => ['class' => 'table-auto w-full text-sm'],
-        'options'      => ['class' => 'admin-grid-view-dark tc-audience-grid'],
-        'layout'       => "{items}\n{pager}",
-        'filterRowOptions' => ['style' => 'display: none;'],
-        'bordered'     => false,
-        'striped'      => false,
-        'hover'        => true,
-        'columns'      => [
+        'dataProvider' => new ArrayDataProvider(['allModels' => $vkUsers, 'pagination' => ['pageSize' => 50]]),
+        'layout' => "{items}\n{pager}",
+        'options' => ['class' => 'mailing-grid'],
+        'tableOptions' => ['class' => 'table mailing-table'],
+        'bordered' => false,
+        'striped' => false,
+        'hover' => true,
+        'emptyText' => 'Доступных получателей VK нет.',
+        'columns' => [
+            ['attribute' => 'vk_user_id', 'label' => 'VK ID'],
             [
-                'attribute' => 'vk_user_id',
-                'label'     => 'VK ID',
-                'options'   => ['width' => '120'],
-                'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
-            ],
-            [
-                'attribute' => 'first_name',
-                'label'     => 'Имя',
-                'format'    => 'raw',
-                'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
-                'value'     => function (VkUser $model) {
-                    return Html::encode($model->first_name . ' ' . $model->last_name);
-                },
+                'label' => 'Пользователь',
+                'value' => static fn(VkUser $model) => trim($model->first_name . ' ' . $model->last_name),
             ],
             [
                 'attribute' => 'screen_name',
-                'label'     => 'Screen Name',
-                'format'    => 'raw',
-                'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
-                'value'     => function (VkUser $model) {
-                    if ($model->screen_name) {
-                        return Html::a(Html::encode($model->screen_name), 'https://vk.com/' . $model->screen_name, [
-                            'target' => '_blank',
-                            'class' => 'text-white hover:underline',
-                            'style' => 'text-decoration: none;',
-                        ]);
-                    }
-                    return '<span class="text-gray-500">—</span>';
-                },
+                'label' => 'Профиль',
+                'format' => 'raw',
+                'value' => static fn(VkUser $model) => $model->screen_name ? Html::a('@' . Html::encode($model->screen_name), 'https://vk.com/' . rawurlencode($model->screen_name), ['class' => 'mailing-table-link', 'target' => '_blank', 'rel' => 'noopener']) : '—',
             ],
             [
                 'attribute' => 'can_send_message',
-                'label'     => 'Можно отправлять',
-                'format'    => 'raw',
-                'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
-                'value'     => function (VkUser $model) {
-                    return $model->can_send_message
-                        ? '<span class="ds-badge ds-badge--success">Да</span>'
-                        : '<span class="ds-badge ds-badge--danger">Нет</span>';
-                },
+                'label' => 'Сообщения',
+                'format' => 'raw',
+                'value' => static fn(VkUser $model) => $model->can_send_message ? '<span class="mailing-status is-success">Доступны</span>' : '<span class="mailing-status is-error">Недоступны</span>',
             ],
-            [
-                'attribute' => 'updated_at',
-                'label'     => 'Обновлено',
-                'format'    => 'datetime',
-                'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
-            ],
+            ['attribute' => 'updated_at', 'label' => 'Проверено', 'format' => ['datetime', 'php:d.m.Y, H:i']],
         ],
-    ]); ?>
+    ]) ?>
 </div>
-
-<style>
-.tc-audience-grid { background: hsl(0 0% 10% / 1) !important; }
-.tc-audience-grid .table, .tc-audience-grid table, .tc-audience-grid .kv-grid-table { background: hsl(0 0% 10% / 1) !important; border-collapse: collapse; color: white !important; border: none !important; }
-.tc-audience-grid .table thead th, .tc-audience-grid table thead th { background: hsl(0 0% 20.4% / 1) !important; color: hsl(0 0% 70% / 1) !important; border: none !important; border-bottom: 1px solid hsl(0 0% 15.3% / 1) !important; }
-.tc-audience-grid .table tbody td, .tc-audience-grid table tbody td { background: transparent !important; color: white !important; border: none !important; border-bottom: 1px solid hsl(0 0% 15.3% / 1) !important; }
-.tc-audience-grid .table tbody tr:hover { background: hsl(0 0% 15% / 1) !important; }
-.tc-audience-grid .pagination, .tc-audience-grid .kv-panel-pager { background: hsl(0 0% 10% / 1) !important; color: white !important; }
-.tc-audience-grid .pagination .page-link { background: hsl(0 0% 20.4% / 1) !important; color: white !important; border-color: hsl(0 0% 15.3% / 1) !important; }
-</style>

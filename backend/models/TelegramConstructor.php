@@ -60,6 +60,9 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public const AUDIENCE_WINNER = 3;
     public const AUDIENCE_MODERATORS = 4;
 
+    /** Saved audiences use a separate range so they cannot collide with system audiences. */
+    public const CUSTOM_AUDIENCE_OFFSET = 100000;
+
     /**
      * {@inheritdoc}
      */
@@ -75,10 +78,22 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     {
         return [
             [['bot_id', 'telegram_constructor_message_id', 'title', 'audience_id'], 'required'],
-            [['bot_id', 'status', 'telegram_constructor_message_id', 'audience_id'], 'integer'],
+            [['title'], 'trim'],
+            [['title'], 'string', 'max' => 190],
+            [['bot_id', 'telegram_constructor_message_id', 'audience_id'], 'integer'],
+            [['bot_id'], 'in', 'range' => array_keys(self::getBotList())],
+            [['telegram_constructor_message_id'], 'exist', 'targetClass' => TelegramConstructorMessage::class, 'targetAttribute' => ['telegram_constructor_message_id' => 'id']],
+            [['audience_id'], 'validateAudience'],
             [['only_with_user'], 'boolean'],
-            [['created_at', 'status'], 'safe'],
+            [['created_at'], 'safe'],
         ];
+    }
+
+    public function validateAudience($attribute): void
+    {
+        if (!array_key_exists((int)$this->$attribute, self::getAudienceList())) {
+            $this->addError($attribute, 'Выбранная аудитория больше не существует.');
+        }
     }
 
     /**
@@ -104,19 +119,24 @@ class TelegramConstructor extends \yii\db\ActiveRecord
     public function saveRecord(): bool
     {
         try {
-            $this->status = self::STATUS_NEW;
-            $this->created_at = date('Y-m-d H:i:s');
+            if ($this->isNewRecord) {
+                $this->status = self::STATUS_NEW;
+                $this->created_at = date('Y-m-d H:i:s');
+            }
             
             // Приводим к int для корректного сохранения
             $this->bot_id = (int)$this->bot_id;
             $this->audience_id = (int)$this->audience_id;
             $this->telegram_constructor_message_id = (int)$this->telegram_constructor_message_id;
+            if ($this->bot_id !== self::VK_GROUP) {
+                $this->only_with_user = false;
+            }
             
             if (!$this->save(false)) {
                 \Yii::error("TelegramConstructor save failed: " . json_encode($this->errors, JSON_UNESCAPED_UNICODE), __METHOD__);
                 return false;
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Yii::error("TelegramConstructor save exception: " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
             $this->addError('id', 'Ошибка сохранения: ' . $e->getMessage());
             return false;
@@ -141,12 +161,33 @@ class TelegramConstructor extends \yii\db\ActiveRecord
      */
     public static function getAudienceList(): array
     {
-        return [
+        static $audiencesCache;
+        if ($audiencesCache !== null) {
+            return $audiencesCache;
+        }
+
+        $audiences = [
             self::AUDIENCE_TEST => 'Тестовая аудитория',
             self::AUDIENCE_ALL => 'Все пользователи',
             self::AUDIENCE_WINNER => 'Победители',
             self::AUDIENCE_MODERATORS => 'Модераторы и админы',
         ];
+
+        foreach (TelegramRecipients::find()->orderBy(['name' => SORT_ASC])->all() as $recipientList) {
+            $audiences[self::CUSTOM_AUDIENCE_OFFSET + (int)$recipientList->id] = sprintf(
+                'Сохранённая: %s (%s)',
+                $recipientList->name,
+                Yii::$app->formatter->asInteger($recipientList->getResolvedQuantity())
+            );
+        }
+
+        $audiencesCache = $audiences;
+        return $audiencesCache;
+    }
+
+    public static function getAudienceName($audienceId): string
+    {
+        return self::getAudienceList()[(int)$audienceId] ?? 'Аудитория удалена';
     }
 
     /**
@@ -208,10 +249,10 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             return false;
         }
 
-        foreach (self::getAudience($this->audience_id, self::PERSONAL_BOT) as $userId) {
+        $userIds = self::getAudience($this->audience_id, self::PERSONAL_BOT);
+        foreach (User::find()->andWhere(['id' => $userIds])->each(200) as $user) {
             /** @var User $user */
-            $user = User::findOne($userId);
-            if (empty($user) || empty($user->telegram_chat_id)) {
+            if (empty($user->telegram_chat_id)) {
                 continue;
             }
             
@@ -302,6 +343,13 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         // Разбиваем получателей на батчи
         $batches = array_chunk($recipients, $batchSize);
         $totalBatches = count($batches);
+        $linkedUserIds = $isDynamicLink
+            ? ArrayHelper::map(
+                User::find()->select(['id', 'vk_id'])->andWhere(['vk_id' => $recipients])->asArray()->all(),
+                'vk_id',
+                'id'
+            )
+            : [];
         
         Yii::info("VK: Preparing to send messages to " . count($recipients) . " recipients in {$totalBatches} batches", __METHOD__);
 
@@ -312,19 +360,10 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             foreach ($batch as $vkUserId) {
                 $photo = null;
                 if (!empty($imageLink)) {
-                    // Для динамических ссылок нужно подставить user_id из базы данных, а не vk_user_id
-                    // Ищем пользователя по vk_id
-                    $user = User::find()
-                        ->where(['vk_id' => $vkUserId])
-                        ->one();
-                    
-                    // Если пользователь найден, используем его user_id, иначе используем vk_user_id
-                    $userIdForUrl = $user ? $user->id : $vkUserId;
-                    
-                    if (!$user) {
+                    $userIdForUrl = $isDynamicLink ? ($linkedUserIds[$vkUserId] ?? $vkUserId) : null;
+                    if ($isDynamicLink && !isset($linkedUserIds[$vkUserId])) {
                         Yii::warning("VK: User not found for vk_id {$vkUserId}, using vk_user_id for URL", __METHOD__);
                     }
-                    
                     $photo = $this->telegramConstructorMessage->getPubUrl('', $language, $userIdForUrl);
                     
                     if (empty($photo)) {
@@ -373,6 +412,18 @@ class TelegramConstructor extends \yii\db\ActiveRecord
         // Приводим к int для корректного сравнения
         $audienceId = (int)$audienceId;
         $botId = $botId !== null ? (int)$botId : null;
+
+        $customUserIds = null;
+        if ($audienceId >= self::CUSTOM_AUDIENCE_OFFSET) {
+            $recipientList = TelegramRecipients::findOne($audienceId - self::CUSTOM_AUDIENCE_OFFSET);
+            if ($recipientList === null) {
+                return [];
+            }
+            $customUserIds = $recipientList->getResolvedUserIds();
+            if (empty($customUserIds)) {
+                return [];
+            }
+        }
         
         // Фильтрация по платформе
         if ($botId === self::PERSONAL_BOT) {
@@ -389,8 +440,10 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             if (!empty($excludedIds)) {
                 $query->andWhere(['NOT IN', 'u.id', $excludedIds]);
             }
-            
-            if ($audienceId == self::AUDIENCE_TEST) {
+
+            if ($customUserIds !== null) {
+                $query->andWhere(['IN', 'u.id', $customUserIds]);
+            } elseif ($audienceId == self::AUDIENCE_TEST) {
                 $query->andWhere(['IN', 'u.id', [509]]);
             } elseif ($audienceId == self::AUDIENCE_ALL) {
                 // Без дополнительных фильтров
@@ -427,32 +480,41 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             if (empty($vkUsers)) {
                 return [];
             }
+
+            if ($customUserIds !== null) {
+                $customVkIds = User::find()
+                    ->select('vk_id')
+                    ->andWhere(['IN', 'id', $customUserIds])
+                    ->andWhere(['IS NOT', 'vk_id', null])
+                    ->column();
+                $vkUsers = array_values(array_intersect($vkUsers, $customVkIds));
+            }
             
             // Фильтруем по наличию привязанного user, если указано
             if ($onlyWithUser) {
-                // Оставляем только тех, у кого есть привязанный user в базе данных
-                $vkUsersWithUser = [];
-                foreach ($vkUsers as $vkUserId) {
-                    $user = User::find()
-                        ->where(['vk_id' => $vkUserId])
-                        ->exists();
-                    if ($user) {
-                        $vkUsersWithUser[] = $vkUserId;
-                    }
-                }
-                $vkUsers = $vkUsersWithUser;
+                $linkedVkIds = User::find()
+                    ->select('vk_id')
+                    ->andWhere(['vk_id' => $vkUsers])
+                    ->andWhere(['IS NOT', 'vk_id', null])
+                    ->column();
+                $vkUsers = array_values(array_intersect($vkUsers, $linkedVkIds));
             }
             
             // Применяем фильтрацию по аудитории
-            if ($audienceId == self::AUDIENCE_TEST) {
-                // Для тестовой аудитории берем только первых 5 участников
-                return [33610634];
+            if ($customUserIds !== null) {
+                return $vkUsers;
+            } elseif ($audienceId == self::AUDIENCE_TEST) {
+                return array_values(array_intersect($vkUsers, [33610634]));
             } elseif ($audienceId == self::AUDIENCE_ALL) {
                 // Для всех пользователей возвращаем всех с разрешением
                 return $vkUsers;
             } elseif ($audienceId == self::AUDIENCE_WINNER) {
-                // Для победителей пока возвращаем всех (можно добавить фильтрацию позже)
-                return $vkUsers;
+                $winnerVkIds = User::find()
+                    ->select('vk_id')
+                    ->andWhere(['steam_id' => [76561198161653962]])
+                    ->andWhere(['IS NOT', 'vk_id', null])
+                    ->column();
+                return array_values(array_intersect($vkUsers, $winnerVkIds));
             } elseif ($audienceId == self::AUDIENCE_MODERATORS) {
                 // Для VK: получаем ID пользователей с ролями ADMIN или MODERATOR
                 $adminUserIds = Yii::$app->authManager->getUserIdsByRole(Role::ROLE_ADMIN);

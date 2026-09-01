@@ -21,7 +21,7 @@ class TelegramRecipientsSearch extends TelegramRecipients
                 ],
                 'trim',
             ],
-            [['ref_id', 'quantity'], 'safe',],
+            [['ref_id'], 'safe'],
         ];
     }
 
@@ -43,9 +43,8 @@ class TelegramRecipientsSearch extends TelegramRecipients
         $query
             ->andFilterWhere([
                 'id'       => $this->id,
-                'name'     => $this->name,
-                'quantity' => $this->quantity
             ])
+            ->andFilterWhere(['like', 'name', $this->name])
             ;
 
         DateQuery::addDateCondition($query, $this, 'created_at');

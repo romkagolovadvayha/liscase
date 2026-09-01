@@ -1,142 +1,216 @@
 $(document).on('change', '#country-dashboard, #deposit-period, #expiration-period, #currency-type, #duration-period, #date-period, #fund-id', function () {
     $(this).closest('form').submit();
 });
-$(document).on('click', '.telegram_message_buttons_item_delete', function (e) {
-    e.preventDefault();
-    $(this).parent().remove();
-});
-var button_updated = undefined;
-$(document).on('click', '.button_add', function (e) {
-    e.preventDefault();
-    button_updated = undefined;
-    button_form_clear();
-});
-function updateButtonsText() {
-    var buttons = $('.telegram_message_buttons_item');
-    console.log(buttons);
-    for (var k = 0; k < buttons.length; k++) {
-        var value = $(buttons[k]).find('.button_title[data-language="' + current_language + '"]').val();
-        if (!value.length) {
-            value = "Пусто...";
+
+(function initMailingComposer() {
+    var $form = $('#telegram-constructor-form');
+    if (!$form.length) return;
+
+    var $bot = $('#telegramconstructor-bot_id');
+    var $audience = $('#telegramconstructor-audience_id');
+    var $onlyWithUser = $('#telegramconstructor-only_with_user');
+    var $message = $('#telegramconstructor-telegram_constructor_message_id');
+    var $audienceResult = $('#mailing-audience-result');
+    var $audienceText = $audienceResult.find('.mailing-audience-result__text');
+    var $audienceLink = $('#mailing-audience-preview-link');
+    var $messagePreview = $('#mailing-message-preview');
+    var $templateLink = $('#mailing-selected-template-link');
+    var requestSequence = 0;
+
+    function recipientWord(count) {
+        var lastTwo = count % 100;
+        var last = count % 10;
+        if (last === 1 && lastTwo !== 11) return 'получатель';
+        if (last >= 2 && last <= 4 && (lastTwo < 12 || lastTwo > 14)) return 'получателя';
+        return 'получателей';
+    }
+
+    function toggleVkOption() {
+        var isVk = String($bot.val()) === String($form.data('vk-bot-id'));
+        $('#mailing-vk-option').prop('hidden', !isVk);
+        if (!isVk) $onlyWithUser.prop('checked', false);
+    }
+
+    function updateAudience() {
+        var botId = $bot.val();
+        var audienceId = $audience.val();
+        var currentRequest = ++requestSequence;
+        $audienceLink.prop('hidden', true);
+
+        if (!botId || !audienceId) {
+            $audienceResult.removeClass('is-loading');
+            $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-users');
+            $audienceText.text('Выберите канал и аудиторию — здесь появится точное количество.');
+            return;
         }
-        $(buttons[k]).find('.telegram_message_buttons_item_title').html(value);
+
+        $audienceResult.addClass('is-loading');
+        $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-rotate');
+        $audienceText.text('Считаем доступных получателей…');
+        var requestData = {
+            bot_id: botId,
+            audience_id: audienceId,
+            only_with_user: $onlyWithUser.is(':checked') ? 1 : 0
+        };
+
+        $.getJSON($form.data('audience-count-url'), requestData)
+            .done(function (response) {
+                if (currentRequest !== requestSequence) return;
+                $audienceResult.removeClass('is-loading');
+                $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-users');
+                if (!response.success) {
+                    $audienceText.text(response.message || 'Не удалось получить количество.');
+                    return;
+                }
+                if (Number(response.count) === 0) {
+                    $audienceText.html('<strong>Нет получателей</strong><span>Измените канал или аудиторию.</span>');
+                    return;
+                }
+                var count = Number(response.count);
+                $audienceText.html('<strong>' + response.formatted + ' ' + recipientWord(count) + '</strong><span>Количество актуально на эту минуту.</span>');
+                var previewUrl = $form.data('audience-preview-url') + '?' + $.param(requestData);
+                $audienceLink.attr('href', previewUrl).prop('hidden', false);
+            })
+            .fail(function () {
+                if (currentRequest !== requestSequence) return;
+                $audienceResult.removeClass('is-loading');
+                $audienceResult.find('.mailing-audience-result__icon i').attr('class', 'fa-solid fa-triangle-exclamation');
+                $audienceText.text('Не удалось проверить аудиторию. Повторите попытку.');
+            });
     }
-}
-if ($('.constructor_message_preview')) {
-    var message_id = $('#telegramconstructor-telegram_constructor_message_id').val();
-    if (message_id > 0) {
-        updateMessagePreview();
-    }
-    $(document).on('change', '#telegramconstructor-telegram_constructor_message_id', function (e) {
-        updateMessagePreview();
-    });
-}
-function updateMessagePreview() {
-    var message_id = $('#telegramconstructor-telegram_constructor_message_id').val();
-    $.ajax({
-        url: '/telegram-constructor-message/get-message-preview',
-        method: 'GET',
-        data: {
-            id: message_id,
-        },
-        success: function(message_preview) {
-            $('.constructor_message_preview').html(message_preview);
+
+    function updateMessagePreview() {
+        var messageId = $message.val();
+        $templateLink.prop('hidden', !messageId);
+        if (messageId && window.mailingComposerConfig) {
+            $templateLink.attr('href', window.mailingComposerConfig.templateEdit.replace('__id__', messageId));
         }
+        if (!messageId) {
+            $messagePreview.html('<div class="mailing-preview-empty"><i class="fa-regular fa-message" aria-hidden="true"></i><span>Выберите шаблон, чтобы увидеть сообщение.</span></div>');
+            return;
+        }
+
+        $messagePreview.attr('aria-busy', 'true').html('<div class="mailing-preview-empty"><i class="fa-solid fa-rotate fa-spin" aria-hidden="true"></i><span>Загружаем шаблон…</span></div>');
+        $.get($form.data('message-preview-url'), {id: messageId})
+            .done(function (html) { $messagePreview.html(html); })
+            .fail(function () { $messagePreview.html('<div class="mailing-preview-empty"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><span>Не удалось загрузить предпросмотр.</span></div>'); })
+            .always(function () { $messagePreview.removeAttr('aria-busy'); });
+    }
+
+    $bot.on('change', function () { toggleVkOption(); updateAudience(); });
+    $audience.add($onlyWithUser).on('change', updateAudience);
+    $message.on('change', updateMessagePreview);
+    toggleVkOption();
+    updateAudience();
+    updateMessagePreview();
+})();
+
+(function initMailingButtons() {
+    var $modal = $('#modalFormAddButtonTgConstructor');
+    if (!$modal.length) return;
+
+    var buttonBeingEdited = null;
+    var nextIndex = $('#sortable-buttons .telegram_message_buttons_item').length;
+    var currentLanguage = 'ru-RU';
+
+    function clearButtonForm() {
+        $('.telegramConstructorMessageButtonTitle').val('');
+        $('#telegramConstructorMessageButtonUrl').val('');
+        $('#telegramConstructorMessageButtonMessageId').val(null).trigger('change');
+        $('.mailing-button-error').prop('hidden', true).text('');
+    }
+
+    function showButtonError(message) {
+        $('.mailing-button-error').text(message).prop('hidden', false);
+    }
+
+    function refreshButtonText() {
+        $('#sortable-buttons .telegram_message_buttons_item').each(function () {
+            var title = $(this).find('.button_title[data-language="' + currentLanguage + '"]').val() || 'Кнопка без названия';
+            $(this).find('.telegram_message_buttons_item_title').text(title);
+        });
+    }
+
+    $(document).on('click', '.button_add', function () {
+        buttonBeingEdited = null;
+        clearButtonForm();
     });
-}
-$(document).on('click', '.telegram_message_buttons_item_update', function (e) {
-    e.preventDefault();
-    button_updated = $(this).parent().parent();
-    var button_titles = $(this).parent().find('.button_title');
-    for (var k = 0; k < button_titles.length; k++) {
-        $('.telegramConstructorMessageButtonTitle[data-language="' + button_titles[k].dataset.language + '"]').val(button_titles[k].value);
-    }
-    var messageId = $(this).parent().find('.button_messageId');
-    if (messageId.length) {
-        $('#telegramConstructorMessageButtonMessageId').val(messageId.val()).change();
-    }
-    var url = $(this).parent().find('.button_url');
-    if (url.length) {
-        $('#telegramConstructorMessageButtonUrl').val(url.val());
-    }
-});
-function button_form_clear() {
-    var url = $('#telegramConstructorMessageButtonUrl');
-    var message_id = $('#telegramConstructorMessageButtonMessageId');
-    $('.telegramConstructorMessageButtonTitle').val('');
-    url.val('');
-    message_id.val('').change();
-}
-$(document).on('click', '#modalFormAddButtonTgConstructor .addButton', function (e) {
-    e.preventDefault();
-    var url = $('#telegramConstructorMessageButtonUrl');
-    var message_id = $('#telegramConstructorMessageButtonMessageId');
-    addButton(url.val(), message_id.val());
-    $('.telegramConstructorMessageButtonTitle').val('');
-    button_form_clear();
-});
-$(document).on('click', '.tg-preview_message .fileinput-remove', function () {
-    $(this).parent().parent().parent().parent().find('.is_delete_image').val(1);
-});
-var current_language = 'ru-RU';
-if ($('.tabs_tg_message')) {
-    $('.tabs_tg_message:first-of-type').addClass('active');
-    $('.tg-preview_message:first-of-type').addClass('active');
-    $(document).on('click', '.tabs_tg_message a', function (e) {
-        e.preventDefault();
-        $('.tabs_tg_message').removeClass('active');
-        $('.tg-preview_message').removeClass('active');
-        $(this).parent().addClass('active');
-        current_language = $(this).attr('data-language');
-        updateButtonsText();
-        $($(this).attr('href')).addClass('active');
+
+    $(document).on('click', '.telegram_message_buttons_item_delete', function () {
+        $(this).closest('.telegram_message_buttons_item_wrap').remove();
     });
-}
-var prevIndexButton = undefined;
-function addButton(url, message_id) {
-    if (!url && !message_id) {
-        return;
-    }
-    if (prevIndexButton === undefined) {
-        prevIndexButton = $('.telegram_message_buttons .telegram_message_buttons_item').length;
-    }
-    prevIndexButton++;
-    var titlesArr = [];
-    var titlesElements = $('.telegramConstructorMessageButtonTitle');
-    for (var k = 0; k < titlesElements.length; k++) {
-        titlesArr[titlesArr.length] = {text: titlesElements[k].value, language: titlesElements[k].dataset.language};
-    }
-    $.ajax({
-        url: '/telegram-constructor-message/get-button',
-        method: 'GET',
-        data: {
-            messageId: message_id,
-            titles: JSON.stringify(titlesArr),
-            languages: JSON.stringify(languages),
-            url: url,
-            index: prevIndexButton
-        },
-        success: function(button){
-            if (button_updated === undefined) {
-                // новая кнопка
-                button = $($.parseHTML(button));
-                $('.telegram_message_buttons').append(button);
-                updateButtonsText();
-            } else {
-                // обновить кнопку
-                button = $($.parseHTML(button));
-                console.log(button);
-                button_updated.html(button.html());
-                button_updated = undefined;
-                updateButtonsText();
+
+    $(document).on('click', '.telegram_message_buttons_item_update', function () {
+        buttonBeingEdited = $(this).closest('.telegram_message_buttons_item_wrap');
+        clearButtonForm();
+        buttonBeingEdited.find('.button_title').each(function () {
+            $('.telegramConstructorMessageButtonTitle[data-language="' + $(this).data('language') + '"]').val($(this).val());
+        });
+        $('#telegramConstructorMessageButtonUrl').val(buttonBeingEdited.find('.button_url').val() || '');
+        $('#telegramConstructorMessageButtonMessageId').val(buttonBeingEdited.find('.button_messageId').val() || null).trigger('change');
+    });
+
+    $(document).on('click', '#modalFormAddButtonTgConstructor .addButton', function () {
+        var title = $.trim($('.telegramConstructorMessageButtonTitle[data-language="ru-RU"]').val());
+        var url = $.trim($('#telegramConstructorMessageButtonUrl').val());
+        var messageId = $('#telegramConstructorMessageButtonMessageId').val();
+        $('.mailing-button-error').prop('hidden', true).text('');
+
+        if (!title) {
+            showButtonError('Введите название кнопки.');
+            return;
+        }
+        if ((!url && !messageId) || (url && messageId)) {
+            showButtonError('Выберите одно действие: ссылку или ответное сообщение.');
+            return;
+        }
+        if (url) {
+            try {
+                var parsedUrl = new URL(url);
+                if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') throw new Error('protocol');
+            } catch (error) {
+                showButtonError('Введите полную ссылку, начинающуюся с https://');
+                return;
             }
         }
-    });
-}
 
-$( "#sortable-buttons" ).sortable({
-    connectWith: ".connectedSortable",
-}).disableSelection();
+        var titles = [];
+        $('.telegramConstructorMessageButtonTitle').each(function () {
+            titles.push({text: $.trim(this.value), language: this.dataset.language});
+        });
+        nextIndex += 1;
+        $.get('/telegram-constructor-message/get-button', {
+            messageId: messageId || '',
+            titles: JSON.stringify(titles),
+            languages: JSON.stringify(window.languages || []),
+            url: url,
+            index: nextIndex
+        }).done(function (html) {
+            var $button = $($.parseHTML(html.trim()));
+            if (buttonBeingEdited) {
+                buttonBeingEdited.replaceWith($button);
+                buttonBeingEdited = null;
+            } else {
+                $('#sortable-buttons').append($button);
+            }
+            refreshButtonText();
+            clearButtonForm();
+            var modalInstance = bootstrap.Modal.getInstance($modal[0]);
+            if (modalInstance) modalInstance.hide();
+        }).fail(function () {
+            showButtonError('Не удалось сохранить кнопку. Повторите попытку.');
+        });
+    });
+
+    $(document).on('click', '.fileinput-remove', function () {
+        $(this).closest('.file-input').siblings('.is_delete_image').val(1);
+        $('.is_delete_image').val(1);
+    });
+
+    if ($.fn.sortable) {
+        $('#sortable-buttons').sortable({axis: 'y', handle: '.telegram_message_buttons_item_drag'});
+    }
+})();
 
 // Функция updateAudienceId удалена, используется новая логика в форме
 if ($.fn.filseinputLocales) {

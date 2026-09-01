@@ -14,6 +14,7 @@ final class AdminNavigation
         $admin = [Role::ROLE_ADMIN];
         $moderation = [Role::ROLE_ADMIN, Role::ROLE_MODERATOR];
         $content = [Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT];
+        $mailingEditors = [Role::ROLE_ADMIN, Role::ROLE_CONTENT_MANAGER];
         $badges = self::badges();
 
         $sections = [
@@ -22,7 +23,6 @@ final class AdminNavigation
                 'items' => [
                     self::item('Обзор', 'fa-solid fa-house', ['/site/index'], ['site'], $content),
                     self::item('Игроки', 'fa-solid fa-users', ['/user/index'], ['user'], $moderation, $badges['users'] ?? null),
-                    self::item('Поддержка', 'fa-solid fa-headset', ['/support/index'], ['support'], $admin, $badges['support'] ?? null),
                     self::group('Сообщество', 'fa-solid fa-people-group', [
                         self::item('Кланы', 'fa-solid fa-users-gear', ['/clan/index'], ['clan'], $moderation),
                         self::item('Турниры', 'fa-solid fa-trophy', ['/tournament/index'], ['tournament'], $moderation),
@@ -49,9 +49,6 @@ final class AdminNavigation
                     self::group('Каталог', 'fa-solid fa-boxes-stacked', [
                         self::item('Категории', 'fa-solid fa-folder-tree', ['/category/index'], ['category'], $admin),
                         self::item('Предметы', 'fa-solid fa-cube', ['/drop/index'], ['drop', 'drop-drop', 'drop-stat'], $moderation),
-                        self::item('Наборы', 'fa-solid fa-layer-group', ['/sets/index'], ['sets', 'sets-drop'], $admin),
-                        self::item('Кейсы', 'fa-solid fa-box', ['/box/index'], ['box'], $admin),
-                        self::item('Селекты', 'fa-solid fa-list-check', ['/select/index'], ['select'], $admin),
                     ]),
                     self::group('Публикации', 'fa-regular fa-newspaper', [
                         self::item('Блог', 'fa-regular fa-pen-to-square', ['/blog/index'], ['blog', 'blog-image'], $content),
@@ -96,10 +93,10 @@ final class AdminNavigation
                         self::item('Бонусы пополнения', 'fa-solid fa-ruble-sign', ['/payment-bonuses/index'], ['payment-bonuses'], $moderation),
                         self::item('Депозитные бонусы', 'fa-solid fa-coins', ['/deposit-bonus/index'], ['deposit-bonus'], $admin),
                     ]),
-                    self::group('Telegram-рассылки', 'fa-brands fa-telegram', [
-                        self::item('Конструктор рассылок', 'fa-solid fa-paper-plane', ['/telegram-constructor/index'], ['telegram-constructor'], $admin),
-                        self::item('Шаблоны сообщений', 'fa-solid fa-message', ['/telegram-constructor-message/index'], ['telegram-constructor-message'], $admin),
-                        self::item('Получатели', 'fa-solid fa-address-book', ['/telegram-recipients/index'], ['telegram-recipients'], $admin),
+                    self::group('Рассылки сообщений', 'fa-solid fa-paper-plane', [
+                        self::item('Рассылки', 'fa-solid fa-paper-plane', ['/telegram-constructor/index'], ['telegram-constructor'], $mailingEditors),
+                        self::item('Шаблоны', 'fa-solid fa-message', ['/telegram-constructor-message/index'], ['telegram-constructor-message'], $mailingEditors),
+                        self::item('Аудитории', 'fa-solid fa-users', ['/telegram-recipients/index'], ['telegram-recipients'], $admin),
                     ]),
                     self::group('Отчёты и финансы', 'fa-solid fa-chart-pie', [
                         self::item('Товары', 'fa-solid fa-box', ['/report/products'], ['report'], $admin, null, ['products']),

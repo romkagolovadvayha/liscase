@@ -1,8 +1,10 @@
 <?php
 
+use common\helpers\HStrings;
+
 /** @var $count int */
 /** @var $audienceId string */
 
 ?>
 
-<?=$count?> получателей (<a href="/telegram-constructor/audience?id=<?=$audienceId?>" target="_blank">Подробнее</a>)
+<?= $count ?> <?= HStrings::pluralForm($count, ['получатель', 'получателя', 'получателей']) ?> (<a href="/telegram-constructor/audience?id=<?= (int)$audienceId ?>" target="_blank" rel="noopener">Подробнее</a>)

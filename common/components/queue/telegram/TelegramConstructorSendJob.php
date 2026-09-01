@@ -49,7 +49,7 @@ class TelegramConstructorSendJob extends BaseObject implements JobInterface
             $model->save(false);
             
             Yii::info("TelegramConstructorSendJob: Completed for constructor id {$this->constructorId}, status: {$model->status}", __METHOD__);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Yii::error("TelegramConstructorSendJob: Exception for constructor id {$this->constructorId} - " . $e->getMessage() . "\n" . $e->getTraceAsString(), __METHOD__);
             
             // Обновляем статус на ошибку
@@ -59,7 +59,7 @@ class TelegramConstructorSendJob extends BaseObject implements JobInterface
                     $model->status = TelegramConstructor::STATUS_ERROR;
                     $model->save(false);
                 }
-            } catch (\Exception $saveException) {
+            } catch (\Throwable $saveException) {
                 Yii::error("TelegramConstructorSendJob: Failed to save error status - " . $saveException->getMessage(), __METHOD__);
             }
         }

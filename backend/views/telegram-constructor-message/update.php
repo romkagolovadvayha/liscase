@@ -1,15 +1,13 @@
 <?php
 
-use yii\helpers\Html;
-
 /* @var $this yii\web\View */
 /* @var $model backend\models\TelegramConstructorMessage */
 
-$this->title = 'Изменить сообщение' . ($model->title ? ': ' . $model->title : ' #' . $model->id);
+$this->title = 'Редактирование шаблона' . ($model->title ? ': ' . $model->title : ' #' . $model->id);
 $this->params['contentClass'] = 'content-no-padding';
-$this->params['breadcrumbs'][] = ['label' => 'Конструктор рассылок', 'url' => ['/telegram-constructor']];
-$this->params['breadcrumbs'][] = ['label' => 'Сообщения для рассылок', 'url' => ['index']];
-$this->params['breadcrumbs'][] = 'Изменить';
+$this->params['breadcrumbs'][] = ['label' => 'Рассылки', 'url' => ['/telegram-constructor/index']];
+$this->params['breadcrumbs'][] = ['label' => 'Шаблоны', 'url' => ['index']];
+$this->params['breadcrumbs'][] = 'Редактирование';
 ?>
 <div class="telegram-constructor-message-update">
     <?= $this->render('_form', ['model' => $model]) ?>

@@ -40,7 +40,7 @@ class TelegramConstructorSearch extends TelegramConstructor
     {
         $this->load($params);
 
-        $query = self::find();
+        $query = self::find()->with('telegramConstructorMessage');
 
         $status = $this->status;
         if ($status == 'all') {
@@ -54,11 +54,11 @@ class TelegramConstructorSearch extends TelegramConstructor
         $query
             ->andFilterWhere([
                 'id'       => $this->id,
-                'title'       => $this->title,
                 'bot_id'       => $this->bot_id,
                 'audience_id'       => $this->audience_id,
                 'status'       => $status,
-            ]);
+            ])
+            ->andFilterWhere(['like', 'title', $this->title]);
 
         DateQuery::addDateCondition($query, $this, 'created_at');
         return new ActiveDataProvider([

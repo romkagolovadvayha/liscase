@@ -1,54 +1,72 @@
 <?php
 
 use backend\models\TelegramRecipients;
-use common\models\user\User;
 use kartik\form\ActiveForm;
+use kartik\select2\Select2;
+use yii\helpers\Html;
+use yii\helpers\Url;
+use yii\web\JsExpression;
+
 /** @var TelegramRecipients $model */
-
-if($model->ref_id && is_string($model->ref_id)){
-    $model->ref_id = json_decode($model->ref_id,1);
-}
 ?>
+<div class="mailing-page mailing-audience-form-page">
+    <?= $this->render('@backend/views/telegram-constructor/_section_nav') ?>
 
-<div class="ds-card">
-    <div class="ds-card__header">
-        <h5 class="ds-card__header-title"><?= $model->isNewRecord ? 'Создать список получателей' : 'Редактировать список получателей' ?></h5>
-    </div>
-    <div class="ds-card__body">
-        <?php $form = ActiveForm::begin(
-            [
-                'id' => 'telegram-recipients-form',
-                'options' => ['enctype' => 'multipart/form-data']
-            ]); ?>
+    <header class="mailing-page-head mailing-page-head--compact">
+        <div>
+            <span class="mailing-page-head__eyebrow">Аудитория</span>
+            <h1><?= $model->isNewRecord ? 'Новая аудитория' : 'Редактирование аудитории' ?></h1>
+            <p>Дайте группе понятное название и найдите пользователей по имени, ID, Steam ID или реферальному коду.</p>
+        </div>
+    </header>
 
-        <?= \yii\helpers\Html::errorSummary($model, ['class' => 'ds-alert ds-alert--danger', 'encode' => false]) ?>
+    <?php $form = ActiveForm::begin(['id' => 'telegram-recipients-form', 'options' => ['class' => 'mailing-audience-form']]) ?>
+        <?= Html::errorSummary($model, ['class' => 'ds-alert ds-alert--danger mailing-form-errors', 'header' => '<strong>Не удалось сохранить аудиторию</strong>', 'encode' => false]) ?>
 
-        <?= $form->field($model, 'ref_id')->widget(\kartik\select2\Select2::class,
-            [
-                'data'    => User::getActiveUsersRefCodes($model->ref_id),
+        <section class="mailing-form-section">
+            <header class="mailing-form-section__head">
+                <span class="mailing-step-number">1</span>
+                <div><h2>Название</h2><p>Показывается только в админке и выборе аудитории.</p></div>
+            </header>
+            <?= $form->field($model, 'name', ['options' => ['class' => 'mailing-field']])->textInput(['class' => 'ds-input form-control', 'maxlength' => true, 'placeholder' => 'Например: VIP-пользователи сентября'])->label('Название аудитории') ?>
+        </section>
+
+        <section class="mailing-form-section">
+            <header class="mailing-form-section__head">
+                <span class="mailing-step-number">2</span>
+                <div><h2>Пользователи</h2><p>Начните вводить запрос и добавьте нужных людей.</p></div>
+            </header>
+            <?= $form->field($model, 'ref_id', ['options' => ['class' => 'mailing-field']])->widget(Select2::class, [
+                'data' => $model->getSelectedUsersOptions(),
+                'value' => $model->getResolvedUserIds(),
                 'options' => [
-                    'prompt' => 'Выберите пользователей...',
                     'multiple' => true,
-                    'placeholder' => 'Выберите пользователей...',
+                    'placeholder' => 'Введите минимум 2 символа…',
                 ],
+                'showToggleAll' => false,
                 'pluginOptions' => [
                     'allowClear' => true,
-                    'maximumSelectionLength' => 50,
-                    'minimumInputLength' => 3
+                    'minimumInputLength' => 2,
+                    'width' => '100%',
+                    'ajax' => [
+                        'url' => Url::to(['search-users']),
+                        'dataType' => 'json',
+                        'delay' => 250,
+                        'data' => new JsExpression('function(params) { return {q: params.term}; }'),
+                        'processResults' => new JsExpression('function(data) { return data; }'),
+                    ],
+                    'language' => [
+                        'inputTooShort' => new JsExpression('function() { return "Введите ещё символы"; }'),
+                        'noResults' => new JsExpression('function() { return "Пользователи не найдены"; }'),
+                        'searching' => new JsExpression('function() { return "Поиск…"; }'),
+                    ],
                 ],
-                'showToggleAll' => false
-            ])->label('Пользователи <span class="text-danger">*</span>'); ?>
-        
-        <?= $form->field($model, 'name')->textInput([
-            'placeholder' => 'Например: VIP пользователи'
-        ])->label('Название списка <span class="text-danger">*</span>') ?>
-        
-        <div class="form-group mt-4">
-            <div class="ds-flex ds-items-center ds-gap-md">
-                <?= $this->context->getFormButtons(); ?>
-            </div>
+            ])->label('Участники аудитории')->hint('В список попадут ID пользователей. Перед каждой отправкой система проверит их доступность в выбранном канале.') ?>
+        </section>
+
+        <div class="mailing-form-actions">
+            <?= Html::submitButton('<i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Сохранить аудиторию', ['class' => 'ds-btn ds-btn--primary']) ?>
+            <?= Html::a('Отмена', $this->context->getIndexUrl(), ['class' => 'ds-btn ds-btn--secondary']) ?>
         </div>
-        
-        <?php ActiveForm::end(); ?>
-    </div>
+    <?php ActiveForm::end() ?>
 </div>

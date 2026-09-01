@@ -10,20 +10,16 @@ use common\components\helpers\Role;
 use common\components\queue\telegram\TelegramConstructorSendJob;
 use common\components\queue\telegram\UpdateTelegramAudienceJob;
 use common\components\queue\vk\UpdateVkAudienceJob;
-use common\components\telegram\TelegramPersonalBot;
-use common\components\vk\VkApiHelper;
 use common\models\user\User;
 use common\models\user\UserSocialNetwork;
 use common\models\vk\VkUser;
 use kartik\form\ActiveForm;
-use PHPUnit\Exception;
 use Yii;
-use yii\base\BaseObject;
 use yii\data\ActiveDataProvider;
 use yii\db\StaleObjectException;
-use yii\helpers\ArrayHelper;
-use yii\helpers\Console;
 use yii\web\Response;
+use yii\web\NotFoundHttpException;
+use yii\filters\VerbFilter;
 
 class TelegramConstructorController extends \backend\components\CrudController
 {
@@ -31,6 +27,15 @@ class TelegramConstructorController extends \backend\components\CrudController
     public function behaviors()
     {
         return [
+            'verbs' => [
+                'class' => VerbFilter::class,
+                'actions' => [
+                    'delete' => ['POST'],
+                    'play' => ['POST'],
+                    'update-vk-audience' => ['POST'],
+                    'update-telegram-audience' => ['POST'],
+                ],
+            ],
             'access' => [
                 'class' => \yii\filters\AccessControl::class,
                 'rules' => [
@@ -41,7 +46,7 @@ class TelegramConstructorController extends \backend\components\CrudController
                     [
                         'allow' => true,
                         'roles' => [Role::ROLE_CONTENT_MANAGER],
-                        'actions' => ['index', 'audience', 'create', 'update', 'view']
+                        'actions' => ['index', 'audience', 'create', 'update', 'view', 'get-audience-count', 'preview-audience']
                     ],
                     [
                         'allow' => true,
@@ -85,6 +90,7 @@ class TelegramConstructorController extends \backend\components\CrudController
      */
     protected function _saveForm($formModel, $view)
     {
+        $isNewRecord = $formModel->isNewRecord;
         if ($formModel->load(Yii::$app->request->post())) {
             //   \Yii::info('post ' . print_r(Yii::$app->request->post(),1), 'problem');
             if (Yii::$app->request->isAjax) {
@@ -94,10 +100,10 @@ class TelegramConstructorController extends \backend\components\CrudController
 
             // Валидация модели
             if (!$formModel->validate()) {
-                Yii::$app->session->addFlash('error', 'Ошибка валидации: ' . json_encode($formModel->errors, JSON_UNESCAPED_UNICODE));
+                Yii::$app->session->addFlash('error', 'Проверьте отмеченные поля. Черновик не сохранён.');
             } elseif ($formModel->saveRecord()) {
-                Yii::$app->session->addFlash('success', 'Рассылка успешно создана!');
-                return $this->redirect($this->getIndexUrl());
+                Yii::$app->session->addFlash('success', $isNewRecord ? 'Черновик создан. Проверьте параметры перед запуском.' : 'Изменения сохранены.');
+                return $this->redirect(['view', 'id' => $formModel->id]);
             } else {
                 Yii::$app->session->addFlash('error', 'Не удалось сохранить рассылку. Проверьте данные.');
             }
@@ -113,11 +119,40 @@ class TelegramConstructorController extends \backend\components\CrudController
      */
     public function actionDelete($id)
     {
-        $formModel = TelegramConstructor::findOne($id);
-        if (!empty($formModel)) {
-            $formModel->delete();
+        $formModel = $this->findMailing($id);
+        if ($formModel->status !== TelegramConstructor::STATUS_NEW) {
+            Yii::$app->session->addFlash('error', 'Удалять можно только черновики рассылок.');
+            return $this->redirect(['view', 'id' => $formModel->id]);
         }
+        $formModel->delete();
+        Yii::$app->session->addFlash('success', 'Черновик удалён.');
         return $this->redirect(['index']);
+    }
+
+    public function actionUpdate($id)
+    {
+        $model = $this->findMailing($id);
+        if ($model->status !== TelegramConstructor::STATUS_NEW) {
+            Yii::$app->session->addFlash('warning', 'Отправленную или выполняющуюся рассылку нельзя изменять.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        return parent::actionUpdate($id);
+    }
+
+    public function actionView($id)
+    {
+        $model = $this->findMailing($id);
+        $recipients = TelegramConstructor::getAudience(
+            $model->audience_id,
+            $model->bot_id,
+            $model->bot_id === TelegramConstructor::VK_GROUP && !empty($model->only_with_user)
+        );
+
+        return $this->render('view', [
+            'model' => $model,
+            'audienceCount' => count($recipients),
+        ]);
     }
 
     /**
@@ -132,13 +167,38 @@ class TelegramConstructorController extends \backend\components\CrudController
             return $this->redirect($this->getIndexUrl());
         }
 
-        // Проверяем, что рассылка не уже в процессе
-        if ($model->status === TelegramConstructor::STATUS_IN_PROGRESS) {
-            Yii::$app->session->addFlash('warning', 'Рассылка уже выполняется');
-            return $this->redirect($this->getIndexUrl());
+        if ($model->status !== TelegramConstructor::STATUS_NEW) {
+            Yii::$app->session->addFlash('warning', 'Эту рассылку уже запускали. Повторный запуск заблокирован.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        if ($model->telegramConstructorMessage === null) {
+            Yii::$app->session->addFlash('error', 'Шаблон сообщения удалён. Выберите другой шаблон.');
+            return $this->redirect(['view', 'id' => $model->id]);
+        }
+
+        $recipients = TelegramConstructor::getAudience(
+            $model->audience_id,
+            $model->bot_id,
+            $model->bot_id === TelegramConstructor::VK_GROUP && !empty($model->only_with_user)
+        );
+        if (empty($recipients)) {
+            Yii::$app->session->addFlash('error', 'В выбранной аудитории нет доступных получателей. Рассылка не запущена.');
+            return $this->redirect(['view', 'id' => $model->id]);
         }
 
         try {
+            // Atomically reserve the draft so parallel requests cannot queue it twice.
+            $reserved = TelegramConstructor::updateAll(
+                ['status' => TelegramConstructor::STATUS_IN_PROGRESS],
+                ['id' => $model->id, 'status' => TelegramConstructor::STATUS_NEW]
+            );
+            if ($reserved !== 1) {
+                Yii::$app->session->addFlash('warning', 'Рассылку уже запустили в другом запросе.');
+                return $this->redirect(['view', 'id' => $model->id]);
+            }
+            $model->status = TelegramConstructor::STATUS_IN_PROGRESS;
+
             // Добавляем задачу в очередь
             if ($model->bot_id == TelegramConstructor::PERSONAL_BOT) {
                 Yii::$app->queueTelegram->push(new TelegramConstructorSendJob([
@@ -153,12 +213,17 @@ class TelegramConstructorController extends \backend\components\CrudController
             Yii::$app->session->addFlash('success',
                 'Рассылка добавлена в очередь. Статус будет обновлен после завершения.'
             );
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            TelegramConstructor::updateAll(
+                ['status' => TelegramConstructor::STATUS_NEW],
+                ['id' => $model->id, 'status' => TelegramConstructor::STATUS_IN_PROGRESS]
+            );
+            $model->status = TelegramConstructor::STATUS_NEW;
             Yii::$app->session->addFlash('error', 'Ошибка при добавлении рассылки в очередь: ' . $e->getMessage());
             Yii::error("TelegramConstructor actionPlay error: " . $e->getMessage(), __METHOD__);
         }
 
-        return $this->redirect($this->getIndexUrl());
+        return $this->redirect(['view', 'id' => $model->id]);
     }
 
     /**
@@ -169,7 +234,10 @@ class TelegramConstructorController extends \backend\components\CrudController
     protected function _renderIndex($dataProvider)
     {
         $this->view->params['showFilters'] = true;
-        $countTelegramUsers = User::find()->andWhere('telegram_chat_id IS NOT NULL')->andWhere(['is_telegram_blocked' => 0])->count();
+        $countTelegramUsers = User::find()
+            ->andWhere(['status' => User::STATUS_ACTIVE, 'is_telegram_blocked' => 0])
+            ->andWhere(['IS NOT', 'telegram_chat_id', null])
+            ->count();
         $countVkUsers = VkUser::find()->where(['can_send_message' => true])->count();
 
         return $this->render('index', [
@@ -191,6 +259,17 @@ class TelegramConstructorController extends \backend\components\CrudController
         // Передаем only_with_user только для VK группы
         $onlyWithUser = ($model->bot_id == TelegramConstructor::VK_GROUP) && !empty($model->only_with_user);
         $userIds = TelegramConstructor::getAudience($model->audience_id, $model->bot_id, $onlyWithUser);
+
+        if ($model->bot_id === TelegramConstructor::VK_GROUP) {
+            $vkUsers = empty($userIds) ? [] : VkUser::find()->andWhere(['vk_user_id' => $userIds])->all();
+            return $this->render('audience-vk', [
+                'audienceId' => $model->audience_id,
+                'audienceCount' => count($userIds),
+                'vkUsers' => $vkUsers,
+                'mailingId' => $model->id,
+            ]);
+        }
+
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams, null, $userIds);
 
         return $this->render('audience', [
@@ -199,6 +278,7 @@ class TelegramConstructorController extends \backend\components\CrudController
             'audience' => $userIds,
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'mailingId' => $model->id,
         ]);
     }
 
@@ -338,5 +418,14 @@ class TelegramConstructorController extends \backend\components\CrudController
         }
 
         return $this->redirect($this->getIndexUrl());
+    }
+
+    private function findMailing($id): TelegramConstructor
+    {
+        $model = TelegramConstructor::findOne($id);
+        if ($model === null) {
+            throw new NotFoundHttpException('Рассылка не найдена.');
+        }
+        return $model;
     }
 }

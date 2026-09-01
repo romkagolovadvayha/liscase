@@ -30,14 +30,81 @@ class TelegramConstructorMessageForm extends TelegramConstructorMessage
     public function rules()
     {
         return [
-            [['buttons', 'title', 'is_delete_image', 'message', 'buttonsTitles', 'image_url', 'buttonResponseMessageId'], 'safe'],
+            [['title'], 'required'],
+            [['title'], 'trim'],
+            [['title'], 'string', 'max' => 190],
+            [['buttons', 'is_delete_image', 'message', 'buttonsTitles', 'image_url', 'buttonResponseMessageId'], 'safe'],
+            [['message'], 'validateMessageContent'],
+            [['buttons'], 'validateButtons'],
             [['image_file'],
              'file',
              'skipOnEmpty' => true,
-             'extensions' => 'png, jpg, jpeg, gif',
+             'extensions' => 'png, jpg, jpeg, gif, webp',
              'maxSize' => 1024 * 1024 * 3,
              'tooBig' => 'The file was larger than 3 MB. Please upload a smaller file.',],
         ];
+    }
+
+    public function validateMessageContent($attribute): void
+    {
+        $messages = is_array($this->message) ? $this->message : ['ru-RU' => (string)$this->message];
+        $hasText = false;
+        foreach ($messages as $message) {
+            if (trim(strip_tags((string)$message)) !== '') {
+                $hasText = true;
+                break;
+            }
+        }
+
+        $imageUrls = is_array($this->image_url) ? $this->image_url : [];
+        $hasUrl = (bool)array_filter($imageUrls, static fn($url) => trim((string)$url) !== '');
+        $deleteFlags = is_array($this->is_delete_image) ? $this->is_delete_image : [];
+        $hasExistingImage = !$this->isNewRecord
+            && empty($deleteFlags['ru-RU'])
+            && (bool)$this->getImageLink('ru-RU');
+        $hasUpload = UploadedFile::getInstance($this, 'image_file[ru-RU]') !== null;
+
+        foreach ($imageUrls as $url) {
+            $url = trim((string)$url);
+            if ($url === '') {
+                continue;
+            }
+            $validatedUrl = str_replace('{user_id}', '1', ltrim($url, '@'));
+            $scheme = strtolower((string)parse_url($validatedUrl, PHP_URL_SCHEME));
+            if (!filter_var($validatedUrl, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
+                $this->addError('image_url', 'Ссылка на изображение должна начинаться с http:// или https://.');
+            }
+        }
+
+        if (!$hasText && !$hasUrl && !$hasExistingImage && !$hasUpload) {
+            $this->addError($attribute, 'Добавьте текст или изображение сообщения.');
+        }
+    }
+
+    public function validateButtons($attribute): void
+    {
+        if (!is_array($this->buttons)) {
+            return;
+        }
+
+        foreach ($this->buttons as $index => $button) {
+            $title = trim((string)($button['title']['ru-RU'] ?? ''));
+            $url = trim((string)($button['url'] ?? ''));
+            $messageId = (int)($button['message'] ?? 0);
+            if ($title === '') {
+                $this->addError($attribute, 'У каждой кнопки должно быть название.');
+            }
+            if (($url === '') === ($messageId === 0)) {
+                $this->addError($attribute, 'У кнопки должно быть ровно одно действие: ссылка или ответное сообщение.');
+            }
+            $scheme = strtolower((string)parse_url($url, PHP_URL_SCHEME));
+            if ($url !== '' && (!filter_var($url, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true))) {
+                $this->addError($attribute, 'Проверьте ссылку у кнопки «' . ($title ?: ($index + 1)) . '».');
+            }
+            if ($messageId > 0 && !TelegramConstructorMessage::find()->andWhere(['id' => $messageId])->exists()) {
+                $this->addError($attribute, 'Ответный шаблон у кнопки «' . ($title ?: ($index + 1)) . '» не найден.');
+            }
+        }
     }
 
     /**

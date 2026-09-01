@@ -1,21 +1,15 @@
 <?php
 
-use backend\models\TelegramConstructor;
-use backend\models\TelegramConstructorSearch;
-use yii\helpers\ArrayHelper;
+use backend\models\TelegramConstructorMessageSearch;
 use yii\helpers\Url;
 use yii\widgets\ActiveForm;
 
-/** @var TelegramConstructorSearch|null $searchModel */
-if (!$searchModel) return;
+/** @var TelegramConstructorMessageSearch $searchModel */
 ?>
 <div class="admin-filters-content">
     <?php $form = ActiveForm::begin(['action' => ['index'], 'method' => 'get', 'options' => ['class' => 'admin-filter-form']]) ?>
         <div class="admin-filter-form__body">
             <?= $form->field($searchModel, 'title')->textInput(['class' => 'ds-input form-control', 'placeholder' => 'Название содержит…'])->label('Название') ?>
-            <?= $form->field($searchModel, 'status')->dropDownList(ArrayHelper::merge(['all' => 'Все статусы'], TelegramConstructor::getStatusList()), ['class' => 'ds-select form-control'])->label('Статус') ?>
-            <?= $form->field($searchModel, 'bot_id')->dropDownList(ArrayHelper::merge(['' => 'Все каналы'], TelegramConstructor::getBotList()), ['class' => 'ds-select form-control'])->label('Канал') ?>
-            <?= $form->field($searchModel, 'audience_id')->dropDownList(ArrayHelper::merge(['' => 'Все аудитории'], TelegramConstructor::getAudienceList()), ['class' => 'ds-select form-control'])->label('Аудитория') ?>
             <?= $form->field($searchModel, 'created_at')->textInput(['class' => 'ds-input form-control', 'placeholder' => 'Дата'])->label('Дата создания') ?>
         </div>
         <div class="admin-filter-form__footer">

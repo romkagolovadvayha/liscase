@@ -2,6 +2,7 @@
 
 namespace backend\models;
 
+use common\helpers\HStrings;
 use Yii;
 
 /**
@@ -18,6 +19,8 @@ use Yii;
  */
 class TelegramConstructorMessage extends \yii\db\ActiveRecord
 {
+    private $_usageCount;
+    private $_languageModels = [];
 
     /**
      * {@inheritdoc}
@@ -28,21 +31,26 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     }
 
     public function getMessage($language = 'ru-RU') {
-        /** @var TelegramConstructorMessageLanguage $message */
-        $message = TelegramConstructorMessageLanguage::find()
-                                                     ->andWhere(['telegram_constructor_message_id' => $this->id])
-                                                     ->andWhere(['language' => $language])
-                                                     ->one();
+        $message = $this->getLanguageModel($language);
         return !empty($message) ? $message->message : '';
     }
 
     public function getImageLink($language = 'ru-RU') {
-        /** @var TelegramConstructorMessageLanguage $message */
-        $message = TelegramConstructorMessageLanguage::find()
-                                                     ->andWhere(['telegram_constructor_message_id' => $this->id])
-                                                     ->andWhere(['language' => $language])
-                                                     ->one();
+        $message = $this->getLanguageModel($language);
         return !empty($message) ? $message->image_link : '';
+    }
+
+    private function getLanguageModel($language): ?TelegramConstructorMessageLanguage
+    {
+        $cacheKey = strtolower((string)$language);
+        if (!array_key_exists($cacheKey, $this->_languageModels)) {
+            $this->_languageModels[$cacheKey] = TelegramConstructorMessageLanguage::find()
+                ->andWhere(['telegram_constructor_message_id' => $this->id])
+                ->andWhere(['language' => $language])
+                ->one();
+        }
+
+        return $this->_languageModels[$cacheKey];
     }
 
     /**
@@ -98,12 +106,29 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
     public static function getList() {
         $result = [];
         /** @var TelegramConstructorMessage[] $messages */
-        $messages = self::find()->all();
+        $messages = self::find()->orderBy(['title' => SORT_ASC])->all();
         foreach ($messages as $message) {
             $result[$message->id] = $message->title;
         }
 
         return $result;
+    }
+
+    public function getUsageCount(): int
+    {
+        if ($this->_usageCount === null) {
+            $this->_usageCount = (int)TelegramConstructor::find()
+                ->andWhere(['telegram_constructor_message_id' => $this->id])
+                ->count();
+        }
+
+        return $this->_usageCount;
+    }
+
+    public function getUsageLabel(): string
+    {
+        $count = $this->getUsageCount();
+        return $count . ' ' . HStrings::pluralForm($count, ['рассылка', 'рассылки', 'рассылок']);
     }
 
     /**
@@ -219,6 +244,7 @@ class TelegramConstructorMessage extends \yii\db\ActiveRecord
             $model->image_link = $imageLink;
         }
         $model->save(false);
+        unset($this->_languageModels[strtolower((string)$language)]);
     }
 
     public function getTelegramMessage($language, $photo = true) {

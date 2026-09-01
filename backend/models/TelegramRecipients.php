@@ -3,6 +3,7 @@
 namespace backend\models;
 
 use common\helpers\HDates;
+use common\helpers\HStrings;
 use common\models\user\User;
 use Yii;
 use yii\db\ActiveQuery;
@@ -19,6 +20,8 @@ use yii\helpers\ArrayHelper;
  */
 class TelegramRecipients extends \yii\db\ActiveRecord
 {
+    private $_resolvedUserIds;
+    private $_usageCount;
     /**
      * {@inheritdoc}
      */
@@ -33,8 +36,10 @@ class TelegramRecipients extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['name'], 'required'],
-            [['name'], 'string'],
+            [['name', 'ref_id'], 'required'],
+            [['name'], 'trim'],
+            [['name'], 'string', 'max' => 190],
+            [['name'], 'unique'],
             [['quantity'], 'integer'],
             [['created_at', 'ref_id', 'quantity'], 'safe'],
         ];
@@ -71,14 +76,21 @@ class TelegramRecipients extends \yii\db\ActiveRecord
     public function saveRecord(): bool
     {
         try {
+            $this->_resolvedUserIds = null;
             $this->name = trim($this->name);
-            $this->quantity = count((array)$this->ref_id);
+            $recipientValues = array_values(array_unique(array_filter((array)$this->ref_id, static function ($value) {
+                return $value !== '' && $value !== null;
+            })));
+            $this->ref_id = $recipientValues;
+            $this->quantity = count($recipientValues);
             if(array_key_exists($this->name, TelegramConstructor::getlkLanguagesArr())){
                 $countUsers = User::find()->where(['current_language' => TelegramConstructor::getlkLanguagesArr()[$this->name], 'status' => User::STATUS_ACTIVE])->count();
                 $this->quantity = $countUsers;
             }
-            $this->ref_id = json_encode($this->ref_id);
-            $this->save(false);
+            $this->ref_id = json_encode($recipientValues, JSON_UNESCAPED_UNICODE);
+            if (!$this->save(false)) {
+                return false;
+            }
         } catch (\Exception $e) {
             if(self::find()->where(['name' => $this->name])->count()){
                 $this->addError('name', 'Такое название уже существует');
@@ -98,5 +110,83 @@ class TelegramRecipients extends \yii\db\ActiveRecord
         $data = self::find()->all();
 
         return ArrayHelper::map($data, 'id', 'name');
+    }
+
+    public function getRecipientValues(): array
+    {
+        $values = is_string($this->ref_id) ? json_decode($this->ref_id, true) : $this->ref_id;
+        return is_array($values) ? array_values(array_filter($values, static function ($value) {
+            return $value !== '' && $value !== null;
+        })) : [];
+    }
+
+    public function getResolvedUserIds(): array
+    {
+        if ($this->_resolvedUserIds !== null) {
+            return $this->_resolvedUserIds;
+        }
+
+        $languageGroups = TelegramConstructor::getLkLanguagesArr();
+        if ($this->name !== null && isset($languageGroups[(string)$this->name])) {
+            $this->_resolvedUserIds = User::find()
+                ->select('id')
+                ->andWhere(['status' => User::STATUS_ACTIVE, 'current_language' => $languageGroups[(string)$this->name]])
+                ->column();
+            return $this->_resolvedUserIds;
+        }
+
+        $values = $this->getRecipientValues();
+        if (empty($values)) {
+            return $this->_resolvedUserIds = [];
+        }
+
+        $this->_resolvedUserIds = User::find()
+            ->select('id')
+            ->andWhere(['status' => User::STATUS_ACTIVE])
+            ->andWhere(['or', ['id' => $values], ['ref_code' => $values]])
+            ->column();
+        return $this->_resolvedUserIds;
+    }
+
+    public function getResolvedQuantity(): int
+    {
+        return count($this->getResolvedUserIds());
+    }
+
+    public function getUsageCount(): int
+    {
+        if ($this->_usageCount === null) {
+            $this->_usageCount = (int)TelegramConstructor::find()
+                ->andWhere(['audience_id' => TelegramConstructor::CUSTOM_AUDIENCE_OFFSET + (int)$this->id])
+                ->count();
+        }
+
+        return $this->_usageCount;
+    }
+
+    public function getUsageLabel(): string
+    {
+        $count = $this->getUsageCount();
+        return $count . ' ' . HStrings::pluralForm($count, ['рассылка', 'рассылки', 'рассылок']);
+    }
+
+    public function getSelectedUsersOptions(): array
+    {
+        $ids = $this->getResolvedUserIds();
+        if (empty($ids)) {
+            return [];
+        }
+
+        $result = [];
+        foreach (User::find()->andWhere(['id' => $ids])->orderBy(['id' => SORT_DESC])->all() as $user) {
+            $result[$user->id] = self::formatUserLabel($user);
+        }
+        return $result;
+    }
+
+    public static function formatUserLabel(User $user): string
+    {
+        $name = trim((string)$user->username);
+        return $name !== '' ? sprintf('%s — ID %d', $name, $user->id) : sprintf('Пользователь ID %d', $user->id);
     }
 }

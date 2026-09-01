@@ -1,33 +1,35 @@
 <?php
 
-/* @var $messageId int */
-/* @var $url string */
-/* @var $languages array */
-/* @var $titles array */
-/* @var $index int */
+use yii\helpers\Html;
 
-use yii\bootstrap5\Html;
+/** @var int|null $messageId */
+/** @var string|null $url */
+/** @var array $titles */
+/** @var int $index */
 
+$firstTitle = $titles[0]['text'] ?? '';
 ?>
 <div class="telegram_message_buttons_item_wrap">
     <div class="telegram_message_buttons_item">
-        <a href="#" class="telegram_message_buttons_item_delete" title="Удалить"><span aria-hidden="true">&times;</span></a>
-        <a href="#" class="telegram_message_buttons_item_update" title="Изменить" data-bs-toggle="modal" data-modal-form="role_form" data-bs-target="#modalFormAddButtonTgConstructor"><?=Html::icon('pencil')?></a>
         <?php foreach ($titles as $title): ?>
-            <input type="hidden" class="button_title" name="TelegramConstructorMessageForm[buttons][<?=$index?>][title][<?=$title['language']?>]" data-language="<?=$title['language']?>" value="<?=$title['text']?>"/>
+            <?= Html::hiddenInput(
+                "TelegramConstructorMessageForm[buttons][{$index}][title][{$title['language']}]",
+                $title['text'],
+                ['class' => 'button_title', 'data-language' => $title['language']]
+            ) ?>
         <?php endforeach; ?>
-        <div class="telegram_message_buttons_item_title"><?=$titles[0]['text']?></div>
-        <?php if (!empty($messageId)): ?>
-        <div class="telegram_message_buttons_item_action">
-            <input type="hidden" class="button_messageId" name="TelegramConstructorMessageForm[buttons][<?=$index?>][message]" value="<?=$messageId?>"/>
-            <a href="/telegram-constructor-message/view?id=<?=$messageId?>" target="_blank">Ответное сообщение</a>
-        </div>
+        <?php if ($messageId): ?>
+            <?= Html::hiddenInput("TelegramConstructorMessageForm[buttons][{$index}][message]", (int)$messageId, ['class' => 'button_messageId']) ?>
         <?php endif; ?>
-        <?php if (!empty($url)): ?>
-        <div class="telegram_message_buttons_item_action">
-            <input type="hidden" class="button_url" name="TelegramConstructorMessageForm[buttons][<?=$index?>][url]" value="<?=$url?>"/>
-            <a href="<?=$url?>" target="_blank">Переход по ссылке</a>
-        </div>
+        <?php if ($url): ?>
+            <?= Html::hiddenInput("TelegramConstructorMessageForm[buttons][{$index}][url]", $url, ['class' => 'button_url']) ?>
         <?php endif; ?>
+        <span class="telegram_message_buttons_item_drag" title="Перетащите для изменения порядка"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
+        <span class="telegram_message_buttons_item_title"><?= Html::encode($firstTitle ?: 'Кнопка без названия') ?></span>
+        <span class="telegram_message_buttons_item_type"><?= $messageId ? 'Ответ' : 'Ссылка' ?></span>
+        <span class="telegram_message_buttons_item_controls">
+            <button type="button" class="telegram_message_buttons_item_update" title="Изменить" aria-label="Изменить кнопку" data-bs-toggle="modal" data-bs-target="#modalFormAddButtonTgConstructor"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+            <button type="button" class="telegram_message_buttons_item_delete" title="Удалить" aria-label="Удалить кнопку"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+        </span>
     </div>
 </div>
