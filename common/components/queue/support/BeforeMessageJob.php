@@ -33,8 +33,7 @@ class BeforeMessageJob extends BaseObject implements JobInterface
     {
         try {
             $domain = Yii::$app->settings->get('site_domain');
-            $text = "💬 Новое сообщение.";
-            $text .= PHP_EOL . "Имя: {$this->username}";
+            $text = "Имя: {$this->username}";
             $message = str_replace(['<br>', '<br/>'], PHP_EOL, (string)$this->message);
             $hasAttachments = $this->hasAttachments();
             $stickerUrl = SupportStickerMessengerMedia::absoluteUrl((string)$this->stickerUrl, (string)$domain);
@@ -45,9 +44,6 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             if (!$hasSticker) {
                 $text .= PHP_EOL . "Сообщение: " . $message;
             }
-            $ticketUrl = "https://{$domain}/support/ticket?id={$this->chatNumber}";
-            $text .= PHP_EOL . "<a href=\"{$ticketUrl}\">Перейти к тикету</a>";
-
             $buttons = [];
             $maxButtons = [];
             $isTicketOwnerMessage = $this->isTicketOwnerMessage();
@@ -65,15 +61,13 @@ class BeforeMessageJob extends BaseObject implements JobInterface
 
             $photoUrls = $this->collectPhotoUrls();
             $plainSupportMessage = mb_substr($this->plainText($message), 0, 3400);
-            $maxMessage = "💬 Новое сообщение."
-                . PHP_EOL . "Имя: {$this->plainText((string)$this->username)}";
+            $maxMessage = "Имя: {$this->plainText((string)$this->username)}";
             if (!$hasSticker) {
                 $maxMessage .= PHP_EOL . 'Сообщение: ' . $plainSupportMessage;
             }
             if ($hasAttachments && trim(strip_tags((string)$this->message)) !== '') {
                 $maxMessage .= PHP_EOL . 'Вложения: доступны в тикете';
             }
-            $maxMessage .= PHP_EOL . 'Тикет: ' . $ticketUrl;
             $maxStickerUrl = $hasSticker
                 ? SupportStickerMessengerMedia::maxImageUrl($stickerUrl, (string)$domain)
                 : null;
