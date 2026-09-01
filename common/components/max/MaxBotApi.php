@@ -202,6 +202,9 @@ class MaxBotApi extends Component
             ],
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 15,
+            // MAX всегда вызывается напрямую, независимо от системных proxy-переменных.
+            CURLOPT_PROXY => '',
+            CURLOPT_NOPROXY => '*',
         ];
         if ($body !== []) {
             $jsonBody = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
