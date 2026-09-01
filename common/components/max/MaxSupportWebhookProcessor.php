@@ -134,7 +134,11 @@ final class MaxSupportWebhookProcessor
         }
 
         $chatId = $this->messageChatId($update);
-        $operatorMaxId = ArrayHelper::getValue($update, 'message.sender.user_id');
+        $operatorMaxId = ArrayHelper::getValue(
+            $update,
+            'message.sender.user_id',
+            ArrayHelper::getValue($update, 'user.user_id')
+        );
         $text = (string)ArrayHelper::getValue($update, 'message.body.text', '');
         $result = $this->replies->handleMessage($chatId, $operatorMaxId, $text);
         $responseChatId = $result['chatId'] ?? $chatId;
