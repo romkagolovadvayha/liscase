@@ -13,6 +13,6 @@ class TailwindAsset extends AssetBundle
     public $sourcePath = '@backend/assets/sources';
 
     public $css = [
-        'scss/tailwind.min.css?v=2.2',
+        'scss/tailwind.min.css',
     ];
 }
