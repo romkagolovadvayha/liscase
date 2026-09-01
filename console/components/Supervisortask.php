@@ -172,9 +172,11 @@ class Supervisortask extends Component
         if (file_put_contents($tmp, $content) === false) {
             throw new \RuntimeException("Cannot write temp file: {$tmp}");
         }
+        @chmod($tmp, 0600);
         if (!@rename($tmp, $path)) {
             @unlink($tmp);
             throw new \RuntimeException("Cannot move {$tmp} to {$path}");
         }
+        @chmod($path, 0600);
     }
 }

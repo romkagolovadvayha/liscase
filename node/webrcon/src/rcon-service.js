@@ -255,8 +255,9 @@ function getDbPool() {
         }
     });
 
-    const PORT = 3010;
-    app.listen(PORT, () => {
-        console.log(`🚀 RCON API работает: http://localhost:${PORT}/send`);
+    const PORT = Number(process.env.RCON_PORT || 3010);
+    const HOST = process.env.RCON_BIND_HOST || '127.0.0.1';
+    app.listen(PORT, HOST, () => {
+        console.log(`🚀 RCON API работает: http://${HOST}:${PORT}/send`);
     });
 })();

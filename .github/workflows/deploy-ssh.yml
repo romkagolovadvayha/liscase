@@ -159,7 +159,63 @@ jobs:
         run: |
           if [ -n "$CRON_BODY" ]; then
             # Секрет с Windows/панели часто с CRLF — \r в конце строк ломает yii (runAction('sync\r')).
-            printf '%s\n' "$CRON_BODY" | tr -d '\r' > deploy.crontab
+            printf '%s\n' "$CRON_BODY" | tr -d '\r' > deploy.crontab.raw
+            python3 <<'PY'
+          import os
+          import re
+          import shlex
+
+          deploy_path = os.environ['DEPLOY_PATH_REMOTE'].rstrip('/')
+          yii = shlex.quote(deploy_path + '/yii')
+
+          def wrap(schedule: str, command: str, slug: str) -> str:
+              lock = '/run/lock/liscase-' + re.sub(r'[^a-z0-9-]+', '-', slug.lower()).strip('-') + '.lock'
+              return f"{schedule} /usr/bin/flock -n {lock} /bin/sh -lc {shlex.quote(command)}"
+
+          source = open('deploy.crontab.raw', encoding='utf-8').read().splitlines()
+          result = ['YII_ENV=prod', 'YII_DEBUG=0', 'MAILTO=""']
+          seen = set()
+
+          for line in source:
+              stripped = line.strip()
+              if not stripped or stripped.startswith('#'):
+                  result.append(line)
+                  continue
+              if re.match(r'^(YII_ENV|YII_DEBUG|MAILTO)=', stripped):
+                  continue
+
+              parts = line.split(None, 5)
+              if len(parts) < 6:
+                  result.append(line)
+                  continue
+              schedule, command = ' '.join(parts[:5]), parts[5]
+
+              if 'market.csgo.com/api/v2/prices/class_instance/RUB.json' in command:
+                  if 'support/empty' in command and 'support/empty' not in seen:
+                      result.append(wrap(schedule, f"cd {shlex.quote(deploy_path)} && php {yii} support/empty", 'support-empty'))
+                      seen.add('support/empty')
+                  result.append(wrap(schedule, f"cd {shlex.quote(deploy_path)} && php {yii} storage/refresh-price-file csmarket 1", 'prices-csmarket'))
+                  seen.add('storage/refresh-price-file-csmarket')
+                  continue
+
+              if 'rust.tm/api/v2/prices/class_instance/RUB.json' in command:
+                  result.append(wrap('*/5 * * * *', f"cd {shlex.quote(deploy_path)} && php {yii} storage/refresh-price-file rusttm", 'prices-rusttm'))
+                  seen.add('storage/refresh-price-file-rusttm')
+                  continue
+
+              actions = re.findall(r'/yii\s+([a-z0-9_/-]+)', command, flags=re.I)
+              seen.update(actions)
+              if actions and '/usr/bin/flock ' not in command:
+                  result.append(wrap(schedule, command, '-'.join(actions)))
+              else:
+                  result.append(line)
+
+          if 'tournament/recalculate-rankings' not in seen:
+              result.append(wrap('*/5 * * * *', f"cd {shlex.quote(deploy_path)} && php {yii} tournament/recalculate-rankings", 'tournament-rankings'))
+
+          open('deploy.crontab', 'w', encoding='utf-8', newline='\n').write('\n'.join(result).rstrip() + '\n')
+          PY
+            rm -f deploy.crontab.raw
             echo "has_cron=1" >> "$GITHUB_OUTPUT"
           else
             echo "has_cron=0" >> "$GITHUB_OUTPUT"
@@ -263,6 +319,73 @@ jobs:
               # Replace PHP both in direct commands (`command=php yii ...`) and
               # in wrapped commands (`command=bash -c '... /usr/bin/php ...'`).
               sed -i -E "s#(^|[=;&|[:space:]])(/usr/bin/php|/opt/php[0-9]+/bin/php|php)([[:space:]])#\\1${PHP_BIN}\\3#g" supervisor.deploy.conf
+              sed -i -E 's/--verbose=1/--verbose=0/g' supervisor.deploy.conf
+              python3 - "$DEPLOY_ROOT" "$PHP_BIN" <<'PY'
+            import configparser
+            import os
+            import shlex
+            import sys
+
+            path, php = sys.argv[1], sys.argv[2]
+            filename = 'supervisor.deploy.conf'
+            parser = configparser.RawConfigParser(strict=True, interpolation=None)
+            parser.optionxform = str
+            parser.read(filename, encoding='utf-8')
+
+            for section in parser.sections():
+                if not section.startswith('program:'):
+                    continue
+                if parser.get(section, 'stopsignal', fallback='').upper() == 'KILL':
+                    parser.set(section, 'stopsignal', 'TERM')
+                if not parser.has_option(section, 'stopwaitsecs'):
+                    parser.set(section, 'stopwaitsecs', '1250')
+                parser.set(section, 'stdout_logfile_maxbytes', '20MB')
+                parser.set(section, 'stdout_logfile_backups', '3')
+                env = parser.get(section, 'environment', fallback='').strip()
+                additions = ['YII_ENV="prod"', 'YII_DEBUG="0"']
+
+                command = parser.get(section, 'command', fallback='')
+                try:
+                    argv = shlex.split(command)
+                except ValueError:
+                    argv = []
+                if len(argv) >= 6 and os.path.basename(argv[1]) == 'multi-bot.js':
+                    def quoted(key, value):
+                        value = value.replace('\\', '\\\\').replace('"', '\\"')
+                        return f'{key}="{value}"'
+                    additions.extend([
+                        quoted('DB_HOST', argv[2]),
+                        quoted('DB_USER', argv[3]),
+                        quoted('DB_PASSWORD', argv[4]),
+                        quoted('DB_NAME', argv[5]),
+                    ])
+                    parser.set(section, 'command', ' '.join(argv[:2]))
+
+                existing_keys = {item.split('=', 1)[0].strip() for item in env.split(',') if '=' in item}
+                merged = [env] if env else []
+                merged.extend(item for item in additions if item.split('=', 1)[0] not in existing_keys)
+                parser.set(section, 'environment', ','.join(merged))
+
+            queue_section = 'program:prostoj.queue-rustoteka-bot'
+            if not parser.has_section(queue_section):
+                parser.add_section(queue_section)
+                parser.set(queue_section, 'command', f'{php} {path}/yii queue-rustoteka-bot/listen --verbose=0 --color=0')
+                parser.set(queue_section, 'directory', path)
+                parser.set(queue_section, 'environment', 'YII_ENV="prod",YII_DEBUG="0"')
+                parser.set(queue_section, 'autostart', 'true')
+                parser.set(queue_section, 'autorestart', 'true')
+                parser.set(queue_section, 'startretries', '10')
+                parser.set(queue_section, 'stopsignal', 'TERM')
+                parser.set(queue_section, 'stopwaitsecs', '1250')
+                parser.set(queue_section, 'numprocs', '1')
+                parser.set(queue_section, 'redirect_stderr', 'true')
+                parser.set(queue_section, 'stdout_logfile', f'{path}/console/runtime/supervisor/queue-rustoteka-bot.queue.log')
+                parser.set(queue_section, 'stdout_logfile_maxbytes', '20MB')
+                parser.set(queue_section, 'stdout_logfile_backups', '3')
+
+            with open(filename, 'w', encoding='utf-8', newline='\n') as output:
+                parser.write(output, space_around_delimiters=False)
+            PY
               if grep -Eq '(^|[=;&|[:space:]])(/usr/bin/php|php)([[:space:]])' supervisor.deploy.conf; then
                 echo "::error::Supervisor config still contains a legacy PHP command"
                 exit 1
@@ -270,7 +393,7 @@ jobs:
               SUPERVISOR_FN='${{ secrets.DEPLOY_SUPERVISOR_CONF_FILENAME || vars.DEPLOY_SUPERVISOR_CONF_FILENAME }}'
               SUPERVISOR_FN="${SUPERVISOR_FN:-liscase.conf}"
               sudo mv -f supervisor.deploy.conf "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
-              sudo chmod 644 "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
+              sudo chmod 600 "/etc/supervisor/conf.d/${SUPERVISOR_FN}"
               set +e
               sudo supervisorctl reread
               R=$?

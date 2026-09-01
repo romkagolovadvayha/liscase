@@ -1046,7 +1046,7 @@
             "dist": {
                 "type": "path",
                 "url": "packages/yii2-websocket",
-                "reference": "52b4e1995d7c257eebd666c392f3731040ee3438"
+                "reference": "6d8382e7f22ce4ab3f580fcb4c4eabb287dc1b6a"
             },
             "require": {
                 "cboden/ratchet": "0.4.x-dev",

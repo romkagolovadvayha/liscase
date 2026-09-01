@@ -30,6 +30,10 @@ class WebSocketServer extends Component implements MessageComponentInterface
     public const EVENT_CLIENT_END_COMMAND = 'ws_client_end_command';
 
     public $port = 8080;
+    /**
+     * Internal listeners are proxied by nginx and must not be reachable directly.
+     */
+    public $host = '127.0.0.1';
     protected $closeConnectionOnError = true;
     protected $runClientCommands = true;
     protected $server = null;
@@ -40,7 +44,8 @@ class WebSocketServer extends Component implements MessageComponentInterface
         try {
             $this->server = IoServer::factory(
                 new HttpServer(new WsServer($this)),
-                $this->port
+                $this->port,
+                $this->host
             );
             $this->clients = new \SplObjectStorage();
             $this->trigger(self::EVENT_WEBSOCKET_OPEN);

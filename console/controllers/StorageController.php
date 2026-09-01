@@ -24,10 +24,22 @@ use Yii;
 use common\models\box\Box;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\console\ExitCode;
 use yii\db\Exception as DbException;
 
 class StorageController extends Controller
 {
+    private const PRICE_FILES = [
+        'csmarket' => [
+            'url' => 'https://market.csgo.com/api/v2/prices/class_instance/RUB.json',
+            'filename' => 'csmarket.json',
+        ],
+        'rusttm' => [
+            'url' => 'https://rust.tm/api/v2/prices/class_instance/RUB.json',
+            'filename' => 'rusttm.json',
+        ],
+    ];
+
     /**
      * storage/test
      * @throws \Exception
@@ -295,6 +307,118 @@ class StorageController extends Controller
      */
     public function actionUpdatePriceCsGo() {
         Yii::$app->csGoMarket->items(true);
+    }
+
+    /**
+     * Atomically refresh a marketplace price file so readers never observe a
+     * partially downloaded JSON document.
+     */
+    public function actionRefreshPriceFile(string $market, int $rebuild = 0): int
+    {
+        if (!isset(self::PRICE_FILES[$market])) {
+            $this->stderr("Unknown market: {$market}\n");
+            return ExitCode::USAGE;
+        }
+        if (!extension_loaded('curl')) {
+            $this->stderr("The cURL extension is required.\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        }
+
+        $uploadDir = Yii::getAlias('@frontend/web/uploads/prices');
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true) && !is_dir($uploadDir)) {
+            $this->stderr("Cannot create price directory: {$uploadDir}\n");
+            return ExitCode::CANTCREAT;
+        }
+
+        $source = self::PRICE_FILES[$market];
+        $target = $uploadDir . DIRECTORY_SEPARATOR . $source['filename'];
+        $lock = fopen(sys_get_temp_dir() . DIRECTORY_SEPARATOR . "liscase-price-{$market}.lock", 'c');
+        if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
+            if (is_resource($lock)) {
+                fclose($lock);
+            }
+            $this->stdout("Refresh already running for {$market}.\n");
+            return ExitCode::OK;
+        }
+
+        $temporary = $target . '.tmp.' . getmypid() . '.' . bin2hex(random_bytes(4));
+        try {
+            $output = fopen($temporary, 'wb');
+            if ($output === false) {
+                throw new \RuntimeException("Cannot create temporary file: {$temporary}");
+            }
+
+            $curl = curl_init($source['url']);
+            curl_setopt_array($curl, [
+                CURLOPT_FILE => $output,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 5,
+                CURLOPT_CONNECTTIMEOUT => 15,
+                CURLOPT_TIMEOUT => 300,
+                CURLOPT_FAILONERROR => true,
+                CURLOPT_USERAGENT => 'Liscase price cache/1.0',
+            ]);
+            $downloaded = curl_exec($curl);
+            $statusCode = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+            $curlError = curl_error($curl);
+            curl_close($curl);
+            fflush($output);
+            if (function_exists('fsync')) {
+                fsync($output);
+            }
+            fclose($output);
+
+            if ($downloaded !== true || $statusCode < 200 || $statusCode >= 300) {
+                throw new \RuntimeException(
+                    "Price download failed for {$market}: HTTP {$statusCode}" . ($curlError ? " ({$curlError})" : '')
+                );
+            }
+            if (!$this->looksLikeCompleteJson($temporary)) {
+                throw new \RuntimeException("Downloaded price file for {$market} is empty or incomplete JSON");
+            }
+            if (!rename($temporary, $target)) {
+                throw new \RuntimeException("Cannot replace price file: {$target}");
+            }
+            @chmod($target, 0644);
+
+            $this->stdout("Updated {$target} (" . filesize($target) . " bytes).\n");
+            if ($market === 'csmarket' && $rebuild) {
+                Yii::$app->csGoMarket->items(true);
+                $this->stdout("Rebuilt CS market cache.\n");
+            }
+
+            return ExitCode::OK;
+        } catch (\Throwable $e) {
+            @unlink($temporary);
+            Yii::error('Price refresh failed: ' . $e->getMessage(), __METHOD__);
+            $this->stderr($e->getMessage() . "\n");
+            return ExitCode::UNSPECIFIED_ERROR;
+        } finally {
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    private function looksLikeCompleteJson(string $path): bool
+    {
+        $size = filesize($path);
+        if ($size === false || $size < 2) {
+            return false;
+        }
+
+        $handle = fopen($path, 'rb');
+        if ($handle === false) {
+            return false;
+        }
+        $head = fread($handle, (int) min(4096, $size));
+        fseek($handle, max(0, $size - 4096));
+        $tail = fread($handle, 4096);
+        fclose($handle);
+
+        $first = substr(ltrim((string) $head, "\xEF\xBB\xBF \t\r\n"), 0, 1);
+        $last = substr(rtrim((string) $tail), -1);
+
+        return ($first === '{' && $last === '}') || ($first === '[' && $last === ']');
     }
 
     /**

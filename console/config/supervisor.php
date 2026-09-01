@@ -14,7 +14,7 @@ $config = [
         // ===== Yii queue listeners =====
         'prostoj.queue-stats' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-stats/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-stats/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -25,7 +25,7 @@ $config = [
         ],
         'prostoj.queue-vk' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-vk/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-vk/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -36,7 +36,7 @@ $config = [
         ],
         'prostoj.queue-telegram' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-telegram/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-telegram/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -47,7 +47,7 @@ $config = [
         ],
         'prostoj.queue-report' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-report/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-report/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -58,7 +58,7 @@ $config = [
         ],
         'prostoj.queue-kills' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-kills/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-kills/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -69,7 +69,7 @@ $config = [
         ],
         'prostoj.queue-team' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-team/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-team/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -80,7 +80,7 @@ $config = [
         ],
         'prostoj.queue-raid' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-raid/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-raid/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -91,7 +91,7 @@ $config = [
         ],
         'prostoj.queue-params' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-params/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-params/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -102,7 +102,7 @@ $config = [
         ],
         'prostoj.queue-top' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-top/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-top/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -113,7 +113,7 @@ $config = [
         ],
         'prostoj.queue-online' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-online/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-online/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -124,7 +124,7 @@ $config = [
         ],
         'prostoj.queue-process' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-process/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-process/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -135,7 +135,7 @@ $config = [
         ],
         'prostoj.queue-support' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-support/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-support/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -146,7 +146,7 @@ $config = [
         ],
         'prostoj.queue-rustoteka-bot' => [
             'directory'       => '@project',
-            'command'         => 'php yii queue-rustoteka-bot/listen --verbose=1 --color=0',
+            'command'         => 'php yii queue-rustoteka-bot/listen --verbose=0 --color=0',
             'autostart'       => true,
             'autorestart'     => true,
             'startretries'    => 10,
@@ -204,7 +204,7 @@ $config = [
         'prostoj.node.radio1' => [
             'directory'       => '@project',
             'command'         => 'node node/mode/app.js 8081 "../../frontend/web/uploads/radio/1"',
-            'environment'     => ['HOST' => '0.0.0.0'],
+            'environment'     => ['HOST' => '127.0.0.1'],
             'autostart'       => false,
             'autorestart'     => false,
             'startretries'    => 10,
@@ -238,7 +238,7 @@ $config = [
         'prostoj.node.radio2' => [
             'directory'       => '@project',
             'command'         => 'node node/mode/app.js 3045 "../../frontend/web/uploads/radio/3"',
-            'environment'     => ['HOST' => '0.0.0.0'],
+            'environment'     => ['HOST' => '127.0.0.1'],
             'autostart'       => false,
             'autorestart'     => false,
             'startretries'    => 10,
@@ -250,7 +250,7 @@ $config = [
         'prostoj.node.radio3' => [
             'directory'       => '@project',
             'command'         => 'node node/mode/app.js 3046 "../../frontend/web/uploads/radio/4"',
-            'environment'     => ['HOST' => '0.0.0.0'],
+            'environment'     => ['HOST' => '127.0.0.1'],
             'autostart'       => false,
             'autorestart'     => false,
             'startretries'    => 10,
@@ -306,7 +306,11 @@ foreach ($config['programs'] as &$program) {
     }
     $program['stopwaitsecs'] = $program['stopwaitsecs'] ?? 1250;
     $program['stdout_logfile_maxbytes'] = $program['stdout_logfile_maxbytes'] ?? '20MB';
-    $program['stdout_logfile_backups'] = $program['stdout_logfile_backups'] ?? 5;
+    $program['stdout_logfile_backups'] = $program['stdout_logfile_backups'] ?? 3;
+    $program['environment'] = array_merge(
+        ['YII_ENV' => 'prod', 'YII_DEBUG' => '0'],
+        $program['environment'] ?? [],
+    );
 }
 unset($program);
 
