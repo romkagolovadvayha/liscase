@@ -2,38 +2,30 @@
 
 namespace common\components\telegram;
 
-use common\components\helpers\Role;
+use common\components\support\SupportReplyCallback;
+use common\components\support\SupportStaffReplyService;
 use common\models\support\Support;
-use common\models\support\SupportMessage;
-use common\models\support\SupportRead;
 use common\models\user\User;
 use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
-use yii\helpers\HtmlPurifier;
 
 /**
  * Сценарий ответа на обращение прямо из Telegram-группы поддержки.
  */
 class SupportTelegramReplyService
 {
-    private const CALLBACK_PREFIX = 'support-reply:';
     private const PENDING_CACHE_PREFIX = 'telegram_support_reply_pending_v1:';
     private const PENDING_TTL = 15 * 60;
 
     public static function callbackData(int $ticketNumber): string
     {
-        return self::CALLBACK_PREFIX . $ticketNumber;
+        return SupportReplyCallback::build($ticketNumber);
     }
 
     public static function ticketNumberFromCallback(string $callbackData): ?int
     {
-        if (!preg_match('/^' . preg_quote(self::CALLBACK_PREFIX, '/') . '(\d{1,12})$/', $callbackData, $matches)) {
-            return null;
-        }
-
-        $ticketNumber = (int)$matches[1];
-        return $ticketNumber > Support::NUMBER_OFFSET ? $ticketNumber : null;
+        return SupportReplyCallback::parse($callbackData);
     }
 
     /**
@@ -156,14 +148,15 @@ class SupportTelegramReplyService
         }
 
         try {
-            $supportMessage = $this->saveReply($ticket, $operator, $replyText);
+            $replyService = new SupportStaffReplyService();
+            $supportMessage = $replyService->saveReply($ticket, $operator, $replyText);
         } catch (\Throwable $e) {
             Yii::error('Telegram support reply save failed: ' . $e->getMessage(), __METHOD__);
             return $this->message('⛔ Не удалось сохранить ответ. Попробуйте ещё раз.');
         }
 
         Yii::$app->cache->delete($cacheKey);
-        $this->broadcastReply($ticket, $supportMessage, $operator);
+        $replyService->broadcastReply($ticket, $supportMessage, $operator);
 
         return $this->message(
             "✅ Ответ сотрудника <b>" . Html::encode((string)$operator->username)
@@ -181,72 +174,9 @@ class SupportTelegramReplyService
         }
 
         $user = User::findByChatId($telegramId);
-        if ($user === null || $user->isSupportWritingBlocked()) {
-            return null;
-        }
-        if (!$user->canRoles([Role::ROLE_ADMIN, Role::ROLE_MODERATOR, Role::ROLE_SUPPORT])) {
-            return null;
-        }
+        $replyService = new SupportStaffReplyService();
 
-        return $user;
-    }
-
-    private function saveReply(Support $ticket, User $operator, string $replyText): SupportMessage
-    {
-        $transaction = Yii::$app->db->beginTransaction();
-        try {
-            $safeMessage = htmlspecialchars(
-                HtmlPurifier::process($replyText),
-                ENT_QUOTES | ENT_SUBSTITUTE,
-                'UTF-8'
-            );
-
-            $supportMessage = new SupportMessage();
-            $supportMessage->support_id = (int)$ticket->id;
-            $supportMessage->user_id = (int)$operator->id;
-            $supportMessage->message = $safeMessage;
-            $supportMessage->created_at = date('Y-m-d H:i:s');
-            if (!$supportMessage->save()) {
-                throw new \RuntimeException(json_encode($supportMessage->errors, JSON_UNESCAPED_UNICODE));
-            }
-
-            $ticket->updated_at = date('Y-m-d H:i:s');
-            if (!$ticket->save(false)) {
-                throw new \RuntimeException('Failed to update support ticket timestamp.');
-            }
-
-            $markedRead = SupportRead::readedAllReturningMessageIds((int)$ticket->id, (int)$operator->id);
-            SupportRead::createRecord(
-                (int)$ticket->user_id,
-                (int)$operator->id,
-                (int)$supportMessage->id,
-                (int)$ticket->id
-            );
-
-            $transaction->commit();
-            SupportRead::notifyReadReceiptsWebSocketIfNeeded($ticket, (int)$operator->id, $markedRead);
-
-            return $supportMessage;
-        } catch (\Throwable $e) {
-            if ($transaction->isActive) {
-                $transaction->rollBack();
-            }
-            throw $e;
-        }
-    }
-
-    private function broadcastReply(Support $ticket, SupportMessage $supportMessage, User $operator): void
-    {
-        try {
-            \console\controllers\NotificationServer::broadcastNewSupportMessage(
-                $ticket->getNumber(),
-                (int)$supportMessage->id,
-                (int)$operator->id,
-                (int)$ticket->user_id
-            );
-        } catch (\Throwable $e) {
-            Yii::warning('Telegram support reply WebSocket broadcast failed: ' . $e->getMessage(), __METHOD__);
-        }
+        return $replyService->isAuthorizedStaff($user) ? $user : null;
     }
 
     /**

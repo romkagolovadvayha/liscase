@@ -2,7 +2,7 @@
 
 namespace common\components\queue\support;
 
-use common\components\telegram\SupportTelegramReplyService;
+use common\components\support\SupportReplyCallback;
 use common\models\support\Support;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
@@ -33,35 +33,64 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $text = "💬 Новое сообщение.";
             $text .= PHP_EOL . "Имя: {$this->username}";
             $message = str_replace(['<br>', '<br/>'], PHP_EOL, (string)$this->message);
+            $hasAttachments = $this->hasAttachments();
             if (trim(strip_tags($message)) === '') {
-                $message = $this->hasAttachments() ? '[вложение]' : '[пустое сообщение]';
+                $message = $hasAttachments ? '[вложение]' : '[пустое сообщение]';
             }
             $text .= PHP_EOL . "Сообщение: " . $message;
-            $text .= PHP_EOL . "<a href=\"https://{$domain}/support/ticket?id={$this->chatNumber}\">Перейти к тикету</a>";
+            $ticketUrl = "https://{$domain}/support/ticket?id={$this->chatNumber}";
+            $text .= PHP_EOL . "<a href=\"{$ticketUrl}\">Перейти к тикету</a>";
 
             $buttons = [];
-            if ($this->isTicketOwnerMessage()) {
+            $maxButtons = [];
+            $isTicketOwnerMessage = $this->isTicketOwnerMessage();
+            if ($isTicketOwnerMessage) {
+                $callbackPayload = SupportReplyCallback::build((int)$this->chatNumber);
                 $buttons[] = [
                     'text' => '✍️ Ответить',
-                    'callback_data' => SupportTelegramReplyService::callbackData((int)$this->chatNumber),
+                    'callback_data' => $callbackPayload,
+                ];
+                $maxButtons[] = [
+                    'text' => '✍️ Ответить',
+                    'payload' => $callbackPayload,
                 ];
             }
 
             $photoUrls = $this->collectPhotoUrls();
+            $plainSupportMessage = mb_substr($this->plainText($message), 0, 3400);
+            $maxMessage = "💬 Новое сообщение."
+                . PHP_EOL . "Имя: {$this->plainText((string)$this->username)}"
+                . PHP_EOL . 'Сообщение: ' . $plainSupportMessage;
+            if ($hasAttachments && trim(strip_tags((string)$this->message)) !== '') {
+                $maxMessage .= PHP_EOL . 'Вложения: доступны в тикете';
+            }
+            $maxMessage .= PHP_EOL . 'Тикет: ' . $ticketUrl;
+        } catch (\Throwable $e) {
+            $this->reportFailure('prepare', $e);
+
+            return;
+        }
+
+        try {
             if (empty($photoUrls)) {
                 Yii::$app->telegramSupport->sendMessage($text, $buttons);
-                return;
-            }
+            } else {
+                // caption в Telegram — максимум 1024 символа
+                $caption = mb_substr($text, 0, 1024);
+                Yii::$app->telegramSupport->sendMessage($caption, $buttons, $photoUrls[0]);
 
-            // caption в Telegram — максимум 1024 символа
-            $caption = mb_substr($text, 0, 1024);
-            Yii::$app->telegramSupport->sendMessage($caption, $buttons, $photoUrls[0]);
-
-            foreach (array_slice($photoUrls, 1) as $photoUrl) {
-                Yii::$app->telegramSupport->sendMessage('', [], $photoUrl);
+                foreach (array_slice($photoUrls, 1) as $photoUrl) {
+                    Yii::$app->telegramSupport->sendMessage('', [], $photoUrl);
+                }
             }
-        } catch (\Exception $e) {
-            Yii::$app->telegramChats->sendMessage("BeforeMessageJob: " . $e->getLine() . ":" . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->reportFailure('telegram', $e);
+        }
+
+        try {
+            Yii::$app->maxSupportBot->sendSupportMessage($maxMessage, $maxButtons);
+        } catch (\Throwable $e) {
+            $this->reportFailure('max', $e);
         }
     }
 
@@ -133,5 +162,21 @@ class BeforeMessageJob extends BaseObject implements JobInterface
                 'user_id' => (int)$this->userId,
             ])
             ->exists();
+    }
+
+    private function plainText(string $value): string
+    {
+        return trim(html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
+    private function reportFailure(string $channel, \Throwable $e): void
+    {
+        $message = "BeforeMessageJob ({$channel}): " . $e->getLine() . ':' . $e->getMessage();
+        Yii::warning($message, __METHOD__);
+        try {
+            Yii::$app->telegramChats->sendMessage($message);
+        } catch (\Throwable $ignored) {
+            // Ошибка резервного оповещения не должна перезапускать задачу очереди.
+        }
     }
 }

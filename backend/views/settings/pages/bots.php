@@ -47,6 +47,10 @@ $tabs = [
                 'category' => 'tgbotSupportAlert',
                 'title' => 'Поддержка, оповещения о сообщениях',
             ],
+            [
+                'category' => 'maxSupport',
+                'title' => 'MAX — поддержка',
+            ],
         ],
     ],
 ];

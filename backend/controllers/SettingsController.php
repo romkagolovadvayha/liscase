@@ -78,6 +78,7 @@ class SettingsController extends BackendController
                 'tgbotPayments' => Yii::t('common', 'Оповещения о платежах'),
                 'tgbotAlert' => Yii::t('common', 'Прочие оповещения'),
                 'tgbotSupportAlert' => Yii::t('common', 'Поддержка, оповещения'),
+                'maxSupport' => Yii::t('common', 'MAX — поддержка'),
             ],
         ];
     }
@@ -185,6 +186,23 @@ class SettingsController extends BackendController
             Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
             Yii::$app->cache->delete('Settings_getSettings');
+
+            if ($category === 'maxSupport') {
+                try {
+                    $webhook = Yii::$app->maxSupportBot->ensureSupportWebhook();
+                    if (($webhook['status'] ?? '') === 'created') {
+                        Yii::$app->session->setFlash('success', 'Настройки сохранены, webhook MAX зарегистрирован.');
+                    } elseif (($webhook['status'] ?? '') === 'updated') {
+                        Yii::$app->session->setFlash('success', 'Настройки сохранены, webhook MAX обновлён.');
+                    }
+                } catch (\Throwable $e) {
+                    Yii::warning('MAX webhook registration failed: ' . $e->getMessage(), __METHOD__);
+                    Yii::$app->session->setFlash(
+                        'warning',
+                        'Настройки сохранены, но webhook MAX не зарегистрирован: ' . $e->getMessage()
+                    );
+                }
+            }
             
             // Сбрасываем кэш API настроек (все возможные комбинации категорий)
             $this->clearApiSettingsCache();

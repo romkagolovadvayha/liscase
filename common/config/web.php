@@ -153,6 +153,9 @@ $config = [
         'telegramSupport'   => [
             'class'  => \common\components\telegram\TelegramSupport::class,
         ],
+        'maxSupportBot' => [
+            'class' => \common\components\max\MaxBotApi::class,
+        ],
         'telegramReport'   => [
             'class'  => \common\components\telegram\TelegramReport::class,
         ],

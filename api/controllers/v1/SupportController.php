@@ -582,7 +582,7 @@ class SupportController extends BaseApiController
             $ticketNumber = $ticket->getNumber();
 
             // Telegram канал поддержки (как ChatServer / SupportGameStoresController)
-            $this->notifySupportTelegramNewMessage($ticket, $userMessage, $user, !empty($files));
+            $this->notifySupportMessengersNewMessage($ticket, $userMessage, $user, !empty($files));
 
             // WebSocket + Next.js push: новый тикет и первые сообщения в чате
             try {
@@ -776,7 +776,7 @@ class SupportController extends BaseApiController
                 Yii::error('WebSocket broadcast exception: ' . $ex->getTraceAsString());
             }
 
-            $this->notifySupportTelegramNewMessage($ticket, $supportMessage, $user, !empty($files));
+            $this->notifySupportMessengersNewMessage($ticket, $supportMessage, $user, !empty($files));
 
             Yii::$app->response->statusCode = 201;
             return $this->successResponse([
@@ -1634,7 +1634,7 @@ class SupportController extends BaseApiController
     /**
      * Публикация в Telegram-канал поддержки через очередь (как legacy ChatServer).
      */
-    protected function notifySupportTelegramNewMessage(Support $ticket, SupportMessage $supportMessage, User $sender, bool $hadFiles = false): void
+    protected function notifySupportMessengersNewMessage(Support $ticket, SupportMessage $supportMessage, User $sender, bool $hadFiles = false): void
     {
         if (!Yii::$app->has('queueProcess')) {
             return;
