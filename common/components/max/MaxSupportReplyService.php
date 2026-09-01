@@ -48,10 +48,9 @@ final class MaxSupportReplyService
             return $this->message('⛔ Эта кнопка работает только в MAX-чате поддержки.');
         }
 
+        $safeMaxId = preg_replace('/[^0-9]/', '', (string)$operatorMaxId);
         $operator = $this->findStaffByMaxId($operatorMaxId);
         if ($operator === null) {
-            $safeMaxId = preg_replace('/[^0-9]/', '', (string)$operatorMaxId);
-
             return $this->message(
                 '⛔ Не найден доступный аккаунт для ответа. Проверьте привязку сотрудника '
                 . 'или пользователя по умолчанию со Steam ID '
@@ -81,7 +80,8 @@ final class MaxSupportReplyService
             'callbackNotice' => 'Режим ответа включён',
             'message' => "✍️ {$operator->username}, напишите ответ для тикета #{$ticketNumber}.\n"
                 . 'Он сохранится в тикете как обычный ответ от вашего аккаунта. '
-                . 'Для отмены отправьте /cancel.',
+                . 'Для отмены отправьте /cancel.'
+                . "\n\nВаш ID MAX: {$safeMaxId}",
         ];
     }
 
