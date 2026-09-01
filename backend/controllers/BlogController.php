@@ -17,6 +17,7 @@ use yii\filters\VerbFilter;
 use common\components\vk\VkApiHelper;
 use common\components\openAi\OpenAiVkPost;
 use common\components\openAi\OpenAiTelegramPost;
+use common\components\openAi\OpenAiSettings;
 use common\components\telegram\TelegramChannelHelper;
 use yii\helpers\Html;
 use Yii;
@@ -79,6 +80,11 @@ class BlogController extends BackendController
 
     public function actionGeneratePost($postId)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->session->addFlash('warning', 'Генерация контента через ChatGPT отключена в настройках.');
+            return $this->redirect(['/blog/view', 'id' => $postId]);
+        }
+
         $cacheKey  = 'actionGenerate_Post_' . $postId;
         $cacheData = Yii::$app->cache->get($cacheKey);
         if (!empty($cacheData)) {
@@ -94,6 +100,11 @@ class BlogController extends BackendController
 
     public function actionGenerate($categoryId = null)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->session->addFlash('warning', 'Генерация контента через ChatGPT отключена в настройках.');
+            return $this->redirect(['/blog-category/index']);
+        }
+
         $categoryIds = [];
         if (!empty($categoryId)) {
             $categoryIds[] = $categoryId;

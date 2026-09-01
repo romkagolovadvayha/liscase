@@ -2,6 +2,7 @@
 
 namespace common\models\map;
 
+use common\components\proxy\ProxySettings;
 use common\components\queue\process\CustomMapGenerateJob;
 use common\models\servers\Servers;
 use common\models\User;
@@ -350,10 +351,17 @@ class Map extends \yii\db\ActiveRecord
     public static function uploadOld($imageUrl, $filename, $previewFilename) {
         $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
         $previewfilePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$previewFilename}";
-        $image = (clone Yii::$app->curl)
-            ->setOption(CURLOPT_PROXY, '154.196.30.165:62742') // Установка прокси
-            ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc') // Если требуется аутентификация
-            ->get($imageUrl);
+        $curl = clone Yii::$app->curl;
+        if (ProxySettings::isEnabled(ProxySettings::MAP)) {
+            $curl
+                ->setOption(CURLOPT_PROXY, '154.196.30.165:62742')
+                ->setOption(CURLOPT_PROXYUSERPWD, 'XyQREbm5:AZ1zUkyc');
+        } else {
+            $curl
+                ->setOption(CURLOPT_PROXY, '')
+                ->setOption(CURLOPT_NOPROXY, '*');
+        }
+        $image = $curl->get($imageUrl);
         Map::watermarkOld($image, $filePath, $previewfilePath);
     }
 
@@ -465,12 +473,17 @@ class Map extends \yii\db\ActiveRecord
 
         $filePath = \Yii::getAlias('@frontend/web') . "/uploads/maps/{$filename}";
         $attempts = [
-            'direct' => [],
-            'proxy' => [
-                CURLOPT_PROXY => '154.196.30.165:62742',
-                CURLOPT_PROXYUSERPWD => 'XyQREbm5:AZ1zUkyc',
+            'direct' => [
+                CURLOPT_PROXY => '',
+                CURLOPT_NOPROXY => '*',
             ],
         ];
+        if (ProxySettings::isEnabled(ProxySettings::MAP)) {
+            $attempts['proxy'] = [
+                CURLOPT_PROXY => '154.196.30.165:62742',
+                CURLOPT_PROXYUSERPWD => 'XyQREbm5:AZ1zUkyc',
+            ];
+        }
         $failures = [];
 
         foreach ($attempts as $attemptName => $options) {

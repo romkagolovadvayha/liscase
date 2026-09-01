@@ -2,6 +2,7 @@
 
 namespace common\components;
 
+use common\components\proxy\ProxySettings;
 use common\models\video\UserVideo;
 use Yii;
 
@@ -201,17 +202,7 @@ class VideoMetadataFetcher
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTPHEADER => $headers,
         ]);
-        if (Yii::$app->has('settings')) {
-            $proxyIp = Yii::$app->settings->get('proxy_ip');
-            if (!empty($proxyIp)) {
-                curl_setopt($ch, CURLOPT_PROXY, $proxyIp);
-                $proxyUser = Yii::$app->settings->get('proxy_username');
-                $proxyPass = Yii::$app->settings->get('proxy_password');
-                if ($proxyUser !== null && $proxyUser !== '' && $proxyPass !== null) {
-                    curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyUser . ':' . $proxyPass);
-                }
-            }
-        }
+        ProxySettings::applyToCurl($ch, ProxySettings::VIDEO_METADATA);
         $raw = curl_exec($ch);
         $err = curl_error($ch);
         if ($raw === false || $err !== '') {

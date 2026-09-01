@@ -2,6 +2,7 @@
 
 namespace api\controllers\v1;
 
+use common\components\openAi\OpenAiSettings;
 use Yii;
 use yii\db\Query;
 use common\helpers\ApiPublicCacheTtl;
@@ -130,7 +131,11 @@ class TranslationsController extends BaseApiController
         $didTranslate = false;
         if ($hasExistingTranslation) {
             $translatedText = (string) $existingTranslation;
-        } elseif ($sourceId > 0 && $language !== 'ru-RU' && isset(Yii::$app->openAi)) {
+        } elseif ($sourceId > 0
+            && $language !== 'ru-RU'
+            && isset(Yii::$app->openAi)
+            && OpenAiSettings::isEnabled(OpenAiSettings::TRANSLATION)
+        ) {
             try {
                 $targetLang = $language === 'en-US' ? 'en' : (strpos($language, '-') ? substr($language, 0, 2) : $language);
                 $google = new TranslateApi();

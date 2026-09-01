@@ -2,6 +2,7 @@
 
 namespace common\components\queue\process;
 
+use common\components\openAi\OpenAiSettings;
 use Yii;
 use yii\base\BaseObject;
 use yii\queue\JobInterface;
@@ -18,6 +19,10 @@ class QuizGetListJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::QUIZ)) {
+            return;
+        }
+
         try {
             $cacheKey = 'quiz_list';
             $questions = Yii::$app->openAiQuiz->questions($this->count);

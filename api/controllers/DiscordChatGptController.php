@@ -3,6 +3,7 @@
 namespace api\controllers;
 
 use common\components\openAi\OpenAiSupport;
+use common\components\openAi\OpenAiSettings;
 use Yii;
 use yii\web\Controller;
 use yii\web\BadRequestHttpException;
@@ -48,6 +49,14 @@ class DiscordChatGptController extends Controller
         Yii::info('Discord ChatGPT: начало обработки запроса', __METHOD__);
         
         Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::DISCORD)) {
+            Yii::$app->response->statusCode = 503;
+            return [
+                'success' => false,
+                'message' => 'ChatGPT для Discord отключён',
+            ];
+        }
         
         // Получаем данные из POST (может быть JSON или form-data)
         // Yii2 автоматически парсит JSON если Content-Type: application/json

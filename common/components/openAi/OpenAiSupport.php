@@ -2,6 +2,7 @@
 
 namespace common\components\openAi;
 
+use common\components\proxy\ProxySettings;
 use common\components\telegram\foreignSystem\PersonalBotSystem;
 use common\models\statistics\Reports;
 use common\models\user\User;
@@ -27,15 +28,6 @@ class OpenAiSupport extends \yii\base\Component
                 'Content-Type'  => 'application/json',
             ],
         ];
-
-        // Добавим прокси, если задано
-        if (!empty(Yii::$app->settings->get('proxy_ip'))) {
-            $proxy = "http://" . Yii::$app->settings->get('proxy_username') . ":" . Yii::$app->settings->get('proxy_password') . "@" . Yii::$app->settings->get('proxy_ip');
-            $clientConfig['proxy'] = [
-                'http'  => $proxy,
-                'https' => $proxy,
-            ];
-        }
 
         $this->client = new Client($clientConfig);
     }
@@ -66,6 +58,12 @@ class OpenAiSupport extends \yii\base\Component
         array $imageUrls = [],
         ?string $serverTag = null
     ): ?string {
+        $feature = $useDiscordInstructions ? OpenAiSettings::DISCORD : OpenAiSettings::SUPPORT;
+        if (!OpenAiSettings::isEnabled($feature)) {
+            Yii::info('OpenAI для этого канала поддержки отключён.', __METHOD__);
+            return null;
+        }
+
         $model = '';
         try {
             $knowledge = $this->loadKnowledgeBase();
@@ -245,10 +243,16 @@ class OpenAiSupport extends \yii\base\Component
 
             $hasImages = !empty($currentImages);
 
-            $response = $this->client->post('chat/completions', [
+            $requestOptions = [
                 'json' => $payload,
                 'timeout' => $hasImages ? 90 : 60,
-            ]);
+            ];
+            $proxyFeature = $useDiscordInstructions
+                ? ProxySettings::OPENAI_DISCORD
+                : ProxySettings::OPENAI_SUPPORT;
+            ProxySettings::applyToGuzzleOptions($requestOptions, $proxyFeature);
+
+            $response = $this->client->post('chat/completions', $requestOptions);
 
             $responseBody = (string)$response->getBody();
             $data = json_decode($responseBody, true);

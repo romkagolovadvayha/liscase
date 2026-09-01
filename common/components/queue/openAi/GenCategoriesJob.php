@@ -2,6 +2,7 @@
 
 namespace common\components\queue\openAi;
 
+use common\components\openAi\OpenAiSettings;
 use common\models\blog\BlogCategory;
 use Yii;
 use yii\base\BaseObject;
@@ -17,6 +18,11 @@ class GenCategoriesJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->cache->delete('actionGenerate');
+            return;
+        }
+
         try {
             $categories = Yii::$app->openAi->getCategories();
             foreach ($categories as $item) {

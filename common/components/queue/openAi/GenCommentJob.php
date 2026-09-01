@@ -2,6 +2,7 @@
 
 namespace common\components\queue\openAi;
 
+use common\components\openAi\OpenAiSettings;
 use common\models\blog\Blog;
 use common\models\comment\Comment;
 use common\models\user\User;
@@ -21,6 +22,10 @@ class GenCommentJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::COMMENT)) {
+            return;
+        }
+
         $blog = Blog::findOne($this->postId);
         $comments = Yii::$app->openAi->getComments($blog->name, $blog->description, rand(1,5));
         foreach ($comments as $item) {

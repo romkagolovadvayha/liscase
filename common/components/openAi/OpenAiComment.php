@@ -2,6 +2,7 @@
 
 namespace common\components\openAi;
 
+use common\components\proxy\ProxySettings;
 use common\components\telegram\foreignSystem\PersonalBotSystem;
 use common\models\servers\Servers;
 use common\models\statistics\Reports;
@@ -29,14 +30,7 @@ class OpenAiComment extends \yii\base\Component
             ],
         ];
 
-        // Добавим прокси, если задано
-        if (!empty(Yii::$app->settings->get('proxy_ip'))) {
-            $proxy = "http://" . Yii::$app->settings->get('proxy_username') . ":" . Yii::$app->settings->get('proxy_password') . "@" . Yii::$app->settings->get('proxy_ip');
-            $clientConfig['proxy'] = [
-                'http'  => $proxy,
-                'https' => $proxy,
-            ];
-        }
+        ProxySettings::applyToGuzzleOptions($clientConfig, ProxySettings::OPENAI_COMMENT);
 
         $this->client = new Client($clientConfig);
     }
@@ -60,6 +54,10 @@ class OpenAiComment extends \yii\base\Component
         array $commentHistory = [],
         ?int $replyToCommentId = null
     ): ?array {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::COMMENT)) {
+            return null;
+        }
+
         // Сжимаем контент статьи, чтобы не раздувать токены (опционально)
         $postContentShort = mb_substr(trim(strip_tags($postContent)), 0, 2000);
 

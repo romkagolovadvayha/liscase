@@ -2,6 +2,7 @@
 
 namespace common\components\queue\openAi;
 
+use common\components\openAi\OpenAiSettings;
 use common\components\google\TranslateApi;
 use common\components\queue\midjourney\GenImageJob;
 use common\models\blog\Blog;
@@ -22,6 +23,11 @@ class GenPostJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->cache->delete('actionGenerate_Post_' . $this->postId);
+            return;
+        }
+
         /** @var Blog $post */
         $post = Blog::findOne($this->postId);
         if ($post->status == Blog::STATUS_ACTIVE) {

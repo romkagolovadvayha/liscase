@@ -2,6 +2,7 @@
 
 namespace common\components\openAi;
 
+use common\components\proxy\ProxySettings;
 use GuzzleHttp\Client;
 use Orhanerday\OpenAi\OpenAi;
 use Yii;
@@ -17,6 +18,7 @@ class OpenAiApi
      */
     public function getCategories()
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo-16k',
@@ -72,6 +74,7 @@ class OpenAiApi
      */
     public function getTitles($name, $description)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo-16k',
@@ -105,6 +108,7 @@ class OpenAiApi
 
     public function getTitle($description)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
                                       'model' => 'gpt-3.5-turbo-16k',
@@ -145,6 +149,7 @@ class OpenAiApi
      */
     public function getComments($name, $description, $count)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::COMMENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo-16k',
@@ -186,6 +191,7 @@ class OpenAiApi
      */
     public function getPost($name, $structrure, $description, $categoryName)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $params = [
             'model' => 'gpt-3.5-turbo-16k',
@@ -247,6 +253,7 @@ class OpenAiApi
      */
     public function getPostMeta($name, $structrure, $description, $categoryName)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $params = [
             'model' => 'gpt-3.5-turbo-16k',
@@ -303,6 +310,7 @@ class OpenAiApi
      */
     public function getStructurePost($name, $description, $categoryName)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo',
@@ -344,6 +352,7 @@ class OpenAiApi
      */
     public function getDescriptionImage($name, $keywords)
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo',
@@ -377,6 +386,7 @@ class OpenAiApi
      */
     public function getUsers()
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::CONTENT);
         $openAi = new OpenAi($this->apiKey);
         $complete = $openAi->chat([
             'model' => 'gpt-3.5-turbo',
@@ -429,15 +439,13 @@ class OpenAiApi
                 'Content-Type'  => 'application/json',
             ],
         ];
-        if (Yii::$app->has('settings') && !empty(Yii::$app->settings->get('proxy_ip'))) {
-            $proxy = 'http://' . Yii::$app->settings->get('proxy_username') . ':' . Yii::$app->settings->get('proxy_password') . '@' . Yii::$app->settings->get('proxy_ip');
-            $clientConfig['proxy'] = ['http' => $proxy, 'https' => $proxy];
-        }
+        ProxySettings::applyToGuzzleOptions($clientConfig, ProxySettings::OPENAI_TRANSLATION);
         return new Client($clientConfig);
     }
 
     public function translateText($text, $targetLanguage = 'en')
     {
+        OpenAiSettings::ensureEnabled(OpenAiSettings::TRANSLATION);
         $text = trim((string) $text);
         if ($text === '') {
             return '';

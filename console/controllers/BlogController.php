@@ -2,6 +2,7 @@
 
 namespace console\controllers;
 
+use common\components\openAi\OpenAiSettings;
 use common\components\google\TranslateApi;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\models\blog\Blog;
@@ -462,7 +463,7 @@ class BlogController extends Controller
      */
     public function actionGenerateComment()
     {
-        if (!Yii::$app->settings->get('openAi_comment_enabled')) {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::COMMENT)) {
             return;
         }
 

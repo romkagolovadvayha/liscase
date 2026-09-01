@@ -2,11 +2,10 @@
 
 namespace common\components\telegram;
 
-use Yii;
+use common\components\proxy\ProxySettings;
 
 /**
- * Прокси для cURL к api.telegram.org: proxy_ip / proxy_username / proxy_password из настроек
- * (как в {@see \common\components\VideoMetadataFetcher}).
+ * Прокси для cURL к api.telegram.org с учётом общего и Telegram-выключателя.
  */
 final class TelegramCurlProxy
 {
@@ -15,18 +14,6 @@ final class TelegramCurlProxy
      */
     public static function applyFromSettings($ch): void
     {
-        if (!Yii::$app->has('settings')) {
-            return;
-        }
-        $proxyIp = Yii::$app->settings->get('proxy_ip');
-        if (empty($proxyIp)) {
-            return;
-        }
-        curl_setopt($ch, CURLOPT_PROXY, $proxyIp);
-        $proxyUser = Yii::$app->settings->get('proxy_username');
-        $proxyPass = Yii::$app->settings->get('proxy_password');
-        if ($proxyUser !== null && $proxyUser !== '' && $proxyPass !== null) {
-            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxyUser . ':' . $proxyPass);
-        }
+        ProxySettings::applyToCurl($ch, ProxySettings::TELEGRAM);
     }
 }

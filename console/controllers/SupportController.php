@@ -3,6 +3,7 @@
 namespace console\controllers;
 
 use common\components\helpers\Role;
+use common\components\openAi\OpenAiSettings;
 use common\components\queue\support\OpenAiJob;
 use common\models\support\Support;
 use common\models\support\SupportMessage;
@@ -22,6 +23,10 @@ class SupportController extends Controller
      */
     public function actionCheck()
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::SUPPORT)) {
+            return;
+        }
+
         /** @var Support[] $tickets */
         $tickets = Support::find()
             ->andWhere(['status' => Support::STATUS_OPEN])

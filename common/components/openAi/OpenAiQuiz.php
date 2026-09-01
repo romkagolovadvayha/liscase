@@ -1,6 +1,7 @@
 <?php
 namespace common\components\openAi;
 
+use common\components\proxy\ProxySettings;
 use GuzzleHttp\Client;
 use Yii;
 
@@ -25,15 +26,7 @@ class OpenAiQuiz extends \yii\base\Component
             'timeout'  => 20,
         ];
 
-        // Прокси (если задан)
-        $proxyIp = Yii::$app->settings->get('proxy_ip');
-        if (!empty($proxyIp)) {
-            $proxy = 'http://' .
-                Yii::$app->settings->get('proxy_username') . ':' .
-                Yii::$app->settings->get('proxy_password') . '@' .
-                $proxyIp;
-            $clientConfig['proxy'] = ['http' => $proxy, 'https' => $proxy];
-        }
+        ProxySettings::applyToGuzzleOptions($clientConfig, ProxySettings::OPENAI_QUIZ);
 
         $this->client = new Client($clientConfig);
     }
@@ -46,6 +39,9 @@ class OpenAiQuiz extends \yii\base\Component
     public function questions(int $count = 20): array
     {
         $count = max(1, min(50, (int)$count));
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::QUIZ)) {
+            return $this->fallback($count);
+        }
 
         $knowledge = (string)Yii::$app->settings->get('openAi_server_quiz');
         $model     = 'gpt-4o-mini';

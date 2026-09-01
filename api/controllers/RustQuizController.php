@@ -2,6 +2,7 @@
 
 namespace api\controllers;
 
+use common\components\openAi\OpenAiSettings;
 use common\components\queue\process\QuizGetListJob;
 use yii\base\BaseObject;
 use yii\web\Controller;
@@ -21,7 +22,9 @@ class RustQuizController extends Controller
             $questions = Yii::$app->cache->get($cacheKey);
         }
 
-        Yii::$app->queueProcess->push(new QuizGetListJob(['count' => 20]));
+        if (OpenAiSettings::isEnabled(OpenAiSettings::QUIZ)) {
+            Yii::$app->queueProcess->push(new QuizGetListJob(['count' => 20]));
+        }
         return [
             'version' => '1.0',
             'locale' => "ru-RU",

@@ -58,6 +58,10 @@ class SettingsController extends BackendController
                 'colors' => Yii::t('common', 'Настройки темы'),
             ],
             [
+                'openAi' => Yii::t('common', 'ChatGPT / OpenAI'),
+                'proxy' => Yii::t('common', 'Прокси'),
+            ],
+            [
                 'tinkoffpay' => Yii::t('common', 'Тинькофф'),
                 'trc20' => Yii::t('common', 'TRC20'),
                 'ton' => Yii::t('common', 'TON COIN'),

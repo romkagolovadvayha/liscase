@@ -2,6 +2,7 @@
 
 namespace common\components\queue\support;
 
+use common\components\openAi\OpenAiSettings;
 use common\components\queue\process\UserSteamInfoUpdateJob;
 use common\components\queue\telegram\SendMessageJob;
 use common\models\signs\Signs;
@@ -37,6 +38,13 @@ class OpenAiJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::SUPPORT)) {
+            if (!empty($this->chatId) && !empty($this->messageId)) {
+                Yii::$app->cache->delete('openai_support_job:' . $this->chatId . ':' . $this->messageId);
+            }
+            return;
+        }
+
         echo $this->message . PHP_EOL;
         try {
             $chat = Support::findOne($this->chatId);

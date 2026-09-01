@@ -3,6 +3,7 @@
 namespace backend\controllers;
 
 use common\components\helpers\Role;
+use common\components\openAi\OpenAiSettings;
 use common\components\queue\openAi\GenCategoriesJob;
 use common\models\blog\BlogCategory;
 use backend\models\blog\BlogCategorySearch;
@@ -88,6 +89,11 @@ class BlogCategoryController extends BackendController
 
     public function actionGenerate()
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->session->addFlash('warning', 'Генерация контента через ChatGPT отключена в настройках.');
+            return $this->redirect(['index']);
+        }
+
         $cacheKey = 'actionGenerate';
         $cacheData = Yii::$app->cache->get($cacheKey);
         if (!empty($cacheData)) {

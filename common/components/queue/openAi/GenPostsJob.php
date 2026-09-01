@@ -2,6 +2,7 @@
 
 namespace common\components\queue\openAi;
 
+use common\components\openAi\OpenAiSettings;
 use common\models\blog\Blog;
 use common\models\blog\BlogCategory;
 use common\models\user\User;
@@ -21,6 +22,11 @@ class GenPostsJob extends BaseObject implements JobInterface
      */
     public function execute($queue)
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::CONTENT)) {
+            Yii::$app->cache->delete('actionGenerate_Posts_' . $this->categoryId);
+            return;
+        }
+
         /** @var BlogCategory $category */
         $category = BlogCategory::findOne($this->categoryId);
         try {

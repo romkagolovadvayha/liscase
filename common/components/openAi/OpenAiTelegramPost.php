@@ -2,6 +2,7 @@
 
 namespace common\components\openAi;
 
+use common\components\proxy\ProxySettings;
 use GuzzleHttp\Client;
 use Yii;
 
@@ -25,14 +26,7 @@ class OpenAiTelegramPost extends \yii\base\Component
             ],
         ];
 
-        // Добавим прокси, если задано
-        if (!empty(Yii::$app->settings->get('proxy_ip'))) {
-            $proxy = "http://" . Yii::$app->settings->get('proxy_username') . ":" . Yii::$app->settings->get('proxy_password') . "@" . Yii::$app->settings->get('proxy_ip');
-            $clientConfig['proxy'] = [
-                'http'  => $proxy,
-                'https' => $proxy,
-            ];
-        }
+        ProxySettings::applyToGuzzleOptions($clientConfig, ProxySettings::OPENAI_TELEGRAM_POST);
 
         $this->client = new Client($clientConfig);
     }
@@ -49,6 +43,10 @@ class OpenAiTelegramPost extends \yii\base\Component
      */
     public function processForTelegram(string $title, string $content, ?string $description = null): ?string
     {
+        if (!OpenAiSettings::isEnabled(OpenAiSettings::TELEGRAM_POST)) {
+            return null;
+        }
+
         // Очищаем HTML и обрезаем контент для экономии токенов
         $cleanContent = strip_tags($content);
         $cleanContent = preg_replace('/\s+/', ' ', $cleanContent);
