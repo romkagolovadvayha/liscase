@@ -29,22 +29,39 @@ class MaxBotApi extends Component
     /**
      * @param array<int, array{text: string, payload: string}> $buttons
      */
-    public function sendSupportMessage(string $text, array $buttons = []): array
+    public function sendSupportMessage(string $text, array $buttons = [], ?string $imageUrl = null): array
     {
         if (!$this->isConfigured()) {
             return [];
         }
 
-        return $this->sendMessage($this->settings->chatId(), $text, $buttons);
+        return $this->sendMessage($this->settings->chatId(), $text, $buttons, $imageUrl);
     }
 
     /**
      * @param int|string $chatId
      * @param array<int, array{text: string, payload: string}> $buttons
      */
-    public function sendMessage($chatId, string $text, array $buttons = []): array
+    public function sendMessage($chatId, string $text, array $buttons = [], ?string $imageUrl = null): array
+    {
+        $body = self::messageBody($text, $buttons, $imageUrl);
+
+        return $this->request('POST', '/messages', ['chat_id' => (string)$chatId], $body);
+    }
+
+    /**
+     * @param array<int, array{text: string, payload: string}> $buttons
+     */
+    public static function messageBody(string $text, array $buttons = [], ?string $imageUrl = null): array
     {
         $body = ['text' => mb_substr($text, 0, 4000)];
+        $attachments = [];
+        if ($imageUrl !== null && $imageUrl !== '') {
+            $attachments[] = [
+                'type' => 'image',
+                'payload' => ['url' => $imageUrl],
+            ];
+        }
         if ($buttons !== []) {
             $row = [];
             foreach ($buttons as $button) {
@@ -58,14 +75,17 @@ class MaxBotApi extends Component
                 ];
             }
             if ($row !== []) {
-                $body['attachments'] = [[
+                $attachments[] = [
                     'type' => 'inline_keyboard',
                     'payload' => ['buttons' => [$row]],
-                ]];
+                ];
             }
         }
+        if ($attachments !== []) {
+            $body['attachments'] = $attachments;
+        }
 
-        return $this->request('POST', '/messages', ['chat_id' => (string)$chatId], $body);
+        return $body;
     }
 
     public function answerCallback(string $callbackId, string $notification): array

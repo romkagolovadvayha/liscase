@@ -1640,8 +1640,9 @@ class SupportController extends BaseApiController
         if (!Yii::$app->has('queueProcess')) {
             return;
         }
+        $rawMessage = (string)($supportMessage->message ?? '');
         $text = SupportMessageNotificationFormatter::format(
-            (string)($supportMessage->message ?? ''),
+            $rawMessage,
             $hadFiles
         );
         try {
@@ -1652,6 +1653,7 @@ class SupportController extends BaseApiController
                 'username' => $sender->username,
                 'chatNumber' => $ticket->getNumber(),
                 'messageId' => $supportMessage->id,
+                'stickerUrl' => SupportMessageNotificationFormatter::stickerUrl($rawMessage),
             ]));
         } catch (\Exception $ex) {
             Yii::warning('BeforeMessageJob: ' . $ex->getMessage());

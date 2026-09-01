@@ -7,6 +7,11 @@ namespace common\components\support;
  */
 final class SupportMessageNotificationFormatter
 {
+    private const STICKER_PATTERNS = [
+        '~<video\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bsupport_sticker\b[^"\']*\1)[^>]*>.*?</video\s*>~isu',
+        '~<img\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bsupport_sticker\b[^"\']*\1)[^>]*\s*/?>~isu',
+    ];
+
     public static function format(string $message, bool $hadFiles = false): string
     {
         $decoded = html_entity_decode($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -27,14 +32,30 @@ final class SupportMessageNotificationFormatter
         return $message;
     }
 
+    public static function stickerUrl(string $message): ?string
+    {
+        $decoded = html_entity_decode($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (stripos($decoded, 'support_sticker') === false) {
+            return null;
+        }
+
+        foreach (self::STICKER_PATTERNS as $pattern) {
+            if (preg_match($pattern, $decoded, $matches) !== 1) {
+                continue;
+            }
+
+            $url = trim(html_entity_decode(self::attribute($matches[0], 'src'), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($url !== '' && (str_starts_with($url, '/') || filter_var($url, FILTER_VALIDATE_URL))) {
+                return $url;
+            }
+        }
+
+        return null;
+    }
+
     private static function replaceStickerTags(string $message): string
     {
-        $patterns = [
-            '~<video\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bsupport_sticker\b[^"\']*\1)[^>]*>.*?</video\s*>~isu',
-            '~<img\b(?=[^>]*\bclass\s*=\s*(["\'])[^"\']*\bsupport_sticker\b[^"\']*\1)[^>]*\s*/?>~isu',
-        ];
-
-        foreach ($patterns as $pattern) {
+        foreach (self::STICKER_PATTERNS as $pattern) {
             $message = preg_replace_callback($pattern, static function (array $matches): string {
                 return self::stickerLabel($matches[0]);
             }, $message) ?? $message;

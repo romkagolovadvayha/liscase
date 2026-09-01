@@ -3,6 +3,7 @@
 namespace common\components\queue\support;
 
 use common\components\support\SupportReplyCallback;
+use common\components\support\SupportStickerMessengerMedia;
 use common\models\support\Support;
 use common\models\support\SupportFile;
 use common\models\support\SupportMessage;
@@ -19,6 +20,8 @@ class BeforeMessageJob extends BaseObject implements JobInterface
     public $chatNumber;
     /** @var int|null ID SupportMessage — чтобы подтянуть вложения */
     public $messageId;
+    /** @var string|null URL custom support sticker embedded in the message */
+    public $stickerUrl;
 
     /**
      * @param \yii\queue\Queue $queue
@@ -34,10 +37,14 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $text .= PHP_EOL . "Имя: {$this->username}";
             $message = str_replace(['<br>', '<br/>'], PHP_EOL, (string)$this->message);
             $hasAttachments = $this->hasAttachments();
+            $stickerUrl = SupportStickerMessengerMedia::absoluteUrl((string)$this->stickerUrl, (string)$domain);
+            $hasSticker = $stickerUrl !== null;
             if (trim(strip_tags($message)) === '') {
                 $message = $hasAttachments ? '[вложение]' : '[пустое сообщение]';
             }
-            $text .= PHP_EOL . "Сообщение: " . $message;
+            if (!$hasSticker) {
+                $text .= PHP_EOL . "Сообщение: " . $message;
+            }
             $ticketUrl = "https://{$domain}/support/ticket?id={$this->chatNumber}";
             $text .= PHP_EOL . "<a href=\"{$ticketUrl}\">Перейти к тикету</a>";
 
@@ -59,12 +66,17 @@ class BeforeMessageJob extends BaseObject implements JobInterface
             $photoUrls = $this->collectPhotoUrls();
             $plainSupportMessage = mb_substr($this->plainText($message), 0, 3400);
             $maxMessage = "💬 Новое сообщение."
-                . PHP_EOL . "Имя: {$this->plainText((string)$this->username)}"
-                . PHP_EOL . 'Сообщение: ' . $plainSupportMessage;
+                . PHP_EOL . "Имя: {$this->plainText((string)$this->username)}";
+            if (!$hasSticker) {
+                $maxMessage .= PHP_EOL . 'Сообщение: ' . $plainSupportMessage;
+            }
             if ($hasAttachments && trim(strip_tags((string)$this->message)) !== '') {
                 $maxMessage .= PHP_EOL . 'Вложения: доступны в тикете';
             }
             $maxMessage .= PHP_EOL . 'Тикет: ' . $ticketUrl;
+            $maxStickerUrl = $hasSticker
+                ? SupportStickerMessengerMedia::maxImageUrl($stickerUrl, (string)$domain)
+                : null;
         } catch (\Throwable $e) {
             $this->reportFailure('prepare', $e);
 
@@ -72,7 +84,10 @@ class BeforeMessageJob extends BaseObject implements JobInterface
         }
 
         try {
-            if (empty($photoUrls)) {
+            if ($hasSticker) {
+                Yii::$app->telegramSupport->sendMessage($text);
+                Yii::$app->telegramSupport->sendSticker($stickerUrl, $buttons);
+            } elseif (empty($photoUrls)) {
                 Yii::$app->telegramSupport->sendMessage($text, $buttons);
             } else {
                 // caption в Telegram — максимум 1024 символа
@@ -88,7 +103,7 @@ class BeforeMessageJob extends BaseObject implements JobInterface
         }
 
         try {
-            Yii::$app->maxSupportBot->sendSupportMessage($maxMessage, $maxButtons);
+            Yii::$app->maxSupportBot->sendSupportMessage($maxMessage, $maxButtons, $maxStickerUrl);
         } catch (\Throwable $e) {
             $this->reportFailure('max', $e);
         }

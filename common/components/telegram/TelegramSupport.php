@@ -26,7 +26,7 @@ class TelegramSupport
         TelegramCurlProxy::applyFromSettings($ch);
 
         if (!empty($params)) {
-            $attachments = ['photo', 'audio', 'document', 'video'];
+            $attachments = ['photo', 'audio', 'document', 'video', 'sticker'];
             $hasFile = false;
 
             foreach ($attachments as $attachment) {
@@ -203,5 +203,23 @@ class TelegramSupport
         }
 
         return $this->sendHttpRequest("sendAudio", $params);
+    }
+
+    /**
+     * Sends a custom support sticker with an optional reply button.
+     */
+    public function sendSticker(string $stickerUrl, array $inlineKeyboard = []): array
+    {
+        $params = [
+            'chat_id' => Yii::$app->settings->get('tgbotSupportAlert_chatId'),
+            'sticker' => $stickerUrl,
+        ];
+        if ($inlineKeyboard !== []) {
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => [$inlineKeyboard],
+            ]);
+        }
+
+        return $this->sendHttpRequest('sendSticker', $params);
     }
 }

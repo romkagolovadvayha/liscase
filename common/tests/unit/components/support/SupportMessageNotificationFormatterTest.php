@@ -45,4 +45,21 @@ class SupportMessageNotificationFormatterTest extends Unit
     {
         $this->assertSame('[вложения]', SupportMessageNotificationFormatter::format('&nbsp;', true));
     }
+
+    public function testExtractsImageStickerUrl(): void
+    {
+        $message = '<img src="https://cdn.example/support/stickers/17.webp" class="support_sticker" alt="Ща починю">';
+
+        $this->assertSame(
+            'https://cdn.example/support/stickers/17.webp',
+            SupportMessageNotificationFormatter::stickerUrl($message)
+        );
+    }
+
+    public function testExtractsNestedVideoStickerUrl(): void
+    {
+        $message = '<video class="support_sticker"><source src="/stickers/14.webm"></video>';
+
+        $this->assertSame('/stickers/14.webm', SupportMessageNotificationFormatter::stickerUrl($message));
+    }
 }
