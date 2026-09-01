@@ -17,6 +17,10 @@ class TelegramPayments
      */
     public function sendHttpRequest($method, $params = null)
     {
+        if (!TelegramNotificationSettings::isEnabled('tgbotPayments')) {
+            return [];
+        }
+
         [$url, $params] = $this->_getUrl($method, $params);
 
         $ch = curl_init($url);

@@ -17,6 +17,10 @@ class TelegramReports
      */
     public function sendHttpRequest($method, $params = null)
     {
+        if (!TelegramNotificationSettings::isEnabled('tgbotReport')) {
+            return [];
+        }
+
         [$url, $params] = $this->_getUrl($method, $params);
 
         $ch = curl_init($url);

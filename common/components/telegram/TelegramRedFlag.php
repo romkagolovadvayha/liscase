@@ -16,6 +16,10 @@ class TelegramRedFlag
      */
     public function sendHttpRequest($method, $params = null)
     {
+        if (!TelegramNotificationSettings::isEnabled('tgbotRedFlag')) {
+            return [];
+        }
+
         [$url, $params] = $this->_getUrl($method, $params);
 
         $ch = curl_init($url);

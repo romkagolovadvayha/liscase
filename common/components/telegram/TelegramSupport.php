@@ -16,6 +16,10 @@ class TelegramSupport
      */
     public function sendHttpRequest($method, $params = null)
     {
+        if (!TelegramNotificationSettings::isEnabled('tgbotSupportAlert')) {
+            return [];
+        }
+
         [$url, $params] = $this->_getUrl($method, $params);
 
         $ch = curl_init($url);
