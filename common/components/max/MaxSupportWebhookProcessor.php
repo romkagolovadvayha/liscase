@@ -90,8 +90,9 @@ final class MaxSupportWebhookProcessor
         $operatorMaxId = ArrayHelper::getValue($update, 'message.sender.user_id');
         $text = (string)ArrayHelper::getValue($update, 'message.body.text', '');
         $result = $this->replies->handleMessage($chatId, $operatorMaxId, $text);
-        if ($chatId !== null && !empty($result['message'])) {
-            $this->api->sendMessage($chatId, (string)$result['message']);
+        $responseChatId = $result['chatId'] ?? $chatId;
+        if ($responseChatId !== null && $responseChatId !== '' && !empty($result['message'])) {
+            $this->api->sendMessage($responseChatId, (string)$result['message']);
         }
     }
 
@@ -100,10 +101,9 @@ final class MaxSupportWebhookProcessor
      */
     private function messageChatId(array $update)
     {
-        return ArrayHelper::getValue(
+        return MaxSupportWebhookContext::chatId(
             $update,
-            'message.recipient.chat_id',
-            ArrayHelper::getValue($update, 'chat_id')
+            (new MaxSupportSettings())->chatId()
         );
     }
 }

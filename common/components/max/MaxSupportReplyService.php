@@ -91,7 +91,7 @@ final class MaxSupportReplyService
      */
     public function handleMessage($supportChatId, $operatorMaxId, string $replyText): array
     {
-        if (!$this->isSupportChat($supportChatId) || $operatorMaxId === null || $operatorMaxId === '') {
+        if ($operatorMaxId === null || $operatorMaxId === '') {
             return [];
         }
 
@@ -100,27 +100,35 @@ final class MaxSupportReplyService
         if (!is_array($pending) || empty($pending['ticketNumber'])) {
             return [];
         }
-        if ((string)($pending['supportChatId'] ?? '') !== (string)$supportChatId) {
+
+        $pendingChatId = (string)($pending['supportChatId'] ?? '');
+        if (!$this->isSupportChat($pendingChatId)) {
             Yii::$app->cache->delete($cacheKey);
 
-            return $this->message('⛔ Чат ответа не совпадает. Нажмите «Ответить» ещё раз.');
+            return $this->message('⛔ Чат поддержки изменился. Нажмите «Ответить» ещё раз.');
+        }
+        if ($supportChatId !== null && $supportChatId !== '' && (string)$supportChatId !== $pendingChatId) {
+            return [];
         }
 
         $replyText = trim($replyText);
         if ($replyText === '/cancel') {
             Yii::$app->cache->delete($cacheKey);
 
-            return $this->message('Отправка ответа отменена.');
+            return $this->message('Отправка ответа отменена.', $pendingChatId);
         }
         if ($replyText === '') {
-            return $this->message('⛔ Отправьте текстовый ответ или используйте /cancel.');
+            return $this->message('⛔ Отправьте текстовый ответ или используйте /cancel.', $pendingChatId);
         }
 
         $operator = $this->findStaffByMaxId($operatorMaxId);
         if ($operator === null) {
             Yii::$app->cache->delete($cacheKey);
 
-            return $this->message('⛔ Аккаунт сотрудника не найден или право ответа было отозвано.');
+            return $this->message(
+                '⛔ Аккаунт сотрудника не найден или право ответа было отозвано.',
+                $pendingChatId
+            );
         }
 
         $ticketNumber = (int)$pending['ticketNumber'];
@@ -128,7 +136,7 @@ final class MaxSupportReplyService
         if ($ticket === null || (int)$ticket->status === Support::STATUS_CLOSED) {
             Yii::$app->cache->delete($cacheKey);
 
-            return $this->message('⛔ Тикет не найден или уже закрыт. Ответ не отправлен.');
+            return $this->message('⛔ Тикет не найден или уже закрыт. Ответ не отправлен.', $pendingChatId);
         }
 
         try {
@@ -136,14 +144,15 @@ final class MaxSupportReplyService
         } catch (\Throwable $e) {
             Yii::error('MAX support reply save failed: ' . $e->getMessage(), __METHOD__);
 
-            return $this->message('⛔ Не удалось сохранить ответ. Попробуйте ещё раз.');
+            return $this->message('⛔ Не удалось сохранить ответ. Попробуйте ещё раз.', $pendingChatId);
         }
 
         Yii::$app->cache->delete($cacheKey);
         $this->staffReplies->broadcastReply($ticket, $supportMessage, $operator);
 
         return $this->message(
-            "✅ Ответ сотрудника {$operator->username} сохранён в тикете #{$ticketNumber}."
+            "✅ Ответ сотрудника {$operator->username} сохранён в тикете #{$ticketNumber}.",
+            $pendingChatId
         );
     }
 
@@ -183,8 +192,13 @@ final class MaxSupportReplyService
         return self::PENDING_CACHE_PREFIX . preg_replace('/[^0-9]/', '', (string)$operatorMaxId);
     }
 
-    private function message(string $text): array
+    private function message(string $text, ?string $chatId = null): array
     {
-        return ['message' => $text];
+        $result = ['message' => $text];
+        if ($chatId !== null && $chatId !== '') {
+            $result['chatId'] = $chatId;
+        }
+
+        return $result;
     }
 }
