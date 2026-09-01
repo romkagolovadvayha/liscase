@@ -33,6 +33,7 @@ class SettingsController extends BackendController
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'register-max-webhook' => ['POST'],
                 ],
             ],
         ];
@@ -240,6 +241,32 @@ class SettingsController extends BackendController
             'category' => $category,
             'setting_items_class' => $itemsFlexClass,
         ]);
+    }
+
+    /**
+     * Принудительно зарегистрировать или обновить webhook MAX из сохранённых настроек.
+     */
+    public function actionRegisterMaxWebhook()
+    {
+        try {
+            $webhook = Yii::$app->maxSupportBot->ensureSupportWebhook();
+            $status = (string)($webhook['status'] ?? '');
+            if ($status === 'disabled') {
+                Yii::$app->session->setFlash(
+                    'warning',
+                    'Интеграция MAX выключена. Включите её и сохраните настройки.'
+                );
+            } elseif ($status === 'created') {
+                Yii::$app->session->setFlash('success', 'Webhook MAX зарегистрирован.');
+            } else {
+                Yii::$app->session->setFlash('success', 'Webhook MAX обновлён.');
+            }
+        } catch (\Throwable $e) {
+            Yii::warning('Manual MAX webhook registration failed: ' . $e->getMessage(), __METHOD__);
+            Yii::$app->session->setFlash('danger', 'Не удалось зарегистрировать webhook MAX: ' . $e->getMessage());
+        }
+
+        return $this->redirect(['index', 'category' => 'maxSupport']);
     }
 
     private function _loadImage($tmpName, $category, $name, $code, $oldFile) {
