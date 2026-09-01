@@ -53,7 +53,9 @@ final class MaxSupportReplyService
             $safeMaxId = preg_replace('/[^0-9]/', '', (string)$operatorMaxId);
 
             return $this->message(
-                '⛔ Ваш MAX ID не привязан к аккаунту сотрудника или у аккаунта нет права отвечать.'
+                '⛔ Не найден доступный аккаунт для ответа. Проверьте привязку сотрудника '
+                . 'или пользователя по умолчанию со Steam ID '
+                . $this->settings->defaultOperatorSteamId() . '.'
                 . ($safeMaxId !== '' ? "\nВаш MAX ID: {$safeMaxId}" : '')
             );
         }
@@ -156,7 +158,21 @@ final class MaxSupportReplyService
 
         $siteUserId = $this->settings->operatorUserId($maxUserId);
 
-        return $siteUserId === null ? null : $this->staffReplies->findAuthorizedStaffByUserId($siteUserId);
+        if ($siteUserId !== null) {
+            return $this->staffReplies->findAuthorizedStaffByUserId($siteUserId);
+        }
+
+        // Если персональной привязки MAX ID нет, отвечаем от системного пользователя.
+        // Для него роль персонала не обязательна: доступ уже ограничен секретом webhook
+        // и конкретным MAX-чатом поддержки.
+        $fallback = User::find()
+            ->andWhere(['steam_id' => $this->settings->defaultOperatorSteamId()])
+            ->one();
+        if ($fallback === null || $fallback->isSupportWritingBlocked()) {
+            return null;
+        }
+
+        return $fallback;
     }
 
     /**

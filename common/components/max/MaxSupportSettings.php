@@ -29,6 +29,13 @@ final class MaxSupportSettings
         return trim((string)Yii::$app->settings->get('maxSupport_webhookSecret'));
     }
 
+    public function defaultOperatorSteamId(): string
+    {
+        $steamId = trim((string)Yii::$app->settings->get('maxSupport_defaultOperatorSteamId'));
+
+        return $steamId !== '' ? $steamId : '777';
+    }
+
     public function operatorUserId($maxUserId): ?int
     {
         $map = self::parseOperatorMap((string)Yii::$app->settings->get('maxSupport_operatorMap'));
