@@ -5,8 +5,8 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var common\models\invoice\PaymentBonuses $model */
 
-$this->title = 'Create Payment Bonuses';
-$this->params['breadcrumbs'][] = ['label' => 'Payment Bonuses', 'url' => ['index']];
+$this->title = 'Добавить бонус при пополнении';
+$this->params['breadcrumbs'][] = ['label' => 'Бонусы при пополнении', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="payment-bonuses-create">

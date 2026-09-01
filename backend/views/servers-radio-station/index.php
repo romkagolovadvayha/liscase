@@ -4,7 +4,7 @@ use common\models\servers\ServersRadioStation;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 
 /** @var backend\models\ServersRadioStationSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */

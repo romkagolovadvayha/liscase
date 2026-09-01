@@ -2,7 +2,7 @@
 
 use common\models\radio\RadioTrack;
 use yii\helpers\Html;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var backend\models\radio\RadioTrackSearch $searchModel */

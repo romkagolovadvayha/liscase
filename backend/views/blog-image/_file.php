@@ -15,7 +15,7 @@ $mimeType = \common\models\blog\BlogImage::getMimetypeFromExtension($ext);
             <a href="<?=$url?>"
                class="blog_item_body_text_images_item_preview"
                title="<?=$name?>">
-                <img src="<?=$url?>" width="64px"/>
+                <img src="<?= \yii\helpers\Html::encode($url) ?>" width="64" height="64" alt="<?= \yii\helpers\Html::encode($name) ?>" />
             </a>
         </div>
     <?php elseif (strpos($mimeType,'video') !== false): ?>

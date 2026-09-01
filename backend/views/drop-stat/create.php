@@ -3,13 +3,12 @@
 use yii\helpers\Html;
 
 /** @var yii\web\View $this */
-/** @var common\models\blog\BlogImage $model */
+/** @var common\models\box\DropStat $model */
 
-$this->title = 'Create Blog Image';
-$this->params['breadcrumbs'][] = ['label' => 'Blog Images', 'url' => ['index']];
+$this->title = 'Добавить характеристику предмета';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="blog-image-create" style="padding: 20px">
+<div class="drop-stat-create">
     <?= $this->render('_form', [
         'model' => $model,
     ]) ?>

@@ -6,7 +6,7 @@ $this->title = 'Денежная гонка';
 ?>
 <div class="p-4 lg:p-6">
   <div class="overflow-x-auto rounded border border-[hsl(0_0%_15.3%_/_1)]">
-    <table class="table-auto w-full text-sm">
+    <table class="table-auto w-full text-sm" aria-label="Денежные гонки">
       <thead class="bg-[hsl(0_0%_20.4%_/_1)] text-gray-400"><tr><th class="p-3 text-left">Название</th><th>Сервер</th><th>Период</th><th>Фаза</th><th></th></tr></thead>
       <tbody class="text-white">
       <?php foreach ($models as $model): ?>

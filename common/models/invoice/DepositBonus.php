@@ -39,8 +39,8 @@ class DepositBonus extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'bonus' => 'Bonus',
-            'min_amount' => 'Min Amount',
+            'bonus' => 'Бонус, %',
+            'min_amount' => 'Минимальная сумма пополнения',
         ];
     }
 }

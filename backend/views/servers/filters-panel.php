@@ -2,15 +2,14 @@
 
 use yii\helpers\Html;
 use yii\widgets\ActiveForm;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use common\models\servers\Servers;
-use yii\helpers\ArrayHelper;
 
 /** @var backend\models\ServersSearch $searchModel */
 ?>
 
 <!-- Filters Panel for Servers -->
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<div class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -28,12 +27,13 @@ use yii\helpers\ArrayHelper;
             <div class="space-y-3">
                 <!-- ID -->
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">ID</label>
+                    <label for="servers-filter-id" class="text-xs text-gray-400 mb-1 block">ID</label>
                     <?= $form->field($searchModel, 'id', [
                         'options' => ['class' => 'mb-0'],
                         'template' => '{input}',
                     ])->textInput([
                         'class' => 'ds-input w-full text-sm',
+                        'id' => 'servers-filter-id',
                         'type' => 'number',
                         'placeholder' => 'ID сервера',
                     ]) ?>
@@ -41,15 +41,16 @@ use yii\helpers\ArrayHelper;
 
                 <!-- Статус -->
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Статус</label>
+                    <label for="servers-filter-status" class="text-xs text-gray-400 mb-1 block">Статус</label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'status', [
                             'options' => ['class' => 'mb-0'],
                             'template' => '{input}',
                         ])->dropDownList(
-                            ArrayHelper::merge(['' => 'Все'], Servers::getStatusList()),
+                            Servers::getStatusList(),
                             [
                                 'class' => 'ds-select',
+                                'id' => 'servers-filter-status',
                                 'prompt' => 'Все',
                             ]
                         ) ?>
@@ -59,36 +60,39 @@ use yii\helpers\ArrayHelper;
 
                 <!-- Wipe -->
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Wipe</label>
+                    <label for="servers-filter-wipe" class="text-xs text-gray-400 mb-1 block">Wipe</label>
                     <?= $form->field($searchModel, 'wipe', [
                         'options' => ['class' => 'mb-0'],
                         'template' => '{input}',
                     ])->textInput([
                         'class' => 'ds-input w-full text-sm',
+                        'id' => 'servers-filter-wipe',
                         'type' => 'date',
                     ]) ?>
                 </div>
 
                 <!-- Next Wipe -->
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Следующий Wipe</label>
+                    <label for="servers-filter-next-wipe" class="text-xs text-gray-400 mb-1 block">Следующий Wipe</label>
                     <?= $form->field($searchModel, 'next_wipe', [
                         'options' => ['class' => 'mb-0'],
                         'template' => '{input}',
                     ])->textInput([
                         'class' => 'ds-input w-full text-sm',
+                        'id' => 'servers-filter-next-wipe',
                         'type' => 'date',
                     ]) ?>
                 </div>
 
                 <!-- Global Wipe -->
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Global Wipe</label>
+                    <label for="servers-filter-global-wipe" class="text-xs text-gray-400 mb-1 block">Global Wipe</label>
                     <?= $form->field($searchModel, 'global_wipe', [
                         'options' => ['class' => 'mb-0'],
                         'template' => '{input}',
                     ])->textInput([
                         'class' => 'ds-input w-full text-sm',
+                        'id' => 'servers-filter-global-wipe',
                         'type' => 'date',
                     ]) ?>
                 </div>
@@ -111,5 +115,4 @@ use yii\helpers\ArrayHelper;
     </div>
 
     <?php ActiveForm::end(); ?>
-</aside>
-
+</div>

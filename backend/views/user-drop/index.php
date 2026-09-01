@@ -2,7 +2,7 @@
 
 use common\models\box\Drop;
 use common\models\user\UserDrop;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\widgets\ActiveForm;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
@@ -38,14 +38,15 @@ $statusList = UserDrop::getStatusList();
         'options' => ['class' => 'user-drop-bulk-form'],
     ]); ?>
 
-    <div class="flex flex-wrap items-end gap-3 mb-4 p-3 rounded-lg bg-[hsl(0_0%_16%_/_1)] border border-[hsl(0_0%_15.3%_/_1)]">
-        <div class="flex flex-col gap-1 min-w-[200px]">
-            <label class="text-xs text-gray-400"><?= Yii::t('common', 'Массовая смена статуса') ?></label>
+    <div class="user-drop-bulk-toolbar flex flex-wrap items-end gap-3 mb-4 p-3 rounded-lg bg-[hsl(0_0%_16%_/_1)] border border-[hsl(0_0%_15.3%_/_1)]">
+        <div class="user-drop-bulk-field flex flex-col gap-1 min-w-[200px]">
+            <label class="text-xs text-gray-400" for="user-drop-bulk-status"><?= Yii::t('common', 'Массовая смена статуса') ?></label>
             <?= Html::dropDownList(
                 'bulk_status',
                 '',
                 $statusList,
                 [
+                    'id' => 'user-drop-bulk-status',
                     'class' => 'ds-select text-sm max-w-xs',
                     'prompt' => Yii::t('common', 'Выберите статус…'),
                 ]
@@ -71,16 +72,24 @@ $statusList = UserDrop::getStatusList();
             [
                 'class' => CheckboxColumn::class,
                 'checkboxOptions' => static function (UserDrop $model) {
-                    return ['value' => (string) $model->id, 'class' => 'user-drop-row-check'];
+                    return [
+                        'value' => (string) $model->id,
+                        'class' => 'user-drop-row-check',
+                        'aria-label' => 'Выбрать предмет #' . $model->id,
+                    ];
                 },
+                'header' => Html::checkbox('selection_all', false, [
+                    'class' => 'select-on-check-all',
+                    'aria-label' => Yii::t('common', 'Выбрать все предметы'),
+                ]),
                 'headerOptions' => ['class' => $headerCellClass, 'style' => 'width:44px'],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'Выбрать')],
             ],
             [
                 'label' => '',
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass, 'style' => 'width:64px'],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'Изображение')],
                 'value' => static function (UserDrop $model) {
                     $drop = $model->dropOne;
                     $url = $drop ? $drop->image() : null;
@@ -100,7 +109,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'Предмет'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'Предмет')],
                 'value' => static function (UserDrop $model) {
                     $drop = $model->dropOne;
                     if (!$drop) {
@@ -113,7 +122,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'Пользователь'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'Пользователь')],
                 'value' => static function (UserDrop $model) {
                     $u = $model->user;
                     if (!$u) {
@@ -129,7 +138,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'Steam ID'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass . ' font-mono text-xs'],
+                'contentOptions' => ['class' => $bodyCellClass . ' font-mono text-xs', 'data-label' => Yii::t('common', 'Steam ID')],
                 'value' => static function (UserDrop $model) {
                     $sid = $model->user ? (string) $model->user->steam_id : '';
                     return $sid !== '' ? Html::encode($sid) : '<span class="text-gray-500">—</span>';
@@ -139,7 +148,7 @@ $statusList = UserDrop::getStatusList();
                 'attribute' => 'created_at',
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap'],
+                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap', 'data-label' => Yii::t('common', 'Создан')],
                 'value' => static function (UserDrop $model) {
                     return Html::encode(Yii::$app->formatter->asDatetime($model->created_at, 'php:d.m.Y H:i'));
                 },
@@ -149,7 +158,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'Дата вывода'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap'],
+                'contentOptions' => ['class' => $bodyCellClass . ' whitespace-nowrap', 'data-label' => Yii::t('common', 'Дата вывода')],
                 'value' => static function (UserDrop $model) {
                     $raw = $model->sended_at;
                     if ($raw === null || $raw === '' || $raw === '0000-00-00 00:00:00') {
@@ -167,7 +176,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'В магазине (предмет)'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'В магазине')],
                 'value' => static function (UserDrop $model) {
                     $drop = $model->dropOne;
                     if (!$drop) {
@@ -178,14 +187,14 @@ $statusList = UserDrop::getStatusList();
                     $marketLabel = Drop::getMarketStatusList()[$drop->market_status] ?? (string) $drop->market_status;
                     $catalogLabel = Drop::getStatusList()[$drop->status] ?? (string) $drop->status;
                     $badgeClass = ($marketOk && $catalogOk)
-                        ? 'bg-green-600/90 text-white'
-                        : 'bg-[hsl(0_0%_30%_/_1)] text-gray-200';
+                        ? 'user-drop-market-badge user-drop-market-badge--active'
+                        : 'user-drop-market-badge user-drop-market-badge--inactive';
                     $short = ($marketOk && $catalogOk)
                         ? Yii::t('common', 'Продаётся')
                         : Yii::t('common', 'Не продаётся');
                     $detail = Html::encode($marketLabel) . ' · ' . Html::encode($catalogLabel);
                     return '<span class="inline-flex flex-col gap-0.5">'
-                        . '<span class="inline-flex px-2 py-0.5 rounded text-xs font-medium ' . $badgeClass . '">' . Html::encode($short) . '</span>'
+                        . '<span class="' . $badgeClass . '">' . Html::encode($short) . '</span>'
                         . '<span class="text-xs text-gray-400">' . $detail . '</span>'
                         . '</span>';
                 },
@@ -194,7 +203,7 @@ $statusList = UserDrop::getStatusList();
                 'label' => Yii::t('common', 'Статус (инвентарь)'),
                 'format' => 'raw',
                 'headerOptions' => ['class' => $headerCellClass],
-                'contentOptions' => ['class' => $bodyCellClass],
+                'contentOptions' => ['class' => $bodyCellClass, 'data-label' => Yii::t('common', 'Статус')],
                 'value' => static function (UserDrop $model) use ($statusList) {
                     $opts = [];
                     foreach ($statusList as $val => $label) {
@@ -206,6 +215,7 @@ $statusList = UserDrop::getStatusList();
                         $opts,
                         [
                             'class' => 'ds-select text-sm min-w-[160px]',
+                            'aria-label' => Yii::t('common', 'Статус предмета #{id}', ['id' => $model->id]),
                             'data-id' => (string) $model->id,
                             'onchange' => 'var f=document.getElementById("user-drop-single-status-form");document.getElementById("user-drop-single-id").value='
                                 . (int) $model->id . ';document.getElementById("user-drop-single-status").value=this.value;f.submit();',

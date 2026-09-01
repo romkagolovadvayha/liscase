@@ -7,7 +7,7 @@ use yii\widgets\ActiveForm;
 $searchModel = $searchModel ?? null;
 if (!$searchModel) return;
 ?>
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<div class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -23,4 +23,4 @@ if (!$searchModel) return;
         <a href="<?= Url::to(['index']) ?>" class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-center block text-center"><i class="fas fa-redo"></i> Сбросить</a>
     </div>
     <?php ActiveForm::end(); ?>
-</aside>
+</div>

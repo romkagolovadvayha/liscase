@@ -137,7 +137,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
             </div>
 
             <div class="overflow-x-auto rounded-lg border border-[hsl(0_0%_15.3%_/_1)]">
-                <table class="w-full text-sm table-auto deposits-report-table">
+                <table class="w-full text-sm table-auto deposits-report-table" aria-label="<?= Html::encode(Yii::t('common', 'Пополнения за {month}', ['month' => $_data['month'] . ' ' . date('Y', strtotime($date))])) ?>">
                     <thead>
                         <tr>
                             <th class="<?= $headerCellClass ?>">#</th>

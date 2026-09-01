@@ -19,16 +19,37 @@ class ModalWidget extends Widget
         if ($this->isFooter) {
             $footer = Html::button(Yii::t('common', 'Закрыть'), [
                 'type'         => 'button',
-                'class'        => 'btn btn-default waves-effect text-left',
-                'data-dismiss' => 'modal',
+                'class'        => 'ds-btn ds-btn--secondary',
+                'data'         => ['bs-dismiss' => 'modal'],
             ]);
         }
+        $titleId = $this->modalId . '-title';
         Modal::begin([
             'id'            => $this->modalId,
-            'clientOptions' => ['backdrop' => 'static', 'keyboard' => false],
+            'title'         => Yii::t('common', 'Диалог'),
+            'titleOptions'  => [
+                'id' => $titleId,
+                'class' => 'modal-title modal-title-js',
+            ],
+            'closeButton'   => [
+                'aria' => ['label' => Yii::t('common', 'Закрыть окно')],
+            ],
+            'clientOptions' => false,
             'footer'        => $footer,
+            'bodyOptions'   => [
+                'class' => 'modal-body modal-body-js',
+            ],
             'options'       => [
                 'class' => 'fade bs-modal-block',
+                'role' => 'dialog',
+                'aria' => [
+                    'modal' => 'true',
+                    'labelledby' => $titleId,
+                ],
+                'data' => [
+                    'bs-backdrop' => 'static',
+                    'bs-keyboard' => 'false',
+                ],
             ],
         ]);
         Modal::end();

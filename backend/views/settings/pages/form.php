@@ -1,61 +1,59 @@
 <?php
 
-use common\models\site\SiteSetting;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\ActiveForm;
-use yii\widgets\Pjax;
 
 /** @var string $category */
-/** @var string $setting_items_class */
-
-$settings = SiteSetting::find()
-    ->andWhere(['category' => $category])
-    ->indexBy('id')
-    ->all();
-
-$itemsClass = 'setting_items';
-if (!empty($setting_items_class)) {
-    $itemsClass .= ' ' . $setting_items_class;
-} else {
-    $setting_items_class = null;
-}
-
-$sectionClass = 'bg-[hsl(0_0%_11.8%_/_1)] overflow-hidden';
-$sectionHeaderClass = 'px-4 py-3 text-xs font-semibold text-zinc-400 uppercase tracking-wider border-b border-[hsl(0_0%_15.3%_/_1)]';
+/** @var \common\models\site\SiteSetting[] $settings */
 ?>
 
-<div class="settings-form-wrap w-full">
-    <?php Pjax::begin([
-        'id' => 'settings-form-pjax-' . $category,
-        'enablePushState' => false,
-    ]); ?>
-
+<div class="settings-form-wrap">
     <?php $form = ActiveForm::begin([
         'enableClientValidation' => false,
         'enableAjaxValidation' => false,
-        'id' => 'settings-form-' . $category,
-        'options' => ['data-pjax' => true, 'enctype' => 'multipart/form-data', 'class' => 'settings-form'],
+        'id' => 'settings-form-' . preg_replace('/[^A-Za-z0-9_-]/', '-', $category),
+        'options' => [
+            'enctype' => 'multipart/form-data',
+            'class' => 'settings-form',
+            'data-settings-form' => true,
+        ],
         'method' => 'post',
-        'action' => Url::to(['/settings/form', 'category' => $category, 'itemsFlexClass' => $setting_items_class]),
+        'action' => Url::to(['/settings/form', 'category' => $category]),
     ]); ?>
+
     <?= \frontend\widgets\Alert::widget() ?>
 
-    <div class="<?= $sectionClass ?>">
-        <h3 class="<?= $sectionHeaderClass ?>"><?= Yii::t('common', 'Параметры') ?></h3>
-        <div class="p-4">
-            <div class="<?= $itemsClass ?> grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <?php foreach ($settings as $setting): ?>
-                    <div class="setting_items_item">
-                        <?= $this->render('../fields/' . $setting->type, ['item' => $setting]) ?>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-            <div class="mt-6 pt-4 border-t border-[hsl(0_0%_15.3%_/_1)]">
-                <?= Html::submitButton(Yii::t('common', 'Сохранить'), ['class' => 'ds-btn ds-btn--primary']) ?>
-            </div>
+    <?php if ($settings === []): ?>
+        <div class="admin-empty-state">
+            <span><i class="fa-solid fa-sliders" aria-hidden="true"></i></span>
+            <h3>В этом разделе пока нет параметров</h3>
+            <p>Добавьте первый параметр — после сохранения он сразу появится здесь.</p>
+            <?= Html::a('Добавить параметр', ['/settings/create', 'category' => $category], ['class' => 'ds-btn ds-btn--primary']) ?>
         </div>
-    </div>
+    <?php else: ?>
+        <div class="settings-fields" data-settings-fields>
+            <?php foreach ($settings as $setting): ?>
+                <?= $this->render('_field', ['item' => $setting]) ?>
+            <?php endforeach; ?>
+        </div>
+
+        <p class="settings-fields__empty" data-settings-fields-empty hidden>По запросу ничего не найдено.</p>
+
+        <footer class="settings-savebar">
+            <div class="settings-savebar__status" aria-live="polite">
+                <span class="settings-savebar__dot" aria-hidden="true"></span>
+                <span data-settings-save-status>Изменений нет</span>
+            </div>
+            <div class="settings-savebar__actions">
+                <span><?= count($settings) ?> <?= count($settings) === 1 ? 'параметр' : 'параметров' ?></span>
+                <?= Html::submitButton(
+                    '<i class="fa-solid fa-check" aria-hidden="true"></i><span>Сохранить изменения</span>',
+                    ['class' => 'ds-btn ds-btn--primary', 'data-settings-submit' => true]
+                ) ?>
+            </div>
+        </footer>
+    <?php endif; ?>
+
     <?php ActiveForm::end(); ?>
-    <?php Pjax::end(); ?>
 </div>

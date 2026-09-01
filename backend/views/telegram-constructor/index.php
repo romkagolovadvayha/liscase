@@ -1,7 +1,7 @@
 <?php
 
 use backend\models\TelegramConstructor;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\bootstrap5\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;

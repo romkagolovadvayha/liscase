@@ -52,7 +52,7 @@ class BlogSearch extends Blog
      *
      * @return ActiveDataProvider
      */
-    public function search($params, callable $filter = null)
+    public function search($params, ?callable $filter = null)
     {
         // Категорию и родителя подгружаем отдельным IN (...) — без join+cartesian и без N+1 при groupBy.
         $query = BlogSearch::find()->alias('b')->with([

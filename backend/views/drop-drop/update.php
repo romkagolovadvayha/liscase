@@ -3,14 +3,11 @@
 use yii\helpers\Html;
 
 /** @var yii\web\View $this */
-/** @var common\models\blog\BlogImage $model */
+/** @var common\models\box\DropDrop $model */
 
-$this->title = 'Update Blog Image: ' . $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Blog Images', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->id, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
+$this->title = 'Изменить предмет набора';
 ?>
-<div class="blog-image-update" style="padding: 20px">
+<div class="drop-drop-update">
     <?= $this->renderAjax('_form', [
         'model' => $model,
     ]) ?>

@@ -14,7 +14,7 @@ class SetsSearch extends Sets
      * @param callable|null $filter
      * @return ActiveDataProvider
      */
-    public function search(array $params, callable $filter = null)
+    public function search(array $params, ?callable $filter = null)
     {
         $this->load($params);
 

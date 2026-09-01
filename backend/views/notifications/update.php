@@ -58,7 +58,7 @@ $this->params['breadcrumbs'][] = 'Редактировать';
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Получатель</label>
-                                <div class="form-control" style="background-color: #f5f5f5;">
+                                <div class="form-control notification-readonly-field">
                                     <?php if ($model->user_id === null): ?>
                                         <span class="label label-primary">Всем пользователям</span>
                                     <?php else: ?>

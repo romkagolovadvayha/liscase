@@ -2,31 +2,31 @@
 
 use yii\helpers\Html;
 use yii\widgets\DetailView;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var common\models\building\Building $model */
 
 $this->title = $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Buildings', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Постройки', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
 <div class="building-view">
     <p>
         <?php if ($model->status !== \common\models\building\Building::STATUS_ACTIVE): ?>
-            <?= Html::a('Принять', ['success', 'id' => $model->id], ['class' => 'btn btn-success']) ?>
+            <?= Html::a('Принять', ['success', 'id' => $model->id], ['class' => 'ds-btn ds-btn--success']) ?>
         <?php endif; ?>
         <?php if ($model->status !== \common\models\building\Building::STATUS_REJECT): ?>
-            <?= Html::a('Отклонить', ['reject', 'id' => $model->id], ['class' => 'btn btn-danger']) ?>
+            <?= Html::a('Отклонить', ['reject', 'id' => $model->id], ['class' => 'ds-btn ds-btn--danger']) ?>
         <?php endif; ?>
     </p>
     <p>
-        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
         <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
+                'confirm' => 'Удалить эту постройку?',
                 'method' => 'post',
             ],
         ]) ?>
@@ -78,7 +78,7 @@ $this->params['breadcrumbs'][] = $this->title;
     ]) ?>
 
     <h2>Жильцы (<?=count($model->buildingResident)?>)</h2>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+    <div class="building-residents">
     <?php foreach ($model->buildingResident as $resident): ?>
             <a  title="<?=Yii::t('common', 'Открыть профиль игрока')?> <?=$resident->user->username?>"
                 target="_blank"

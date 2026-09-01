@@ -3,14 +3,11 @@
 use yii\helpers\Html;
 
 /** @var yii\web\View $this */
-/** @var common\models\blog\BlogImage $model */
+/** @var common\models\box\DropStat $model */
 
-$this->title = 'Update Blog Image: ' . $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Blog Images', 'url' => ['index']];
-$this->params['breadcrumbs'][] = ['label' => $model->id, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
+$this->title = 'Изменить характеристику предмета';
 ?>
-<div class="blog-image-update" style="padding: 20px">
+<div class="drop-stat-update">
     <?= $this->render('_form', [
         'model' => $model,
     ]) ?>

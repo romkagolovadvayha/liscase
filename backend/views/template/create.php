@@ -5,7 +5,7 @@
 use yii\widgets\ActiveForm;
 use yii\helpers\Html;
 
-$this->title = 'Create New Template';
+$this->title = 'Создать шаблон';
 ?>
 
 <h1><?= Html::encode($this->title) ?></h1>
@@ -15,8 +15,8 @@ $this->title = 'Create New Template';
 <?= $form->field($template, 'name')->textInput() ?>
 
 <div class="form-group">
-    <?= Html::submitButton('Create', ['class' => 'btn btn-success']) ?>
-    <?= Html::a('Back', ['template/index'], ['class' => 'btn btn-default']) ?>
+    <?= Html::submitButton('Создать', ['class' => 'ds-btn ds-btn--primary']) ?>
+    <?= Html::a('Назад', ['template/index'], ['class' => 'ds-btn ds-btn--secondary']) ?>
 </div>
 
 <?php ActiveForm::end(); ?>

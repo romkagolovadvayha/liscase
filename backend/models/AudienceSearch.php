@@ -36,7 +36,7 @@ class AudienceSearch extends User
      *
      * @return ActiveDataProvider
      */
-    public function search($params, callable $filter = null, $userIds = [])
+    public function search($params, ?callable $filter = null, $userIds = [])
     {
         $this->load($params);
 

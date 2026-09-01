@@ -2,7 +2,7 @@
 
 use yii\helpers\ArrayHelper;
 use backend\models\TelegramConstructor;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\bootstrap5\Html;
 use common\models\vk\VkUser;
 

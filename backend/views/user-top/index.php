@@ -4,13 +4,13 @@ use common\models\user\UserTop;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var common\models\user\UserTopSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'User Tops';
+$this->title = 'Топ игроков';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="user-top-index">
@@ -18,7 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create User Top', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Добавить запись', ['create'], ['class' => 'ds-btn ds-btn--primary']) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>

@@ -1,6 +1,6 @@
 <?php
 
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;

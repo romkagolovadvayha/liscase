@@ -1,53 +1,51 @@
 <?php
 
+use yii\helpers\Html;
+use yii\helpers\Url;
+
 /** @var yii\web\View $this */
 
-$this->title = 'My Yii Application';
+$this->title = 'Обзор';
+$this->params['breadcrumbs'][] = $this->title;
+
+$quickLinks = [
+    ['label' => 'Игроки', 'description' => 'Профили, статусы и балансы', 'icon' => 'fa-users', 'route' => ['/user/index']],
+    ['label' => 'Поддержка', 'description' => 'Обращения и ответы игрокам', 'icon' => 'fa-headset', 'route' => ['/support/index']],
+    ['label' => 'Серверы', 'description' => 'Состояние, вайпы и параметры', 'icon' => 'fa-server', 'route' => ['/servers/index']],
+    ['label' => 'Каталог', 'description' => 'Категории, предметы и наборы', 'icon' => 'fa-box-open', 'route' => ['/category/index']],
+    ['label' => 'Отчёты', 'description' => 'Продажи, пополнения и сводки', 'icon' => 'fa-chart-line', 'route' => ['/reports/index']],
+    ['label' => 'Рассылки', 'description' => 'Telegram и шаблоны сообщений', 'icon' => 'fa-paper-plane', 'route' => ['/telegram-constructor/index']],
+    ['label' => 'Настройки', 'description' => 'Все параметры проекта по разделам', 'icon' => 'fa-sliders-h', 'route' => ['/settings/index']],
+    ['label' => 'Дизайн-система', 'description' => 'Компоненты и состояния интерфейса', 'icon' => 'fa-layer-group', 'route' => ['/design-system/index']],
+];
 ?>
-<div class="site-index">
 
-    <div class="jumbotron text-center bg-transparent">
-        <h1 class="display-4">Congratulations!</h1>
-
-        <p class="lead">You have successfully created your Yii-powered application.</p>
-
-        <p><a class="btn btn-lg btn-success" href="http://www.yiiframework.com">Get started with Yii</a></p>
-    </div>
-
-    <div class="body-content">
-
-        <div class="row">
-            <div class="col-lg-4">
-                <h2>Heading</h2>
-
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="http://www.yiiframework.com/doc/">Yii Documentation &raquo;</a></p>
-            </div>
-            <div class="col-lg-4">
-                <h2>Heading</h2>
-
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="http://www.yiiframework.com/forum/">Yii Forum &raquo;</a></p>
-            </div>
-            <div class="col-lg-4">
-                <h2>Heading</h2>
-
-                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et
-                    dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-                    ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                    fugiat nulla pariatur.</p>
-
-                <p><a class="btn btn-outline-secondary" href="http://www.yiiframework.com/extensions/">Yii Extensions &raquo;</a></p>
-            </div>
+<div class="admin-dashboard">
+    <header class="admin-dashboard__intro">
+        <div>
+            <span class="admin-dashboard__eyebrow">Панель управления</span>
+            <h1><?= Html::encode($this->title) ?></h1>
+            <p>Быстрый доступ к ежедневным задачам. Полное меню со всеми инструментами находится слева.</p>
         </div>
+        <?= Html::a(
+            '<i class="fas fa-external-link-alt" aria-hidden="true"></i><span>Открыть сайт</span>',
+            Yii::$app->params['baseUrl'],
+            ['class' => 'btn btn-outline-secondary', 'target' => '_blank', 'rel' => 'noopener']
+        ) ?>
+    </header>
 
-    </div>
+    <nav class="admin-dashboard__grid" aria-label="Быстрый доступ">
+        <?php foreach ($quickLinks as $link): ?>
+            <a class="admin-dashboard-card" href="<?= Html::encode(Url::to($link['route'])) ?>">
+                <span class="admin-dashboard-card__icon" aria-hidden="true">
+                    <i class="fas <?= Html::encode($link['icon']) ?>"></i>
+                </span>
+                <span class="admin-dashboard-card__content">
+                    <strong><?= Html::encode($link['label']) ?></strong>
+                    <span><?= Html::encode($link['description']) ?></span>
+                </span>
+                <i class="fas fa-chevron-right admin-dashboard-card__arrow" aria-hidden="true"></i>
+            </a>
+        <?php endforeach; ?>
+    </nav>
 </div>

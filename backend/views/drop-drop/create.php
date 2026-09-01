@@ -3,13 +3,12 @@
 use yii\helpers\Html;
 
 /** @var yii\web\View $this */
-/** @var common\models\blog\BlogImage $model */
+/** @var common\models\box\DropDrop $model */
 
-$this->title = 'Create Blog Image';
-$this->params['breadcrumbs'][] = ['label' => 'Blog Images', 'url' => ['index']];
+$this->title = 'Добавить предмет в набор';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
-<div class="blog-image-create" style="padding: 20px">
+<div class="drop-drop-create">
     <?= $this->render('_form', [
         'model' => $model,
     ]) ?>

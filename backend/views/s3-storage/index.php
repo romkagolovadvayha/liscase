@@ -65,7 +65,7 @@ $pathParts = $path === '' ? [] : explode('/', $path);
     </nav>
 
     <div class="rounded-lg border border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_18%_/_1)] overflow-hidden">
-        <table class="w-full text-sm text-left">
+        <table class="w-full text-sm text-left" aria-label="Файлы S3-хранилища">
             <thead class="text-gray-400 border-b border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20%_/_1)]">
                 <tr>
                     <th class="py-2 px-3">Имя</th>

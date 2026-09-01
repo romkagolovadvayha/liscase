@@ -71,7 +71,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         </div>
                     </div>
 
-                    <div class="row" id="user-selection" style="display: none;">
+                    <div class="row" id="user-selection" hidden>
                         <div class="col-md-12">
                             <div class="form-group">
                                 <?= $form->field($model, 'user_id')->dropDownList(
@@ -100,8 +100,8 @@ $this->params['breadcrumbs'][] = $this->title;
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="control-label">Предварительный просмотр</label>
-                                <div class="form-control" id="preview" style="height: auto; min-height: 100px;">
+                                <div class="control-label" id="notification-preview-label">Предварительный просмотр</div>
+                                <div class="form-control notification-preview" id="preview" aria-labelledby="notification-preview-label">
                                     <div class="alert alert-info">
                                         <strong>Информация</strong><br>
                                         Здесь будет показан предварительный просмотр уведомления
@@ -174,11 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Показ/скрытие выбора пользователя
     targetTypeSelect.addEventListener('change', function() {
-        if (this.value === 'user') {
-            userSelection.style.display = 'block';
-        } else {
-            userSelection.style.display = 'none';
-        }
+        userSelection.hidden = this.value !== 'user';
     });
 
     // Обновление предварительного просмотра

@@ -6,8 +6,8 @@ use yii\widgets\DetailView;
 /** @var yii\web\View $this */
 /** @var common\models\map\MapList $model */
 
-$this->title = 'Map List #' . $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Map List', 'url' => ['index']];
+$this->title = 'Карта №' . $model->id;
+$this->params['breadcrumbs'][] = ['label' => 'Карты', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
@@ -16,11 +16,11 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
+        <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
+                'confirm' => 'Удалить эту карту?',
                 'method' => 'post',
             ],
         ]) ?>
@@ -37,7 +37,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 'format' => 'raw',
                 'value' => function ($model) {
                     if ($model->image_preview) {
-                        return Html::img($model->image_preview, ['style' => 'max-width: 300px; max-height: 300px;']);
+                        return Html::img($model->image_preview, [
+                            'class' => 'admin-map-preview admin-map-preview--large',
+                            'alt' => 'Карта ' . Html::encode($model->hash ?? ''),
+                        ]);
                     }
                     return '-';
                 },
@@ -78,18 +81,18 @@ $this->params['breadcrumbs'][] = $this->title;
     ]) ?>
 
     <?php if ($model->monuments_json): ?>
-        <h3>Monuments</h3>
+        <h3>Монументы</h3>
         <pre><?= Html::encode($model->monuments_json) ?></pre>
     <?php endif; ?>
 
     <?php if ($model->biome_percentages_json): ?>
-        <h3>Biome Percentages</h3>
+        <h3>Распределение биомов</h3>
         <pre><?= Html::encode($model->biome_percentages_json) ?></pre>
     <?php endif; ?>
 
     <?php if ($model->data_json): ?>
-        <h3>Full Data</h3>
-        <pre style="max-height: 400px; overflow: auto;"><?= Html::encode($model->data_json) ?></pre>
+        <h3>Полные данные</h3>
+        <pre class="admin-code-preview"><?= Html::encode($model->data_json) ?></pre>
     <?php endif; ?>
 
 </div>

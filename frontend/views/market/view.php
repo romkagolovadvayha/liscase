@@ -113,7 +113,7 @@ JS
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="exampleModalLabel"><?=Yii::t('common', 'Внимание!')?></h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть окно"></button>
                 </div>
                 <div class="modal-body">
                     <p><?=Yii::t('common', 'С вашего баланса будет списано')?> <?=$drop->getPriceMarket()?> <span class="currency"><?=$drop->currency?></span>.</p>

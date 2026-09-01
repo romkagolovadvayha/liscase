@@ -1,7 +1,7 @@
 <?php
 
 use common\models\invoice\Deposit;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;

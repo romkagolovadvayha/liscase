@@ -2,7 +2,7 @@
 
 use yii\helpers\Html;
 use yii\helpers\Url;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\grid\ActionColumn;
 use backend\models\TelegramConstructorMessage;
 
@@ -74,10 +74,16 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                     'headerOptions' => ['class' => $headerCellClass],
                     'contentOptions' => ['class' => $bodyCellClass],
                     'value' => function ($model) {
+                        $title = trim((string) $model->title);
+                        $label = $title !== '' ? $title : 'Сообщение #' . $model->id;
                         return Html::a(
-                            Html::encode($model->title),
+                            Html::encode($label),
                             ['view', 'id' => $model->id],
-                            ['class' => 'text-white hover:underline', 'style' => 'text-decoration: none;']
+                            [
+                                'class' => 'text-white hover:underline',
+                                'style' => 'text-decoration: none;',
+                                'aria-label' => 'Открыть сообщение «' . $label . '»',
+                            ]
                         );
                     },
                 ],

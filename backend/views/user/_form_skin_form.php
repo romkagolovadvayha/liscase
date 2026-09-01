@@ -14,7 +14,7 @@ use common\models\user\UserBalance;
 
 <div class="modal-header">
     <h5 class="modal-title">Выберите скин</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть окно"></button>
 </div>
 <div class="modal-body">
     <?= \kartik\grid\GridView::widget([
@@ -26,7 +26,11 @@ use common\models\user\UserBalance;
                                                   'label'     => Yii::t('common', "Изображение"),
                                                   'format'    => 'raw',
                                                   'value'          => function ($model) {
-                                                      return "<img src=\"{$model['image']}\" width=\"50px\"/>";
+                                                      return Html::img($model['image'], [
+                                                          'width' => 50,
+                                                          'height' => 50,
+                                                          'alt' => $model['name'] ?? 'Скин',
+                                                      ]);
                                                   },
                                               ],
                                               [

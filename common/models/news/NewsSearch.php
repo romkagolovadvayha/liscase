@@ -14,7 +14,7 @@ class NewsSearch extends News
      *
      * @return ActiveDataProvider
      */
-    public function search($params = [], callable $filter = null): ActiveDataProvider
+    public function search($params = [], ?callable $filter = null): ActiveDataProvider
     {
         $this->load($params);
 

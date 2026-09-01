@@ -2,32 +2,32 @@
 
 use yii\helpers\Html;
 use yii\widgets\DetailView;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use common\models\serverskin\ServerSkin;
 
 /** @var yii\web\View $this */
 /** @var common\models\serverskin\ServerSkin $model */
 
 $this->title = $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Buildings', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Скины сервера', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
 <div class="building-view">
     <p>
         <?php if ($model->status !== ServerSkin::STATUS_ACTIVE): ?>
-            <?= Html::a('Принять', ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'btn btn-success', 'data' => ['method' => 'post']]) ?>
+            <?= Html::a('Принять', ['success', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'ds-btn ds-btn--success', 'data' => ['method' => 'post']]) ?>
         <?php endif; ?>
         <?php if ($model->status !== ServerSkin::STATUS_REJECT): ?>
-            <?= Html::a('Отклонить', ['reject', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'btn btn-danger', 'data' => ['method' => 'post']]) ?>
+            <?= Html::a('Отклонить', ['reject', 'id' => $model->id, 'returnUrl' => Yii::$app->request->url], ['class' => 'ds-btn ds-btn--danger', 'data' => ['method' => 'post']]) ?>
         <?php endif; ?>
     </p>
     <p>
-        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
         <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
+                'confirm' => 'Удалить этот скин?',
                 'method' => 'post',
             ],
         ]) ?>

@@ -53,20 +53,20 @@ use yii\helpers\Html;
                         </div>
                     </div>
                     <div>
-                        <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Превью') ?></label>
+                        <div class="text-xs text-gray-400 mb-1"><?= Yii::t('common', 'Превью') ?></div>
                         <?php
                         $firstImage = $model->buildingImage ? reset($model->buildingImage) : null;
                         if ($firstImage):
                             $previewUrl = $firstImage->getPublicUrlPreview();
                         ?>
-                        <div class="building-form-preview rounded overflow-hidden bg-[hsl(0_0%_15.3%_/_1)]" style="width: 100%; max-width: 200px;">
-                            <a href="<?= Html::encode(\yii\helpers\Url::to(['view', 'id' => $model->id])) ?>" target="_blank" class="block">
-                                <img src="<?= Html::encode($previewUrl) ?>" alt="" class="w-full h-auto object-cover" style="max-height: 120px; object-fit: cover;" />
+                        <div class="building-form-preview rounded overflow-hidden bg-[hsl(0_0%_15.3%_/_1)]">
+                            <a href="<?= Html::encode(\yii\helpers\Url::to(['view', 'id' => $model->id])) ?>" target="_blank" rel="noopener" class="block">
+                                <img src="<?= Html::encode($previewUrl) ?>" alt="Превью постройки <?= Html::encode($model->name) ?>" class="building-form-preview__image" />
                             </a>
                         </div>
                         <p class="text-xs text-gray-400 mt-1"><?= count($model->buildingImage) ?> <?= Yii::t('common', 'фото') ?></p>
                         <?php else: ?>
-                        <div class="text-gray-500 text-sm py-4 border border-dashed border-[hsl(0_0%_15.3%_/_1)] rounded flex items-center justify-center" style="min-height: 80px;">
+                        <div class="building-form-preview__empty text-gray-500 text-sm py-4 border border-dashed border-[hsl(0_0%_15.3%_/_1)] rounded flex items-center justify-center">
                             <?= Yii::t('common', 'Нет фото') ?>
                         </div>
                         <?php endif; ?>

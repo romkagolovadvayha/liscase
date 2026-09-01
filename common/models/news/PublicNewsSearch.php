@@ -13,7 +13,7 @@ class PublicNewsSearch extends NewsSearch
      *
      * @return ActiveDataProvider
      */
-    public function search($params = [], callable $filter = null)
+    public function search($params = [], ?callable $filter = null)
     {
         return parent::search($params, function ($query) {
             $query->andWhere(['status' => self::STATUS_ACTIVE]);

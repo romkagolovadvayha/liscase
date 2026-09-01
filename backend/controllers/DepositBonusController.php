@@ -16,6 +16,16 @@ use yii\filters\VerbFilter;
 class DepositBonusController extends Controller
 {
     /**
+     * Historical views use an underscore directory while the controller route
+     * is kebab-cased. Keep the existing templates and make every CRUD action
+     * resolve them consistently.
+     */
+    public function getViewPath(): string
+    {
+        return \Yii::getAlias('@backend/views/deposit_bonus');
+    }
+
+    /**
      * @return array
      */
     public function behaviors()

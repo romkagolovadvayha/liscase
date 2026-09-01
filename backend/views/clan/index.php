@@ -3,7 +3,7 @@
 use backend\models\ClanSearch;
 use common\models\clan\Clan;
 use common\models\servers\Servers;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;

@@ -79,9 +79,9 @@ class TelegramConstructorButtons extends \yii\db\ActiveRecord
         return [
             'id' => 'ID',
             'telegram_constructor_message_id' => 'ID сообщения',
-            'url' => 'Url',
+            'url' => 'Ссылка',
             'callback_telegram_constructor_message_id' => 'Возвращаемое сообщение',
-            'created_at' => 'Created At',
+            'created_at' => 'Дата создания',
         ];
     }
 

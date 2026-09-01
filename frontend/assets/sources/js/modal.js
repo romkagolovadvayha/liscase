@@ -21,46 +21,60 @@ $(document).ready(function () {
 });
 
 function openModal(modalId, size, title, href, topImage, contentOverflow, topClass) {
-    var mQ = $('#' + modalId);
-    if (!modalId || !mQ.length) {
+    modalId = String(modalId || 'modal-dialog').replace(/^#/, '');
+    var modalEl = document.getElementById(modalId);
+    if (!modalEl) {
         modalId = 'modal-dialog';
+        modalEl = document.getElementById(modalId);
     }
+    if (!modalEl) return;
 
     $('#loader').addClass('active');
-    var modal = new bootstrap.Modal(document.getElementById(modalId), {});
-    mQ.removeClass('modal-lg');
-    mQ.removeClass('modal-sm');
-    mQ.removeClass('modal-xl');
-    mQ.removeClass('modal-xxl');
-    var modalEl = document.getElementById('modal-dialog');
-    $(modalEl).find('.modal-backdrop-image').removeClass('active');
-    $(modalEl).find('.modal-content').css('overflow', 'hidden');
-    $(modalEl).removeClass('with-image');
-    var modalBody = $(modalEl).find('.modal-body-js');
+    var mQ = $(modalEl);
+    var modal = typeof bootstrap.Modal.getOrCreateInstance === 'function'
+        ? bootstrap.Modal.getOrCreateInstance(modalEl, {})
+        : new bootstrap.Modal(modalEl, {});
+    var modalDialog = mQ.find('.modal-dialog').first();
+    modalDialog.removeClass('modal-lg modal-sm modal-xl modal-xxl');
+    mQ.find('.modal-backdrop-image').removeClass('active');
+    mQ.find('.modal-content').css('overflow', 'hidden');
+    mQ.removeClass('with-image');
+    var modalBody = mQ.find('.modal-body-js').first();
     if (title) {
-        $(modalEl).find('.modal-title-js').html(title);
+        mQ.find('.modal-title-js').text(title);
     }
     if (size) {
-        $(modalEl).addClass(size);
+        modalDialog.addClass(size);
     }
     if (topImage) {
-        $(modalEl).addClass('with-image');
-        $(modalEl).find('.modal-backdrop-image').addClass('active');
-        $(modalEl).find('.modal-backdrop-image').attr('src', topImage);
+        mQ.addClass('with-image');
+        mQ.find('.modal-backdrop-image').addClass('active').attr('src', topImage);
     }
     if (topClass) {
-        $(modalEl).addClass('with-image');
-        $(modalEl).find('.modal-backdrop-image').attr('class', 'modal-backdrop-image ' + topClass);
+        mQ.addClass('with-image');
+        mQ.find('.modal-backdrop-image').attr('class', 'modal-backdrop-image ' + topClass);
     }
     if (contentOverflow) {
-        $(modalEl).find('.modal-content').css('overflow', contentOverflow);
+        mQ.find('.modal-content').css('overflow', contentOverflow);
     }
 
+    modalEl.setAttribute('aria-busy', 'true');
+    if (!modalBody.length || !href) {
+        $('#loader').removeClass('active');
+        modalEl.removeAttribute('aria-busy');
+        modal.show();
+        return;
+    }
     modalBody.load(href, function () {
         $('#loader').removeClass('active');
+        modalEl.removeAttribute('aria-busy');
         modal.show();
         modalEl.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((tooltip) => {
-            new bootstrap.Tooltip(tooltip);
+            if (typeof bootstrap.Tooltip.getOrCreateInstance === 'function') {
+                bootstrap.Tooltip.getOrCreateInstance(tooltip);
+            } else {
+                new bootstrap.Tooltip(tooltip);
+            }
         });
         let pay_buttons = $('.pay__button');
         let paymentform__amount = $('#paymentform-amount');
@@ -85,11 +99,6 @@ function openModal(modalId, size, title, href, topImage, contentOverflow, topCla
         // Триггерим кастомное событие после загрузки контента в модалку
         $(modalEl).trigger('modal.content.loaded');
     });
-
-    modalEl.addEventListener('shown.bs.modal', () => {
-        // myInput.focus()
-    });
-
 
     // let modalBody = modal.find('.modal-body');
 

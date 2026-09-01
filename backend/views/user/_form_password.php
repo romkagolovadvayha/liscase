@@ -11,7 +11,7 @@ use backend\forms\userProfile\PasswordForm;
 
 <div class="modal-header">
     <h5 class="modal-title">Смена пароля</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть окно"></button>
 </div>
 <div class="modal-body">
     <?php $form = \yii\bootstrap5\ActiveForm::begin() ?>

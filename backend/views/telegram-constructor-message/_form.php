@@ -123,7 +123,7 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
             <div class="modal-content bg-[hsl(0_0%_11.8%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] rounded-lg overflow-hidden">
                 <div class="modal-header flex items-center justify-between p-4 border-b border-[hsl(0_0%_15.3%_/_1)]">
                     <h5 class="text-sm font-semibold text-white uppercase tracking-wide m-0"><?= Yii::t('common', 'Добавить кнопку') ?></h5>
-                    <button type="button" class="ds-btn ds-btn--icon ds-btn--ghost close" data-dismiss="modal" data-bs-dismiss="modal" aria-label="Close"><i class="fas fa-times"></i></button>
+                    <button type="button" class="ds-btn ds-btn--icon ds-btn--ghost close" data-bs-dismiss="modal" aria-label="Закрыть окно"><i class="fas fa-times" aria-hidden="true"></i></button>
                 </div>
                 <div class="modal-body p-4">
                     <?php foreach ($languages as $language): ?>
@@ -147,8 +147,8 @@ $borderDivider = 'border-[hsl(0_0%_15.3%_/_1)]';
                     </div>
                 </div>
                 <div class="modal-footer flex flex-wrap gap-2 p-4 border-t border-[hsl(0_0%_15.3%_/_1)]">
-                    <button type="button" class="ds-btn ds-btn--primary addButton" data-dismiss="modal" data-bs-dismiss="modal"><i class="fas fa-check"></i> <?= Yii::t('common', 'Сохранить') ?></button>
-                    <button type="button" class="ds-btn ds-btn--secondary" data-dismiss="modal" data-bs-dismiss="modal"><i class="fas fa-times"></i> <?= Yii::t('common', 'Отмена') ?></button>
+                    <button type="button" class="ds-btn ds-btn--primary addButton" data-bs-dismiss="modal"><i class="fas fa-check" aria-hidden="true"></i> <?= Yii::t('common', 'Сохранить') ?></button>
+                    <button type="button" class="ds-btn ds-btn--secondary" data-bs-dismiss="modal"><i class="fas fa-times" aria-hidden="true"></i> <?= Yii::t('common', 'Отмена') ?></button>
                 </div>
             </div>
         </div>

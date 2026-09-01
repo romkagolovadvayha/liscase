@@ -86,7 +86,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     <div class="reports-card mb-6 rounded-lg border border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)] overflow-hidden">
         <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide px-4 py-3 border-b border-[hsl(0_0%_15.3%_/_1)]"><?= Yii::t('common', 'Топ-10 пользователей с наибольшим количеством репортов') ?></h2>
         <div class="overflow-x-auto">
-            <table class="table-auto w-full text-sm">
+            <table class="table-auto w-full text-sm" aria-label="<?= Html::encode(Yii::t('common', 'Топ-10 пользователей с наибольшим количеством репортов')) ?>">
                 <thead>
                     <tr>
                         <th class="<?= $headerCellClass ?>">#</th>
@@ -125,7 +125,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     <div class="reports-card mb-6 rounded-lg border border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)] overflow-hidden">
         <h2 class="text-sm font-semibold text-gray-400 uppercase tracking-wide px-4 py-3 border-b border-[hsl(0_0%_15.3%_/_1)]"><?= Yii::t('common', 'Статистика по серверам') ?></h2>
         <div class="overflow-x-auto">
-            <table class="table-auto w-full text-sm">
+            <table class="table-auto w-full text-sm" aria-label="<?= Html::encode(Yii::t('common', 'Статистика по серверам')) ?>">
                 <thead>
                     <tr>
                         <th class="<?= $headerCellClass ?>"><?= Yii::t('common', 'Сервер') ?></th>
@@ -154,7 +154,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="w-full">
             <?= \kartik\grid\GridView::widget([
                 'dataProvider' => $checkingProvider,
-                'tableOptions' => ['class' => 'table-auto w-full text-sm'],
+                'tableOptions' => [
+                    'class' => 'table-auto w-full text-sm',
+                    'aria-label' => Yii::t('common', 'Все пользователи с репортами'),
+                ],
                 'options' => ['class' => 'admin-grid-view-dark'],
                 'layout' => "{items}\n{pager}",
                 'filterRowOptions' => ['style' => 'display: none;'],

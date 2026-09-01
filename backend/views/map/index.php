@@ -4,13 +4,13 @@ use common\models\map\Map;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var backend\models\map\MapSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Maps';
+$this->title = 'Карты (старый список)';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="map-index">
@@ -18,7 +18,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create Map', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Добавить карту', ['create'], ['class' => 'ds-btn ds-btn--primary']) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>

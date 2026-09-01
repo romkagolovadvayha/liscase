@@ -12,7 +12,6 @@ use common\components\widgets\ModalWidget;
 \backend\assets\BootstrapAsset::register($this);
 \common\assets\BootstrapIcons::register($this);
 \frontend\assets\ModalAsset::register($this);
-$this->registerCssFile('https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback');
 
 $assetDir = Yii::$app->assetManager->getPublishedUrl('@vendor/almasaeed2010/adminlte/dist');
 $publishedRes = Yii::$app->assetManager->publish('@vendor/hail812/yii2-adminlte3/src/web/js');
@@ -30,8 +29,10 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
     <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
     <?php $this->head() ?>
 </head>
-<body class="bg-[hsl(0_0%_10%_/_1)]">
+<body class="admin-body">
 <?php $this->beginBody() ?>
+
+<a class="admin-skip-link" href="#admin-main-content">Перейти к содержимому</a>
 
 <!-- Sidebar Overlay для мобильных -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
@@ -45,19 +46,16 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
 
     <!-- Right Side: Header, Content -->
     <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        <!-- Header -->
-        <header class="flex-shrink-0 z-50">
-            <?= $this->render('navbar', [
-                'pageTitle' => $this->title,
-                'headerActions' => $this->params['headerActions'] ?? null,
-                'showFilters' => $this->params['showFilters'] ?? false,
-            ]) ?>
-        </header>
+        <?= $this->render('navbar', [
+            'pageTitle' => $this->title,
+            'headerActions' => $this->params['headerActions'] ?? null,
+            'showFilters' => $this->params['showFilters'] ?? false,
+        ]) ?>
 
         <!-- Content and Filters Row (id нужен, чтобы при открытии фильтров на мобилке не обрезать панель) -->
         <div class="flex-1 flex min-h-0 overflow-hidden" id="content-and-filters-row">
             <!-- Content Area -->
-            <main class="flex-1 overflow-y-auto scrollbar-thin min-w-0 bg-[hsl(0_0%_10%_/_1)]">
+            <main class="admin-main-content flex-1 overflow-y-auto scrollbar-thin min-w-0" id="admin-main-content" tabindex="-1">
                 <?= $this->render('content', ['content' => $content, 'assetDir' => $assetDir]) ?>
             </main>
 
@@ -65,7 +63,14 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
             <?php if (isset($this->params['showFilters']) && $this->params['showFilters']): ?>
             <div class="filters-drawer-backdrop" id="filters-drawer-backdrop" aria-hidden="true"></div>
             <div id="filters-drawer-slot">
-            <aside class="filters-wrapper filters-drawer-aside flex-shrink-0 overflow-y-auto border-l border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)]" id="filters-wrapper" style="width: 300px;">
+            <div class="filters-wrapper filters-drawer-aside flex-shrink-0 overflow-y-auto" id="filters-wrapper" role="complementary" aria-labelledby="filters-drawer-title" tabindex="-1">
+                <h2 class="visually-hidden" id="filters-drawer-title">Фильтры страницы</h2>
+                <div class="filters-drawer-header">
+                    <span>Фильтры</span>
+                    <button type="button" class="filters-drawer-close ds-btn ds-btn--icon ds-btn--ghost" aria-label="Закрыть фильтры">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <?php
                 $controllerId = Yii::$app->controller->id;
                 $filtersFile = '@backend/views/' . $controllerId . '/filters-panel.php';
@@ -73,10 +78,10 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
                 if (file_exists(Yii::getAlias($filtersFile))) {
                     echo $this->render($filtersFile, ['searchModel' => $searchModel]);
                 } else {
-                    echo $this->render('filters-panel');
+                    echo $this->render('filters-panel', ['searchModel' => $searchModel]);
                 }
                 ?>
-            </aside>
+            </div>
             </div>
             <?php endif; ?>
         </div>
@@ -84,16 +89,16 @@ $this->registerJsFile($publishedRes[1].'/control_sidebar.js', ['depends' => '\ha
 </div>
 
 <!-- Модальные окна -->
-<div class="modal fade" id="modal-dialog" tabindex="-1" role="dialog" aria-labelledby="modal-dialog" aria-hidden="true">
+<div class="modal fade" id="modal-dialog" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="modal-dialog-title" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <header class="flex items-center justify-between p-4 border-b border-[hsl(0_0%_15.3%_/_1)]">
-                <h4 class="modal-title-js text-white font-semibold m-0"></h4>
-                <button type="button" class="ds-btn ds-btn--icon ds-btn--ghost" data-bs-dismiss="modal" aria-label="Close">
-                    <i class="fas fa-times"></i>
+            <header class="modal-header">
+                <h2 class="modal-title modal-title-js" id="modal-dialog-title">Диалог</h2>
+                <button type="button" class="ds-btn ds-btn--icon ds-btn--ghost" data-bs-dismiss="modal" aria-label="Закрыть окно">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
                 </button>
             </header>
-            <div class="modal-body-js p-4"></div>
+            <div class="modal-body modal-body-js"></div>
         </div>
     </div>
 </div>
@@ -106,135 +111,6 @@ echo $secondModal->run();
 
 <!-- Page Preloader -->
 <div class="page-preloader" id="page-preloader"></div>
-
-<?php if (isset($this->params['showFilters']) && $this->params['showFilters']): ?>
-<style>
-/* Фильтры на мобилке: выдвижная панель (чистый CSS, без зависимости от Tailwind) */
-.filters-drawer-backdrop {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 9998;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
-}
-body.filters-drawer-open .filters-drawer-backdrop {
-    display: block;
-    opacity: 1;
-}
-@media (max-width: 991px) {
-    .filters-drawer-backdrop {
-        display: block;
-        pointer-events: none;
-    }
-    body.filters-drawer-open .filters-drawer-backdrop {
-        pointer-events: auto;
-    }
-    .filters-wrapper.filters-drawer-aside {
-        position: fixed !important;
-        top: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 90vw !important;
-        max-width: 320px !important;
-        z-index: 9999 !important;
-        transform: translateX(100%);
-        transition: transform 0.25s ease-out;
-        box-shadow: -4px 0 24px rgba(0,0,0,0.4);
-    }
-    body.filters-drawer-open .filters-wrapper.filters-drawer-aside {
-        transform: translateX(0);
-    }
-    body.filters-drawer-open { overflow: hidden !important; }
-    #filters-drawer-toggle {
-        display: inline-flex !important;
-        min-height: 44px;
-        min-width: 44px;
-        padding: 10px 14px;
-        align-items: center;
-        justify-content: center;
-    }
-    #filters-drawer-toggle .filters-btn-text { display: none; }
-}
-@media (max-width: 991px) and (min-width: 400px) {
-    #filters-drawer-toggle .filters-btn-text { display: inline; }
-}
-@media (min-width: 992px) {
-    .filters-drawer-backdrop { display: none !important; }
-    #filters-drawer-toggle { display: none !important; }
-    /* Панель фильтров на всю высоту */
-    #content-and-filters-row {
-        display: flex;
-        align-items: stretch;
-    }
-    #filters-drawer-slot {
-        display: flex;
-        flex-direction: column;
-        min-height: 0;
-        height: 100%;
-        align-self: stretch;
-    }
-    #filters-wrapper.filters-drawer-aside {
-        height: 100%;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-    }
-    #filters-wrapper .admin-filters-content {
-        height: 100%;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-    }
-}
-</style>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var btn = document.getElementById('filters-drawer-toggle');
-    var backdrop = document.getElementById('filters-drawer-backdrop');
-    var wrapper = document.getElementById('filters-wrapper');
-    var slot = document.getElementById('filters-drawer-slot');
-    if (!btn || !backdrop || !wrapper) return;
-    var isMobile = function() { return window.innerWidth < 992; };
-    function openDrawer() {
-        if (isMobile() && slot && wrapper.parentNode === slot) {
-            document.body.appendChild(wrapper);
-        }
-        document.body.classList.add('filters-drawer-open');
-        backdrop.setAttribute('aria-hidden', 'false');
-    }
-    function closeDrawer() {
-        document.body.classList.remove('filters-drawer-open');
-        backdrop.setAttribute('aria-hidden', 'true');
-        if (slot && wrapper.parentNode === document.body) {
-            slot.appendChild(wrapper);
-        }
-    }
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openDrawer();
-    });
-    backdrop.addEventListener('click', closeDrawer);
-    document.body.addEventListener('click', function(e) {
-        if (e.target && e.target.closest && e.target.closest('.filters-drawer-close')) closeDrawer();
-    });
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.body.classList.contains('filters-drawer-open')) closeDrawer();
-    });
-    window.addEventListener('resize', function() {
-        if (!isMobile() && wrapper.parentNode === document.body) {
-            closeDrawer();
-        }
-    });
-});
-</script>
-<?php endif; ?>
 
 <?php $this->endBody() ?>
 </body>

@@ -4,7 +4,7 @@ use common\models\servers\Servers;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\ArrayHelper;
 use yii\widgets\ListView;
 

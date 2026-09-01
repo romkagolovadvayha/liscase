@@ -2,7 +2,7 @@
 
 use backend\models\support\SupportStickerSearch;
 use common\models\support\SupportSticker;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Url;

@@ -2,17 +2,13 @@
 namespace backend\controllers;
 
 use backend\components\BackendController;
+use backend\components\SettingsCatalog;
 use common\components\helpers\Role;
-use common\components\settings\Settings;
 use common\helpers\SettingsCacheHelper;
-use common\models\box\BoxImage;
 use Yii;
-use yii\base\BaseObject;
 use yii\filters\VerbFilter;
 use common\models\site\SiteSetting;
-use yii\web\UploadedFile;
-use yii\helpers\ArrayHelper;
-use yii\helpers\Html;
+use yii\web\NotFoundHttpException;
 
 class SettingsController extends BackendController
 {
@@ -33,155 +29,94 @@ class SettingsController extends BackendController
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'form' => ['POST'],
                     'register-max-webhook' => ['POST'],
                 ],
             ],
         ];
     }
 
-    /**
-     * Группы категорий настроек для вкладок в шапке (категория => заголовок).
-     * @return array[]
-     */
-    protected function getSettingsCategoryGroups(): array
-    {
-        return [
-            [
-                'site' => Yii::t('common', 'Настройки сайта'),
-                'social' => Yii::t('common', 'Социальные сети'),
-                'section' => Yii::t('common', 'Разделы сайта'),
-                'banSystem' => Yii::t('common', 'Бан система'),
-                'metrics' => Yii::t('common', 'Счетчики'),
-            ],
-            [
-                'design' => Yii::t('common', 'Дизайн'),
-                'colors' => Yii::t('common', 'Настройки темы'),
-            ],
-            [
-                'openAi' => Yii::t('common', 'ChatGPT / OpenAI'),
-                'proxy' => Yii::t('common', 'Прокси'),
-            ],
-            [
-                'tinkoffpay' => Yii::t('common', 'Тинькофф'),
-                'trc20' => Yii::t('common', 'TRC20'),
-                'ton' => Yii::t('common', 'TON COIN'),
-                'skinpay' => Yii::t('common', 'Оплата скинами'),
-                'telegrampay' => Yii::t('common', 'Оплата через TG'),
-                'funpay' => Yii::t('common', 'FunPay'),
-                'personal_info_ip' => Yii::t('common', 'Информация о вас'),
-            ],
-            [
-                'skindrops' => Yii::t('common', 'Раздача скинов'),
-                'rusttm' => Yii::t('common', 'Rust.Tm'),
-                'custom-skins' => Yii::t('common', 'Кастомные скины'),
-            ],
-            [
-                'tgbot' => Yii::t('common', 'Персональный бот'),
-                'tgbotRedFlag' => Yii::t('common', 'Важные оповещения'),
-                'tgbotReport' => Yii::t('common', 'Телеграм канал для репортов'),
-                'tgbotPaymentReport' => Yii::t('common', 'Финансовые отчеты'),
-                'tgbotPayments' => Yii::t('common', 'Оповещения о платежах'),
-                'tgbotAlert' => Yii::t('common', 'Прочие оповещения'),
-                'tgbotSupportAlert' => Yii::t('common', 'Поддержка, оповещения'),
-                'maxSupport' => Yii::t('common', 'MAX — поддержка'),
-            ],
-        ];
-    }
-
-    /**
-     * Найти группу, в которую входит категория, и вернуть список категорий этой группы.
-     * @param string $category
-     * @return array [category => title, ...]
-     */
-    protected function getTabsForCategory(string $category): array
-    {
-        if ($category === 'bots') {
-            $category = 'tgbot';
-        }
-        if ($category === 'payments') {
-            $category = 'tinkoffpay';
-        }
-        foreach ($this->getSettingsCategoryGroups() as $group) {
-            if (isset($group[$category])) {
-                return $group;
-            }
-        }
-        return [$category => $category];
-    }
-
-    // Страница отображения настроек
     public function actionIndex($category = null)
     {
-        if ($category === null || $category === '') {
-            $category = 'site';
+        $navigation = SettingsCatalog::navigation();
+        $category = SettingsCatalog::normalizeCategory($category);
+        $categoryMeta = SettingsCatalog::findCategory($navigation, $category);
+        if ($categoryMeta === null) {
+            $category = SettingsCatalog::firstCategory($navigation);
+            $categoryMeta = SettingsCatalog::findCategory($navigation, $category)
+                ?? SettingsCatalog::category($category);
         }
-        // Раньше bots и payments объединяли несколько категорий; переназначаем на первую в группе
-        if ($category === 'bots') {
-            $category = 'tgbot';
-        }
-        if ($category === 'payments') {
-            $category = 'tinkoffpay';
-        }
-        $tabs = $this->getTabsForCategory($category);
-        $baseButtonClass = 'px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5';
-        $headerActions = [];
-        foreach ($tabs as $cat => $title) {
-            $isActive = (string)$cat === (string)$category;
-            $headerActions[] = [
-                'label' => Html::encode($title),
-                'url' => ['index', 'category' => $cat],
-                'class' => $isActive
-                    ? 'bg-[hsl(0_0%_35%_/_1)] text-white ' . $baseButtonClass
-                    : 'bg-[hsl(0_0%_25%_/_1)] hover:bg-[hsl(0_0%_30%_/_1)] text-white ' . $baseButtonClass,
-            ];
-        }
+
+        $settings = SiteSetting::find()
+            ->andWhere(['category' => $category])
+            ->orderBy(['id' => SORT_ASC])
+            ->all();
 
         $this->view->params['contentClass'] = 'content-no-padding';
-        $this->view->params['headerActions'] = $headerActions;
+        $this->view->params['headerActions'] = [
+            [
+                'label' => '<i class="fa-solid fa-plus" aria-hidden="true"></i><span>Добавить параметр</span>',
+                'url' => ['/settings/create', 'category' => $category],
+                'encode' => false,
+                'class' => 'ds-btn ds-btn--primary ds-btn--sm',
+            ],
+        ];
 
-        $pageTitle = $tabs[$category] ?? Yii::t('common', 'Настройки');
-        $this->view->title = $pageTitle;
+        $this->view->title = 'Настройки · ' . $categoryMeta['label'];
 
         return $this->render('pages/default', [
             'category' => $category,
-            'pageTitle' => $pageTitle,
+            'categoryMeta' => $categoryMeta,
+            'navigation' => $navigation,
+            'settings' => $settings,
+            'totalCount' => SettingsCatalog::totalCount($navigation),
         ]);
     }
 
-    // Страница отображения настроек
     public function actionForm($category, $itemsFlexClass = null)
     {
+        $category = SettingsCatalog::normalizeCategory($category);
         $settings = SiteSetting::find()
-                               ->indexBy('id')
-                               ->all();
+            ->andWhere(['category' => $category])
+            ->indexBy('id')
+            ->all();
 
         if (Yii::$app->request->isPost) {
-            $postSettings = Yii::$app->request->post('settings');
-            if (!empty($postSettings)) {
-                foreach ($postSettings as $id => $value) {
-                    if (!empty($settings[$id])) {
-                        /** @var SiteSetting $setting */
-                        $setting = $settings[$id];
-                        if ($setting->type === 'password' && (string) $value === '') {
-                            continue;
-                        }
-                        $setting->value = $value;
-                        $setting->save();
-                    }
+            $postSettings = Yii::$app->request->post('settings', []);
+            if (!is_array($postSettings)) {
+                $postSettings = [];
+            }
+            $saveFailed = false;
+            foreach ($postSettings as $id => $value) {
+                if (!isset($settings[$id]) || is_array($value)) {
+                    continue;
+                }
+                /** @var SiteSetting $setting */
+                $setting = $settings[$id];
+                if (SettingsCatalog::isSensitive($setting) && (string) $value === '') {
+                    continue;
+                }
+                $setting->value = (string) $value;
+                if (!$setting->save()) {
+                    $saveFailed = true;
+                    Yii::warning(['setting' => $setting->id, 'errors' => $setting->errors], __METHOD__);
                 }
             }
-            if (!empty($_FILES) && !empty($_FILES['settings'])) {
+            if (!empty($_FILES['settings']['tmp_name']) && is_array($_FILES['settings']['tmp_name'])) {
                 foreach ($_FILES['settings']['tmp_name'] as $id => $tmpName) {
-                    if (!empty($settings[$id]) && !empty($tmpName)) {
+                    if (isset($settings[$id]) && !empty($tmpName)) {
                         /** @var SiteSetting $setting */
-                        $setting        = $settings[$id];
+                        $setting = $settings[$id];
+                        $uploadedValue = null;
                         if ($setting->type === 'image') {
-                            $setting->value = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
+                            $uploadedValue = $this->_loadImage($tmpName, $setting->category, $_FILES['settings']['name'][$id] ?? '', $setting->code, $setting->value);
+                        } elseif ($setting->type === 'video') {
+                            $uploadedValue = $this->_loadVideo($tmpName, $setting->category, $_FILES['settings']['name'][$id] ?? '', $setting->code, $setting->value);
                         }
-                        if ($setting->type === 'video') {
-                            $setting->value = $this->_loadVideo($tmpName, $setting->category, $_FILES['settings']['name'][$id], $setting->code, $setting->value);
+                        if ($uploadedValue !== null) {
+                            $setting->value = $uploadedValue;
+                            $saveFailed = !$setting->save() || $saveFailed;
                         }
-                        $setting->save();
                     }
                 }
             }
@@ -189,7 +124,10 @@ class SettingsController extends BackendController
                 Yii::$app->settings->genColors();
             }
             Yii::$app->settings->getSettings(true);
-            Yii::$app->session->setFlash('success', 'Настройки успешно сохранены!');
+            Yii::$app->session->setFlash(
+                $saveFailed ? 'warning' : 'success',
+                $saveFailed ? 'Часть параметров не удалось сохранить. Проверьте журнал ошибок.' : 'Настройки сохранены.'
+            );
             Yii::$app->cache->delete('Settings_getSettings');
 
             if ($category === 'maxSupport') {
@@ -216,12 +154,10 @@ class SettingsController extends BackendController
             $referralSettings = ['referral_percent', 'referral_bonus', 'referral_skin', 'referral_minSum', 'referral_maxSum', 'section_referral'];
             $hasReferralChanges = false;
             foreach ($referralSettings as $settingCode) {
-                if (isset($postSettings) && is_array($postSettings)) {
-                    foreach ($postSettings as $id => $value) {
-                        if (!empty($settings[$id]) && $settings[$id]->code === $settingCode) {
-                            $hasReferralChanges = true;
-                            break 2;
-                        }
+                foreach ($postSettings as $id => $value) {
+                    if (isset($settings[$id]) && $settings[$id]->code === $settingCode) {
+                        $hasReferralChanges = true;
+                        break 2;
                     }
                 }
             }
@@ -241,10 +177,7 @@ class SettingsController extends BackendController
             return $this->redirect(['index', 'category' => $category]);
         }
 
-        return $this->render('pages/form', [
-            'category' => $category,
-            'setting_items_class' => $itemsFlexClass,
-        ]);
+        return $this->redirect(['index', 'category' => $category]);
     }
 
     /**
@@ -278,8 +211,8 @@ class SettingsController extends BackendController
             return null;
         }
         $exp = explode('.', $name);
-        $exp = $exp[count($exp) - 1];
-        if (!in_array($exp, ['svg', 'png', 'jpg', 'ico', 'webp'])) {
+        $exp = strtolower($exp[count($exp) - 1]);
+        if (!in_array($exp, ['svg', 'png', 'jpg', 'jpeg', 'ico', 'webp'], true)) {
             Yii::$app->session->setFlash('danger', 'Разрешенно загружать только изображения в формате SVG, PNG, JPG, ICO, WEBP!');
             return null;
         }
@@ -302,7 +235,7 @@ class SettingsController extends BackendController
         
         // Удаляем старое изображение из S3, если оно было
         if (!empty($oldFile) && strpos($oldFile, '/uploads/') === 0) {
-            $oldS3Key = 'uploads' . $oldFile;
+            $oldS3Key = ltrim($oldFile, '/');
             $s3Api->deleteFile($oldS3Key);
         }
         
@@ -314,8 +247,8 @@ class SettingsController extends BackendController
             return null;
         }
         $exp = explode('.', $name);
-        $exp = $exp[count($exp) - 1];
-        if (!in_array($exp, ['webm'])) {
+        $exp = strtolower($exp[count($exp) - 1]);
+        if (!in_array($exp, ['webm'], true)) {
             Yii::$app->session->setFlash('danger', 'Разрешенно загружать только видео в формате WEBM!');
             return null;
         }
@@ -338,52 +271,72 @@ class SettingsController extends BackendController
         
         // Удаляем старое видео из S3, если оно было
         if (!empty($oldFile) && strpos($oldFile, '/uploads/') === 0) {
-            $oldS3Key = 'uploads' . $oldFile;
+            $oldS3Key = ltrim($oldFile, '/');
             $s3Api->deleteFile($oldS3Key);
         }
         
         return $fileUrl;
     }
 
-    // Страница добавления новой настройки
-    public function actionCreate()
+    public function actionCreate($category = null)
     {
         $model = new SiteSetting();
+        if (!Yii::$app->request->isPost && $category !== null) {
+            $model->category = SettingsCatalog::normalizeCategory($category);
+        }
 
         if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            // Сбрасываем кэш API настроек
             $this->clearApiSettingsCache();
-            
+            Yii::$app->settings->getSettings(true);
             Yii::$app->session->setFlash('success', 'Настройка добавлена');
-            return $this->redirect(['index?category=' . $model->category]);
+            return $this->redirect(['index', 'category' => $model->category]);
         }
+
+        $isSensitive = SettingsCatalog::isSensitive($model);
+        if ($isSensitive) {
+            $model->value = '';
+        }
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->title = 'Новый параметр';
 
         return $this->render('create', [
             'model' => $model,
+            'isUpdate' => false,
+            'hasStoredSecret' => false,
         ]);
     }
 
-    // Страница добавления новой настройки
     public function actionUpdate($id)
     {
         $model = SiteSetting::findOne($id);
+        if ($model === null) {
+            throw new NotFoundHttpException('Параметр настройки не найден.');
+        }
         $previousValue = $model->value;
+        $hadStoredSecret = SettingsCatalog::isSensitive($model) && (string) $previousValue !== '';
 
         if ($model->load(Yii::$app->request->post())) {
-            if ($model->type === 'password' && (string) $model->value === '') {
+            if (SettingsCatalog::isSensitive($model) && (string) $model->value === '') {
                 $model->value = $previousValue;
             }
             if ($model->save()) {
-                // Сбрасываем кэш API настроек
                 $this->clearApiSettingsCache();
-
+                Yii::$app->settings->getSettings(true);
                 Yii::$app->session->setFlash('success', 'Настройка сохранена');
-                return $this->redirect(['index?category=' . $model->category]);
+                return $this->redirect(['index', 'category' => $model->category]);
             }
         }
 
+        if (SettingsCatalog::isSensitive($model)) {
+            $model->value = '';
+        }
+        $this->view->params['contentClass'] = 'content-no-padding';
+        $this->view->title = 'Редактирование параметра';
+
         return $this->render('create', [
             'model' => $model,
+            'isUpdate' => true,
+            'hasStoredSecret' => $hadStoredSecret,
         ]);
     }
 

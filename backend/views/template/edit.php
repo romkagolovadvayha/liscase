@@ -6,26 +6,10 @@
 use yii\helpers\Url;
 use yii\helpers\Html;
 
-$this->title = 'Edit Template: ' . Html::encode($template->name);
+$this->title = 'Редактор шаблона: ' . Html::encode($template->name);
 $loadUrl = Url::to(['template/load-file', 'id' => $template->id]);
 $saveUrl = Url::to(['template/save-file', 'id' => $template->id]);
 $revertUrl = Url::to(['template/revert-file', 'id' => $template->id]);
-
-$css = <<<CSS
-.editor-wrap { display:flex; gap:16px; }
-.tree { width: 360px; max-height: 75vh; overflow:auto; border:1px solid var(--border-color, #e5e7eb); border-radius:8px; padding:8px; background:var(--background-teritiary, #0f1216); }
-.tree h3 { margin: 8px 8px 12px; font-weight:700; text-transform:uppercase; font-size:12px; opacity:.85; }
-.tree ul { list-style:none; padding-left:14px; }
-.tree .dir > .name { font-weight:700; margin:6px 0; cursor:default; }
-.tree .file { cursor:pointer; padding:2px 0; }
-.tree .file .badge { font-size:11px; opacity:.7; margin-left:6px; }
-.pane { flex:1; display:flex; flex-direction:column; min-width:0; }
-#editor { height: 65vh; width: 100%; border:1px solid var(--border-color, #e5e7eb); border-radius:8px; }
-.toolbar { display:flex; gap:8px; align-items:center; margin: 0 0 8px; }
-.status { margin-left:auto; opacity:.8; font-size:12px; }
-.empty-hint { opacity:.7; font-size:14px; padding:16px; }
-CSS;
-$this->registerCss($css);
 
 // Ace Editor (CDN)
 $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.7/ace.js', ['defer' => true]);
@@ -48,17 +32,20 @@ function renderTree(array $nodes)
                 'path' => $n['path'],
                 'ext'  => $n['ext'],
             ];
-            echo '<li class="file" data-meta=\''.Html::encode(json_encode($data)).'\'>' . $label . ' ' . $meta . '</li>';
+            echo '<li><button type="button" class="file" data-meta=\'' . Html::encode(json_encode($data)) . '\'>' . $label . ' ' . $meta . '</button></li>';
         }
     }
     echo '</ul>';
 }
 ?>
+<div class="template-editor-page">
+    <h1><?= Html::encode($this->title) ?></h1>
+
     <div class="editor-wrap">
         <div class="tree">
             <h3>@frontend/views</h3>
             <?php renderTree($trees['frontend'] ?? []); ?>
-            <h3 style="margin-top:16px;">@common/views</h3>
+            <h3 class="template-editor-tree-secondary">@common/views</h3>
             <?php renderTree($trees['common'] ?? []); ?>
         </div>
 
@@ -66,7 +53,7 @@ function renderTree(array $nodes)
             <div class="toolbar">
                 <div>
                     <strong id="fileLabel">Файл не выбран</strong>
-                    <div class="p3" id="filePath" style="opacity:.7;"></div>
+                    <div class="p3 template-editor-path" id="filePath"></div>
                 </div>
                 <div class="status">
                     Источник: <span id="sourceBadge">—</span>
@@ -75,12 +62,13 @@ function renderTree(array $nodes)
 
             <div id="editor" class="empty-hint">Выберите файл слева…</div>
 
-            <div style="margin-top:8px; display:flex; gap:8px;">
-                <button id="saveBtn" class="btn btn-primary" disabled>Сохранить в БД</button>
-                <button id="revertBtn" class="btn btn-outline-danger" disabled>Откатить (удалить оверрайд)</button>
+            <div class="template-editor-actions">
+                <button type="button" id="saveBtn" class="ds-btn ds-btn--primary" disabled>Сохранить в БД</button>
+                <button type="button" id="revertBtn" class="ds-btn ds-btn--danger" disabled>Удалить переопределение</button>
             </div>
         </div>
     </div>
+</div>
 
 <?php
 $js = <<<JS
@@ -100,7 +88,7 @@ function setToolbarLabels(meta, from) {
   document.getElementById('filePath').textContent = meta ? meta.root + '://' + meta.path : '';
   const badge = document.getElementById('sourceBadge');
   if (!from) { badge.textContent = '—'; return; }
-  badge.textContent = (from === 'db') ? 'DB override' : 'Filesystem';
+  badge.textContent = (from === 'db') ? 'Переопределение из БД' : 'Файл на диске';
   badge.style.opacity = (from === 'db') ? '1' : '0.8';
 }
 
@@ -138,7 +126,7 @@ document.querySelectorAll('.tree .file').forEach(el => {
       url.searchParams.set('path', meta.path);
       const res = await fetch(url.toString(), { credentials:'same-origin' });
       const json = await res.json();
-      if (!json.success) throw new Error(json.message || 'Load failed');
+      if (!json.success) throw new Error(json.message || 'Не удалось загрузить файл');
       current = meta;
       currentFrom = json.from;
       setToolbarLabels(meta, json.from);
@@ -163,7 +151,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   try {
     const res = await fetch(saveUrl, { method:'POST', body: formData, credentials:'same-origin' });
     const json = await res.json();
-    if (!json.success) throw new Error(json.message || 'Save failed');
+    if (!json.success) throw new Error(json.message || 'Не удалось сохранить файл');
     currentFrom = 'db';
     setToolbarLabels(current, currentFrom);
     alert('Сохранено');
@@ -181,7 +169,7 @@ document.getElementById('revertBtn').addEventListener('click', async () => {
   try {
     const res = await fetch(revertUrl, { method:'POST', body: formData, credentials:'same-origin' });
     const json = await res.json();
-    if (!json.success) throw new Error(json.message || 'Revert failed');
+    if (!json.success) throw new Error(json.message || 'Не удалось удалить переопределение');
 
     // Перечитать файл уже с диска
     const url = new URL(loadUrl, window.location.origin);
@@ -189,7 +177,7 @@ document.getElementById('revertBtn').addEventListener('click', async () => {
     url.searchParams.set('path', current.path);
     const res2 = await fetch(url.toString(), { credentials:'same-origin' });
     const json2 = await res2.json();
-    if (!json2.success) throw new Error(json2.message || 'Reload failed');
+    if (!json2.success) throw new Error(json2.message || 'Не удалось перечитать файл');
 
     editor.setValue(json2.content ?? '', -1);
     currentFrom = json2.from;

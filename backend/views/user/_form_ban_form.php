@@ -12,7 +12,7 @@ use common\models\user\User;
 
 <div class="modal-header">
     <h5 class="modal-title">Бан игрока</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть окно"></button>
 </div>
 <div class="modal-body">
     <?php $form = ActiveForm::begin() ?>

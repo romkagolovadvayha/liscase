@@ -7,7 +7,7 @@ use yii\widgets\DetailView;
 /** @var common\models\servers\Servers $model */
 
 $this->title = $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Servers', 'url' => ['index']];
+$this->params['breadcrumbs'][] = ['label' => 'Серверы', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
@@ -16,11 +16,11 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
+        <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
+                'confirm' => 'Удалить этот сервер?',
                 'method' => 'post',
             ],
         ]) ?>
@@ -41,7 +41,12 @@ $this->params['breadcrumbs'][] = $this->title;
             'port',
             'query',
             'rcon',
-            'rcon_password',
+            [
+                'attribute' => 'rcon_password',
+                'value' => static function ($model) {
+                    return $model->rcon_password ? '••••••••' : '—';
+                },
+            ],
             'map:ntext',
             'players',
             'joined',
@@ -52,13 +57,23 @@ $this->params['breadcrumbs'][] = $this->title;
             'db_host:ntext',
             'db_name:ntext',
             'db_user:ntext',
-            'db_password:ntext',
+            [
+                'attribute' => 'db_password',
+                'value' => static function ($model) {
+                    return $model->db_password ? '••••••••' : '—';
+                },
+            ],
             'tag:ntext',
             'stats_payment',
             'skindrops',
             'wargm_id',
             'commands:ntext',
-            'discord_token',
+            [
+                'attribute' => 'discord_token',
+                'value' => static function ($model) {
+                    return $model->discord_token ? '••••••••' : '—';
+                },
+            ],
         ],
     ]) ?>
 

@@ -52,7 +52,7 @@ class UserDropSearch extends UserDrop
      * @param callable|null $filter
      * @return ActiveDataProvider
      */
-    public function search(array $params, callable $filter = null)
+    public function search(array $params, ?callable $filter = null)
     {
         $this->load($params);
 
@@ -189,4 +189,3 @@ class UserDropSearch extends UserDrop
         ]);
     }
 }
-

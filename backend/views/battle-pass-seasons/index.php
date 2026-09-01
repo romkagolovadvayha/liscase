@@ -20,11 +20,12 @@ $this->params['breadcrumbs'][] = $this->title;
                 </div>
                 <span class="ds-badge <?= $model->status === 'active' ? 'ds-badge--success' : 'ds-badge--secondary' ?>"><?= Html::encode($model->getStatusList()[$model->status] ?? $model->status) ?></span>
                 <?= Html::a('Задания', ['/tasks-v2/index', 'type' => 'battle_pass', 'season_id' => $model->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm']) ?>
-                <?= Html::a('<i class="fas fa-pen"></i>', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--secondary ds-btn--sm']) ?>
+                <?= Html::a('<i class="fas fa-pen" aria-hidden="true"></i>', ['update', 'id' => $model->id], [
+                    'class' => 'ds-btn ds-btn--secondary ds-btn--sm',
+                    'aria-label' => 'Редактировать сезон «' . $model->name . '»',
+                    'title' => 'Редактировать',
+                ]) ?>
             </article>
         <?php endforeach; ?>
     </div>
 </div>
-<style>
-.battle-pass-admin-index{padding:16px 24px;background:hsl(0 0% 10%);min-height:100%}.battle-pass-admin-list{display:grid;gap:10px}.battle-pass-admin-season{display:flex;align-items:center;gap:14px;background:hsl(0 0% 15%);border-radius:10px;padding:14px}.battle-pass-admin-season__number{font-size:22px;font-weight:800;color:hsl(18 90% 60%);min-width:52px}.battle-pass-admin-season__content{display:grid;gap:2px;min-width:0;flex:1}.battle-pass-admin-season__content span,.battle-pass-admin-season__content small{color:hsl(0 0% 62%);font-size:12px}@media(max-width:760px){.battle-pass-admin-season{align-items:flex-start;flex-wrap:wrap}.battle-pass-admin-season__content{flex-basis:calc(100% - 70px)}}
-</style>

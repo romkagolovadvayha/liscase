@@ -9,6 +9,7 @@ use common\components\queue\telegram\TelegramMassJob;
 use common\components\queue\vk\SendVkMessageJob;
 use common\components\queue\vk\SendVkMessageBatchJob;
 use common\components\telegram\TelegramPersonalBot;
+use common\components\web\Language;
 use common\components\vk\VkApiHelper;
 use common\components\helpers\Role;
 use common\models\vk\VkUser;
@@ -159,6 +160,21 @@ class TelegramConstructor extends \yii\db\ActiveRecord
             self::STATUS_SUCCESS => 'Завершен',
             self::STATUS_ERROR => 'Ошибка'
         ];
+    }
+
+    /**
+     * Recipient group names mapped to the language stored on a user profile.
+     *
+     * @return string[] group label => locale
+     */
+    public static function getLkLanguagesArr(): array
+    {
+        $languages = [];
+        foreach (Language::getLanguageList() as $locale => $label) {
+            $languages[(string)$label] = $locale;
+        }
+
+        return $languages;
     }
 
     /**

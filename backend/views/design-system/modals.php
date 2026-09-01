@@ -27,13 +27,13 @@ $this->params['breadcrumbs'][] = 'Модальные окна';
 </div>
 
 <!-- Модальное окно -->
-<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="exampleModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <header>
-                <h4 id="exampleModalLabel">Пример модального окна</h4>
-                <button type="button" class="ds-btn ds-btn--icon" data-bs-dismiss="modal" aria-label="Close">
-                    <i class="fas fa-times"></i>
+                <h2 id="exampleModalLabel">Пример модального окна</h2>
+                <button type="button" class="ds-btn ds-btn--icon" data-bs-dismiss="modal" aria-label="Закрыть окно">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </header>
             <div class="modal-body">

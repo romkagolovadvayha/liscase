@@ -2,7 +2,7 @@
 
 use common\models\statistics\Statistics;
 use common\models\statistics\StatisticsSearch;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;

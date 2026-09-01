@@ -47,10 +47,10 @@ class TelegramRecipients extends \yii\db\ActiveRecord
     {
         return [
             'id' => 'ID',
-            'ref_id' => 'Ref Code',
+            'ref_id' => 'Код группы',
             'name' => 'Название группы',
             'quantity' => 'Количество участников',
-            'created_at' => 'Created At',
+            'created_at' => 'Дата создания',
         ];
     }
 

@@ -9,7 +9,7 @@ use common\models\servers\ServersRadioStation;
 $searchModel = $searchModel ?? null;
 if (!$searchModel) return;
 ?>
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<div class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -20,7 +20,7 @@ if (!$searchModel) return;
             <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Фильтры</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Статус</label>
+                    <label for="serversradiostationsearch-status" class="text-xs text-gray-400 mb-1 block">Статус</label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList(
                             ArrayHelper::merge(['' => 'Все'], ServersRadioStation::getStatusList()),
@@ -37,4 +37,4 @@ if (!$searchModel) return;
         <a href="<?= Url::to(['index']) ?>" class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-center block text-center mt-2"><i class="fas fa-redo"></i> Сбросить</a>
     </div>
     <?php ActiveForm::end(); ?>
-</aside>
+</div>

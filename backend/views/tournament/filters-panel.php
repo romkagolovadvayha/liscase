@@ -22,7 +22,7 @@ $serverList = ArrayHelper::merge(
     )
 );
 ?>
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<div class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -35,20 +35,20 @@ $serverList = ArrayHelper::merge(
             <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide"><?= Yii::t('common', 'Фильтры') ?></h3>
             <div class="space-y-3">
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Название') ?></label>
+                    <label for="tournamentsearch-title" class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Название') ?></label>
                     <?= $form->field($searchModel, 'title', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->textInput([
                         'class' => 'ds-input w-full text-sm',
                         'placeholder' => Yii::t('common', 'Поиск…'),
                     ]) ?>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Slug</label>
+                    <label for="tournamentsearch-slug" class="text-xs text-gray-400 mb-1 block">Slug</label>
                     <?= $form->field($searchModel, 'slug', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->textInput([
                         'class' => 'ds-input w-full text-sm',
                     ]) ?>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Статус') ?></label>
+                    <label for="tournamentsearch-status" class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Статус') ?></label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'status', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList(
                             ArrayHelper::merge(['' => Yii::t('common', 'Все')], Tournament::getStatusList()),
@@ -58,7 +58,7 @@ $serverList = ArrayHelper::merge(
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Фаза') ?></label>
+                    <label for="tournamentsearch-phase" class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Фаза') ?></label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'phase', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList(
                             ArrayHelper::merge(['' => Yii::t('common', 'Все')], Tournament::getPhaseList()),
@@ -68,7 +68,7 @@ $serverList = ArrayHelper::merge(
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Сервер') ?></label>
+                    <label for="tournamentsearch-server_id" class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Сервер') ?></label>
                     <div class="ds-select-wrapper">
                         <?= $form->field($searchModel, 'server_id', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->dropDownList(
                             $serverList,
@@ -89,4 +89,4 @@ $serverList = ArrayHelper::merge(
         </a>
     </div>
     <?php ActiveForm::end(); ?>
-</aside>
+</div>

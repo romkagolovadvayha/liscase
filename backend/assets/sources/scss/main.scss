@@ -1586,3 +1586,7 @@ $color_text: $ds-text-primary;
     }
   }
 }
+
+// Финальный слой интерфейса админки. Подключён последним, чтобы единые
+// компоненты предсказуемо перекрывали legacy AdminLTE и старые page-specific правила.
+@import 'admin-refresh';

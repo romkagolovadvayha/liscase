@@ -2,7 +2,6 @@
 namespace common\models\site;
 
 use Yii;
-use yii\base\Model;
 use yii\db\ActiveRecord;
 use yii\web\UploadedFile;
 
@@ -27,12 +26,15 @@ class SiteSetting extends ActiveRecord
     public function rules()
     {
         return [
-            [['name', 'category', 'type'], 'required'],
+            [['name', 'category', 'type', 'code'], 'required'],
+            [['name', 'category', 'code'], 'trim'],
             [['name', 'category'], 'string', 'max' => 255],
-            [['type'], 'in', 'range' => ['text', 'color', 'image', 'video', 'number', 'checkbox', 'longtext', 'password']],
+            [['type'], 'in', 'range' => ['text', 'color', 'image', 'video', 'file', 'number', 'checkbox', 'radio', 'longtext', 'password']],
             [['value'], 'string'],
             [['is_translate'], 'integer'],
             [['code'], 'string', 'max' => 255],
+            [['category', 'code'], 'match', 'pattern' => '/^[A-Za-z0-9_-]+$/u', 'message' => 'Используйте латинские буквы, цифры, дефис и подчёркивание.'],
+            [['code'], 'unique', 'targetAttribute' => ['category', 'code'], 'message' => 'Такой системный код уже есть в этой категории.'],
         ];
     }
 

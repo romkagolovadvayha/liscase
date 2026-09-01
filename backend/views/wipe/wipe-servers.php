@@ -1,7 +1,7 @@
 <?php
 
 use common\models\servers\Servers;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\bootstrap5\Html;
 use yii\helpers\ArrayHelper;
 

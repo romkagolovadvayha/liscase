@@ -4,7 +4,7 @@ use common\models\support\Support;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 use yii\widgets\Pjax;
 /** @var yii\web\View $this */
 /** @var backend\models\support\SupportSearch $searchModel */
@@ -42,7 +42,7 @@ $this->params['breadcrumbs'][] = $this->title;
                     $avatarHtml = '';
                     if ($avatar) {
                         $avatarHtml = Html::img($avatar, [
-                            'alt' => Html::encode($model->user->username),
+                            'alt' => '',
                             'style' => 'width: 32px; height: 32px; border-radius: 50%; object-fit: cover; vertical-align: middle; margin-right: 8px;',
                         ]);
                     }
@@ -53,9 +53,26 @@ $this->params['breadcrumbs'][] = $this->title;
                     ]);
                 },
             ],
-            'name',
-            'status',
-            'created_at',
+            [
+                'attribute' => 'name',
+                'value' => static function (Support $model): string {
+                    return trim((string)$model->name) !== '' ? (string)$model->name : 'Без темы';
+                },
+            ],
+            [
+                'attribute' => 'status',
+                'format' => 'raw',
+                'filter' => Support::getStatusList(),
+                'value' => static function (Support $model): string {
+                    $label = Support::getStatusList()[$model->status] ?? 'Неизвестно';
+                    $modifier = (int)$model->status === Support::STATUS_OPEN ? 'success' : 'secondary';
+                    return Html::tag('span', Html::encode($label), ['class' => 'ds-badge ds-badge--' . $modifier]);
+                },
+            ],
+            [
+                'attribute' => 'created_at',
+                'format' => ['datetime', 'php:d.m.Y H:i'],
+            ],
             [
                 'class' => ActionColumn::className(),
                 'urlCreator' => function ($action, Support $model, $key, $index, $column) {

@@ -7,6 +7,23 @@ use yii\widgets\ActiveForm;
 /** @var yii\web\View $this */
 /** @var common\models\rustplugin\RustPluginConfig $model */
 /** @var yii\widgets\ActiveForm $form */
+
+$replacementTags = [
+    '{SERVER_NAME}' => 'Название сервера',
+    '{SERVER_IP}' => 'IP-адрес',
+    '{SERVER_PORT}' => 'Порт',
+    '{SERVER_TAG}' => 'Тег сервера',
+    '{SERVER_QUERY_PORT}' => 'Query-порт',
+    '{SERVER_RCON_PORT}' => 'RCON-порт',
+    '{SERVER_MONITORING_NAME}' => 'Название для мониторинга',
+    '{SERVER_DESCRIPTION}' => 'Описание сервера',
+    '{SERVER_MAP}' => 'Карта сервера',
+    '{SERVER_MAX_PLAYERS}' => 'Максимальное количество игроков',
+    '{SERVER_TEAM_LIMIT}' => 'Лимит команды',
+    '{TEXT_IP}' => 'Текстовый IP-адрес',
+    '{WIPE_TYPE}' => 'Тип вайпа',
+    '{DOMAIN}' => 'Домен сайта',
+];
 ?>
 
 <div class="rust-plugin-config-form">
@@ -17,40 +34,30 @@ use yii\widgets\ActiveForm;
     <?= $form->field($model, 'name')->textInput(['maxlength' => true])->hint('Название плагина, по которому будет происходить поиск конфига в API') ?>
     
     <div class="form-group">
-        <label class="control-label" style="color: #333;">Доступные теги для замены</label>
-        <div class="tags-help-block" style="background: #1e1e1e; border: 1px solid #444; border-radius: 4px; padding: 15px; margin-bottom: 15px; color: #ffffff;">
-            <p style="margin-bottom: 10px; font-weight: bold; color: #ffffff;">В JSON конфиге можно использовать следующие теги (будут заменены на значения сервера при запросе через API):</p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; font-family: monospace; font-size: 13px;">
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_NAME}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_NAME}</code> <span style="color: #d0d0d0;">- Название сервера</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_IP}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_IP}</code> <span style="color: #d0d0d0;">- IP адрес</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_PORT}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_PORT}</code> <span style="color: #d0d0d0;">- Порт</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_TAG}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_TAG}</code> <span style="color: #d0d0d0;">- Тег сервера</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_QUERY_PORT}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_QUERY_PORT}</code> <span style="color: #d0d0d0;">- Query порт</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_RCON_PORT}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_RCON_PORT}</code> <span style="color: #d0d0d0;">- RCON порт</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_MONITORING_NAME}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_MONITORING_NAME}</code> <span style="color: #d0d0d0;">- Название для мониторинга</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_DESCRIPTION}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_DESCRIPTION}</code> <span style="color: #d0d0d0;">- Описание сервера</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_MAP}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_MAP}</code> <span style="color: #d0d0d0;">- Карта сервера</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_MAX_PLAYERS}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_MAX_PLAYERS}</code> <span style="color: #d0d0d0;">- Максимальное количество игроков</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{SERVER_TEAM_LIMIT}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{SERVER_TEAM_LIMIT}</code> <span style="color: #d0d0d0;">- Лимит команды</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{TEXT_IP}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{TEXT_IP}</code> <span style="color: #d0d0d0;">- Текстовый IP адрес</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{WIPE_TYPE}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{WIPE_TYPE}</code> <span style="color: #d0d0d0;">- Тип вайпа (Недельный/Двухнедельный/Месячный)</span></div>
-                <div style="color: #ffffff;"><code class="tag-item" data-tag="{DOMAIN}" style="background: #3d3d3d; color: #61dafb; padding: 4px 8px; border-radius: 3px; cursor: pointer; user-select: none; display: inline-block; transition: all 0.2s;" title="Кликните, чтобы вставить">{DOMAIN}</code> <span style="color: #d0d0d0;">- Домен сайта (<code style="color:#aaa;">site_domain</code> в настройках)</span></div>
+        <div class="control-label">Доступные теги для замены</div>
+        <div class="tags-help-block">
+            <p class="tags-help-block__intro">В JSON-конфиге можно использовать теги, которые API заменит значениями сервера:</p>
+            <div class="tags-help-grid">
+                <?php foreach ($replacementTags as $tag => $description): ?>
+                    <div class="tags-help-item">
+                        <button type="button" class="tag-item" data-tag="<?= Html::encode($tag) ?>" title="Скопировать <?= Html::encode($tag) ?>"><?= Html::encode($tag) ?></button>
+                        <span>— <?= Html::encode($description) ?></span>
+                    </div>
+                <?php endforeach; ?>
             </div>
-            <p style="margin-top: 10px; margin-bottom: 0; font-size: 12px; color: #ffffff;">
-                <strong style="color: #ffffff;">Пример использования:</strong> <code style="background: #3d3d3d; color: #61dafb; padding: 2px 6px; border-radius: 3px;">"host": "{SERVER_IP}:{SERVER_PORT}"</code>
-            </p>
+            <p class="tags-help-example"><strong>Пример:</strong> <code>"host": "{SERVER_IP}:{SERVER_PORT}"</code></p>
         </div>
     </div>
     
     <div class="form-group field-rustpluginconfig-content required">
-        <label class="control-label" for="content-hidden-input"><?= $model->attributeLabels()['content'] ?></label>
-        <?= Html::textarea('RustPluginConfig[content]', $model->content, ['id' => 'content-hidden-input', 'rows' => 1, 'style' => 'display: none;']) ?>
-        <div id="json-editor" style="height: 500px; width: 100%; border: 1px solid #444; border-radius: 4px; background: #1e1e1e;"></div>
+        <div class="control-label" id="content-label"><?= $model->attributeLabels()['content'] ?></div>
+        <?= Html::textarea('RustPluginConfig[content]', $model->content, ['id' => 'content-hidden-input', 'rows' => 1, 'hidden' => true]) ?>
+        <div id="json-editor" aria-labelledby="content-label"></div>
         <div class="help-block"></div>
     </div>
     
     <div class="form-group">
-        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Сохранить', ['class' => 'ds-btn ds-btn--primary']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>
@@ -64,13 +71,13 @@ use yii\widgets\ActiveForm;
     ?>
     
     <?php if (!$model->isNewRecord): ?>
-    <div class="plugin-reload-section" style="margin-top: 30px; padding: 20px; background: #1e1e1e; border: 1px solid #444; border-radius: 4px; color: #ffffff;">
-        <h4 style="margin-top: 0; color: #ffffff;">Перезагрузка плагина на сервере</h4>
-        <p style="color: #d0d0d0; margin-bottom: 15px;">Выберите сервер и нажмите кнопку для перезагрузки плагина "<strong style="color: #61dafb;"><?= Html::encode($model->name) ?></strong>"</p>
+    <div class="plugin-reload-section">
+        <h4>Перезагрузка плагина на сервере</h4>
+        <p>Выберите сервер для перезагрузки плагина «<strong><?= Html::encode($model->name) ?></strong>».</p>
         
         <div class="form-group">
-            <label for="reload-server-select" style="color: #ffffff;">Сервер:</label>
-            <select id="reload-server-select" class="form-control" style="max-width: 400px; display: inline-block; margin-left: 10px; background: #2d2d2d; color: #ffffff; border: 1px solid #444;">
+            <label for="reload-server-select">Сервер</label>
+            <select id="reload-server-select" class="form-control ds-select plugin-reload-select">
                 <option value="">Выберите сервер...</option>
                 <?php
                 $servers = \common\models\servers\Servers::find()
@@ -85,11 +92,11 @@ use yii\widgets\ActiveForm;
             </select>
         </div>
         
-        <button type="button" id="reload-plugin-btn" class="btn btn-primary" disabled>
-            <i class="fas fa-sync-alt"></i> Перезагрузить плагин
+        <button type="button" id="reload-plugin-btn" class="ds-btn ds-btn--primary" disabled>
+            <i class="fas fa-sync-alt" aria-hidden="true"></i> Перезагрузить плагин
         </button>
         
-        <div id="reload-result" style="margin-top: 15px; display: none;"></div>
+        <div id="reload-result" class="plugin-reload-result" hidden role="status" aria-live="polite"></div>
     </div>
     <?php endif; ?>
 </div>
@@ -245,15 +252,11 @@ $js = <<<JS
     
     // Функция визуальной обратной связи
     function showCopyFeedback(tagElement, originalText) {
-        var originalBg = tagElement.style.background || '#3d3d3d';
-        var originalColor = tagElement.style.color || '#61dafb';
-        tagElement.style.background = '#28a745';
-        tagElement.style.color = '#fff';
+        tagElement.classList.add('is-copied');
         tagElement.textContent = 'Скопировано!';
         
         setTimeout(function() {
-            tagElement.style.background = originalBg;
-            tagElement.style.color = originalColor;
+            tagElement.classList.remove('is-copied');
             tagElement.textContent = originalText;
         }, 1000);
     }
@@ -269,18 +272,6 @@ $js = <<<JS
                 if (tag) {
                     copyToClipboard(tag, this);
                 }
-            });
-            
-            // Эффект при наведении
-            tagElement.addEventListener('mouseenter', function() {
-                this.style.background = '#4d4d4d';
-                this.style.color = '#7dd3fc';
-                this.style.transform = 'scale(1.05)';
-            });
-            tagElement.addEventListener('mouseleave', function() {
-                this.style.background = '#3d3d3d';
-                this.style.color = '#61dafb';
-                this.style.transform = 'scale(1)';
             });
         });
     }
@@ -312,7 +303,7 @@ $js = <<<JS
             // Блокируем кнопку
             reloadPluginBtn.disabled = true;
             reloadPluginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Перезагрузка...';
-            reloadResult.style.display = 'none';
+            reloadResult.hidden = true;
             
             // Отправляем AJAX запрос
             var formData = new FormData();
@@ -334,19 +325,19 @@ $js = <<<JS
                 return response.json();
             })
             .then(function(data) {
-                reloadResult.style.display = 'block';
+                reloadResult.hidden = false;
                 if (data.success) {
                     reloadResult.className = 'alert alert-success';
-                    reloadResult.innerHTML = '<strong>Успешно!</strong> ' + (data.message || 'Плагин перезагружен');
+                    reloadResult.textContent = data.message || 'Плагин перезагружен';
                 } else {
                     reloadResult.className = 'alert alert-danger';
-                    reloadResult.innerHTML = '<strong>Ошибка!</strong> ' + (data.message || 'Не удалось перезагрузить плагин');
+                    reloadResult.textContent = data.message || 'Не удалось перезагрузить плагин';
                 }
             })
             .catch(function(error) {
-                reloadResult.style.display = 'block';
+                reloadResult.hidden = false;
                 reloadResult.className = 'alert alert-danger';
-                reloadResult.innerHTML = '<strong>Ошибка!</strong> ' + error.message;
+                reloadResult.textContent = 'Ошибка: ' + error.message;
             })
             .finally(function() {
                 reloadPluginBtn.disabled = false;

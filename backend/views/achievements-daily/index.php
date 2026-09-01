@@ -4,7 +4,7 @@ use common\models\achievements\AchievementsDaily;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 use backend\models\achievements\AchievementsDailySearch;
 
 /** @var yii\web\View $this */
@@ -40,7 +40,11 @@ $this->title = 'Ежедневная награда';
                     'options'   => ['width' => '40'],
                     'format'    => 'raw',
                     'value'          => function (AchievementsDaily $model) {
-                        return Html::img($model->drop->image(), ['style' => 'width: 32px']);
+                        return Html::img($model->drop->image(), [
+                            'alt' => 'Изображение награды',
+                            'width' => 32,
+                            'height' => 32,
+                        ]);
                     },
                 ],
                 [

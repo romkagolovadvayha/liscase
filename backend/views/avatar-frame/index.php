@@ -2,7 +2,7 @@
 
 use backend\models\avatar\AvatarFrameSearch;
 use common\models\avatar\AvatarFrame;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\grid\ActionColumn;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
@@ -41,7 +41,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 [
                     'attribute' => 'image_key',
                     'format' => 'raw',
-                    'label' => '',
+                    'label' => Yii::t('common', 'Рамка'),
                     'options' => ['width' => '70'],
                     'headerOptions' => ['class' => $headerCellClass],
                     'contentOptions' => ['class' => $bodyCellClass . ' drop-index-preview-cell'],
@@ -54,7 +54,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                             'width' => 48,
                             'height' => 48,
                             'loading' => 'lazy',
-                            'alt' => 'Avatar frame',
+                            'alt' => Yii::t('common', 'Рамка аватара'),
                             'class' => 'drop-index-preview-img',
                         ]), ['class' => 'drop-index-preview']);
                     },

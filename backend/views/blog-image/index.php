@@ -4,14 +4,14 @@ use common\models\blog\BlogImage;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 use common\models\blog\BlogImageSearch;
 
 /** @var yii\web\View $this */
 /** @var BlogImageSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Blog Images';
+$this->title = 'Изображения блога';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="blog-image-index">
@@ -19,7 +19,7 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create Blog Image', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('Добавить изображение', ['create'], ['class' => 'ds-btn ds-btn--primary']) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>

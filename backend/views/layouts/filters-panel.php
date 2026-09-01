@@ -1,144 +1,141 @@
 <?php
 
+use backend\models\ClanSearch;
+use backend\models\ServersTagsSearch;
+use common\models\box\Select;
+use common\models\box\SelectSearch;
+use common\models\clan\Clan;
+use common\models\servers\Servers;
+use common\models\servers\ServersTags;
+use common\models\statistics\StatisticsSearch;
+use yii\base\Model;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
+use yii\widgets\ActiveForm;
 
+/** @var Model|null $searchModel */
+
+$searchModel = $searchModel ?? null;
+$route = '/' . Yii::$app->controller->route;
+$fields = [];
+
+if ($searchModel instanceof ClanSearch) {
+    $fields = [
+        'id' => ['type' => 'number'],
+        'name' => [],
+        'tag' => [],
+        'server_id' => [
+            'type' => 'select',
+            'items' => ArrayHelper::map(
+                Servers::find()->where(['status' => Servers::STATUS_ACTIVE])->orderBy(['sort' => SORT_ASC])->all(),
+                'id',
+                'name'
+            ),
+            'prompt' => Yii::t('common', 'Все серверы'),
+        ],
+        'leader_username' => [],
+        'privacy' => [
+            'type' => 'select',
+            'items' => [
+                Clan::PRIVACY_OPEN => Yii::t('common', 'Открытый'),
+                Clan::PRIVACY_CLOSED => Yii::t('common', 'Закрытый'),
+                Clan::PRIVACY_INVITE_ONLY => Yii::t('common', 'По приглашению'),
+            ],
+            'prompt' => Yii::t('common', 'Любая приватность'),
+        ],
+    ];
+} elseif ($searchModel instanceof SelectSearch) {
+    $fields = [
+        'id' => ['type' => 'number'],
+        'name' => [],
+        'status' => ['type' => 'select', 'items' => Select::getStatusList(), 'prompt' => Yii::t('common', 'Любой статус')],
+        'created_at' => [],
+    ];
+} elseif ($searchModel instanceof StatisticsSearch) {
+    $fields = [
+        'id' => ['type' => 'number'],
+        'steam_id' => [],
+        'key' => [],
+        'value' => ['type' => 'number'],
+        'server_tag' => [],
+        'wipe' => [],
+    ];
+} elseif ($searchModel instanceof ServersTagsSearch) {
+    $fields = [
+        'id' => ['type' => 'number'],
+        'name' => [],
+        'title' => [],
+        'link_name' => [],
+        'status' => ['type' => 'select', 'items' => ServersTags::getStatusList(), 'prompt' => Yii::t('common', 'Любой статус')],
+        'color' => [],
+        'sort' => ['type' => 'number'],
+    ];
+} elseif ($searchModel instanceof Model) {
+    foreach (array_slice($searchModel->activeAttributes(), 0, 8) as $attribute) {
+        $fields[$attribute] = [];
+    }
+}
 ?>
 
-<!-- Filters Panel -->
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
-    <div class="p-4">
-        <!-- Search in Filters -->
-        <div class="mb-4">
-            <div class="relative">
-                <input 
-                    type="search" 
-                    class="ds-input w-full pl-10" 
-                    placeholder="Поиск..." 
-                    id="filters-search"
-                >
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-            </div>
-        </div>
-
-        <!-- Фильтры Section -->
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">
-                Фильтры
-            </h3>
-            
-            <div class="space-y-3">
-                <!-- Только с сервера -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Только с сервера
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <select class="ds-select text-sm min-w-[80px] py-1.5 pr-8 pl-2">
-                            <option>Все</option>
-                            <option>Сервер 1</option>
-                            <option>Сервер 2</option>
-                        </select>
-                        <label class="ds-switch">
-                            <input type="checkbox">
-                            <span class="ds-switch__slider"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Только онлайн игроки -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Только онлайн игроки
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox">
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-
-                <!-- Только игроков с VPN -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Только игроков с VPN
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox">
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-
-                <!-- Только с игнором жалоб -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Только с игнором жалоб
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox">
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-
-                <!-- Только с заметками -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Только с заметками
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox">
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Внешний вид Section -->
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">
-                Внешний вид
-            </h3>
-            
-            <div class="space-y-3">
-                <!-- Показывать тип подключения -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Показывать тип подключения
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox">
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-
-                <!-- Выделять IP c VPN/Proxy -->
-                <div class="flex items-center justify-between gap-3">
-                    <label class="text-sm text-gray-400 flex-1">
-                        Выделять IP c VPN/Proxy
-                    </label>
-                    <label class="ds-switch">
-                        <input type="checkbox" checked>
-                        <span class="ds-switch__slider"></span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="mb-6">
-            <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">
-                Быстрые действия
-            </h3>
-            
-            <div class="space-y-2">
-                <button class="ds-btn ds-btn--primary ds-btn--sm w-full justify-start">
-                    <i class="fas fa-filter"></i>
-                    <span>Применить фильтры</span>
-                </button>
-                <button class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-start">
-                    <i class="fas fa-redo"></i>
-                    <span>Сбросить</span>
-                </button>
-            </div>
-        </div>
+<div class="admin-filters-content generic-filters-panel">
+    <div class="user-filters-mobile-header">
+        <h2 class="generic-filters-panel__title"><?= Yii::t('common', 'Фильтры') ?></h2>
+        <button type="button" class="filters-drawer-close ds-btn ds-btn--icon ds-btn--ghost" aria-label="Закрыть фильтры">
+            <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
     </div>
-</aside>
 
+    <?php if ($searchModel instanceof Model && $fields !== []): ?>
+        <?php $form = ActiveForm::begin([
+            'action' => [$route],
+            'method' => 'get',
+            'options' => ['class' => 'generic-filters-panel__form'],
+            'fieldConfig' => [
+                'options' => ['class' => 'generic-filter-field'],
+                'labelOptions' => ['class' => 'generic-filter-field__label'],
+                'errorOptions' => ['class' => 'generic-filter-field__error'],
+            ],
+        ]); ?>
+
+        <h2 class="generic-filters-panel__title generic-filters-panel__title--desktop"><?= Yii::t('common', 'Фильтры') ?></h2>
+
+        <?php foreach ($fields as $attribute => $config): ?>
+            <?php
+            $inputId = 'sidebar-filter-' . Html::getInputId($searchModel, $attribute);
+            $field = $form->field($searchModel, $attribute, [
+                'labelOptions' => [
+                    'class' => 'generic-filter-field__label',
+                    'for' => $inputId,
+                ],
+            ]);
+            if (($config['type'] ?? 'text') === 'select') {
+                echo $field->dropDownList($config['items'] ?? [], [
+                    'id' => $inputId,
+                    'class' => 'ds-select',
+                    'prompt' => $config['prompt'] ?? null,
+                ]);
+            } else {
+                echo $field->textInput([
+                    'id' => $inputId,
+                    'class' => 'ds-input',
+                    'type' => ($config['type'] ?? null) === 'number' ? 'number' : 'text',
+                    'autocomplete' => 'off',
+                ]);
+            }
+            ?>
+        <?php endforeach; ?>
+
+        <div class="generic-filters-panel__actions">
+            <?= Html::submitButton('<i class="fas fa-filter" aria-hidden="true"></i> ' . Yii::t('common', 'Применить'), [
+                'class' => 'ds-btn ds-btn--primary',
+            ]) ?>
+            <?= Html::a('<i class="fas fa-rotate-left" aria-hidden="true"></i> ' . Yii::t('common', 'Сбросить'), [$route], [
+                'class' => 'ds-btn ds-btn--secondary',
+            ]) ?>
+        </div>
+
+        <?php ActiveForm::end(); ?>
+    <?php else: ?>
+        <p class="generic-filters-panel__empty"><?= Yii::t('common', 'Для этой страницы дополнительные фильтры не предусмотрены.') ?></p>
+    <?php endif; ?>
+</div>

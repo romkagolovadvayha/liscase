@@ -60,7 +60,7 @@ class UserSearch extends User
      *
      * @return ActiveDataProvider
      */
-    public function search($params, callable $filter = null)
+    public function search($params, ?callable $filter = null)
     {
         $this->load($params);
 

@@ -7,7 +7,7 @@ use yii\widgets\ActiveForm;
 $searchModel = $searchModel ?? null;
 if (!$searchModel) return;
 ?>
-<aside class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
+<div class="admin-filters-content bg-[hsl(0_0%_20.4%_/_1)] border-l border-[hsl(0_0%_15.3%_/_1)] h-full overflow-y-auto scrollbar-thin">
     <?php $form = ActiveForm::begin([
         'action' => ['index'],
         'method' => 'get',
@@ -19,19 +19,19 @@ if (!$searchModel) return;
             <h3 class="text-sm font-semibold text-white mb-3 uppercase tracking-wide">Фильтры</h3>
             <div class="space-y-3">
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">ID</label>
+                    <label for="categorysearch-id" class="text-xs text-gray-400 mb-1 block">ID</label>
                     <?= $form->field($searchModel, 'id', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->textInput([
                         'class' => 'ds-input w-full text-sm', 'type' => 'number', 'placeholder' => 'ID',
                     ]) ?>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Название</label>
+                    <label for="categorysearch-name" class="text-xs text-gray-400 mb-1 block">Название</label>
                     <?= $form->field($searchModel, 'name', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->textInput([
                         'class' => 'ds-input w-full text-sm', 'placeholder' => 'Название',
                     ]) ?>
                 </div>
                 <div>
-                    <label class="text-xs text-gray-400 mb-1 block">Тег</label>
+                    <label for="categorysearch-tag" class="text-xs text-gray-400 mb-1 block">Тег</label>
                     <?= $form->field($searchModel, 'tag', ['options' => ['class' => 'mb-0'], 'template' => '{input}'])->textInput([
                         'class' => 'ds-input w-full text-sm', 'placeholder' => 'Тег',
                     ]) ?>
@@ -44,4 +44,4 @@ if (!$searchModel) return;
         <a href="<?= Url::to(['index']) ?>" class="ds-btn ds-btn--secondary ds-btn--sm w-full justify-center block text-center mt-2"><i class="fas fa-redo"></i> Сбросить</a>
     </div>
     <?php ActiveForm::end(); ?>
-</aside>
+</div>

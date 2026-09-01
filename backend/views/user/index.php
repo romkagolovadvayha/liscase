@@ -1,7 +1,7 @@
 <?php
 
 use common\components\helpers\Role;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;
@@ -19,12 +19,15 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
 ?>
 
 <div class="user-index-page w-full">
+    <h1 class="visually-hidden"><?= Html::encode($this->title) ?></h1>
     <!-- Десктоп: таблица -->
     <div class="user-index-desktop">
         <div class="user-index-table-wrap">
         <?= GridView::widget([
             'dataProvider' => $dataProvider,
-            'filterModel' => $searchModel,
+            // Фильтры вынесены в единый боковой drawer. Скрытая строка GridView
+            // дублировала id полей и оставляла недоступные контролы в DOM.
+            'filterModel' => null,
             'tableOptions' => [
                 'class' => 'table-auto w-full text-sm user-table-dark user-index-table',
             ],
@@ -46,6 +49,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 [
                     'format' => 'raw',
                     'label' => '',
+                    'header' => Html::tag('span', 'Аватар', ['class' => 'visually-hidden']),
                     'options' => ['width' => '48px'],
                     'headerOptions' => ['class' => $headerCellClass . ' user-index-avatar-cell'],
                     'contentOptions' => ['class' => $bodyCellClass . ' user-index-avatar-cell'],
@@ -91,6 +95,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                     'value' => function (UserSearch $model) {
                         return Html::a($model->steam_id, 'https://steamcommunity.com/profiles/' . $model->steam_id, [
                             'target' => '_blank',
+                            'rel' => 'noopener noreferrer',
                             'class' => 'text-white hover:underline',
                             'style' => 'text-decoration: none;',
                         ]);
@@ -126,6 +131,7 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                 ],
                 [
                     'class' => ActionColumn::class,
+                    'header' => Html::tag('span', 'Действия', ['class' => 'visually-hidden']),
                     'template' => '{switch}',
                     'options' => ['width' => '90'],
                     'headerOptions' => ['class' => $headerCellClass],
@@ -143,6 +149,9 @@ $bodyCellClass = 'px-4 py-3 text-white border-b border-[hsl(0_0%_15.3%_/_1)]';
                             return Html::a('Войти', $url, [
                                 'class' => 'ds-btn ds-btn--primary ds-btn--sm',
                                 'title' => Yii::t('common', 'Перейти в личный кабинет'),
+                                'aria-label' => Yii::t('common', 'Войти как {username}', [
+                                    'username' => $model->username,
+                                ]),
                             ]);
                         },
                     ],

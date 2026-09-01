@@ -52,7 +52,7 @@ $searchJS = \common\models\box\Drop::searchJS();
     ]); ?>
     <?=$form->field($model, 'count')->textInput()?>
     <div class="form-group">
-        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Сохранить', ['class' => 'ds-btn ds-btn--primary']) ?>
     </div>
     <?php \yii\widgets\Pjax::end(); ?>
     <?php ActiveForm::end(); ?>

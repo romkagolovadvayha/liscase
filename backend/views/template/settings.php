@@ -5,7 +5,7 @@
 use yii\widgets\ActiveForm;
 use yii\helpers\Html;
 
-$this->title = 'Edit Template: ' . Html::encode($template->name);
+$this->title = 'Настройки шаблона: ' . Html::encode($template->name);
 ?>
 
 <h1><?= Html::encode($this->title) ?></h1>
@@ -15,8 +15,8 @@ $this->title = 'Edit Template: ' . Html::encode($template->name);
 <?= $form->field($template, 'name')->textInput() ?>
 
 <div class="form-group">
-    <?= Html::submitButton('Save', ['class' => 'btn btn-primary']) ?>
-    <?= Html::a('Back', ['template/index', 'templateId' => (int)$template->id], ['class' => 'btn btn-default']) ?>
+    <?= Html::submitButton('Сохранить', ['class' => 'ds-btn ds-btn--primary']) ?>
+    <?= Html::a('Назад', ['template/index', 'templateId' => (int)$template->id], ['class' => 'ds-btn ds-btn--secondary']) ?>
 </div>
 
 <?php ActiveForm::end(); ?>

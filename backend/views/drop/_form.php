@@ -107,7 +107,7 @@ JS
     <?php if ($model->isNewRecord): ?>
         <span class="ds-btn ds-btn--primary ds-btn--sm ds-btn--disabled" title="Сначала сохраните предмет" style="opacity:0.6; cursor:not-allowed; pointer-events:none;"><i class="fas fa-plus"></i> Добавить предмет</span>
     <?php else: ?>
-        <a href="/drop-drop/create?dropId=<?= (int)$model->id ?>" class="ds-btn ds-btn--primary ds-btn--sm show-modal-link" data-toggl="modal" data-target="modal-dialog" data-title="Добавить предмет" data-pjax="0"><i class="fas fa-plus"></i> Добавить предмет</a>
+        <a href="/drop-drop/create?dropId=<?= (int)$model->id ?>" class="ds-btn ds-btn--primary ds-btn--sm show-modal-link" data-target="modal-dialog" data-title="Добавить предмет" data-pjax="0"><i class="fas fa-plus"></i> Добавить предмет</a>
     <?php endif; ?>
 </div>
 <?php if (!$model->isNewRecord): ?>

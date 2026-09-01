@@ -4,7 +4,7 @@ use common\models\rustplugin\RustPluginConfig;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var common\models\rustplugin\RustPluginConfigSearch $searchModel */

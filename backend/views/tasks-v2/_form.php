@@ -25,7 +25,7 @@ $dropFormat = new JsExpression("
     function(item) {
         try {
             var model = JSON.parse(item.text);
-            return '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + (model.image || '') + '\"/><span>' + model.name + '</span></div>';
+            return '<div class=\"drop-select-item\"><img class=\"kv-icon-image\" src=\"' + (model.image || '') + '\" alt=\"\"/><span>' + model.name + '</span></div>';
         } catch {
             return item.text;
         }

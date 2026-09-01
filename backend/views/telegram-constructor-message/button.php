@@ -12,7 +12,7 @@ use yii\bootstrap5\Html;
 <div class="telegram_message_buttons_item_wrap">
     <div class="telegram_message_buttons_item">
         <a href="#" class="telegram_message_buttons_item_delete" title="Удалить"><span aria-hidden="true">&times;</span></a>
-        <a href="#" class="telegram_message_buttons_item_update" title="Изменить" data-toggle="modal" data-modal-form="role_form" data-target="#modalFormAddButtonTgConstructor"><?=Html::icon('pencil')?></a>
+        <a href="#" class="telegram_message_buttons_item_update" title="Изменить" data-bs-toggle="modal" data-modal-form="role_form" data-bs-target="#modalFormAddButtonTgConstructor"><?=Html::icon('pencil')?></a>
         <?php foreach ($titles as $title): ?>
             <input type="hidden" class="button_title" name="TelegramConstructorMessageForm[buttons][<?=$index?>][title][<?=$title['language']?>]" data-language="<?=$title['language']?>" value="<?=$title['text']?>"/>
         <?php endforeach; ?>

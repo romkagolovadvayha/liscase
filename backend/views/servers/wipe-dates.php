@@ -22,14 +22,14 @@ $this->title = Yii::t('common', 'Даты вайпов');
         </div>
         <div class="ds-card__body">
             <div class="table-responsive">
-                <table class="table table-striped align-middle">
+                <table class="table table-striped align-middle" aria-label="<?= Html::encode(Yii::t('common', 'Сервера и даты вайпов')) ?>">
                     <thead>
                     <tr>
-                        <th><?= Yii::t('common', 'Сервер') ?></th>
-                        <th><?= Yii::t('common', 'wipe') ?></th>
-                        <th><?= Yii::t('common', 'next_wipe') ?></th>
-                        <th><?= Yii::t('common', 'global_wipe') ?></th>
-                        <th><?= Yii::t('common', 'Действие') ?></th>
+                        <th scope="col"><?= Yii::t('common', 'Сервер') ?></th>
+                        <th scope="col"><?= Yii::t('common', 'wipe') ?></th>
+                        <th scope="col"><?= Yii::t('common', 'next_wipe') ?></th>
+                        <th scope="col"><?= Yii::t('common', 'global_wipe') ?></th>
+                        <th scope="col"><?= Yii::t('common', 'Действие') ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -44,42 +44,51 @@ $this->title = Yii::t('common', 'Даты вайпов');
                                 <small class="text-muted"><?= Html::encode($server->tag) ?></small>
                             </td>
                             <td>
+                                <label class="visually-hidden" for="wipe-<?= $sid ?>"><?= Html::encode($server->name) ?> — <?= Yii::t('common', 'Дата текущего вайпа') ?></label>
                                 <input type="text"
+                                       id="wipe-<?= $sid ?>"
                                        class="form-control"
                                        data-role="wipe"
+                                       aria-describedby="current-wipe-<?= $sid ?>"
                                        value="<?= Html::encode($preset['wipe']) ?>"
                                        placeholder="YYYY-MM-DD HH:MM:SS">
                                 <small class="text-muted d-block mt-1">
-                                    Текущее: <span data-current="wipe"><?= Html::encode((string) $server->wipe) ?></span>
+                                    Текущее: <span id="current-wipe-<?= $sid ?>" data-current="wipe"><?= Html::encode((string) $server->wipe) ?></span>
                                 </small>
                             </td>
                             <td>
+                                <label class="visually-hidden" for="next-wipe-<?= $sid ?>"><?= Html::encode($server->name) ?> — <?= Yii::t('common', 'Дата следующего вайпа') ?></label>
                                 <input type="text"
+                                       id="next-wipe-<?= $sid ?>"
                                        class="form-control"
                                        data-role="next_wipe"
+                                       aria-describedby="current-next-wipe-<?= $sid ?>"
                                        value="<?= Html::encode($preset['next_wipe']) ?>"
                                        placeholder="YYYY-MM-DD HH:MM:SS">
                                 <small class="text-muted d-block mt-1">
-                                    Текущее: <span data-current="next_wipe"><?= Html::encode((string) $server->next_wipe) ?></span>
+                                    Текущее: <span id="current-next-wipe-<?= $sid ?>" data-current="next_wipe"><?= Html::encode((string) $server->next_wipe) ?></span>
                                 </small>
                             </td>
                             <td>
+                                <label class="visually-hidden" for="global-wipe-<?= $sid ?>"><?= Html::encode($server->name) ?> — <?= Yii::t('common', 'Дата глобального вайпа') ?></label>
                                 <input type="text"
+                                       id="global-wipe-<?= $sid ?>"
                                        class="form-control"
                                        data-role="global_wipe"
+                                       aria-describedby="current-global-wipe-<?= $sid ?>"
                                        value="<?= Html::encode($preset['global_wipe']) ?>"
                                        placeholder="YYYY-MM-DD HH:MM:SS">
                                 <small class="text-muted d-block mt-1">
-                                    Текущее: <span data-current="global_wipe"><?= Html::encode((string) $server->global_wipe) ?></span>
+                                    Текущее: <span id="current-global-wipe-<?= $sid ?>" data-current="global_wipe"><?= Html::encode((string) $server->global_wipe) ?></span>
                                 </small>
                             </td>
                             <td>
                                 <button type="button"
                                         class="ds-btn ds-btn--success js-save-wipe-row"
                                         data-server-id="<?= $sid ?>">
-                                    <i class="bi bi-save"></i> <?= Yii::t('common', 'Сохранить') ?>
+                                    <i class="bi bi-save" aria-hidden="true"></i> <?= Yii::t('common', 'Сохранить') ?>
                                 </button>
-                                <div class="mt-2 small" data-role="result"></div>
+                                <div class="mt-2 small" data-role="result" role="status" aria-live="polite"></div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

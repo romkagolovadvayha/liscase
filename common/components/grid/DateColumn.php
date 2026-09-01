@@ -5,6 +5,7 @@ namespace common\components\grid;
 use kartik\daterange\DateRangePicker;
 use Yii;
 use kartik\grid\DataColumn;
+use yii\base\Model;
 
 class DateColumn extends DataColumn
 {
@@ -15,9 +16,17 @@ class DateColumn extends DataColumn
 
     public function renderFilterCell()
     {
+        $model = $this->grid->filterModel;
+        $label = $model instanceof Model
+            ? $model->getAttributeLabel($this->attribute)
+            : Yii::t('common', 'Дата');
         $this->filter = DateRangePicker::widget([
-            'model'     => $this->grid->filterModel,
+            'model'     => $model,
             'attribute' => $this->attribute,
+            'options' => [
+                'aria-label' => Yii::t('common', 'Фильтр: {label}', ['label' => $label]),
+                'autocomplete' => 'off',
+            ],
         ]);
 
         return parent::renderFilterCell();

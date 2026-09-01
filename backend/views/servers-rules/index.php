@@ -7,7 +7,7 @@ use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\helpers\ArrayHelper;
 use yii\grid\ActionColumn;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 
 /** @var backend\models\ServersRulesSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */

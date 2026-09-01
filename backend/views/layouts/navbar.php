@@ -1,119 +1,104 @@
 <?php
-/* @var $pageTitle string */
-/* @var $headerActions array|null */
-/* @var $showFilters bool */
 
 use yii\helpers\Html;
-use yii\helpers\Url;
+
+/** @var string $pageTitle */
+/** @var array|null $headerActions */
+/** @var bool $showFilters */
 
 $pageTitle = $pageTitle ?? '';
-$headerActions = $headerActions ?? $this->params['headerActions'] ?? null;
+$headerActions = $headerActions ?? $this->params['headerActions'] ?? [];
 $showFilters = $showFilters ?? false;
+$identity = Yii::$app->user->identity;
+$username = (string) ($identity->username ?? 'Администратор');
+$avatarUrl = $identity && method_exists($identity, 'getAvatar') ? (string) $identity->getAvatar() : '';
 ?>
-<!-- Modern Header -->
-<header class="admin-header-content bg-[hsl(0_0%_20.4%_/_1)] border-b border-[hsl(0_0%_15.3%_/_1)]">
-    <div class="flex items-center justify-between px-4 py-3" style="height: 57px;">
-        <!-- Left: Logo and Menu Toggle (только на мобилке) -->
-        <div class="flex items-center gap-4 md:hidden">
-            <button 
-                class="ds-btn ds-btn--icon ds-btn--ghost" 
-                data-widget="pushmenu" 
-                href="#" 
-                role="button" 
-                aria-label="Toggle sidebar"
-                id="mobile-menu-toggle"
-            >
-                <i class="fas fa-bars"></i>
+
+<header class="admin-header-content">
+    <div class="admin-header-bar">
+        <div class="admin-header-leading">
+            <button type="button"
+                    class="ds-btn ds-btn--icon ds-btn--ghost admin-mobile-menu-button"
+                    aria-label="Открыть основное меню"
+                    aria-controls="main-sidebar"
+                    aria-expanded="false"
+                    id="mobile-menu-toggle">
+                <i class="fa-solid fa-bars" aria-hidden="true"></i>
             </button>
-            
-            <a href="<?= Yii::$app->params['baseUrl'] ?? '/' ?>" class="flex items-center gap-2 text-white no-underline font-semibold">
-                <?php if (Yii::$app->settings->get('design_logo')): ?>
-                    <img src="<?= Yii::$app->settings->get('design_logo') ?>" alt="<?= Yii::$app->settings->get('site_title') ?>" class="h-8 max-w-[120px]">
-                <?php else: ?>
-                    <span class="text-xl"><?= Html::encode(Yii::$app->settings->get('site_title') ?: 'Prostoj') ?></span>
-                <?php endif; ?>
-            </a>
+
+            <?php if ($pageTitle !== ''): ?>
+                <div class="page-title-header">
+                    <span class="page-title-header__context">Админка</span>
+                    <div class="page-title-header__title"><?= Html::encode($pageTitle) ?></div>
+                </div>
+            <?php endif; ?>
         </div>
 
-        <!-- Left: Page Title and Header Actions -->
-        <div class="flex items-center gap-4 flex-1">
-            <!-- Page Title (только на ПК) -->
-            <?php if (!empty($pageTitle)): ?>
-            <style>
-            @media (min-width: 768px) {
-                .page-title-header {
-                    display: flex !important;
-                    align-items: center;
-                }
-            }
-            @media (max-width: 767px) {
-                .page-title-header {
-                    display: none !important;
-                }
-            }
-            </style>
-            <div class="page-title-header">
-                <h1 class="text-lg font-semibold text-white m-0"><?= Html::encode($pageTitle) ?></h1>
-            </div>
-            <?php endif; ?>
-            
-            <!-- Header Actions (кнопки из params) -->
-            <?php if (!empty($headerActions)): ?>
-            <div class="flex items-center gap-2">
+        <?php if ($headerActions !== []): ?>
+            <nav class="admin-header-actions" aria-label="Действия страницы">
                 <?php foreach ($headerActions as $action): ?>
                     <?php
-                    $buttonClass = $action['class'] ?? 'bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors no-underline inline-flex items-center gap-1.5';
-                    $buttonClass = str_replace(['px-3 py-1.5', 'text-sm'], ['px-2 py-1', 'text-xs'], $buttonClass);
-                    $options = array_merge(['class' => $buttonClass], array_diff_key($action, ['label' => 1, 'url' => 1, 'class' => 1]));
+                    $legacyClass = (string) ($action['class'] ?? '');
+                    $plainLabel = trim(strip_tags((string) ($action['label'] ?? 'Действие')));
+                    $variant = (str_contains($legacyClass, 'ds-btn--danger') || str_contains($legacyClass, 'red-'))
+                        ? 'ds-btn--danger'
+                        : ((str_contains($legacyClass, 'ds-btn--primary') || str_contains($legacyClass, 'blue-') || str_contains($legacyClass, 'green-') || str_contains($legacyClass, 'teal-'))
+                            ? 'ds-btn--primary'
+                            : 'ds-btn--secondary');
+                    $options = array_merge(
+                        ['class' => 'ds-btn ' . $variant . ' ds-btn--sm', 'aria-label' => $plainLabel],
+                        array_diff_key($action, ['label' => true, 'url' => true, 'class' => true, 'encode' => true])
+                    );
                     ?>
                     <?= Html::a($action['label'], $action['url'], $options) ?>
                 <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-        </div>
+            </nav>
+        <?php endif; ?>
 
-        <!-- Right: Actions -->
-        <div class="flex items-center gap-3">
-            <!-- Кнопка «Фильтры» на мобилке (открывает выдвижную панель) -->
+        <div class="admin-header-trailing">
             <?php if ($showFilters): ?>
-            <button type="button" class="ds-btn ds-btn--secondary ds-btn--sm inline-flex items-center gap-1.5" id="filters-drawer-toggle" aria-label="Открыть фильтры">
-                <i class="fas fa-filter" aria-hidden="true"></i>
-                <span class="filters-btn-text">Фильтры</span>
-            </button>
+                <button type="button"
+                        class="ds-btn ds-btn--secondary ds-btn--sm"
+                        id="filters-drawer-toggle"
+                        aria-label="Открыть фильтры"
+                        aria-controls="filters-wrapper"
+                        aria-expanded="false">
+                    <i class="fa-solid fa-filter" aria-hidden="true"></i>
+                    <span class="filters-btn-text">Фильтры</span>
+                </button>
             <?php endif; ?>
 
-            <!-- User Info -->
-            <div class="flex items-center gap-2">
-                <span class="text-gray-400 text-sm hidden md:inline">
-                    <?= Html::encode(Yii::$app->user->identity->username ?? 'User') ?>
-                </span>
-                <div class="relative">
-                    <button class="ds-btn ds-btn--icon ds-btn--ghost p-0 rounded-full overflow-hidden" id="user-menu-toggle" aria-label="User menu">
-                        <?php
-                        $identity = Yii::$app->user->identity;
-                        $avatarUrl = $identity && method_exists($identity, 'getAvatar') ? $identity->getAvatar() : '';
-                        if (!empty($avatarUrl)): ?>
-                            <img src="<?= Html::encode($avatarUrl) ?>" alt="" class="w-8 h-8 rounded-full object-cover" width="32" height="32" />
-                        <?php else: ?>
-                            <i class="fas fa-user-circle text-2xl text-gray-400"></i>
-                        <?php endif; ?>
-                    </button>
-                    <!-- User Dropdown (can be added later) -->
+            <div class="admin-user-menu">
+                <button type="button"
+                        class="admin-user-menu__toggle"
+                        id="user-menu-toggle"
+                        aria-haspopup="menu"
+                        aria-expanded="false"
+                        aria-controls="admin-user-dropdown">
+                    <?php if ($avatarUrl !== ''): ?>
+                        <img src="<?= Html::encode($avatarUrl) ?>" alt="" width="32" height="32">
+                    <?php else: ?>
+                        <span class="admin-user-menu__avatar" aria-hidden="true"><?= Html::encode(mb_strtoupper(mb_substr($username, 0, 1))) ?></span>
+                    <?php endif; ?>
+                    <span class="admin-user-menu__name"><?= Html::encode($username) ?></span>
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                </button>
+
+                <div class="admin-user-dropdown" id="admin-user-dropdown" role="menu" hidden>
+                    <div class="admin-user-dropdown__identity">
+                        <strong><?= Html::encode($username) ?></strong>
+                        <small>Панель управления</small>
+                    </div>
+                    <?= Html::a('<i class="fa-solid fa-sliders" aria-hidden="true"></i><span>Настройки</span>', ['/settings/index'], ['role' => 'menuitem']) ?>
+                    <?= Html::a('<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i><span>Открыть сайт</span>', Yii::$app->params['baseUrl'] ?? '/', ['role' => 'menuitem', 'target' => '_blank', 'rel' => 'noopener']) ?>
+                    <div class="admin-user-dropdown__separator" role="separator"></div>
+                    <?= Html::a(
+                        '<i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i><span>Выйти</span>',
+                        ['/site/logout'],
+                        ['data-method' => 'post', 'role' => 'menuitem', 'class' => 'is-danger']
+                    ) ?>
                 </div>
             </div>
-
-            <!-- Logout -->
-            <?= Html::a(
-                '<i class="fas fa-sign-out-alt"></i>',
-                ['/site/logout'],
-                [
-                    'data-method' => 'post',
-                    'class' => 'ds-btn ds-btn--icon ds-btn--ghost',
-                    'aria-label' => 'Выход',
-                    'title' => 'Выход'
-                ]
-            ) ?>
         </div>
     </div>
-
 </header>

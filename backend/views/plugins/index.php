@@ -34,9 +34,9 @@ $csrfToken = Yii::$app->request->csrfToken;
     </div>
 
     <?php if (!empty($servers) && !empty($pluginRows)): ?>
-    <div class="plugins-tabs border-b border-[hsl(0_0%_15.3%_/_1)] px-4">
-        <button type="button" class="plugins-tab-btn py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white -mb-px" data-tab="all">Установленные (<?= count($pluginRows) ?>)</button>
-        <button type="button" class="plugins-tab-btn py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white -mb-px" data-tab="not-installed">Не установленные (<?= count($pluginRowsNotInstalled) ?>)</button>
+    <div class="plugins-tabs px-4" role="tablist" aria-label="Состояние установки плагинов">
+        <button type="button" id="plugins-tab-button-all" class="plugins-tab-btn py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white -mb-px" data-tab="all" role="tab" aria-controls="plugins-tab-all" aria-selected="true">Установленные (<?= count($pluginRows) ?>)</button>
+        <button type="button" id="plugins-tab-button-not-installed" class="plugins-tab-btn py-3 px-4 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-white -mb-px" data-tab="not-installed" role="tab" aria-controls="plugins-tab-not-installed" aria-selected="false" tabindex="-1">Не установленные (<?= count($pluginRowsNotInstalled) ?>)</button>
     </div>
     <?php endif; ?>
 
@@ -100,14 +100,13 @@ $csrfToken = Yii::$app->request->csrfToken;
                                         ? 'Установить'
                                         : ($isOutdated ? 'Обновить' : 'Повторно загрузить');
                                     $cellClass = $isRed ? 'text-red-400' : 'text-gray-300';
-                                    $cellStyle = $isRed ? ' color: #f87171;' : '';
                                     ?>
-                                    <td class="py-2 px-3 <?= $cellClass ?>"<?= $cellStyle !== '' ? ' style="' . $cellStyle . '"' : '' ?>>
+                                    <td class="py-2 px-3 <?= $cellClass ?>">
                                         <span class="inline-flex items-center gap-1 flex-nowrap">
                                             <?= $ver !== null ? Html::encode($ver) : '—' ?>
                                             <?php if ($showUploadBtn): ?>
                                                 <button type="button" class="plugins-upload-btn ds-btn ds-btn--icon ds-btn--ghost p-0.5 rounded hover:bg-[hsl(0_0%_25%_/_1)]" title="<?= Html::encode($uploadTitle) ?>" data-server-tag="<?= Html::encode($s->tag) ?>" data-plugin-name="<?= Html::encode($row['name']) ?>" aria-label="<?= Html::encode($uploadAria) ?>">
-                                                    <i class="fas <?= $isUpToDate ? 'fa-sync-alt' : 'fa-cloud-upload-alt' ?> <?= $isUpToDate ? 'text-gray-400' : 'text-green-400' ?>" style="<?= $isUpToDate ? 'color: #9ca3af;' : 'color: #4ade80;' ?>"></i>
+                                                    <i class="fas <?= $isUpToDate ? 'fa-sync-alt' : 'fa-cloud-upload-alt' ?> <?= $isUpToDate ? 'text-gray-400' : 'text-green-400' ?>" aria-hidden="true"></i>
                                                 </button>
                                             <?php endif; ?>
                                         </span>
@@ -121,8 +120,8 @@ $csrfToken = Yii::$app->request->csrfToken;
                 <?php
             };
             ?>
-            <div id="plugins-tab-all" class="plugins-tab-pane"><?php $renderTable($pluginRows); ?></div>
-            <div id="plugins-tab-not-installed" class="plugins-tab-pane hidden"><?php $renderTable($pluginRowsNotInstalled); ?></div>
+            <div id="plugins-tab-all" class="plugins-tab-pane" role="tabpanel" aria-labelledby="plugins-tab-button-all"><?php $renderTable($pluginRows); ?></div>
+            <div id="plugins-tab-not-installed" class="plugins-tab-pane" role="tabpanel" aria-labelledby="plugins-tab-button-not-installed" hidden><?php $renderTable($pluginRowsNotInstalled); ?></div>
         <?php endif; ?>
     </div>
 
@@ -131,35 +130,44 @@ $csrfToken = Yii::$app->request->csrfToken;
     </div>
 </div>
 
-<style>
-.plugins-table td.sticky,
-.plugins-table th.sticky { box-shadow: 2px 0 4px rgba(0,0,0,0.15); }
-.plugins-table tr.plugins-row-version-mismatch { background: rgba(248, 113, 113, 0.08); }
-.plugins-table tr.plugins-row-version-mismatch:hover { background: rgba(248, 113, 113, 0.12); }
-.plugins-table td.plugins-row-mismatch-bg { background: rgba(248, 113, 113, 0.08); }
-.plugins-table tr.plugins-row-version-mismatch:hover td.plugins-row-mismatch-bg { background: rgba(248, 113, 113, 0.12); }
-.plugins-tab-pane.hidden { display: none; }
-.plugins-tabs .plugins-tab-btn.active { color: #fff; border-bottom-color: hsl(0 0% 40%); }
-</style>
-
 <script>
 (function() {
     var uploadUrl = <?= json_encode($uploadPluginUrl) ?>;
     var csrfParam = <?= json_encode($csrfParam) ?>;
     var csrfToken = <?= json_encode($csrfToken) ?>;
 
-    document.querySelectorAll('.plugins-tab-btn').forEach(function(btn) {
+    var tabButtons = Array.prototype.slice.call(document.querySelectorAll('.plugins-tab-btn'));
+    var activateTab = function(btn, moveFocus) {
+        var tab = btn.getAttribute('data-tab');
+        tabButtons.forEach(function(b) {
+            var selected = b === btn;
+            b.classList.toggle('active', selected);
+            b.setAttribute('aria-selected', selected ? 'true' : 'false');
+            b.tabIndex = selected ? 0 : -1;
+        });
+        document.querySelectorAll('.plugins-tab-pane').forEach(function(p) {
+            p.hidden = p.id !== 'plugins-tab-' + tab;
+        });
+        if (moveFocus) btn.focus();
+    };
+
+    tabButtons.forEach(function(btn, index) {
         btn.addEventListener('click', function() {
-            var tab = this.getAttribute('data-tab');
-            document.querySelectorAll('.plugins-tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            document.querySelectorAll('.plugins-tab-pane').forEach(function(p) { p.classList.add('hidden'); });
-            this.classList.add('active');
-            var pane = document.getElementById('plugins-tab-' + tab);
-            if (pane) { pane.classList.remove('hidden'); }
+            activateTab(this, false);
+        });
+        btn.addEventListener('keydown', function(event) {
+            var targetIndex = null;
+            if (event.key === 'ArrowRight') targetIndex = (index + 1) % tabButtons.length;
+            if (event.key === 'ArrowLeft') targetIndex = (index - 1 + tabButtons.length) % tabButtons.length;
+            if (event.key === 'Home') targetIndex = 0;
+            if (event.key === 'End') targetIndex = tabButtons.length - 1;
+            if (targetIndex === null) return;
+            event.preventDefault();
+            activateTab(tabButtons[targetIndex], true);
         });
     });
     var firstBtn = document.querySelector('.plugins-tab-btn');
-    if (firstBtn) { firstBtn.classList.add('active'); }
+    if (firstBtn) { activateTab(firstBtn, false); }
 
     document.querySelectorAll('.plugins-upload-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {

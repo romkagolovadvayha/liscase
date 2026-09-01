@@ -101,16 +101,16 @@ $sections = [
                     <div class="ds-card ds-card--hover">
                         <div class="ds-card__body">
                             <div class="ds-flex ds-items-center ds-gap-4 mb-3">
-                                <div class="ds-bg--<?= $section['color'] ?> ds-rounded-lg" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
-                                    <i class="<?= $section['icon'] ?>" style="font-size: 24px; color: white;"></i>
+                                <div class="ds-bg--<?= $section['color'] ?> ds-rounded-lg design-system-section-icon">
+                                    <i class="<?= $section['icon'] ?>" aria-hidden="true"></i>
                                 </div>
                                 <div>
-                                    <h3 class="ds-text--primary" style="margin: 0; font-size: 1.25rem; font-weight: 600;">
+                                    <h3 class="ds-text--primary ds-m-0 ds-text-xl ds-font-semibold">
                                         <?= Html::encode($section['title']) ?>
                                     </h3>
                                 </div>
                             </div>
-                            <p class="ds-text--secondary" style="margin-bottom: 1rem;">
+                            <p class="ds-text--secondary ds-mb-4">
                                 <?= Html::encode($section['description']) ?>
                             </p>
                             <?= Html::a('Перейти →', $section['url'], ['class' => 'ds-btn ds-btn--primary']) ?>
@@ -132,7 +132,7 @@ $sections = [
                 </p>
                 
                 <h6 class="ds-text--primary mb-3 mt-4">Примеры использования</h6>
-                <pre class="ds-bg--secondary ds-p-4 ds-rounded-lg" style="overflow-x: auto;"><code>&lt;button class="ds-btn ds-btn--primary"&gt;Кнопка&lt;/button&gt;
+                <pre class="ds-bg--secondary ds-p-4 ds-rounded-lg ds-overflow-x-auto"><code>&lt;button class="ds-btn ds-btn--primary"&gt;Кнопка&lt;/button&gt;
 
 &lt;div class="ds-card"&gt;
     &lt;div class="ds-card__header"&gt;
@@ -148,36 +148,3 @@ $sections = [
         </div>
     </div>
 </div>
-
-<style>
-.design-system-page {
-    padding: 0;
-}
-
-.design-system-page .content-header {
-    margin-bottom: 2rem;
-}
-
-.design-system-page .content-header p {
-    margin-top: 0.5rem;
-    font-size: 1rem;
-}
-
-.design-system-page code {
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-    font-size: 0.875rem;
-    color: hsl(0 0% 94.9% / 1);
-}
-
-.design-system-page pre {
-    margin: 0;
-    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-    font-size: 0.875rem;
-    line-height: 1.5;
-}
-
-.design-system-page pre code {
-    background: transparent;
-    padding: 0;
-}
-</style>

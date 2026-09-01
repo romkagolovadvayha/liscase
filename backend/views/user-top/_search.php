@@ -28,8 +28,8 @@ use yii\widgets\ActiveForm;
     <?php // echo $form->field($model, 'wipe') ?>
 
     <div class="form-group">
-        <?= Html::submitButton('Search', ['class' => 'btn btn-primary']) ?>
-        <?= Html::resetButton('Reset', ['class' => 'btn btn-outline-secondary']) ?>
+        <?= Html::submitButton('Найти', ['class' => 'ds-btn ds-btn--primary']) ?>
+        <?= Html::resetButton('Сбросить', ['class' => 'ds-btn ds-btn--secondary']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

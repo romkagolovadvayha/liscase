@@ -5,8 +5,8 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var common\models\invoice\DepositBonus $model */
 
-$this->title = 'Create Deposit Bonus';
-$this->params['breadcrumbs'][] = ['label' => 'Deposit Bonuses', 'url' => ['index']];
+$this->title = 'Добавить депозитный бонус';
+$this->params['breadcrumbs'][] = ['label' => 'Депозитные бонусы', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="deposit-bonus-create">

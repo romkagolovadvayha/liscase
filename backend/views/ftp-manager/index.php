@@ -42,7 +42,7 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
             <?= Html::a('<i class="fas fa-cloud-arrow-up mr-1"></i> Все сервера (одна папка)', ['broadcast'], ['class' => 'text-xs text-blue-400 hover:text-blue-300 whitespace-nowrap']) ?>
         </div>
         <div class="flex items-center gap-2">
-            <label class="text-xs text-gray-400">Открыть сервер:</label>
+            <label for="ftp-server-select" class="text-xs text-gray-400">Открыть сервер:</label>
             <select id="ftp-server-select" class="ds-select bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] text-white rounded px-3 py-1.5 text-sm min-w-[200px]">
                 <option value="">— Выберите сервер —</option>
                 <?php foreach ($serversWithFtp as $s): ?>
@@ -57,7 +57,7 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
     <!-- Вкладки открытых серверов -->
     <div class="ftp-tabs-wrap border-b border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_18%_/_1)] overflow-x-auto">
-        <ul class="ftp-tabs flex items-center gap-0 min-h-0 p-0 m-0 list-none" id="ftp-tabs-list"></ul>
+        <ul class="ftp-tabs flex items-center gap-0 min-h-0 p-0 m-0 list-none" id="ftp-tabs-list" role="tablist" aria-label="Открытые FTP-серверы"></ul>
     </div>
 
     <!-- Контент: файловый менеджер для активной вкладки -->
@@ -71,16 +71,18 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
 <!-- Шаблон одной вкладки (сервер) -->
 <template id="ftp-tab-tpl">
-    <li class="ftp-tab-item flex items-center border-b-2 border-transparent -mb-px cursor-pointer px-4 py-3 text-sm text-gray-400 hover:text-white hover:bg-[hsl(0_0%_22%_/_1)]" data-server-id="">
-        <i class="fas fa-server mr-2 text-gray-500"></i>
-        <span class="ftp-tab-name"></span>
+    <li class="ftp-tab-item flex items-center border-b-2 border-transparent -mb-px text-sm text-gray-400 hover:text-white hover:bg-[hsl(0_0%_22%_/_1)]" data-server-id="">
+        <button type="button" class="ftp-tab-activate flex items-center px-4 py-3" role="tab" aria-label="Открыть FTP-сервер" aria-selected="false" tabindex="-1">
+            <i class="fas fa-server mr-2 text-gray-500" aria-hidden="true"></i>
+            <span class="ftp-tab-name"></span>
+        </button>
         <button type="button" class="ftp-tab-close ml-2 p-0.5 rounded hover:bg-red-600/30 hover:text-red-300 text-gray-500" title="Закрыть" aria-label="Закрыть">&times;</button>
     </li>
 </template>
 
 <!-- Шаблон панели файлов для одного сервера -->
 <template id="ftp-panel-tpl">
-    <div class="ftp-panel hidden flex flex-col min-h-0 h-full" data-server-id="">
+    <div class="ftp-panel hidden flex flex-col min-h-0 h-full" data-server-id="" role="tabpanel">
         <div class="ftp-toolbar flex items-center gap-3 flex-wrap p-3 border-b border-[hsl(0_0%_15.3%_/_1)] bg-[hsl(0_0%_20.4%_/_1)]">
             <nav class="ftp-breadcrumb flex items-center gap-0 text-sm flex-wrap min-w-0 rounded-md bg-[hsl(0_0%_15%_/_1)] px-2 py-1.5 border border-[hsl(0_0%_25%_/_1)]" aria-label="Путь"></nav>
             <div class="ml-auto flex items-center gap-2 flex-shrink-0">
@@ -91,7 +93,7 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         </div>
         <div class="ftp-list-wrap flex-1 overflow-auto p-3">
             <div class="ftp-loading text-gray-500 text-sm py-4 text-center">Загрузка...</div>
-            <table class="ftp-table w-full text-sm text-left hidden">
+            <table class="ftp-table w-full text-sm text-left hidden" aria-label="Файлы FTP-сервера">
                 <thead>
                     <tr class="text-gray-400 border-b border-[hsl(0_0%_15.3%_/_1)]">
                         <th class="py-2 pr-2">Имя</th>
@@ -107,14 +109,14 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 </template>
 
 <!-- Модальное окно: редактирование файла (большое, с подсветкой синтаксиса) -->
-<div class="ftp-modal-overlay fixed inset-0 bg-black/70 z-[100] hidden items-center justify-center p-4" id="ftp-edit-modal">
+<div class="ftp-modal-overlay fixed inset-0 bg-black/70 z-[100] hidden items-center justify-center p-4" id="ftp-edit-modal" role="dialog" aria-modal="true" aria-labelledby="ftp-edit-modal-title" aria-hidden="true">
     <div class="ftp-edit-modal-box bg-[hsl(0_0%_18%_/_1)] border border-[hsl(0_0%_25%_/_1)] rounded-xl shadow-2xl w-[92vw] max-w-[1600px] h-[88vh] flex flex-col overflow-hidden">
         <div class="flex items-center justify-between flex-shrink-0 px-4 py-3 border-b border-[hsl(0_0%_25%_/_1)] bg-[hsl(0_0%_22%_/_1)]">
-            <span class="text-white font-medium truncate flex items-center gap-2">
+            <h2 class="text-white font-medium truncate flex items-center gap-2 m-0" id="ftp-edit-modal-title">
                 <i class="fas fa-file-code text-blue-400 flex-shrink-0"></i>
                 <span class="ftp-edit-filename truncate"></span>
-            </span>
-            <button type="button" class="ftp-modal-close text-gray-400 hover:text-white text-2xl leading-none p-1 rounded hover:bg-white/10 flex-shrink-0" aria-label="Закрыть">&times;</button>
+            </h2>
+            <button type="button" class="ftp-modal-close text-gray-400 hover:text-white text-2xl leading-none p-1 rounded hover:bg-white/10 flex-shrink-0" aria-label="Закрыть редактор">&times;</button>
         </div>
         <div class="flex-1 min-h-0 flex flex-col p-3 overflow-hidden">
             <div class="ftp-codemirror-wrap flex-1 min-h-0 rounded-lg overflow-hidden border border-[hsl(0_0%_25%_/_1)]">
@@ -129,18 +131,18 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 </div>
 
 <!-- Модальное окно: загрузка файла -->
-<div class="ftp-modal-overlay fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4" id="ftp-upload-modal">
+<div class="ftp-modal-overlay fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4" id="ftp-upload-modal" role="dialog" aria-modal="true" aria-labelledby="ftp-upload-modal-title" aria-hidden="true">
     <div class="ftp-modal bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] rounded-lg shadow-xl w-full max-w-md">
         <div class="flex items-center justify-between p-3 border-b border-[hsl(0_0%_15.3%_/_1)]">
-            <span class="text-white font-medium">Загрузить файл</span>
-            <button type="button" class="ftp-upload-modal-close text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            <h2 class="text-white font-medium m-0" id="ftp-upload-modal-title">Загрузить файл</h2>
+            <button type="button" class="ftp-upload-modal-close text-gray-400 hover:text-white text-2xl leading-none" aria-label="Закрыть загрузку файла">&times;</button>
         </div>
         <form id="ftp-upload-form" class="p-4">
             <input type="hidden" name="<?= $csrf ?>" value="<?= Html::encode($csrfToken) ?>">
             <input type="hidden" name="server_id" id="ftp-upload-server-id">
             <input type="hidden" name="path" id="ftp-upload-path">
             <div class="mb-3">
-                <label class="block text-gray-400 text-xs mb-1">Файл</label>
+                <label for="ftp-upload-file" class="block text-gray-400 text-xs mb-1">Файл</label>
                 <input type="file" name="file" id="ftp-upload-file" class="ds-input w-full text-sm">
             </div>
             <div class="flex justify-end gap-2">
@@ -152,18 +154,18 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 </div>
 
 <!-- Модальное окно: новая папка -->
-<div class="ftp-modal-overlay fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4" id="ftp-newdir-modal">
+<div class="ftp-modal-overlay fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4" id="ftp-newdir-modal" role="dialog" aria-modal="true" aria-labelledby="ftp-newdir-modal-title" aria-hidden="true">
     <div class="ftp-modal bg-[hsl(0_0%_20.4%_/_1)] border border-[hsl(0_0%_15.3%_/_1)] rounded-lg shadow-xl w-full max-w-md">
         <div class="flex items-center justify-between p-3 border-b border-[hsl(0_0%_15.3%_/_1)]">
-            <span class="text-white font-medium">Новая папка</span>
-            <button type="button" class="ftp-newdir-modal-close text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            <h2 class="text-white font-medium m-0" id="ftp-newdir-modal-title">Новая папка</h2>
+            <button type="button" class="ftp-newdir-modal-close text-gray-400 hover:text-white text-2xl leading-none" aria-label="Закрыть создание папки">&times;</button>
         </div>
         <form id="ftp-newdir-form" class="p-4">
             <input type="hidden" name="<?= $csrf ?>" value="<?= Html::encode($csrfToken) ?>">
             <input type="hidden" name="server_id" id="ftp-newdir-server-id">
             <input type="hidden" name="path" id="ftp-newdir-path">
             <div class="mb-3">
-                <label class="block text-gray-400 text-xs mb-1">Имя папки</label>
+                <label for="ftp-newdir-name" class="block text-gray-400 text-xs mb-1">Имя папки</label>
                 <input type="text" name="name" id="ftp-newdir-name" class="ds-input w-full" placeholder="folder_name" required>
             </div>
             <div class="flex justify-end gap-2">
@@ -173,24 +175,6 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         </form>
     </div>
 </div>
-
-<style>
-.ftp-tab-item.active { color: #4a9eff; border-bottom-color: #4a9eff; background: hsl(0 0% 20.4% / 1); }
-.ftp-modal-overlay.flex { display: flex !important; }
-.ftp-table td { padding: 10px 12px 10px 0; border-bottom: 1px solid hsl(0 0% 15.3% / 1); color: hsl(0 0% 88%); vertical-align: middle; }
-.ftp-table td a { color: #6bb3ff; text-decoration: none; }
-.ftp-table td a:hover { text-decoration: underline; }
-/* Хлебные крошки */
-.ftp-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 0; }
-.ftp-breadcrumb .ftp-bc-item { display: inline-flex; align-items: center; gap: 0.25rem; }
-.ftp-breadcrumb .ftp-bc-link { color: #6bb3ff; text-decoration: none; padding: 0.15rem 0.35rem; border-radius: 4px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
-.ftp-breadcrumb .ftp-bc-link:hover { background: hsl(0 0% 25% / 1); color: #8cc5ff; }
-.ftp-breadcrumb .ftp-bc-sep { color: hsl(0 0% 45%); font-size: 0.75rem; padding: 0 0.2rem; user-select: none; }
-.ftp-breadcrumb .ftp-bc-current { color: hsl(0 0% 85%); padding: 0.15rem 0.35rem; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-/* CodeMirror в модалке */
-.ftp-codemirror-wrap .CodeMirror { height: 100%; min-height: 400px; font-size: 13px; }
-.ftp-codemirror-wrap .CodeMirror-gutters { background: hsl(0 0% 14% / 1); border-right: 1px solid hsl(0 0% 22% / 1); }
-</style>
 
 <script>
 (function() {
@@ -206,6 +190,7 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
     var openTabs = {};
     var activeServerId = null;
+    var lastFtpDialogTrigger = null;
 
     function getPanel(serverId) {
         return document.querySelector('.ftp-panel[data-server-id="' + serverId + '"]');
@@ -224,11 +209,16 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         var tab = tabTpl.content.cloneNode(true).querySelector('li');
         tab.setAttribute('data-server-id', serverId);
         tab.querySelector('.ftp-tab-name').textContent = name;
+        var tabButton = tab.querySelector('.ftp-tab-activate');
+        tabButton.id = 'ftp-tab-' + serverId;
+        tabButton.setAttribute('aria-controls', 'ftp-panel-' + serverId);
         tab.querySelector('.ftp-tab-close').addEventListener('click', function(e) { e.stopPropagation(); closeServer(serverId); });
 
         var panelTpl = document.getElementById('ftp-panel-tpl');
         var panel = panelTpl.content.cloneNode(true).querySelector('.ftp-panel');
         panel.setAttribute('data-server-id', serverId);
+        panel.id = 'ftp-panel-' + serverId;
+        panel.setAttribute('aria-labelledby', tabButton.id);
 
         document.getElementById('ftp-tabs-list').appendChild(tab);
         document.getElementById('ftp-panels').appendChild(panel);
@@ -240,7 +230,20 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         panel.querySelector('.ftp-btn-upload').addEventListener('click', function() { openUploadModal(serverId); });
         panel.querySelector('.ftp-btn-newdir').addEventListener('click', function() { openNewDirModal(serverId); });
 
-        tab.addEventListener('click', function() { setActiveTab(serverId); });
+        tabButton.addEventListener('click', function() { setActiveTab(serverId); });
+        tabButton.addEventListener('keydown', function(event) {
+            var buttons = Array.prototype.slice.call(document.querySelectorAll('.ftp-tab-activate'));
+            var index = buttons.indexOf(tabButton);
+            var target = null;
+            if (event.key === 'ArrowRight') target = buttons[(index + 1) % buttons.length];
+            if (event.key === 'ArrowLeft') target = buttons[(index - 1 + buttons.length) % buttons.length];
+            if (event.key === 'Home') target = buttons[0];
+            if (event.key === 'End') target = buttons[buttons.length - 1];
+            if (!target) return;
+            event.preventDefault();
+            setActiveTab(target.closest('.ftp-tab-item').getAttribute('data-server-id'));
+            target.focus();
+        });
 
         setActiveTab(serverId);
         loadList(serverId);
@@ -266,11 +269,18 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
     function setActiveTab(serverId) {
         serverId = String(serverId);
-        document.querySelectorAll('.ftp-tab-item').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.ftp-tab-item').forEach(function(t) {
+            var selected = t.getAttribute('data-server-id') === serverId;
+            t.classList.toggle('active', selected);
+            var button = t.querySelector('.ftp-tab-activate');
+            if (button) {
+                button.setAttribute('aria-selected', selected ? 'true' : 'false');
+                button.tabIndex = selected ? 0 : -1;
+            }
+        });
         document.querySelectorAll('.ftp-panel').forEach(function(p) { p.classList.add('hidden'); });
         var t = getTab(serverId);
         var p = getPanel(serverId);
-        if (t) t.classList.add('active');
         if (p) p.classList.remove('hidden');
         activeServerId = serverId;
     }
@@ -430,6 +440,7 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         return modeByExt[ext] != null ? modeByExt[ext] : null;
     }
     function openEditModal(serverId, path, filename) {
+        lastFtpDialogTrigger = document.activeElement;
         editServerId = serverId;
         editPath = path;
         editModal.querySelector('.ftp-edit-filename').textContent = filename;
@@ -437,6 +448,8 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         if (ftpCodeMirrorEditor) { ftpCodeMirrorEditor.toTextArea(); ftpCodeMirrorEditor = null; }
         editModal.classList.remove('hidden');
         editModal.classList.add('flex');
+        editModal.setAttribute('aria-hidden', 'false');
+        editModal.querySelector('.ftp-modal-close').focus();
         fetch(getContentUrl + '?server_id=' + serverId + '&path=' + encodeURIComponent(path), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -463,6 +476,8 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         editTextarea.style.display = 'none';
         editModal.classList.add('hidden');
         editModal.classList.remove('flex');
+        editModal.setAttribute('aria-hidden', 'true');
+        if (lastFtpDialogTrigger && document.contains(lastFtpDialogTrigger)) lastFtpDialogTrigger.focus();
     }
     editModal.querySelectorAll('.ftp-modal-close').forEach(function(btn) { btn.addEventListener('click', closeEditModal); });
     editModal.addEventListener('click', function(e) { if (e.target === editModal) closeEditModal(); });
@@ -484,42 +499,60 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
 
     var uploadModal = document.getElementById('ftp-upload-modal');
     function openUploadModal(serverId) {
+        lastFtpDialogTrigger = document.activeElement;
         var info = openTabs[serverId];
         document.getElementById('ftp-upload-server-id').value = serverId;
         document.getElementById('ftp-upload-path').value = info ? info.path || '/' : '/';
         document.getElementById('ftp-upload-file').value = '';
         uploadModal.classList.remove('hidden');
         uploadModal.classList.add('flex');
+        uploadModal.setAttribute('aria-hidden', 'false');
+        document.getElementById('ftp-upload-file').focus();
     }
-    uploadModal.querySelectorAll('.ftp-upload-modal-close').forEach(function(btn) { btn.addEventListener('click', function() { uploadModal.classList.add('hidden'); uploadModal.classList.remove('flex'); }); });
+    function closeUploadModal() {
+        uploadModal.classList.add('hidden');
+        uploadModal.classList.remove('flex');
+        uploadModal.setAttribute('aria-hidden', 'true');
+        if (lastFtpDialogTrigger && document.contains(lastFtpDialogTrigger)) lastFtpDialogTrigger.focus();
+    }
+    uploadModal.querySelectorAll('.ftp-upload-modal-close').forEach(function(btn) { btn.addEventListener('click', closeUploadModal); });
     document.getElementById('ftp-upload-form').addEventListener('submit', function(e) {
         e.preventDefault();
         var fd = new FormData(this);
         fetch(uploadUrl, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.success) { uploadModal.classList.add('hidden'); uploadModal.classList.remove('flex'); loadList(activeServerId); }
+                if (data.success) { closeUploadModal(); loadList(activeServerId); }
                 else alert(data.error || 'Ошибка загрузки');
             });
     });
 
     var newDirModal = document.getElementById('ftp-newdir-modal');
     function openNewDirModal(serverId) {
+        lastFtpDialogTrigger = document.activeElement;
         var info = openTabs[serverId];
         document.getElementById('ftp-newdir-server-id').value = serverId;
         document.getElementById('ftp-newdir-path').value = info ? info.path || '/' : '/';
         document.getElementById('ftp-newdir-name').value = '';
         newDirModal.classList.remove('hidden');
         newDirModal.classList.add('flex');
+        newDirModal.setAttribute('aria-hidden', 'false');
+        document.getElementById('ftp-newdir-name').focus();
     }
-    newDirModal.querySelectorAll('.ftp-newdir-modal-close').forEach(function(btn) { btn.addEventListener('click', function() { newDirModal.classList.add('hidden'); newDirModal.classList.remove('flex'); }); });
+    function closeNewDirModal() {
+        newDirModal.classList.add('hidden');
+        newDirModal.classList.remove('flex');
+        newDirModal.setAttribute('aria-hidden', 'true');
+        if (lastFtpDialogTrigger && document.contains(lastFtpDialogTrigger)) lastFtpDialogTrigger.focus();
+    }
+    newDirModal.querySelectorAll('.ftp-newdir-modal-close').forEach(function(btn) { btn.addEventListener('click', closeNewDirModal); });
     document.getElementById('ftp-newdir-form').addEventListener('submit', function(e) {
         e.preventDefault();
         var fd = new FormData(this);
         fetch(createDirUrl, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.success) { newDirModal.classList.add('hidden'); newDirModal.classList.remove('flex'); loadList(activeServerId); }
+                if (data.success) { closeNewDirModal(); loadList(activeServerId); }
                 else alert(data.error || 'Ошибка');
             });
     });
@@ -528,6 +561,12 @@ $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16
         var sel = document.getElementById('ftp-server-select');
         var id = sel.value;
         if (id) openServer(id);
+    });
+    document.addEventListener('keydown', function(event) {
+        if (event.key !== 'Escape') return;
+        if (!editModal.classList.contains('hidden')) closeEditModal();
+        else if (!uploadModal.classList.contains('hidden')) closeUploadModal();
+        else if (!newDirModal.classList.contains('hidden')) closeNewDirModal();
     });
 })();
 </script>

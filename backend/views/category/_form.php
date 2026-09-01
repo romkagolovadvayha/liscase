@@ -14,7 +14,7 @@ use yii\widgets\ActiveForm;
     <?= $form->field($model, 'tag')->textInput() ?>
     <div class="ds-select-wrapper">
         <?= $form->field($model, 'show_main_block', ['options' => ['class' => 'mb-0'], 'template' => '{label}{input}{error}'])->dropDownList([0 => 'Нет', 1 => 'Да'], ['class' => 'ds-select form-control']) ?>
-        <i class="fas fa-chevron-down ds-select-arrow"></i>
+        <i class="fas fa-chevron-down ds-select-arrow" aria-hidden="true"></i>
     </div>
     <?= $form->field($model, 'sort')->textInput() ?>
     
@@ -28,7 +28,7 @@ use yii\widgets\ActiveForm;
                 $imageUrl = $model->getImageUrl();
                 if ($imageUrl): 
                 ?>
-                    <img src="<?= Html::encode($imageUrl) ?>" alt="Изображение категории" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; padding: 5px; margin-top: 10px;" />
+                    <img src="<?= Html::encode($imageUrl) ?>" alt="Изображение категории" class="admin-form-image-preview" />
                 <?php else: ?>
                     <p class="text-muted">Изображение не найдено</p>
                 <?php endif; ?>
@@ -37,7 +37,7 @@ use yii\widgets\ActiveForm;
     <?php endif; ?>
     
     <div class="form-group">
-        <?= Html::submitButton('Сохранить', ['class' => 'btn btn-success']) ?>
+        <?= Html::submitButton('Сохранить', ['class' => 'ds-btn ds-btn--primary']) ?>
     </div>
 
     <?php ActiveForm::end(); ?>

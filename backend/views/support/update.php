@@ -5,10 +5,10 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var common\models\support\Support $model */
 
-$this->title = 'Update Support: ' . $model->name;
-$this->params['breadcrumbs'][] = ['label' => 'Supports', 'url' => ['index']];
+$this->title = 'Изменить обращение: ' . $model->name;
+$this->params['breadcrumbs'][] = ['label' => 'Поддержка', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => $model->name, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
+$this->params['breadcrumbs'][] = 'Изменить';
 ?>
 <div class="support-update">
 

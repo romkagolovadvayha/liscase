@@ -9,16 +9,17 @@ use yii\widgets\DetailView;
 $this->title = $model->name;
 $this->params['breadcrumbs'][] = ['label' => 'Теги серверов', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
+$tagColor = preg_match('/^#[0-9a-f]{3,8}$/i', (string) $model->color) ? $model->color : '#566272';
 \yii\web\YiiAsset::register($this);
 ?>
-<div class="servers-tags-view">
+<div class="servers-tags-view admin-form-page">
 
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Редактировать', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
+        <?= Html::a('<i class="fas fa-pen" aria-hidden="true"></i> Редактировать', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
         <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
                 'confirm' => 'Вы уверены, что хотите удалить этот тег?',
                 'method' => 'post',
@@ -38,7 +39,10 @@ $this->params['breadcrumbs'][] = $this->title;
             [
                 'attribute' => 'color',
                 'format' => 'raw',
-                'value' => '<span class="badge" style="background-color: ' . $model->color . '; padding: 10px 20px;">' . $model->color . '</span>',
+                'value' => Html::tag('span', Html::encode($model->color), [
+                    'class' => 'servers-tag-color-preview',
+                    'style' => ['--servers-tag-color' => $tagColor],
+                ]),
             ],
             'sort',
             [
@@ -56,7 +60,7 @@ $this->params['breadcrumbs'][] = $this->title;
             <?php foreach ($model->servers as $server): ?>
                 <li>
                     <?= Html::a(Html::encode($server->name), ['/servers/view', 'id' => $server->id]) ?>
-                    (<?= $server->tag ?>)
+                    (<?= Html::encode($server->tag) ?>)
                 </li>
             <?php endforeach; ?>
         </ul>

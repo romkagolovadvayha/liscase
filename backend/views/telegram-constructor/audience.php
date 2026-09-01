@@ -4,7 +4,7 @@ use yii\helpers\ArrayHelper;
 use yii\helpers\Url;
 use backend\models\TelegramConstructor;
 use backend\models\AudienceSearch;
-use kartik\grid\GridView;
+use backend\components\AccessibleKartikGridView as GridView;
 use yii\bootstrap5\Html;
 use common\models\user\User;
 

@@ -4,13 +4,13 @@ use common\models\invoice\DepositBonus;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var backend\models\invoice\DepositBonusSearch $searchModel */
 /** @var yii\data\ActiveDataProvider $dataProvider */
 
-$this->title = 'Deposit Bonuses';
+$this->title = 'Депозитные бонусы';
 $this->params['breadcrumbs'][] = $this->title;
 ?>
 <div class="deposit-bonus-index">
@@ -18,7 +18,9 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-        <?= Html::a('Create Deposit Bonus', ['create'], ['class' => 'btn btn-success']) ?>
+        <?= Html::a('<i class="fa-solid fa-plus" aria-hidden="true"></i> Добавить бонус', ['create'], [
+            'class' => 'ds-btn ds-btn--primary',
+        ]) ?>
     </p>
 
     <?php // echo $this->render('_search', ['model' => $searchModel]); ?>

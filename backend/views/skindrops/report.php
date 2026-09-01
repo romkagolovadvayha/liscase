@@ -1,11 +1,9 @@
 <?php
 
-use yii\base\BaseObject;
 use yii\web\View;
-use common\models\user\UserDrop;
-use yii\widgets\ActiveForm;
 use frontend\widgets\Alert;
 use yii\helpers\Html;
+use yii\db\Expression;
 use common\models\user\User;
 use common\models\user\UserPayoutSkins;
 use common\models\profit\Profit;
@@ -16,219 +14,195 @@ use common\models\user\UserBalance;
 $user = Yii::$app->user->identity;
 $this->title = Yii::t('common', "Отчет по скиндропсам");
 
-// Кэшируем данные на 10 минут
-$cacheKey = 'skindrops_report_data_v3';
+// Кэшируем только агрегаты: сырые строки отчёта занимали десятки мегабайт в Redis.
+$cacheKey = 'skindrops_report_data_v6';
 $data = Yii::$app->cache->get($cacheKey);
 
 if ($data === false) {
-    set_time_limit(300); // Увеличиваем лимит времени
-    
-    // Получаем все данные из БД с оптимизацией
-    $query = UserPayoutSkins::find()
-        ->with('user')
-        ->orderBy(['created_at' => SORT_DESC]);
-    
-    $allItems = $query->asArray()->all();
-    
-    // Получаем переводы с баланса скинов в баланс магазина
-    $personalBalanceIds = UserBalance::find()
-        ->select('id')
-        ->where(['type' => UserBalance::TYPE_PERSONAL])
-        ->column();
-    
-    $transfers = Profit::find()
-        ->where(['type' => Profit::TYPE_TRANSFER_SKINS])
-        ->andWhere(['IN', 'user_balance_id', $personalBalanceIds])
-        ->andWhere(['status' => 1])
-        ->with(['userBalance.user'])
-        ->orderBy(['created_at' => SORT_DESC])
+    set_time_limit(120);
+
+    $successStatus = (int) UserPayoutSkins::STATUS_SUCCESS;
+    $rejectStatus = (int) UserPayoutSkins::STATUS_REJECT;
+    $newStatus = (int) UserPayoutSkins::STATUS_NEW;
+    $waitStatus = (int) UserPayoutSkins::STATUS_WAIT;
+    // Все тяжёлые вычисления выполняет БД: в PHP попадают только агрегаты.
+    $itemsQuery = UserPayoutSkins::find()->alias('payout');
+    $itemSummary = (clone $itemsQuery)
+        ->select([
+            'totalItems' => new Expression('COUNT(*)'),
+            'totalAmount' => new Expression('COALESCE(SUM(payout.amount), 0)'),
+            'receivedCount' => new Expression("SUM(CASE WHEN payout.status = {$successStatus} THEN 1 ELSE 0 END)"),
+            'receivedAmount' => new Expression("COALESCE(SUM(CASE WHEN payout.status = {$successStatus} THEN payout.amount ELSE 0 END), 0)"),
+            'timeoutCount' => new Expression("SUM(CASE WHEN payout.status = {$rejectStatus} THEN 1 ELSE 0 END)"),
+            'timeoutAmount' => new Expression("COALESCE(SUM(CASE WHEN payout.status = {$rejectStatus} THEN payout.amount ELSE 0 END), 0)"),
+            'newCount' => new Expression("SUM(CASE WHEN payout.status = {$newStatus} THEN 1 ELSE 0 END)"),
+            'sentCount' => new Expression("SUM(CASE WHEN payout.status IN ({$waitStatus}, {$newStatus}) THEN 1 ELSE 0 END)"),
+            'sentAmount' => new Expression("COALESCE(SUM(CASE WHEN payout.status IN ({$waitStatus}, {$newStatus}) THEN payout.amount ELSE 0 END), 0)"),
+        ])
+        ->asArray()
+        ->one();
+
+    $itemsByDate = [];
+    $itemDateRows = (clone $itemsQuery)
+        ->select([
+            'report_date' => new Expression('DATE(payout.created_at)'),
+            'total' => new Expression('COALESCE(SUM(payout.amount), 0)'),
+            'received' => new Expression("COALESCE(SUM(CASE WHEN payout.status = {$successStatus} THEN payout.amount ELSE 0 END), 0)"),
+            'timeout' => new Expression("COALESCE(SUM(CASE WHEN payout.status = {$rejectStatus} THEN payout.amount ELSE 0 END), 0)"),
+            'sent' => new Expression("COALESCE(SUM(CASE WHEN payout.status IN ({$waitStatus}, {$newStatus}) THEN payout.amount ELSE 0 END), 0)"),
+            'new' => new Expression("SUM(CASE WHEN payout.status = {$newStatus} THEN 1 ELSE 0 END)"),
+            'count' => new Expression('COUNT(*)'),
+            'count_received' => new Expression("SUM(CASE WHEN payout.status = {$successStatus} THEN 1 ELSE 0 END)"),
+            'count_timeout' => new Expression("SUM(CASE WHEN payout.status = {$rejectStatus} THEN 1 ELSE 0 END)"),
+            'count_sent' => new Expression("SUM(CASE WHEN payout.status IN ({$waitStatus}, {$newStatus}) THEN 1 ELSE 0 END)"),
+        ])
+        ->groupBy(new Expression('DATE(payout.created_at)'))
+        ->orderBy(['report_date' => SORT_DESC])
+        ->limit(30)
         ->asArray()
         ->all();
-    
-    // Подготовка данных для статистики
-    $itemsByDate = [];
-    $statusCounts = [
-        'sent' => 0,      // STATUS_WAIT + STATUS_NEW
-        'received' => 0,  // STATUS_SUCCESS
-        'timeout' => 0,   // STATUS_REJECT
-        'new' => 0,       // STATUS_NEW
-    ];
-    $totalAmount = 0;
-    $receivedAmount = 0;
-    $timeoutAmount = 0;
-    $sentAmount = 0;
-    $topUsers = [];
-    $topItems = [];
+    foreach ($itemDateRows as $row) {
+        $date = (string) $row['report_date'];
+        unset($row['report_date']);
+        $itemsByDate[$date] = array_map('floatval', $row);
+        foreach (['new', 'count', 'count_received', 'count_timeout', 'count_sent'] as $countKey) {
+            $itemsByDate[$date][$countKey] = (int) $row[$countKey];
+        }
+    }
+
+    $topUsers = (clone $itemsQuery)
+        ->select([
+            'user_id' => 'payout.user_id',
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression('COALESCE(SUM(payout.amount), 0)'),
+        ])
+        ->where(['payout.status' => $successStatus])
+        ->andWhere(['not', ['payout.user_id' => null]])
+        ->groupBy(['payout.user_id'])
+        ->orderBy(['amount' => SORT_DESC])
+        ->limit(10)
+        ->asArray()
+        ->all();
+
+    $topItems = (clone $itemsQuery)
+        ->select([
+            'name' => 'payout.name',
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression('COALESCE(SUM(payout.amount), 0)'),
+        ])
+        ->where(['payout.status' => $successStatus])
+        ->groupBy(['payout.name'])
+        ->orderBy(['amount' => SORT_DESC])
+        ->limit(10)
+        ->asArray()
+        ->all();
+    foreach ($topItems as &$topItem) {
+        $topItem['name'] = trim((string) $topItem['name']) !== '' ? $topItem['name'] : Yii::t('common', 'Неизвестно');
+        $topItem['count'] = (int) $topItem['count'];
+        $topItem['amount'] = (float) $topItem['amount'];
+    }
+    unset($topItem);
+
     $byType = ['rust' => 0, 'cs2' => 0];
-    $byTypeAmount = ['rust' => 0, 'cs2' => 0];
-    
-    // Статистика по переводам
+    $byTypeAmount = ['rust' => 0.0, 'cs2' => 0.0];
+    $typeRows = (clone $itemsQuery)
+        ->select([
+            'type' => 'payout.type',
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression("COALESCE(SUM(CASE WHEN payout.status = {$successStatus} THEN payout.amount ELSE 0 END), 0)"),
+        ])
+        ->where(['payout.type' => array_keys($byType)])
+        ->groupBy(['payout.type'])
+        ->asArray()
+        ->all();
+    foreach ($typeRows as $row) {
+        $type = (string) $row['type'];
+        $byType[$type] = (int) $row['count'];
+        $byTypeAmount[$type] = (float) $row['amount'];
+    }
+
+    $transfersQuery = Profit::find()
+        ->alias('profit')
+        ->innerJoin(['balance' => UserBalance::tableName()], 'balance.id = profit.user_balance_id')
+        ->where([
+            'profit.type' => Profit::TYPE_TRANSFER_SKINS,
+            'profit.status' => 1,
+            'balance.type' => UserBalance::TYPE_PERSONAL,
+        ]);
+
+    $transferSummary = (clone $transfersQuery)
+        ->select([
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression('COALESCE(SUM(profit.amount), 0)'),
+        ], 'STRAIGHT_JOIN')
+        ->asArray()
+        ->one();
+
     $transfersByDate = [];
-    $totalTransfers = 0;
-    $transfersCount = count($transfers);
-    $topTransferUsers = [];
-    
-    foreach ($transfers as $transfer) {
-        $date = date('Y-m-d', strtotime($transfer['created_at']));
-        $amount = (float)$transfer['amount'];
-        $totalTransfers += $amount;
-        
-        // Группировка переводов по датам
-        if (!isset($transfersByDate[$date])) {
-            $transfersByDate[$date] = [
-                'count' => 0,
-                'amount' => 0,
-            ];
-        }
-        $transfersByDate[$date]['count']++;
-        $transfersByDate[$date]['amount'] += $amount;
-        
-        // Топ пользователей по переводам
-        if (!empty($transfer['userBalance']['user_id'])) {
-            $userId = $transfer['userBalance']['user_id'];
-            if (!isset($topTransferUsers[$userId])) {
-                $topTransferUsers[$userId] = [
-                    'user_id' => $userId,
-                    'count' => 0,
-                    'amount' => 0,
-                ];
-            }
-            $topTransferUsers[$userId]['count']++;
-            $topTransferUsers[$userId]['amount'] += $amount;
-        }
+    $transferDateRows = (clone $transfersQuery)
+        ->select([
+            'report_date' => new Expression('DATE(profit.created_at)'),
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression('COALESCE(SUM(profit.amount), 0)'),
+        ], 'STRAIGHT_JOIN')
+        ->groupBy(new Expression('DATE(profit.created_at)'))
+        ->orderBy(['report_date' => SORT_DESC])
+        ->limit(30)
+        ->asArray()
+        ->all();
+    foreach ($transferDateRows as $row) {
+        $transfersByDate[(string) $row['report_date']] = [
+            'count' => (int) $row['count'],
+            'amount' => (float) $row['amount'],
+        ];
     }
-    
-    // Загружаем данные пользователей для топа переводов
-    $transferUserIds = array_keys($topTransferUsers);
-    $transferUsers = User::find()->where(['id' => $transferUserIds])->indexBy('id')->all();
-    foreach ($topTransferUsers as $userId => &$userData) {
-        if (isset($transferUsers[$userId])) {
-            $userData['user'] = $transferUsers[$userId];
-        }
-    }
-    unset($userData);
-    
-    // Сортировка топа переводов
-    usort($topTransferUsers, function($a, $b) {
-        return $b['amount'] - $a['amount'];
-    });
-    $topTransferUsers = array_slice($topTransferUsers, 0, 10);
-    
-    foreach ($allItems as $item) {
-        $date = date('Y-m-d', strtotime($item['created_at']));
-        $amount = (float)$item['amount'];
-        $type = $item['type'] ?? 'rust';
-        
-        // Статистика по статусам
-        if ($item['status'] == UserPayoutSkins::STATUS_SUCCESS) {
-            $statusCounts['received']++;
-            $receivedAmount += $amount;
-        } elseif ($item['status'] == UserPayoutSkins::STATUS_REJECT) {
-            $statusCounts['timeout']++;
-            $timeoutAmount += $amount;
-        } elseif ($item['status'] == UserPayoutSkins::STATUS_NEW) {
-            $statusCounts['new']++;
-            $statusCounts['sent']++;
-            $sentAmount += $amount;
-        } elseif ($item['status'] == UserPayoutSkins::STATUS_WAIT) {
-            $statusCounts['sent']++;
-            $sentAmount += $amount;
-        }
-        
-        $totalAmount += $amount;
-        
-        // Группировка по датам
-        if (!isset($itemsByDate[$date])) {
-            $itemsByDate[$date] = [
-                'total' => 0,
-                'received' => 0,
-                'timeout' => 0,
-                'sent' => 0,
-                'new' => 0,
-                'count' => 0,
-                'count_received' => 0,
-                'count_timeout' => 0,
-                'count_sent' => 0,
-            ];
-        }
-        $itemsByDate[$date]['count']++;
-        $itemsByDate[$date]['total'] += $amount;
-        
-        if ($item['status'] == UserPayoutSkins::STATUS_SUCCESS) {
-            $itemsByDate[$date]['received'] += $amount;
-            $itemsByDate[$date]['count_received']++;
-        } elseif ($item['status'] == UserPayoutSkins::STATUS_REJECT) {
-            $itemsByDate[$date]['timeout'] += $amount;
-            $itemsByDate[$date]['count_timeout']++;
-        } elseif ($item['status'] == UserPayoutSkins::STATUS_WAIT || $item['status'] == UserPayoutSkins::STATUS_NEW) {
-            $itemsByDate[$date]['sent'] += $amount;
-            $itemsByDate[$date]['count_sent']++;
-            if ($item['status'] == UserPayoutSkins::STATUS_NEW) {
-                $itemsByDate[$date]['new']++;
+
+    $topTransferUsers = (clone $transfersQuery)
+        ->select([
+            'user_id' => 'balance.user_id',
+            'count' => new Expression('COUNT(*)'),
+            'amount' => new Expression('COALESCE(SUM(profit.amount), 0)'),
+        ], 'STRAIGHT_JOIN')
+        ->andWhere(['not', ['balance.user_id' => null]])
+        ->groupBy(['balance.user_id'])
+        ->orderBy(['amount' => SORT_DESC])
+        ->limit(10)
+        ->asArray()
+        ->all();
+
+    $attachUsers = static function (array $rows): array {
+        $userIds = array_map('intval', array_column($rows, 'user_id'));
+        $users = User::find()->where(['id' => $userIds])->indexBy('id')->all();
+        foreach ($rows as &$row) {
+            $row['user_id'] = (int) $row['user_id'];
+            $row['count'] = (int) $row['count'];
+            $row['amount'] = (float) $row['amount'];
+            if (isset($users[$row['user_id']])) {
+                $row['user'] = $users[$row['user_id']];
             }
         }
-        
-        // Топ пользователей (только успешные)
-        if ($item['status'] == UserPayoutSkins::STATUS_SUCCESS && !empty($item['user_id'])) {
-            if (!isset($topUsers[$item['user_id']])) {
-                $topUsers[$item['user_id']] = [
-                    'user_id' => $item['user_id'],
-                    'count' => 0,
-                    'amount' => 0,
-                ];
-            }
-            $topUsers[$item['user_id']]['count']++;
-            $topUsers[$item['user_id']]['amount'] += $amount;
-        }
-        
-        // Топ предметов (только успешные)
-        if ($item['status'] == UserPayoutSkins::STATUS_SUCCESS) {
-            $itemName = $item['name'] ?? 'Неизвестно';
-            if (!isset($topItems[$itemName])) {
-                $topItems[$itemName] = [
-                    'name' => $itemName,
-                    'count' => 0,
-                    'amount' => 0,
-                ];
-            }
-            $topItems[$itemName]['count']++;
-            $topItems[$itemName]['amount'] += $amount;
-        }
-        
-        // Статистика по типам
-        if (isset($byType[$type])) {
-            $byType[$type]++;
-            if ($item['status'] == UserPayoutSkins::STATUS_SUCCESS) {
-                $byTypeAmount[$type] += $amount;
-            }
-        }
-    }
-    
-    // Загружаем данные пользователей для топа
-    $userIds = array_keys($topUsers);
-    $users = User::find()->where(['id' => $userIds])->indexBy('id')->all();
-    foreach ($topUsers as $userId => &$userData) {
-        if (isset($users[$userId])) {
-            $userData['user'] = $users[$userId];
-        }
-    }
-    unset($userData);
-    
-    // Сортировка топов
-    usort($topUsers, function($a, $b) {
-        return $b['amount'] - $a['amount'];
-    });
-    $topUsers = array_slice($topUsers, 0, 10);
-    
-    usort($topItems, function($a, $b) {
-        return $b['amount'] - $a['amount'];
-    });
-    $topItems = array_slice($topItems, 0, 10);
-    
-    // Сортировка дат
-    krsort($itemsByDate);
-    $last30Days = array_slice($itemsByDate, 0, 30, true);
-    
+        unset($row);
+
+        return $rows;
+    };
+    $topUsers = $attachUsers($topUsers);
+    $topTransferUsers = $attachUsers($topTransferUsers);
+
+    $statusCounts = [
+        'sent' => (int) ($itemSummary['sentCount'] ?? 0),
+        'received' => (int) ($itemSummary['receivedCount'] ?? 0),
+        'timeout' => (int) ($itemSummary['timeoutCount'] ?? 0),
+        'new' => (int) ($itemSummary['newCount'] ?? 0),
+    ];
+    $totalItems = (int) ($itemSummary['totalItems'] ?? 0);
+    $totalAmount = (float) ($itemSummary['totalAmount'] ?? 0);
+    $receivedAmount = (float) ($itemSummary['receivedAmount'] ?? 0);
+    $timeoutAmount = (float) ($itemSummary['timeoutAmount'] ?? 0);
+    $sentAmount = (float) ($itemSummary['sentAmount'] ?? 0);
+    $transfersCount = (int) ($transferSummary['count'] ?? 0);
+    $totalTransfers = (float) ($transferSummary['amount'] ?? 0);
+    $last30Days = $itemsByDate;
+
     // Объединяем даты для переводов с датами скиндропсов
     $allDates = array_unique(array_merge(array_keys($itemsByDate), array_keys($transfersByDate)));
     krsort($allDates);
@@ -247,7 +221,6 @@ if ($data === false) {
     }
     
     $data = [
-        'allItems' => $allItems,
         'itemsByDate' => $itemsByDate,
         'last30Days' => $last30Days,
         'last30DaysWithTransfers' => $last30DaysWithTransfers,
@@ -260,11 +233,11 @@ if ($data === false) {
         'topItems' => $topItems,
         'byType' => $byType,
         'byTypeAmount' => $byTypeAmount,
-        'transfers' => $transfers,
         'transfersByDate' => $transfersByDate,
         'totalTransfers' => $totalTransfers,
         'transfersCount' => $transfersCount,
         'topTransferUsers' => $topTransferUsers,
+        'totalItems' => $totalItems,
     ];
     
     Yii::$app->cache->set($cacheKey, $data, 600); // 10 минут
@@ -295,7 +268,6 @@ foreach ($last30DaysWithTransfers as $date => $dayData) {
     $chartTransfersCount[] = $dayData['transfers_count'] ?? 0;
 }
 
-$totalItems = count($allItems);
 $successRate = $totalItems > 0 ? ($statusCounts['received'] / $totalItems) * 100 : 0;
 $avgItemPrice = $statusCounts['received'] > 0 ? $receivedAmount / $statusCounts['received'] : 0;
 $efficiency = $totalAmount > 0 ? ($receivedAmount / $totalAmount) * 100 : 0;
@@ -308,7 +280,7 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     <h1><?= Html::encode($this->title) ?></h1>
 </div>
 
-<div class="content">
+<div class="content skindrops-report-page">
     <?= Alert::widget(); ?>
 
     <!-- Общая статистика -->
@@ -368,33 +340,33 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         </div>
         <div class="row mt-3">
             <div class="col-md-3">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Средняя цена предмета</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Средняя цена предмета</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= number_format($avgItemPrice, 2, '.', ' ') ?> руб.
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Эффективность</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Эффективность</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= number_format($efficiency, 1, '.', ' ') ?>%
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Потери</div>
-                    <div class="ds-text--danger" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Потери</div>
+                    <div class="ds-text--danger skindrops-report-metric__value">
                         <?= number_format($lossRate, 1, '.', ' ') ?>%
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">В процессе</div>
-                    <div class="ds-text--info" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">В процессе</div>
+                    <div class="ds-text--info skindrops-report-metric__value">
                         <?= number_format($sentAmount, 2, '.', ' ') ?> руб.
                     </div>
                 </div>
@@ -402,25 +374,25 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         </div>
         <div class="row mt-3">
             <div class="col-md-4">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Переводов в магазин</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Переводов в магазин</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= $transfersCount ?> операций
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Сумма переводов</div>
-                    <div class="ds-text--success" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Сумма переводов</div>
+                    <div class="ds-text--success skindrops-report-metric__value">
                         <?= number_format($totalTransfers, 2, '.', ' ') ?> руб.
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Средний перевод</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Средний перевод</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= $transfersCount > 0 ? number_format($totalTransfers / $transfersCount, 2, '.', ' ') : 0 ?> руб.
                     </div>
                 </div>
@@ -428,17 +400,17 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         </div>
         <div class="row mt-3">
             <div class="col-md-6">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">Rust</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">Rust</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= $byType['rust'] ?> операций (<?= number_format($byTypeAmount['rust'], 2, '.', ' ') ?> руб.)
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="ds-card" style="background: hsl(0 0% 11.8% / 1); padding: 1rem;">
-                    <div class="ds-text--secondary" style="font-size: 0.875rem; margin-bottom: 0.5rem;">CS2</div>
-                    <div class="ds-text--primary" style="font-size: 1.5rem; font-weight: 600;">
+                <div class="ds-card skindrops-report-metric">
+                    <div class="ds-text--secondary skindrops-report-metric__label">CS2</div>
+                    <div class="ds-text--primary skindrops-report-metric__value">
                         <?= $byType['cs2'] ?> операций (<?= number_format($byTypeAmount['cs2'], 2, '.', ' ') ?> руб.)
                     </div>
                 </div>
@@ -451,10 +423,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-12">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Динамика по дням (последние 30 дней)</h5>
+                    <h2 class="ds-card__header-title">Динамика по дням (последние 30 дней)</h2>
                 </div>
                 <div class="ds-card__body">
-                    <div style="position: relative; height: 300px;">
+                    <div class="skindrops-report-chart">
                         <canvas id="dailyChart"></canvas>
                     </div>
                 </div>
@@ -466,10 +438,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Распределение по статусам</h5>
+                    <h2 class="ds-card__header-title">Распределение по статусам</h2>
                 </div>
                 <div class="ds-card__body">
-                    <div style="position: relative; height: 300px;">
+                    <div class="skindrops-report-chart">
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
@@ -478,10 +450,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Количество операций по дням</h5>
+                    <h2 class="ds-card__header-title">Количество операций по дням</h2>
                 </div>
                 <div class="ds-card__body">
-                    <div style="position: relative; height: 300px;">
+                    <div class="skindrops-report-chart">
                         <canvas id="countChart"></canvas>
                     </div>
                 </div>
@@ -493,10 +465,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Распределение по типам игр</h5>
+                    <h2 class="ds-card__header-title">Распределение по типам игр</h2>
                 </div>
                 <div class="ds-card__body">
-                    <div style="position: relative; height: 300px;">
+                    <div class="skindrops-report-chart">
                         <canvas id="typeChart"></canvas>
                     </div>
                 </div>
@@ -505,10 +477,10 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Переводы в магазин по дням</h5>
+                    <h2 class="ds-card__header-title">Переводы в магазин по дням</h2>
                 </div>
                 <div class="ds-card__body">
-                    <div style="position: relative; height: 300px;">
+                    <div class="skindrops-report-chart">
                         <canvas id="transfersChart"></canvas>
                     </div>
                 </div>
@@ -521,11 +493,11 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Топ-10 пользователей (вывод скинов)</h5>
+                    <h2 class="ds-card__header-title">Топ-10 пользователей (вывод скинов)</h2>
                 </div>
                 <div class="ds-card__body">
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table" aria-label="Топ-10 пользователей по выводу скинов">
                             <thead>
                                 <tr>
                                     <th>Пользователь</th>
@@ -566,11 +538,11 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-6">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Топ-10 предметов</h5>
+                    <h2 class="ds-card__header-title">Топ-10 предметов</h2>
                 </div>
                 <div class="ds-card__body">
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table" aria-label="Топ-10 предметов">
                             <thead>
                                 <tr>
                                     <th>Предмет</th>
@@ -605,11 +577,11 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
         <div class="col-md-12">
             <div class="ds-card">
                 <div class="ds-card__header">
-                    <h5 class="ds-card__header-title">Топ-10 пользователей по переводам в магазин</h5>
+                    <h2 class="ds-card__header-title">Топ-10 пользователей по переводам в магазин</h2>
                 </div>
                 <div class="ds-card__body">
                     <div class="table-responsive">
-                        <table class="table">
+                        <table class="table" aria-label="Топ-10 пользователей по переводам в магазин">
                             <thead>
                                 <tr>
                                     <th>Пользователь</th>
@@ -654,11 +626,11 @@ $this->registerJsFile('https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.um
     <!-- Детальная таблица по датам -->
     <div class="ds-card">
         <div class="ds-card__header">
-            <h5 class="ds-card__header-title">Детальная статистика по датам (последние 30 дней)</h5>
+            <h2 class="ds-card__header-title">Детальная статистика по датам (последние 30 дней)</h2>
         </div>
         <div class="ds-card__body">
             <div class="table-responsive">
-                <table class="table">
+                <table class="table" aria-label="Детальная статистика по датам за последние 30 дней">
                             <thead>
                                 <tr>
                                     <th>Дата</th>

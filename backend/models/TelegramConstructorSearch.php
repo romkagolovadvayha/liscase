@@ -36,7 +36,7 @@ class TelegramConstructorSearch extends TelegramConstructor
      * @param callable|null $filter
      * @return ActiveDataProvider
      */
-    public function search(array $params, callable $filter = null)
+    public function search(array $params, ?callable $filter = null)
     {
         $this->load($params);
 

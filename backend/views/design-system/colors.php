@@ -42,7 +42,7 @@ $texts = [
                 <?php foreach ($colors as $key => $color): ?>
                     <div class="col-md-4 col-lg-3 mb-3">
                         <div class="ds-card">
-                            <div style="background: <?= $color[0] ?>; height: 120px; border-radius: 8px; margin-bottom: 1rem;"></div>
+                            <div class="design-system-swatch design-system-swatch--large design-system-swatch--accent-<?= Html::encode($key) ?>"></div>
                             <strong class="ds-text--primary"><?= $color[1] ?></strong>
                             <div class="ds-text--muted small mb-2"><?= $color[2] ?></div>
                             <div class="ds-text--secondary small">
@@ -64,7 +64,7 @@ $texts = [
                 <?php foreach ($backgrounds as $key => $bg): ?>
                     <div class="col-md-3 mb-3">
                         <div class="ds-card">
-                            <div style="background: <?= $bg[0] ?>; height: 100px; border-radius: 8px; margin-bottom: 1rem; border: 1px solid hsl(0 0% 15.3% / 1);"></div>
+                            <div class="design-system-swatch design-system-swatch--medium design-system-swatch--background-<?= Html::encode($key) ?>"></div>
                             <strong class="ds-text--primary"><?= $bg[1] ?></strong>
                             <div class="ds-text--muted small mb-2"><?= $bg[2] ?></div>
                             <div class="ds-text--secondary small">
@@ -83,8 +83,8 @@ $texts = [
                 <?php foreach ($texts as $key => $text): ?>
                     <div class="col-md-4 mb-3">
                         <div class="ds-card">
-                            <div style="background: <?= $text[0] ?>; height: 60px; border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; color: <?= $key === 'primary' ? 'hsl(0 0% 7.8% / 1)' : 'hsl(0 0% 94.9% / 1)' ?>; font-weight: 600;">
-                                Sample Text
+                            <div class="design-system-swatch design-system-swatch--small design-system-swatch--text-<?= Html::encode($key) ?><?= $key === 'primary' ? ' design-system-swatch--dark-copy' : '' ?>">
+                                Пример текста
                             </div>
                             <strong class="ds-text--primary"><?= $text[1] ?></strong>
                             <div class="ds-text--muted small mb-2"><?= $text[2] ?></div>
@@ -104,7 +104,7 @@ $texts = [
                     <h5 class="ds-card__header-title">Использование в CSS/SCSS</h5>
                 </div>
                 <div class="ds-card__body">
-                    <pre class="ds-bg--secondary ds-p-4 ds-rounded-lg" style="overflow-x: auto;"><code>// В SCSS
+                    <pre class="ds-bg--secondary ds-p-4 ds-rounded-lg ds-overflow-x-auto"><code>// В SCSS
 .my-element {
   background: $ds-bg-primary;
   color: $ds-text-primary;

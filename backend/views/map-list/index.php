@@ -4,7 +4,7 @@ use common\models\map\MapList;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\grid\ActionColumn;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 
 /** @var yii\web\View $this */
 /** @var backend\models\map\MapListSearch $searchModel */
@@ -34,8 +34,10 @@ $this->params['breadcrumbs'][] = $this->title;
                 'value' => function ($model) {
                     if ($model->image_preview) {
                         return Html::img($model->image_preview, [
-                            'style' => 'max-width: 100px; max-height: 100px; border-radius: 4px;',
+                            'class' => 'admin-map-preview',
                             'loading' => 'lazy',
+                            'width' => 100,
+                            'height' => 100,
                             'alt' => 'Карта ' . Html::encode($model->hash ?? '')
                         ]);
                     }

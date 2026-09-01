@@ -5,10 +5,10 @@ use yii\helpers\Html;
 /** @var yii\web\View $this */
 /** @var common\models\invoice\PaymentBonuses $model */
 
-$this->title = 'Update Payment Bonuses: ' . $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'Payment Bonuses', 'url' => ['index']];
+$this->title = 'Изменить бонус при пополнении №' . $model->id;
+$this->params['breadcrumbs'][] = ['label' => 'Бонусы при пополнении', 'url' => ['index']];
 $this->params['breadcrumbs'][] = ['label' => $model->id, 'url' => ['view', 'id' => $model->id]];
-$this->params['breadcrumbs'][] = 'Update';
+$this->params['breadcrumbs'][] = 'Изменение';
 ?>
 <div class="payment-bonuses-update">
 

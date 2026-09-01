@@ -13,7 +13,7 @@ $model = TelegramConstructorMessage::findOne($messageId);
         <div class="tg-preview">
             <div class="tg-preview_message active">
                 <?php if (!empty($model->getImageLink())): ?>
-                    <img class="tg-preview-image" src="<?=$model->getPubUrl()?>" />
+                    <img class="tg-preview-image" src="<?= \yii\helpers\Html::encode($model->getPubUrl()) ?>" alt="Превью сообщения" />
                 <?php endif; ?>
                 <div class="tg-preview_message_body">
                     <?=$model->getMessage()?>

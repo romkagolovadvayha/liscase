@@ -108,6 +108,10 @@ $totalAmount = array_sum(array_column($list, 'amount'));
         <div class="ds-card__body">
             <?= \kartik\grid\GridView::widget([
                 'dataProvider' => $dataProvider,
+                'tableOptions' => [
+                    'class' => 'kv-grid-table table table-bordered table-striped kv-table-wrap',
+                    'aria-label' => 'История операций со скинами',
+                ],
                 'layout'       => "{items} {pager}",
                 'columns'      => [
                     [

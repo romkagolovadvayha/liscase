@@ -29,30 +29,6 @@ $this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/
 $this->registerJsFile('https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js', ['depends' => [\yii\web\JqueryAsset::class]]);
 $this->registerCssFile('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 
-$css = <<<CSS
-.editor-wrap { display:flex; gap:16px; }
-.left { width:380px; }
-.tree { max-height: 70vh; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:8px; background:#0f1216; color:#e5e7eb; }
-.tree h3 { margin: 8px; font-weight:700; text-transform:uppercase; font-size:12px; opacity:.85; }
-.tree ul { list-style:none; padding-left:16px; margin:0; }
-.tree li { margin:2px 0; }
-.tree .dir > .name { font-weight:700; margin:6px 0; cursor:pointer; display:flex; align-items:center; gap:6px; user-select:none; }
-.tree .dir > .name::before { content: '▾'; display:inline-block; width:1em; text-align:center; }
-.tree .dir.collapsed > .name::before { content: '▸'; }
-.tree .dir.collapsed > ul { display:none; }
-.tree .file { cursor:pointer; padding:2px 0; display:flex; align-items:center; gap:6px; }
-.tree .file .badge { font-size:11px; opacity:.7; margin-left:auto; }
-.tree .file .dot { width:8px; height:8px; border-radius:50%; background:#22c55e; display:none; }
-.pane { flex:1; display:flex; flex-direction:column; min-width:0; }
-#editor { height: 65vh; width: 100%; border:1px solid #e5e7eb; border-radius:8px; }
-.toolbar { display:flex; gap:8px; align-items:center; margin: 8px 0; }
-.status { margin-left:auto; opacity:.8; font-size:12px; }
-.debug { margin:10px 0; padding:10px; border:1px dashed #888; font-size:12px; background:#111; color:#ddd; }
-.actions { display:flex; gap:8px; margin-top:8px; }
-.toast-message_text { display:inline-block; margin-left:8px; }
-CSS;
-$this->registerCss($css);
-
 /** Рендер дерева (все папки по умолчанию свернуты) */
 function renderTree(array $nodes, $rootKey = '', $prefix = '') {
     if (empty($nodes)) return;
@@ -61,7 +37,7 @@ function renderTree(array $nodes, $rootKey = '', $prefix = '') {
         if (isset($n['type']) && $n['type'] === 'dir') {
             $dirPath = $prefix . $n['name'] . '/';
             $dataPath = Html::encode($rootKey . '://' . $dirPath);
-            echo '<li class="dir collapsed" data-dirpath="'.$dataPath.'"><div class="name">📁 ' . Html::encode($n['name']) . '</div>';
+            echo '<li class="dir collapsed" data-dirpath="' . $dataPath . '"><button type="button" class="name" aria-expanded="false">📁 ' . Html::encode($n['name']) . '</button>';
             renderTree($n['children'], $rootKey, $dirPath);
             echo '</li>';
         } elseif (isset($n['type']) && $n['type'] === 'file') {
@@ -70,39 +46,41 @@ function renderTree(array $nodes, $rootKey = '', $prefix = '') {
                                                  'path' => $n['path'],
                                                  'ext'  => $n['ext'],
                                              ]));
-            echo '<li class="file" data-meta="'.$meta.'">'
+            echo '<li><button type="button" class="file" data-meta="' . $meta . '">'
                 . '📄 ' . Html::encode($n['name'])
                 . '<span class="dot" title="Есть оверрайд в БД"></span>'
                 . '<span class="badge">'.strtoupper($n['ext']).'</span>'
-                . '</li>';
+                . '</button></li>';
         }
     }
     echo '</ul>';
 }
 ?>
 
+<div class="template-editor-page">
     <h1><?= Html::encode($this->title) ?></h1>
 
 <?php if (!empty($debug)): ?>
-    <div class="debug">
-        <strong>Debug paths</strong>
-        <ul style="margin:6px 0;">
+    <div class="template-editor-debug">
+        <strong>Диагностика путей</strong>
+        <ul>
             <?php foreach ($debug as $d): ?>
                 <li>
                     <code><?= Html::encode($d['alias']) ?></code> →
                     <code><?= Html::encode($d['path']) ?></code>,
-                    exists: <strong><?= Html::encode($d['exists']) ?></strong>,
-                    top-level nodes: <?= (int)$d['count'] ?>
+                    существует: <strong><?= Html::encode($d['exists']) ?></strong>,
+                    узлов верхнего уровня: <?= (int)$d['count'] ?>
                 </li>
             <?php endforeach; ?>
         </ul>
     </div>
 <?php endif; ?>
 
-    <div class="d-flex align-items-center" style="gap:12px; margin-bottom:12px;">
-        <div><strong>Текущий Template:</strong></div>
+    <div class="template-editor-selector">
+        <div><strong>Текущий шаблон:</strong></div>
         <form method="get" action="<?= Url::to(['template/index']) ?>">
-            <select name="templateId" onchange="this.form.submit()">
+            <label class="visually-hidden" for="template-id">Выберите шаблон</label>
+            <select id="template-id" name="templateId" class="ds-select form-control" onchange="this.form.submit()">
                 <?php foreach ($templates as $t): ?>
                     <option value="<?= (int)$t->id ?>" <?= ($selectedTemplate && $t->id === $selectedTemplate->id) ? 'selected' : '' ?>>
                         #<?= (int)$t->id ?> — <?= Html::encode($t->name) ?>
@@ -111,7 +89,7 @@ function renderTree(array $nodes, $rootKey = '', $prefix = '') {
             </select>
         </form>
         <div class="ms-auto">
-            <a class="btn btn-secondary btn-sm" href="<?= $selectedId ? Url::to(['template/settings', 'id' => $selectedId]) : '#' ?>">Настройки Template</a>
+            <a class="ds-btn ds-btn--secondary ds-btn--sm" href="<?= $selectedId ? Url::to(['template/settings', 'id' => $selectedId]) : '#' ?>">Настройки шаблона</a>
         </div>
     </div>
 
@@ -132,17 +110,18 @@ function renderTree(array $nodes, $rootKey = '', $prefix = '') {
             <div class="toolbar">
                 <div>
                     <div><strong id="fileLabel">Файл не выбран</strong></div>
-                    <div id="filePath" style="opacity:.7;"></div>
+                    <div id="filePath" class="template-editor-path"></div>
                 </div>
                 <div class="status">Источник: <span id="sourceBadge">—</span></div>
             </div>
             <div id="editor">// Выберите файл слева…</div>
-            <div class="actions">
-                <button id="saveBtn" class="btn btn-primary" disabled>Сохранить в БД</button>
-                <button id="revertBtn" class="btn btn-outline-danger" disabled>Откатить (удалить оверрайд)</button>
+            <div class="template-editor-actions">
+                <button type="button" id="saveBtn" class="ds-btn ds-btn--primary" disabled>Сохранить в БД</button>
+                <button type="button" id="revertBtn" class="ds-btn ds-btn--danger" disabled>Удалить переопределение</button>
             </div>
         </div>
     </div>
+</div>
 
     <script>
         // CSRF → JS
@@ -159,10 +138,10 @@ $js = <<<JS
 
   // toastr helpers
   function toastSuccess(msg){
-    try { toastr.success('<i class=\\'fas fa-check-circle\\'></i><div class=\\'toast-message_text\\'>' + (msg || 'OK') + '</div>', '', {progressBar:true, positionClass:'toast-top-right', escapeHtml:false}); } catch(e) {}
+    try { toastr.success(String(msg || 'Готово'), '', {progressBar:true, positionClass:'toast-top-right', escapeHtml:true}); } catch(e) {}
   }
   function toastError(msg){
-    try { toastr.error('<i class=\\'fas fa-exclamation-circle\\'></i><div class=\\'toast-message_text\\'>' + (msg || 'Ошибка') + '</div>', '', {progressBar:true, positionClass:'toast-top-right', escapeHtml:false}); } catch(e) {}
+    try { toastr.error(String(msg || 'Ошибка'), '', {progressBar:true, positionClass:'toast-top-right', escapeHtml:true}); } catch(e) {}
   }
 
   // localStorage keys per template
@@ -199,7 +178,7 @@ $js = <<<JS
 
     fileLabel.textContent = meta ? meta.path.split('/').pop() : 'Файл не выбран';
     filePath.textContent  = meta ? (meta.root + '://' + meta.path) : '';
-    badge.textContent     = from ? ((from === 'db') ? 'DB override' : 'Filesystem') : '—';
+    badge.textContent     = from ? ((from === 'db') ? 'Переопределение из БД' : 'Файл на диске') : '—';
   }
 
   function setButtons(enabled) {
@@ -230,7 +209,7 @@ $js = <<<JS
     var ct = res.headers.get('content-type') || '';
     if (ct.indexOf('application/json') !== -1) return res.json();
     return res.text().then(function(t){
-      throw new Error(t ? t.substring(0, 200) : 'Non-JSON response');
+      throw new Error(t ? t.substring(0, 200) : 'Сервер вернул некорректный ответ');
     });
   }
 
@@ -263,7 +242,10 @@ $js = <<<JS
     var dirs = document.querySelectorAll('.tree .dir');
     for (var i=0; i<dirs.length; i++) {
       var p = dirs[i].getAttribute('data-dirpath');
-      if (p && set[p]) dirs[i].classList.remove('collapsed'); else dirs[i].classList.add('collapsed');
+      var expanded = Boolean(p && set[p]);
+      dirs[i].classList.toggle('collapsed', !expanded);
+      var button = dirs[i].querySelector(':scope > .name');
+      if (button) button.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     }
   }
 
@@ -271,7 +253,11 @@ $js = <<<JS
     try {
       var li = fileEl.parentElement;
       while (li) {
-        if (li.classList && li.classList.contains('dir')) li.classList.remove('collapsed');
+        if (li.classList && li.classList.contains('dir')) {
+          li.classList.remove('collapsed');
+          var button = li.querySelector(':scope > .name');
+          if (button) button.setAttribute('aria-expanded', 'true');
+        }
         li = li.parentElement;
       }
       var set = getExpandedSet();
@@ -294,8 +280,8 @@ $js = <<<JS
 
     var url = '$loadUrl';
     if (url === '#') {
-      editor.setValue('// Template не определён', -1);
-      toastError('Template не определён');
+      editor.setValue('// Шаблон не выбран', -1);
+      toastError('Шаблон не выбран');
       return;
     }
 
@@ -313,7 +299,7 @@ $js = <<<JS
     fetch(full.toString(), { credentials:'same-origin' })
       .then(parseJsonSafe)
       .then(function(json){
-        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Load failed');
+        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Не удалось загрузить файл');
 
         editor.setValue(json.content ? json.content : '', -1);
         setMode(meta.ext);
@@ -347,6 +333,7 @@ $js = <<<JS
         } else {
           li.classList.add('collapsed'); set[key] = false;
         }
+        this.setAttribute('aria-expanded', li.classList.contains('collapsed') ? 'false' : 'true');
         saveExpandedSet(set);
       });
     }
@@ -425,7 +412,7 @@ $js = <<<JS
     if (!current.path) return;
 
     var url = '$saveUrl';
-    if (url === '#') { toastError('Template не определён'); return; }
+    if (url === '#') { toastError('Шаблон не выбран'); return; }
 
     var fd = new FormData();
     fd.set('root', current.root);
@@ -443,7 +430,7 @@ $js = <<<JS
     })
       .then(parseJsonSafe)
       .then(function(json){
-        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Save failed');
+        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Не удалось сохранить файл');
         setToolbar(current, 'db');
         markDotForPath(current.path, true);
         toastSuccess(json.message || 'Сохранено в БД');
@@ -451,9 +438,9 @@ $js = <<<JS
         // Если бэкенд компилировал SCSS — покажем уведомление
         if (json.compile) {
           if (json.compile.success) {
-            toastSuccess(json.compile.message || 'SCSS compiled');
+            toastSuccess(json.compile.message || 'SCSS успешно собран');
           } else {
-            toastError(json.compile.message || 'SCSS compile failed');
+            toastError(json.compile.message || 'Не удалось собрать SCSS');
           }
         }
       })
@@ -468,7 +455,7 @@ $js = <<<JS
     if (!confirm('Удалить оверрайд в БД и вернуть версию с диска?')) return;
 
     var url = '$revertUrl';
-    if (url === '#') { toastError('Template не определён'); return; }
+    if (url === '#') { toastError('Шаблон не выбран'); return; }
 
     var fd = new FormData();
     fd.set('root', current.root);
@@ -485,7 +472,7 @@ $js = <<<JS
     })
       .then(parseJsonSafe)
       .then(function(json){
-        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Revert failed');
+        if (!json || !json.success) throw new Error((json && json.message) ? json.message : 'Не удалось удалить переопределение');
         loadFile(current);
         markDotForPath(current.path, false);
         toastSuccess(json.message || 'Откат выполнен');

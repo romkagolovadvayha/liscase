@@ -155,7 +155,6 @@ $csrfToken = Yii::$app->request->getCsrfToken();
                     <div>
                         <label class="text-xs text-gray-400 mb-1 block"><?= Yii::t('common', 'Главное изображение') ?></label>
                         <a href="<?= Url::to(['/blog-image/create', 'blogId' => $model->id]) ?>" class="ds-btn ds-btn--primary ds-btn--sm show-modal-link inline-flex items-center gap-1.5"
-                           data-toggl="modal"
                            data-target="modal-dialog"
                            data-title="<?= Yii::t('common', 'Загрузить изображение') ?>"><i class="fas fa-upload"></i> <?= Yii::t('common', 'Загрузить изображение') ?></a>
                     </div>

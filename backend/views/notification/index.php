@@ -1,7 +1,7 @@
 <?php
 
 use backend\models\Notification;
-use yii\grid\GridView;
+use backend\components\AccessibleGridView as GridView;
 use yii\helpers\Html;
 use yii\helpers\Url;
 use yii\widgets\Pjax;

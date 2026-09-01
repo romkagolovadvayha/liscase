@@ -6,18 +6,18 @@ use yii\widgets\DetailView;
 /** @var yii\web\View $this */
 /** @var common\models\user\UserTop $model */
 
-$this->title = $model->id;
-$this->params['breadcrumbs'][] = ['label' => 'User Tops', 'url' => ['index']];
+$this->title = 'Запись топа №' . $model->id;
+$this->params['breadcrumbs'][] = ['label' => 'Топ игроков', 'url' => ['index']];
 $this->params['breadcrumbs'][] = $this->title;
 \yii\web\YiiAsset::register($this);
 ?>
 <div class="user-top-view">
     <p>
-        <?= Html::a('Update', ['update', 'id' => $model->id], ['class' => 'btn btn-primary']) ?>
-        <?= Html::a('Delete', ['delete', 'id' => $model->id], [
-            'class' => 'btn btn-danger',
+        <?= Html::a('Изменить', ['update', 'id' => $model->id], ['class' => 'ds-btn ds-btn--primary']) ?>
+        <?= Html::a('Удалить', ['delete', 'id' => $model->id], [
+            'class' => 'ds-btn ds-btn--danger',
             'data' => [
-                'confirm' => 'Are you sure you want to delete this item?',
+                'confirm' => 'Удалить эту запись топа?',
                 'method' => 'post',
             ],
         ]) ?>

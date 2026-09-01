@@ -1,14 +1,16 @@
 <?php
 /* @var $content string */
 
-use yii\bootstrap4\Breadcrumbs;
-
 $contentClass = isset($this->params['contentClass']) ? $this->params['contentClass'] : 'content';
+$hasPageHeading = (bool) preg_match('/<h1\b/i', $content);
 ?>
 <!-- Content Area -->
-<div class="admin-content-wrapper bg-[hsl(0_0%_10%_/_1)] min-h-full">
+<div class="admin-content-wrapper">
     <!-- Main Content -->
-    <div class="<?= $contentClass ?> <?= ($contentClass === 'content-no-padding') ? '' : 'p-6' ?>">
+    <div class="<?= $contentClass ?>">
+        <?php if (!$hasPageHeading && !empty($this->title)): ?>
+            <h1 class="visually-hidden"><?= \yii\helpers\Html::encode($this->title) ?></h1>
+        <?php endif; ?>
         <?= $content ?>
     </div>
 </div>
