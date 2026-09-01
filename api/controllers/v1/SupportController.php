@@ -18,6 +18,7 @@ use common\models\statistics\Reports;
 use common\models\servers\Servers;
 use common\components\helpers\Role;
 use common\components\queue\support\BeforeMessageJob;
+use common\components\support\SupportMessageNotificationFormatter;
 use api\components\jwt\JwtAuthFilter;
 use OpenApi\Annotations as OA;
 
@@ -1639,10 +1640,10 @@ class SupportController extends BaseApiController
         if (!Yii::$app->has('queueProcess')) {
             return;
         }
-        $text = (string) ($supportMessage->message ?? '');
-        if ($text === '' || trim(strip_tags(str_replace(['&nbsp;', "\xc2\xa0"], ' ', $text))) === '') {
-            $text = $hadFiles ? '[вложения]' : '[сообщение]';
-        }
+        $text = SupportMessageNotificationFormatter::format(
+            (string)($supportMessage->message ?? ''),
+            $hadFiles
+        );
         try {
             Yii::$app->queueProcess->push(new BeforeMessageJob([
                 'chatId' => $supportMessage->support_id,
