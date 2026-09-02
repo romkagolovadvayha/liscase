@@ -48,7 +48,6 @@ Thumbs.db
 
 # Kubernetes
 kubernetes/
-helm/
 .github/
 
 # Docker
@@ -63,7 +62,6 @@ mysql/
 # Deployment scripts
 deploy*.sh
 deploy*.ps1
-ONE_CLICK_DEPLOY.*
 
 # Documentation
 *README.md

@@ -1,0 +1,17 @@
+# Kubernetes & Docker
+k8s.env
+.env.k8s
+secrets-production.yaml
+*-local.yaml
+
+# Docker
+.docker/
+
+# Logs
+*.log
+
+# Временные файлы
+*.tmp
+*.temp
+
+

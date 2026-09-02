@@ -21,18 +21,19 @@ use common\models\user\UserProfile;
 use common\models\user\UserTree;
 use yii\base\BaseObject;
 use yii\console\Controller;
+use yii\console\Exception;
 
 class GamestoresController extends Controller
 {
     /**
      * Парсит товары с gamestores
-     * gamestores/product-parsing
+     * gamestores/product-parsing [file]
      *
      * @throws \Exception
      */
-    public function actionProductParsing()
+    public function actionProductParsing(?string $file = null)
     {
-        $result = json_decode(file_get_contents(__DIR__ . "/../../drops.json"), 1)['data'];
+        $result = $this->loadImportData($file, 'drops.json');
         $products = $result['products'];
         $categories = $result['categories'];
 
@@ -194,13 +195,13 @@ class GamestoresController extends Controller
 
     /**
      * Парсит пользователей с gamestores
-     * gamestores/users-parsing
+     * gamestores/users-parsing [file]
      *
      * @throws \Exception
      */
-    public function actionUsersParsing()
+    public function actionUsersParsing(?string $file = null)
     {
-        $users = json_decode(file_get_contents(__DIR__ . "/../../players.json"), 1)['data'];
+        $users = $this->loadImportData($file, 'players.json');
 
         foreach ($users as $user) {
             $model = User::find()
@@ -273,13 +274,13 @@ class GamestoresController extends Controller
 
     /**
      * Парсит Корзину с gamestores
-     * gamestores/baskets-parsing
+     * gamestores/baskets-parsing [file]
      *
      * @throws \Exception
      */
-    public function actionBasketsParsing()
+    public function actionBasketsParsing(?string $file = null)
     {
-        $baskets = json_decode(file_get_contents(__DIR__ . "/../../baskets.json"), 1)['data'];
+        $baskets = $this->loadImportData($file, 'baskets.json');
 
         foreach ($baskets as $basket) {
             /** @var User $user */
@@ -322,6 +323,37 @@ class GamestoresController extends Controller
             }
             UserDrop::createRecord($user->id, $drop->id, $boxId, $setId, UserDrop::STATUS_ACTIVE, false, $basket['amount'], $basket['date_created']);
         }
+    }
+
+    /**
+     * Loads a local GameStores export without keeping production data in Git.
+     *
+     * When no path is passed, the command looks in
+     * console/runtime/imports/gamestores/<filename>.
+     *
+     * @throws Exception
+     */
+    private function loadImportData(?string $file, string $defaultFilename): array
+    {
+        $file = $file ?: \Yii::getAlias("@runtime/imports/gamestores/{$defaultFilename}");
+
+        if (!is_file($file) || !is_readable($file)) {
+            throw new Exception(
+                "Import file is not readable: {$file}. Pass its path as the command argument."
+            );
+        }
+
+        try {
+            $payload = json_decode((string) file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $exception) {
+            throw new Exception("Invalid JSON in import file {$file}: {$exception->getMessage()}");
+        }
+
+        if (!isset($payload['data']) || !is_array($payload['data'])) {
+            throw new Exception("Import file {$file} must contain an array in the data field.");
+        }
+
+        return $payload['data'];
     }
 
     private function _loadImageDrop($imageUrl, $dropId) {

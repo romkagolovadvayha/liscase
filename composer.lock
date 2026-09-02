@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "fdc71117c3feac81d72f4af13ac4f0d0",
+    "content-hash": "383f5e54a50ec929f3263eb90bf9a693",
     "packages": [
         {
             "name": "2amigos/qrcode-library",
@@ -1045,7 +1045,7 @@
             "version": "1.1.0",
             "dist": {
                 "type": "path",
-                "url": "packages/yii2-websocket",
+                "url": "common/packages/yii2-websocket",
                 "reference": "6d8382e7f22ce4ab3f580fcb4c4eabb287dc1b6a"
             },
             "require": {
@@ -9654,8 +9654,8 @@
             "version": "2.0.1",
             "dist": {
                 "type": "path",
-                "url": "packages/yii2-behaviors",
-                "reference": "81140ee7532582f48ec37f9ce795434e1d50edad"
+                "url": "common/packages/yii2-behaviors",
+                "reference": "b5d3b40a1053b5349b6779b4a3ea93cb0bf5a52b"
             },
             "require": {
                 "nesbot/carbon": "^2.72 || ^3.0",

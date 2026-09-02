@@ -128,14 +128,14 @@
     "repositories": [
         {
             "type": "path",
-            "url": "packages/yii2-behaviors",
+            "url": "common/packages/yii2-behaviors",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "packages/yii2-websocket",
+            "url": "common/packages/yii2-websocket",
             "options": {
                 "symlink": false
             }

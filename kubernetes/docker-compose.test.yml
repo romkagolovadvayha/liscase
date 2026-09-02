@@ -1,0 +1,118 @@
+# Docker Compose для тестирования перед развертыванием в K8s
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: liscase-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: prostoj4
+      MYSQL_USER: liscase
+      MYSQL_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - liscase-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: liscase-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - liscase-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main Application (PHP + Nginx)
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: liscase-app
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=prostoj4
+      - DB_USERNAME=liscase
+      - DB_PASSWORD=password
+      - REDIS_HOST=redis
+      - WS_HOST=websocket
+      - APP_ENV=production
+    volumes:
+      - ../frontend/web/uploads:/var/www/html/frontend/web/uploads
+      - ../backend/web/uploads:/var/www/html/backend/web/uploads
+    networks:
+      - liscase-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # WebSocket Server
+  websocket:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: liscase-websocket
+    command: php yii ws/start
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=prostoj4
+      - DB_USERNAME=liscase
+      - DB_PASSWORD=password
+    networks:
+      - liscase-network
+
+  # Node.js Services
+  node-services:
+    build:
+      context: ..
+      dockerfile: docker/node/Dockerfile
+    container_name: liscase-node
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=prostoj4
+    networks:
+      - liscase-network
+
+volumes:
+  mysql-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  liscase-network:
+    driver: bridge
+
+
