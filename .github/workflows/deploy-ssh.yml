@@ -277,8 +277,11 @@ jobs:
               mv -f .env.deploy .env
             fi
             git fetch origin "$BRANCH"
-            git checkout "$BRANCH"
-            # Без merge: локальные правки отслеживаемых файлов (например yii) ломали git pull (exit 128)
+            # Сначала сбрасываем правки в текущем checkout: иначе изменённый на сервере
+            # отслеживаемый файл (например yii) блокирует переключение ветки.
+            git reset --hard HEAD
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            # Без merge: серверный checkout всегда точно соответствует origin.
             git reset --hard "origin/$BRANCH"
             # yii в репозитории должен быть 100755; если в индексе был 100644 — chmod после деплоя
             chmod +x yii 2>/dev/null || true
