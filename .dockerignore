@@ -33,6 +33,14 @@ node_modules/
 *.tmp
 *.temp
 *.cache
+tmp-*.png
+.codex-check/
+.codex-tmp/
+deploy-backups/
+frontend-new/
+frontend/web/stickers-archive-*/
+plugins/**/bin/
+plugins/**/obj/
 
 # OS
 .DS_Store

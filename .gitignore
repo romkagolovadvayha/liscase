@@ -58,6 +58,15 @@ frontend/web/uploads/
 # сгенерированный CSS
 /frontend/assets/sources/css/design/styles-local.min.css
 
-# local agent/staging worktrees
-/frontend-new/.patch-staging/
-/frontend-new/.site-starter/
+# local build and agent artifacts
+/.codex-check/
+/.codex-tmp/
+/deploy-backups/
+/frontend-new/
+/frontend/web/stickers-archive-*/
+/plugins/bin/
+/plugins/obj/
+/plugins/**/bin/
+/plugins/**/obj/
+/plugins/*.backup
+/tmp-*.png
