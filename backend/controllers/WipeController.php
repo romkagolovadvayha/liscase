@@ -609,6 +609,7 @@ class WipeController extends Controller
         }
         Yii::$app->cache->set($cacheKey, 1, 30*60);
         ini_set('memory_limit', '512M');
+        $tgMessage = [];
         /** @var Servers[] $servers */
         $servers = Servers::find()
                           ->cache(30)
