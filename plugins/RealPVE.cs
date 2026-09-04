@@ -1569,7 +1569,10 @@ namespace Oxide.Plugins
 					lastLooter = lootableEntity.LastLootedBy;
 				NextTick(() =>
 				{
-					restrictor.SetFlag(BaseEntity.Flags.Open, b: false);
+					using (var setFlags = restrictor.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+					{
+					    setFlags.Set(BaseEntity.Flags.Open, false);
+					}
 					player.inventory.loot.RemoveContainer(restrictor.inventory);
 					player.inventory.loot.SendImmediate();
 					if (lootableEntity != null)
@@ -1726,7 +1729,10 @@ namespace Oxide.Plugins
 					{
 						if (entity is not Recycler recycler || !recycler.IsValid()) continue;
 						if (_config.RecyclerNoPenalties)
-							recycler.SetFlag(BaseEntity.Flags.Reserved9, false);
+							using (var setFlags = recycler.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+							{
+							    setFlags.Set(BaseEntity.Flags.Reserved9, false);
+							}
 						else
 							recycler.UpdateInSafeZone();
                     }
@@ -2168,9 +2174,15 @@ namespace Oxide.Plugins
         {
             if (decayEntity.IsDemolishSupported && decayEntity.OwnerID.IsSteamId())
             {
-				decayEntity.SetFlag(BaseEntity.Flags.Reserved2, false);
+				using (var setFlags = decayEntity.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+				{
+				    setFlags.Set(BaseEntity.Flags.Reserved2, false);
+				}
 				if (decayEntity is BuildingBlock block)
-                    block.SetFlag(BaseEntity.Flags.Reserved1, false);
+                    using (var setFlags = block.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+                    {
+                        setFlags.Set(BaseEntity.Flags.Reserved1, false);
+                    }
 			}
 		}
 		private static Dictionary<ulong, EventData> _eventsList;
@@ -2203,12 +2215,18 @@ namespace Oxide.Plugins
 			if (decayEntity.IsDemolishSupported && decayEntity.OwnerID.IsSteamId())
 			{
 				decayEntity.CancelInvoke(decayEntity.StopBeingDemolishable);
-				decayEntity.SetFlag(BaseEntity.Flags.Reserved2, true);
+				using (var setFlags = decayEntity.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+				{
+				    setFlags.Set(BaseEntity.Flags.Reserved2, true);
+				}
 				
 				if (decayEntity is BuildingBlock block)
 				{
 					block.CancelInvoke(block.StopBeingRotatable);
-					block.SetFlag(BaseEntity.Flags.Reserved1, true);
+					using (var setFlags = block.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+					{
+					    setFlags.Set(BaseEntity.Flags.Reserved1, true);
+					}
 				}
 			}
 		}
@@ -2697,7 +2715,10 @@ namespace Oxide.Plugins
         {
 			if (player.inventory.loot.StartLootingEntity(container, false))
             {
-                container.SetFlag(BaseEntity.Flags.Open, b: true);
+                using (var setFlags = container.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+                {
+                    setFlags.Set(BaseEntity.Flags.Open, true);
+                }
                 container.AddContainers(player.inventory.loot);
                 player.inventory.loot.SendImmediate();
                 player.ClientRPC(RpcTarget.Player("RPC_OpenLootPanel", player), container.panelName);
@@ -6008,7 +6029,10 @@ namespace Oxide.Plugins
 			{
 				if (!entity.IsValid()) continue;
 				if (_config.RecyclerNoPenalties && entity is Recycler recycler)
-					recycler.SetFlag(BaseEntity.Flags.Reserved9, false);
+					using (var setFlags = recycler.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+					{
+					    setFlags.Set(BaseEntity.Flags.Reserved9, false);
+					}
 				else if (entity is DecayEntity decayEntity)
 					ApplyDemolishable(decayEntity);
 			}
@@ -6635,7 +6659,10 @@ namespace Oxide.Plugins
             {
                 if (__instance.EquipSound != null)
                     Effect.server.Run(__instance.EquipSound.resourcePath, player, StringPool.Get("spine3"), Vector3.zero, Vector3.zero);
-                __instance.SetFlag(BaseEntity.Flags.Reserved1, b: true);
+                using (var setFlags = __instance.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+                {
+                    setFlags.Set(BaseEntity.Flags.Reserved1, true);
+                }
                 __instance.Invoke(__instance.ClearEquipping, 1.5f);
             }
             return false;
@@ -7295,7 +7322,10 @@ namespace Oxide.Plugins
 			if (!turret.OwnerID.IsSteamId()) return null;
             int limit = GetTurretsLimit(turret.OwnerID.ToString());
 			if (limit < 0)
-				turret.SetFlag(BaseEntity.Flags.OnFire, true);
+				using (var setFlags = turret.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+				{
+				    setFlags.Set(BaseEntity.Flags.OnFire, true);
+				}
 			else
 			{
 				int num = 0;
@@ -7304,7 +7334,10 @@ namespace Oxide.Plugins
                     if (!nearbyTurret.isClient && nearbyTurret.IsValid() && nearbyTurret.gameObject.activeSelf && !nearbyTurret.EqualNetID(turret.net.ID) && nearbyTurret.IsOn() && !nearbyTurret.HasInterference())
                         num++;
                 }
-                turret.SetFlag(BaseEntity.Flags.OnFire, num >= limit);
+                using (var setFlags = turret.StartSetFlags(BaseEntity.FlagsUpdateMode.SendNetworkUpdate_Flags))
+                {
+                    setFlags.Set(BaseEntity.Flags.OnFire, num >= limit);
+                }
             }
 			return true;
 		}
