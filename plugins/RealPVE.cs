@@ -4335,7 +4335,7 @@ namespace Oxide.Plugins
 			public void LockedCrateSpawned(LockedByEntCrate lockedCrate)
             {
                 lockedCrate.OwnerID = OwnerID;
-                var lockedEntity = lockedCrate.lockingEnt?.ToBaseEntity();
+                var lockedEntity = lockedCrate.lockingEnt;
                 if (lockedEntity == null) return;
                 if (Settings.StopFire)
 					lockedEntity.Kill();
