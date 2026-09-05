@@ -4354,7 +4354,7 @@ namespace Oxide.Plugins
                     {
 						serverGib.OwnerID = OwnerID;
 						if (serverGib is HelicopterDebris debris)
-							debris.tooHotUntil = 0f;
+							debris.OnCooledDown();
 					}
                 }
                 else
